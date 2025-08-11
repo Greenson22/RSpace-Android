@@ -1,18 +1,61 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/discussion_model.dart';
+
+class SharedPreferencesService {
+  static const String _sortTypeKey = 'sort_type';
+  static const String _sortAscendingKey = 'sort_ascending';
+  static const String _filterTypeKey = 'filter_type';
+  static const String _filterValueKey = 'filter_value';
+
+  Future<void> saveSortPreferences(String sortType, bool sortAscending) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sortTypeKey, sortType);
+    await prefs.setBool(_sortAscendingKey, sortAscending);
+  }
+
+  Future<Map<String, dynamic>> loadSortPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sortType = prefs.getString(_sortTypeKey) ?? 'date';
+    final sortAscending = prefs.getBool(_sortAscendingKey) ?? true;
+    return {'sortType': sortType, 'sortAscending': sortAscending};
+  }
+
+  Future<void> saveFilterPreference(
+    String? filterType,
+    String? filterValue,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (filterType != null) {
+      await prefs.setString(_filterTypeKey, filterType);
+    } else {
+      await prefs.remove(_filterTypeKey);
+    }
+    if (filterValue != null) {
+      await prefs.setString(_filterValueKey, filterValue);
+    } else {
+      await prefs.remove(_filterValueKey);
+    }
+  }
+
+  Future<Map<String, String?>> loadFilterPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final filterType = prefs.getString(_filterTypeKey);
+    final filterValue = prefs.getString(_filterValueKey);
+    return {'filterType': filterType, 'filterValue': filterValue};
+  }
+}
 
 class LocalFileService {
   final String _topicsPath =
       '/home/lemon-manis-22/RikalG22/RSpace_data/data/contents/topics';
 
   String getContentsPath() {
-    // Navigasi satu tingkat ke atas dari _topicsPath untuk mendapatkan direktori 'contents'
     return path.dirname(_topicsPath);
   }
 
-  // ... (Metode getTopics, addTopic, renameTopic, deleteTopic tidak berubah)
   Future<List<String>> getTopics() async {
     final directory = Directory(_topicsPath);
     if (!await directory.exists()) {
@@ -94,7 +137,6 @@ class LocalFileService {
         .listSync()
         .whereType<File>()
         .where((item) => item.path.toLowerCase().endsWith('.json'))
-        // Baris ini ditambahkan untuk memfilter topic_config.json
         .where((item) => path.basename(item.path) != 'topic_config.json')
         .map((item) => path.basenameWithoutExtension(item.path))
         .toList();
@@ -160,7 +202,6 @@ class LocalFileService {
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
-      // Jika file tidak ada, buat dengan struktur dasar
       await file.writeAsString(jsonEncode({'content': []}));
     }
     final jsonString = await file.readAsString();

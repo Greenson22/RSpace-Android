@@ -20,6 +20,7 @@ class DiscussionsPage extends StatefulWidget {
 
 class _DiscussionsPageState extends State<DiscussionsPage> {
   final LocalFileService _fileService = LocalFileService();
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   bool _isLoading = true;
   List<Discussion> _allDiscussions = [];
   List<Discussion> _filteredDiscussions = [];
@@ -27,14 +28,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   final Map<int, bool> _arePointsVisible = {};
   bool _isSearching = false;
 
-  // Variabel state untuk filter
   String? _activeFilterType;
   String? _selectedRepetitionCode;
   DateTimeRange? _selectedDateRange;
 
-  // --- VARIABEL BARU UNTUK SORTING ---
-  String _sortType = 'date'; // Default sort: 'name', 'date', 'code'
-  bool _sortAscending = true; // Default order: true for ASC, false for DESC
+  String _sortType = 'date';
+  bool _sortAscending = true;
 
   final List<String> _repetitionCodes = const [
     'R0D',
@@ -50,7 +49,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   @override
   void initState() {
     super.initState();
-    _loadDiscussions();
+    _loadInitialData();
     _searchController.addListener(_filterAndSortDiscussions);
   }
 
@@ -60,9 +59,32 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
-  // --- FUNGSI BARU UNTUK MENGURUTKAN DISKUSI ---
+  Future<void> _loadInitialData() async {
+    await _loadPreferences();
+    await _loadDiscussions();
+  }
+
+  Future<void> _loadPreferences() async {
+    final sortPrefs = await _prefsService.loadSortPreferences();
+    final filterPrefs = await _prefsService.loadFilterPreference();
+    setState(() {
+      _sortType = sortPrefs['sortType'];
+      _sortAscending = sortPrefs['sortAscending'];
+      _activeFilterType = filterPrefs['filterType'];
+      if (_activeFilterType == 'code') {
+        _selectedRepetitionCode = filterPrefs['filterValue'];
+      } else if (_activeFilterType == 'date' &&
+          filterPrefs['filterValue'] != null) {
+        final dates = filterPrefs['filterValue']!.split('/');
+        _selectedDateRange = DateTimeRange(
+          start: DateTime.parse(dates[0]),
+          end: DateTime.parse(dates[1]),
+        );
+      }
+    });
+  }
+
   void _sortDiscussions() {
-    // Sort a copy of the list to avoid modifying the original order
     List<Discussion> listToSort = List.from(_filteredDiscussions);
     List<Discussion> allListToSort = List.from(_allDiscussions);
 
@@ -81,7 +103,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           try {
             return DateTime.parse(a.date).compareTo(DateTime.parse(b.date));
           } catch (e) {
-            return 0; // Handle invalid date format gracefully
+            return 0;
           }
         };
         break;
@@ -116,7 +138,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             final startDate = _selectedDateRange!.start;
             final endDate = _selectedDateRange!.end.add(
               const Duration(days: 1),
-            ); // Make it inclusive
+            );
             matchesFilter =
                 discussionDate.isAfter(
                   startDate.subtract(const Duration(days: 1)),
@@ -129,7 +151,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         return matchesSearchQuery && matchesFilter;
       }).toList();
 
-      _sortDiscussions(); // Terapkan sorting setelah filtering
+      _sortDiscussions();
     });
   }
 
@@ -140,8 +162,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       _selectedDateRange = null;
       _filterAndSortDiscussions();
     });
+    _prefsService.saveFilterPreference(null, null);
     _showSnackBar('Semua filter telah dihapus.');
   }
+
+  // Lokasi: lib/presentation/pages/3_discussions_page.dart
 
   Future<void> _loadDiscussions() async {
     try {
@@ -150,11 +175,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       );
       setState(() {
         _allDiscussions = discussions;
-        _filteredDiscussions = _allDiscussions;
+        // Baris ini tidak lagi diperlukan karena _filterAndSortDiscussions akan menanganinya
+        // _filteredDiscussions = _allDiscussions;
         for (int i = 0; i < _allDiscussions.length; i++) {
           _arePointsVisible[i] = false;
         }
-        _sortDiscussions(); // Terapkan sorting awal
+        _filterAndSortDiscussions(); // <-- PERBAIKAN: Panggil fungsi ini
         _isLoading = false;
       });
     } catch (e) {
@@ -416,6 +442,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                       _selectedDateRange = null;
                       _filterAndSortDiscussions();
                     });
+                    _prefsService.saveFilterPreference('code', code);
                     Navigator.pop(context);
                     _showSnackBar('Filter diterapkan: Kode = $code');
                   },
@@ -447,6 +474,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                     _selectedRepetitionCode = null;
                     _filterAndSortDiscussions();
                   });
+                  final dateRangeString =
+                      '${now.toIso8601String()}/${now.toIso8601String()}';
+                  _prefsService.saveFilterPreference('date', dateRangeString);
                   Navigator.pop(context);
                   _showSnackBar('Filter diterapkan: Hari Ini');
                 },
@@ -454,15 +484,16 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               ListTile(
                 title: const Text('Hari ini dan sebelumnya'),
                 onTap: () {
+                  final start = DateTime(2000);
                   setState(() {
                     _activeFilterType = 'date';
-                    _selectedDateRange = DateTimeRange(
-                      start: DateTime(2000),
-                      end: now,
-                    );
+                    _selectedDateRange = DateTimeRange(start: start, end: now);
                     _selectedRepetitionCode = null;
                     _filterAndSortDiscussions();
                   });
+                  final dateRangeString =
+                      '${start.toIso8601String()}/${now.toIso8601String()}';
+                  _prefsService.saveFilterPreference('date', dateRangeString);
                   Navigator.pop(context);
                   _showSnackBar('Filter diterapkan: Hari ini dan sebelumnya');
                 },
@@ -489,6 +520,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                       final endDate = DateFormat(
                         'dd/MM/yy',
                       ).format(pickedRange.end);
+                      final dateRangeString =
+                          '${pickedRange.start.toIso8601String()}/${pickedRange.end.toIso8601String()}';
+                      _prefsService.saveFilterPreference(
+                        'date',
+                        dateRangeString,
+                      );
                       _showSnackBar('Filter diterapkan: $startDate - $endDate');
                     });
                   }
@@ -501,12 +538,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // --- WIDGET BARU UNTUK DIALOG SORTING ---
   Future<void> _showSortDialog() async {
     showDialog(
       context: context,
       builder: (context) {
-        // Use a StatefulBuilder to manage the state of the dialog internally
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -569,9 +604,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 TextButton(
                   onPressed: () {
                     setState(() {
-                      // Apply the sort by calling the main sort function
                       _sortDiscussions();
                     });
+                    _prefsService.saveSortPreferences(
+                      _sortType,
+                      _sortAscending,
+                    );
                     Navigator.pop(context);
                     _showSnackBar('Diskusi telah diurutkan.');
                   },
@@ -587,7 +625,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine which list to show based on search/filter state
     final discussionsToShow =
         (_activeFilterType != null || _searchController.text.isNotEmpty)
         ? _filteredDiscussions
@@ -629,7 +666,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             onPressed: _showFilterDialog,
             tooltip: 'Filter Diskusi',
           ),
-          // --- TOMBOL SORT BARU ---
           IconButton(
             icon: const Icon(Icons.sort),
             onPressed: _showSortDialog,
