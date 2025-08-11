@@ -101,7 +101,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       default:
         comparator = (a, b) {
           try {
-            return DateTime.parse(a.date).compareTo(DateTime.parse(b.date));
+            // Handle null dates for sorting
+            if (a.date == null && b.date == null) return 0;
+            if (a.date == null) return _sortAscending ? 1 : -1;
+            if (b.date == null) return _sortAscending ? -1 : 1;
+            return DateTime.parse(a.date!).compareTo(DateTime.parse(b.date!));
           } catch (e) {
             return 0;
           }
@@ -134,16 +138,20 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           matchesFilter = discussion.repetitionCode == _selectedRepetitionCode;
         } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
           try {
-            final discussionDate = DateTime.parse(discussion.date);
-            final startDate = _selectedDateRange!.start;
-            final endDate = _selectedDateRange!.end.add(
-              const Duration(days: 1),
-            );
-            matchesFilter =
-                discussionDate.isAfter(
-                  startDate.subtract(const Duration(days: 1)),
-                ) &&
-                discussionDate.isBefore(endDate);
+            if (discussion.date == null) {
+              matchesFilter = false;
+            } else {
+              final discussionDate = DateTime.parse(discussion.date!);
+              final startDate = _selectedDateRange!.start;
+              final endDate = _selectedDateRange!.end.add(
+                const Duration(days: 1),
+              );
+              matchesFilter =
+                  discussionDate.isAfter(
+                    startDate.subtract(const Duration(days: 1)),
+                  ) &&
+                  discussionDate.isBefore(endDate);
+            }
           } catch (e) {
             matchesFilter = false;
           }
@@ -368,6 +376,18 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         );
       },
     );
+  }
+
+  // ==> FUNGSI BARU UNTUK MENANDAI SELESAI <==
+  Future<void> _markAsFinished(Discussion discussion) async {
+    setState(() {
+      discussion.finished = true;
+      discussion.repetitionCode = 'Finish';
+      discussion.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      discussion.date = null; // Set tanggal repetisi menjadi null
+    });
+    await _saveDiscussions();
+    _showSnackBar('Diskusi "${discussion.discussion}" ditandai selesai.');
   }
 
   Future<void> _showFilterDialog() async {
@@ -619,7 +639,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHITUNG TANGGAL <==
   String _getNewDateForRepetitionCode(String code) {
     final now = DateTime.now();
     int daysToAdd;
@@ -725,26 +744,44 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   Widget _buildDiscussionCard(Discussion discussion, int index) {
     bool arePointsVisible = _arePointsVisible[index] ?? false;
+    // ==> LOGIKA Tampilan Berdasarkan Status Selesai <==
+    final bool isFinished = discussion.finished;
+    final iconColor = isFinished ? Colors.green : Colors.blue;
+    final iconData = isFinished
+        ? Icons.check_circle
+        : Icons.chat_bubble_outline;
+
+    String subtitleText;
+    if (isFinished) {
+      subtitleText = 'Selesai pada: ${discussion.finish_date}';
+    } else {
+      subtitleText =
+          'Date: ${discussion.date ?? 'N/A'} | Code: ${discussion.repetitionCode}';
+    }
+
     return Card(
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
+            leading: Icon(iconData, color: iconColor), // Icon dinamis
             title: Text(
               discussion.discussion,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                decoration: isFinished
+                    ? TextDecoration.lineThrough
+                    : null, // Coret jika selesai
+              ),
             ),
-            subtitle: Text(
-              'Date: ${discussion.date} | Code: ${discussion.repetitionCode}',
-            ),
+            subtitle: Text(subtitleText),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 EditPopupMenu(
+                  isFinished: isFinished, // Kirim status
                   onDateChange: () => _changeDate(
                     (newDate) => setState(() => discussion.date = newDate),
                   ),
-                  // ==> PERUBAHAN LOGIKA onCodeChange <==
                   onCodeChange: () => _changeRepetitionCode(
                     discussion.repetitionCode,
                     (newCode) {
@@ -759,6 +796,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                     (newName) =>
                         setState(() => discussion.discussion = newName),
                   ),
+                  // ==> KIRIM FUNGSI onMarkAsFinished <==
+                  onMarkAsFinished: () => _markAsFinished(discussion),
                 ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
@@ -785,21 +824,22 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 child: Column(
                   children: [
                     ...discussion.points.map((point) => _buildPointTile(point)),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Tambah Poin'),
-                        onPressed: () => _addPoint(discussion),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                    if (!isFinished) // Sembunyikan tombol jika sudah selesai
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Tambah Poin'),
+                          onPressed: () => _addPoint(discussion),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -818,7 +858,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       trailing: EditPopupMenu(
         onDateChange: () =>
             _changeDate((newDate) => setState(() => point.date = newDate)),
-        // ==> PERUBAHAN LOGIKA onCodeChange <==
         onCodeChange: () =>
             _changeRepetitionCode(point.repetitionCode, (newCode) {
               setState(() {

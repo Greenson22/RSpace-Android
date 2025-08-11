@@ -28,15 +28,19 @@ class Point {
 
 class Discussion {
   String discussion;
-  String date;
+  String? date; // Diubah menjadi nullable
   String repetitionCode;
   List<Point> points;
+  bool finished; // ==> FIELD BARU <==
+  String? finish_date; // ==> FIELD BARU <==
 
   Discussion({
     required this.discussion,
-    required this.date,
+    this.date,
     required this.repetitionCode,
     required this.points,
+    this.finished = false, // Default value
+    this.finish_date,
   });
 
   factory Discussion.fromJson(Map<String, dynamic> json) {
@@ -47,9 +51,11 @@ class Discussion {
 
     return Discussion(
       discussion: json['discussion'] ?? 'Tidak ada diskusi',
-      date: json['date'] ?? 'No Date',
+      date: json['date'], // Bisa jadi null
       repetitionCode: json['repetition_code'] ?? '',
       points: pointsList,
+      finished: json['finished'] ?? false, // ==> DITAMBAHKAN <==
+      finish_date: json['finish_date'], // ==> DITAMBAHKAN <==
     );
   }
 
@@ -59,6 +65,8 @@ class Discussion {
       'date': date,
       'repetition_code': repetitionCode,
       'points': points.map((p) => p.toJson()).toList(),
+      'finished': finished, // ==> DITAMBAHKAN <==
+      'finish_date': finish_date, // ==> DITAMBAHKAN <==
     };
   }
 }
