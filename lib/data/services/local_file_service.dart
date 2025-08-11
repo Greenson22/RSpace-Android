@@ -7,6 +7,7 @@ class LocalFileService {
   final String _topicsPath =
       '/home/lemon-manis-22/RikalG22/RSpace_data/data/contents/topics';
 
+  // ... (Metode getTopics, addTopic, renameTopic, deleteTopic tidak berubah)
   Future<List<String>> getTopics() async {
     final directory = Directory(_topicsPath);
     if (!await directory.exists()) {
@@ -92,6 +93,61 @@ class LocalFileService {
         .toList();
     fileNames.sort();
     return fileNames;
+  }
+
+  Future<void> addSubject(String topicPath, String subjectName) async {
+    if (subjectName.isEmpty) {
+      throw Exception('Nama subject tidak boleh kosong.');
+    }
+    final filePath = path.join(topicPath, '$subjectName.json');
+    final file = File(filePath);
+    if (await file.exists()) {
+      throw Exception('Subject dengan nama "$subjectName" sudah ada.');
+    }
+    try {
+      await file.writeAsString(jsonEncode({'content': []}));
+    } catch (e) {
+      throw Exception('Gagal membuat subject: $e');
+    }
+  }
+
+  Future<void> renameSubject(
+    String topicPath,
+    String oldName,
+    String newName,
+  ) async {
+    if (newName.isEmpty) {
+      throw Exception('Nama baru tidak boleh kosong.');
+    }
+    final oldPath = path.join(topicPath, '$oldName.json');
+    final newPath = path.join(topicPath, '$newName.json');
+    final oldFile = File(oldPath);
+    final newFile = File(newPath);
+
+    if (!await oldFile.exists()) {
+      throw Exception('Subject yang ingin diubah tidak ditemukan.');
+    }
+    if (await newFile.exists()) {
+      throw Exception('Subject dengan nama "$newName" sudah ada.');
+    }
+    try {
+      await oldFile.rename(newPath);
+    } catch (e) {
+      throw Exception('Gagal mengubah nama subject: $e');
+    }
+  }
+
+  Future<void> deleteSubject(String topicPath, String subjectName) async {
+    final filePath = path.join(topicPath, '$subjectName.json');
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Subject yang ingin dihapus tidak ditemukan.');
+    }
+    try {
+      await file.delete();
+    } catch (e) {
+      throw Exception('Gagal menghapus subject: $e');
+    }
   }
 
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
