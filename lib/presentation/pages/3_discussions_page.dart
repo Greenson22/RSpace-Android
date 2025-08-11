@@ -324,6 +324,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         tooltip: 'Tambah Diskusi',
         child: const Icon(Icons.add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

@@ -258,6 +258,7 @@ class _TopicsPageState extends State<TopicsPage> {
         tooltip: 'Tambah Topik',
         child: const Icon(Icons.add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

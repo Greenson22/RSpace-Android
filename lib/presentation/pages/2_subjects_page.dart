@@ -268,6 +268,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
         tooltip: 'Tambah Subject',
         child: const Icon(Icons.add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
