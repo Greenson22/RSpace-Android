@@ -50,32 +50,101 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal memuat file: $e')));
-      }
+      _showSnackBar('Gagal memuat file: $e', isError: true);
     }
   }
 
   Future<void> _saveDiscussions() async {
     try {
       await _fileService.saveDiscussions(widget.jsonFilePath, _discussions);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Perubahan berhasil disimpan!'),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      }
+      _showSnackBar('Perubahan berhasil disimpan!');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan perubahan: $e')),
-        );
-      }
+      _showSnackBar('Gagal menyimpan perubahan: $e', isError: true);
     }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : null,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _showTextInputDialog({
+    required String title,
+    required String label,
+    required Function(String) onSave,
+  }) async {
+    final controller = TextEditingController();
+    return showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(labelText: label),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  onSave(controller.text);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _addDiscussion() async {
+    await _showTextInputDialog(
+      title: 'Tambah Diskusi Baru',
+      label: 'Nama Diskusi',
+      onSave: (name) {
+        final newDiscussion = Discussion(
+          discussion: name,
+          date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+          repetitionCode: 'R0D',
+          points: [],
+        );
+        setState(() {
+          _discussions.add(newDiscussion);
+        });
+        _saveDiscussions();
+      },
+    );
+  }
+
+  Future<void> _addPoint(Discussion discussion) async {
+    await _showTextInputDialog(
+      title: 'Tambah Poin Baru',
+      label: 'Teks Poin',
+      onSave: (text) {
+        final newPoint = Point(
+          pointText: text,
+          date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+          repetitionCode: 'R0D',
+        );
+        setState(() {
+          discussion.points.add(newPoint);
+        });
+        _saveDiscussions();
+      },
+    );
   }
 
   Future<void> _changeDate(Function(String) onDateSelected) async {
@@ -87,6 +156,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
     if (pickedDate != null) {
       onDateSelected(DateFormat('yyyy-MM-dd').format(pickedDate));
+      _saveDiscussions();
     }
   }
 
@@ -113,10 +183,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 }).toList(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    setStateInDialog(() {
-                      tempSelectedCode = newValue;
-                    });
+                    setStateInDialog(() => tempSelectedCode = newValue);
                     onCodeSelected(newValue);
+                    _saveDiscussions();
                     Navigator.of(dialogContext).pop();
                   }
                 },
@@ -143,33 +212,25 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Ubah Nama'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                TextField(
-                  controller: controller,
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Nama Baru'),
-                ),
-              ],
-            ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nama Baru'),
           ),
           actions: <Widget>[
             TextButton(
               child: const Text('Batal'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
               child: const Text('Simpan'),
               onPressed: () {
                 onRename(controller.text);
                 Navigator.of(context).pop();
+                _saveDiscussions();
               },
             ),
           ],
@@ -187,15 +248,20 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           : ListView.builder(
               itemCount: _discussions.length,
               itemBuilder: (context, index) =>
-                  _buildDiscussionCard(_discussions[index], index),
+                  _buildDiscussionCard(_discussions[index]),
             ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addDiscussion,
+        tooltip: 'Tambah Diskusi',
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
-  Widget _buildDiscussionCard(Discussion discussion, int discussionIndex) {
+  Widget _buildDiscussionCard(Discussion discussion) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -214,17 +280,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               trailing: EditPopupMenu(
                 onDateChange: () => _changeDate((newDate) {
                   setState(() => discussion.date = newDate);
-                  _saveDiscussions();
                 }),
                 onCodeChange: () =>
                     _changeRepetitionCode(discussion.repetitionCode, (newCode) {
                       setState(() => discussion.repetitionCode = newCode);
-                      _saveDiscussions();
                     }),
                 onRename: () =>
                     _showRenameDialog(discussion.discussion, (newName) {
                       setState(() => discussion.discussion = newName);
-                      _saveDiscussions();
                     }),
               ),
             ),
@@ -236,24 +299,33 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   right: 16.0,
                 ),
                 child: Column(
-                  children: List.generate(discussion.points.length, (
-                    pointIndex,
-                  ) {
-                    return _buildPointTile(
-                      discussion.points[pointIndex],
-                      discussionIndex,
-                      pointIndex,
-                    );
-                  }),
+                  children: discussion.points
+                      .map((point) => _buildPointTile(point))
+                      .toList(),
                 ),
               ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Tambah Poin'),
+                onPressed: () => _addPoint(discussion),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPointTile(Point point, int discussionIndex, int pointIndex) {
+  Widget _buildPointTile(Point point) {
     return ListTile(
       dense: true,
       leading: const Icon(Icons.arrow_right, color: Colors.grey),
@@ -262,16 +334,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       trailing: EditPopupMenu(
         onDateChange: () => _changeDate((newDate) {
           setState(() => point.date = newDate);
-          _saveDiscussions();
         }),
         onCodeChange: () =>
             _changeRepetitionCode(point.repetitionCode, (newCode) {
               setState(() => point.repetitionCode = newCode);
-              _saveDiscussions();
             }),
         onRename: () => _showRenameDialog(point.pointText, (newName) {
           setState(() => point.pointText = newName);
-          _saveDiscussions();
         }),
       ),
       contentPadding: EdgeInsets.zero,
