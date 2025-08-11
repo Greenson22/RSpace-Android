@@ -7,6 +7,11 @@ class LocalFileService {
   final String _topicsPath =
       '/home/lemon-manis-22/RikalG22/RSpace_data/data/contents/topics';
 
+  String getContentsPath() {
+    // Navigasi satu tingkat ke atas dari _topicsPath untuk mendapatkan direktori 'contents'
+    return path.dirname(_topicsPath);
+  }
+
   // ... (Metode getTopics, addTopic, renameTopic, deleteTopic tidak berubah)
   Future<List<String>> getTopics() async {
     final directory = Directory(_topicsPath);

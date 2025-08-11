@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_archive/flutter_archive.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../../data/services/local_file_service.dart';
 import '2_subjects_page.dart';
@@ -17,6 +21,7 @@ class _TopicsPageState extends State<TopicsPage> {
   List<String> _allTopics = [];
   List<String> _filteredTopics = [];
   bool _isSearching = false;
+  bool _isBackingUp = false;
 
   @override
   void initState() {
@@ -155,6 +160,55 @@ class _TopicsPageState extends State<TopicsPage> {
     );
   }
 
+  Future<void> _backupContents() async {
+    setState(() {
+      _isBackingUp = true;
+    });
+    _showSnackBar('Memulai proses backup...', isError: false);
+
+    try {
+      final contentsPath = _fileService.getContentsPath();
+      final sourceDir = Directory(contentsPath);
+
+      if (!await sourceDir.exists()) {
+        throw Exception('Direktori "contents" tidak ditemukan.');
+      }
+
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final zipFileName = 'backup_contents_$timestamp.zip';
+
+      final tempDir = await Directory.systemTemp.createTemp();
+      final zipFile = File(path.join(tempDir.path, zipFileName));
+
+      await ZipFile.createFromDirectory(
+        sourceDir: sourceDir,
+        zipFile: zipFile,
+        recurseSubDirs: true,
+      );
+
+      // Mengubah 'ext' menjadi 'fileExtension'
+      String? savedPath = await FileSaver.instance.saveAs(
+        name: zipFileName,
+        bytes: await zipFile.readAsBytes(),
+        fileExtension: 'zip', // <-- PERUBAHAN DI SINI
+        mimeType: MimeType.zip,
+      );
+
+      if (savedPath != null) {
+        _showSnackBar('Backup berhasil disimpan di folder Downloads');
+      } else {
+        _showSnackBar('Backup dibatalkan atau gagal disimpan.');
+      }
+      await tempDir.delete(recursive: true);
+    } catch (e) {
+      _showSnackBar('Terjadi error saat backup: $e', isError: true);
+    } finally {
+      setState(() {
+        _isBackingUp = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -172,6 +226,25 @@ class _TopicsPageState extends State<TopicsPage> {
               )
             : const Text('Topics'),
         actions: [
+          if (_isBackingUp)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.backup),
+              onPressed: _backupContents,
+              tooltip: 'Backup Seluruh Konten',
+            ),
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: () {
