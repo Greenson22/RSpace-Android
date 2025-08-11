@@ -13,16 +13,36 @@ class TopicsPage extends StatefulWidget {
 class _TopicsPageState extends State<TopicsPage> {
   final LocalFileService _fileService = LocalFileService();
   late Future<List<String>> _folderListFuture;
+  final TextEditingController _searchController = TextEditingController();
+  List<String> _allTopics = [];
+  List<String> _filteredTopics = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _refreshTopics();
+    _searchController.addListener(_filterTopics);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _refreshTopics() {
     setState(() {
       _folderListFuture = _fileService.getTopics();
+    });
+  }
+
+  void _filterTopics() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredTopics = _allTopics
+          .where((topic) => topic.toLowerCase().contains(query))
+          .toList();
     });
   }
 
@@ -138,7 +158,33 @@ class _TopicsPageState extends State<TopicsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Topics')),
+      appBar: AppBar(
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Cari topik...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+              )
+            : const Text('Topics'),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<List<String>>(
         future: _folderListFuture,
         builder: (context, snapshot) {
@@ -154,11 +200,19 @@ class _TopicsPageState extends State<TopicsPage> {
             );
           }
 
-          final folders = snapshot.data!;
+          _allTopics = snapshot.data!;
+          final topicsToShow = _searchController.text.isEmpty
+              ? _allTopics
+              : _filteredTopics;
+
+          if (topicsToShow.isEmpty && _searchController.text.isNotEmpty) {
+            return const Center(child: Text('Topik tidak ditemukan.'));
+          }
+
           return ListView.builder(
-            itemCount: folders.length,
+            itemCount: topicsToShow.length,
             itemBuilder: (context, index) {
-              final folderName = folders[index];
+              final folderName = topicsToShow[index];
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.folder_open, color: Colors.teal),

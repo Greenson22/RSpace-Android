@@ -20,16 +20,36 @@ class SubjectsPage extends StatefulWidget {
 class _SubjectsPageState extends State<SubjectsPage> {
   final LocalFileService _fileService = LocalFileService();
   late Future<List<String>> _jsonFilesFuture;
+  final TextEditingController _searchController = TextEditingController();
+  List<String> _allSubjects = [];
+  List<String> _filteredSubjects = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _refreshSubjects();
+    _searchController.addListener(_filterSubjects);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _refreshSubjects() {
     setState(() {
       _jsonFilesFuture = _fileService.getSubjects(widget.folderPath);
+    });
+  }
+
+  void _filterSubjects() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredSubjects = _allSubjects
+          .where((subject) => subject.toLowerCase().contains(query))
+          .toList();
     });
   }
 
@@ -148,7 +168,33 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Subjects in ${widget.topicName}')),
+      appBar: AppBar(
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Cari subject...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+              )
+            : Text('Subjects in ${widget.topicName}'),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<List<String>>(
         future: _jsonFilesFuture,
         builder: (context, snapshot) {
@@ -164,11 +210,19 @@ class _SubjectsPageState extends State<SubjectsPage> {
             );
           }
 
-          final files = snapshot.data!;
+          _allSubjects = snapshot.data!;
+          final subjectsToShow = _searchController.text.isEmpty
+              ? _allSubjects
+              : _filteredSubjects;
+
+          if (subjectsToShow.isEmpty && _searchController.text.isNotEmpty) {
+            return const Center(child: Text('Subject tidak ditemukan.'));
+          }
+
           return ListView.builder(
-            itemCount: files.length,
+            itemCount: subjectsToShow.length,
             itemBuilder: (context, index) {
-              final subjectName = files[index];
+              final subjectName = subjectsToShow[index];
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.description, color: Colors.orange),

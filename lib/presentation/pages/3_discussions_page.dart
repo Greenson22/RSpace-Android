@@ -21,8 +21,11 @@ class DiscussionsPage extends StatefulWidget {
 class _DiscussionsPageState extends State<DiscussionsPage> {
   final LocalFileService _fileService = LocalFileService();
   bool _isLoading = true;
-  List<Discussion> _discussions = [];
-  final Map<int, bool> _arePointsVisible = {}; // Untuk melacak visibilitas poin
+  List<Discussion> _allDiscussions = [];
+  List<Discussion> _filteredDiscussions = [];
+  final TextEditingController _searchController = TextEditingController();
+  final Map<int, bool> _arePointsVisible = {};
+  bool _isSearching = false;
   final List<String> _repetitionCodes = const [
     'R0D',
     'R1D',
@@ -38,6 +41,24 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   void initState() {
     super.initState();
     _loadDiscussions();
+    _searchController.addListener(_filterDiscussions);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterDiscussions() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredDiscussions = _allDiscussions
+          .where(
+            (discussion) => discussion.discussion.toLowerCase().contains(query),
+          )
+          .toList();
+    });
   }
 
   Future<void> _loadDiscussions() async {
@@ -46,9 +67,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         widget.jsonFilePath,
       );
       setState(() {
-        _discussions = discussions;
-        for (int i = 0; i < _discussions.length; i++) {
-          _arePointsVisible[i] = false; // Awalnya sembunyikan semua poin
+        _allDiscussions = discussions;
+        _filteredDiscussions = _allDiscussions;
+        for (int i = 0; i < _allDiscussions.length; i++) {
+          _arePointsVisible[i] = false;
         }
         _isLoading = false;
       });
@@ -60,7 +82,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   Future<void> _saveDiscussions() async {
     try {
-      await _fileService.saveDiscussions(widget.jsonFilePath, _discussions);
+      await _fileService.saveDiscussions(widget.jsonFilePath, _allDiscussions);
       _showSnackBar('Perubahan berhasil disimpan!');
     } catch (e) {
       _showSnackBar('Gagal menyimpan perubahan: $e', isError: true);
@@ -126,8 +148,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           points: [],
         );
         setState(() {
-          _discussions.add(newDiscussion);
-          _arePointsVisible[_discussions.length - 1] = false;
+          _allDiscussions.add(newDiscussion);
+          _filterDiscussions();
+          _arePointsVisible[_allDiscussions.length - 1] = false;
         });
         _saveDiscussions();
       },
@@ -246,14 +269,54 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final discussionsToShow = _searchController.text.isEmpty
+        ? _allDiscussions
+        : _filteredDiscussions;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.subjectName)),
+      appBar: AppBar(
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Cari diskusi...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+              )
+            : Text(widget.subjectName),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : discussionsToShow.isEmpty
+          ? Center(
+              child: Text(
+                _searchController.text.isNotEmpty
+                    ? 'Diskusi tidak ditemukan.'
+                    : 'Tidak ada diskusi. Tekan + untuk menambah.',
+              ),
+            )
           : ListView.builder(
-              itemCount: _discussions.length,
+              itemCount: discussionsToShow.length,
               itemBuilder: (context, index) {
-                return _buildDiscussionCard(_discussions[index], index);
+                final discussion = discussionsToShow[index];
+                final originalIndex = _allDiscussions.indexOf(discussion);
+                return _buildDiscussionCard(discussion, originalIndex);
               },
             ),
       floatingActionButton: FloatingActionButton(
@@ -296,7 +359,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                         setState(() => discussion.discussion = newName);
                       }),
                 ),
-                // Tombol ekspansi hanya muncul jika ada poin
                 if (discussion.points.isNotEmpty)
                   IconButton(
                     icon: Icon(
