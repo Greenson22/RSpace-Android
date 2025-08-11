@@ -78,7 +78,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     }
   }
 
-  // Logika UI (seperti menampilkan dialog) tetap berada di lapisan presentasi
   Future<void> _changeDate(Function(String) onDateSelected) async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -95,11 +94,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     String currentCode,
     Function(String) onCodeSelected,
   ) {
-    // Pastikan `context` tersedia untuk showDialog
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        // Menggunakan StatefulBuilder agar dropdown dapat diperbarui di dalam dialog
         String? tempSelectedCode = currentCode;
         return StatefulBuilder(
           builder: (context, setStateInDialog) {
@@ -116,11 +113,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 }).toList(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    // Perbarui state di dalam dialog untuk menampilkan pilihan baru
                     setStateInDialog(() {
                       tempSelectedCode = newValue;
                     });
-                    // Panggil callback untuk menyimpan perubahan dan tutup dialog
                     onCodeSelected(newValue);
                     Navigator.of(dialogContext).pop();
                   }
@@ -134,6 +129,50 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<void> _showRenameDialog(
+    String currentName,
+    Function(String) onRename,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: currentName,
+    );
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Ubah Nama'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Nama Baru'),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Batal'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Simpan'),
+              onPressed: () {
+                onRename(controller.text);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         );
       },
     );
@@ -182,6 +221,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                       setState(() => discussion.repetitionCode = newCode);
                       _saveDiscussions();
                     }),
+                onRename: () =>
+                    _showRenameDialog(discussion.discussion, (newName) {
+                      setState(() => discussion.discussion = newName);
+                      _saveDiscussions();
+                    }),
               ),
             ),
             if (discussion.points.isNotEmpty)
@@ -225,6 +269,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               setState(() => point.repetitionCode = newCode);
               _saveDiscussions();
             }),
+        onRename: () => _showRenameDialog(point.pointText, (newName) {
+          setState(() => point.pointText = newName);
+          _saveDiscussions();
+        }),
       ),
       contentPadding: EdgeInsets.zero,
     );
