@@ -4,11 +4,9 @@ import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
 
 class LocalFileService {
-  // Path utama sekarang terpusat di sini
   final String _topicsPath =
       '/home/lemon-manis-22/RikalG22/RSpace_data/data/contents/topics';
 
-  // Sebelumnya _getFolders di TopicsPage
   Future<List<String>> getTopics() async {
     final directory = Directory(_topicsPath);
     if (!await directory.exists()) {
@@ -28,7 +26,59 @@ class LocalFileService {
     return folderNames;
   }
 
-  // Sebelumnya _getJsonFiles di SubjectsPage
+  Future<void> addTopic(String topicName) async {
+    if (topicName.isEmpty) {
+      throw Exception('Nama topik tidak boleh kosong.');
+    }
+    final newTopicPath = path.join(_topicsPath, topicName);
+    final directory = Directory(newTopicPath);
+    if (await directory.exists()) {
+      throw Exception('Topik dengan nama "$topicName" sudah ada.');
+    }
+    try {
+      await directory.create();
+    } catch (e) {
+      throw Exception('Gagal membuat topik: $e');
+    }
+  }
+
+  Future<void> renameTopic(String oldName, String newName) async {
+    if (newName.isEmpty) {
+      throw Exception('Nama baru tidak boleh kosong.');
+    }
+    final oldPath = path.join(_topicsPath, oldName);
+    final newPath = path.join(_topicsPath, newName);
+
+    final oldDir = Directory(oldPath);
+    final newDir = Directory(newPath);
+
+    if (!await oldDir.exists()) {
+      throw Exception('Topik yang ingin diubah tidak ditemukan.');
+    }
+    if (await newDir.exists()) {
+      throw Exception('Topik dengan nama "$newName" sudah ada.');
+    }
+    try {
+      await oldDir.rename(newPath);
+    } catch (e) {
+      throw Exception('Gagal mengubah nama topik: $e');
+    }
+  }
+
+  Future<void> deleteTopic(String topicName) async {
+    final topicPath = path.join(_topicsPath, topicName);
+    final directory = Directory(topicPath);
+
+    if (!await directory.exists()) {
+      throw Exception('Topik yang ingin dihapus tidak ditemukan.');
+    }
+    try {
+      await directory.delete(recursive: true);
+    } catch (e) {
+      throw Exception('Gagal menghapus topik: $e');
+    }
+  }
+
   Future<List<String>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
@@ -44,7 +94,6 @@ class LocalFileService {
     return fileNames;
   }
 
-  // Sebelumnya _loadDiscussions di DiscussionsPage
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
@@ -57,7 +106,6 @@ class LocalFileService {
     return contentList.map((item) => Discussion.fromJson(item)).toList();
   }
 
-  // Sebelumnya _saveDiscussions di DiscussionsPage
   Future<void> saveDiscussions(
     String filePath,
     List<Discussion> discussions,
@@ -70,6 +118,5 @@ class LocalFileService {
     await file.writeAsString(encoder.convert(newJsonData));
   }
 
-  // Mendapatkan path topik utama
   String getTopicsPath() => _topicsPath;
 }
