@@ -26,6 +26,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   final TextEditingController _searchController = TextEditingController();
   final Map<int, bool> _arePointsVisible = {};
   bool _isSearching = false;
+
+  // Variabel baru untuk state filter
+  String? _activeFilterType; // 'code' atau 'date'
+  String? _selectedRepetitionCode;
+  DateTimeRange? _selectedDateRange;
+
   final List<String> _repetitionCodes = const [
     'R0D',
     'R1D',
@@ -53,12 +59,42 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   void _filterDiscussions() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredDiscussions = _allDiscussions
-          .where(
-            (discussion) => discussion.discussion.toLowerCase().contains(query),
-          )
-          .toList();
+      _filteredDiscussions = _allDiscussions.where((discussion) {
+        final matchesSearchQuery = discussion.discussion.toLowerCase().contains(
+          query,
+        );
+
+        bool matchesFilter = true;
+        if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
+          matchesFilter = discussion.repetitionCode == _selectedRepetitionCode;
+        } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
+          try {
+            final discussionDate = DateTime.parse(discussion.date);
+            final startDate = _selectedDateRange!.start;
+            final endDate = _selectedDateRange!.end;
+            matchesFilter =
+                (discussionDate.isAtSameMomentAs(startDate) ||
+                    discussionDate.isAfter(startDate)) &&
+                (discussionDate.isAtSameMomentAs(endDate) ||
+                    discussionDate.isBefore(endDate));
+          } catch (e) {
+            matchesFilter = false;
+          }
+        }
+
+        return matchesSearchQuery && matchesFilter;
+      }).toList();
     });
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _activeFilterType = null;
+      _selectedRepetitionCode = null;
+      _selectedDateRange = null;
+      _filterDiscussions(); // Terapkan kembali filter (yang sekarang kosong)
+    });
+    _showSnackBar('Semua filter telah dihapus.');
   }
 
   Future<void> _loadDiscussions() async {
@@ -267,11 +303,198 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
+  // --- WIDGET BARU UNTUK FILTER ---
+  Future<void> _showFilterDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Filter Diskusi'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.code),
+                title: const Text('Berdasarkan Kode Repetisi'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRepetitionCodeFilterDialog();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.date_range),
+                title: const Text('Berdasarkan Tanggal'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDateFilterDialog();
+                },
+              ),
+            ],
+          ),
+          actions: [
+            if (_activeFilterType != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _clearFilters();
+                },
+                child: const Text('Hapus Filter'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Tutup'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showRepetitionCodeFilterDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pilih Kode Repetisi'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _repetitionCodes.length,
+              itemBuilder: (context, index) {
+                final code = _repetitionCodes[index];
+                return ListTile(
+                  title: Text(code),
+                  onTap: () {
+                    setState(() {
+                      _activeFilterType = 'code';
+                      _selectedRepetitionCode = code;
+                      _selectedDateRange = null; // Reset filter tanggal
+                      _filterDiscussions();
+                    });
+                    Navigator.pop(context);
+                    _showSnackBar('Filter diterapkan: Kode = $code');
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Ganti metode _showDateFilterDialog di file lib/presentation/pages/3_discussions_page.dart
+  // dengan kode di bawah ini.
+
+  Future<void> _showDateFilterDialog() async {
+    final now = DateTime.now();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pilih Opsi Tanggal'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Hari Ini'),
+                onTap: () {
+                  setState(() {
+                    _activeFilterType = 'date';
+                    _selectedDateRange = DateTimeRange(start: now, end: now);
+                    _selectedRepetitionCode = null; // Reset filter kode
+                    _filterDiscussions();
+                  });
+                  Navigator.pop(context);
+                  _showSnackBar('Filter diterapkan: Hari Ini');
+                },
+              ),
+              ListTile(
+                title: const Text('Kemarin'),
+                onTap: () {
+                  final yesterday = now.subtract(const Duration(days: 1));
+                  setState(() {
+                    _activeFilterType = 'date';
+                    _selectedDateRange = DateTimeRange(
+                      start: yesterday,
+                      end: yesterday,
+                    );
+                    _selectedRepetitionCode = null; // Reset filter kode
+                    _filterDiscussions();
+                  });
+                  Navigator.pop(context);
+                  _showSnackBar('Filter diterapkan: Kemarin');
+                },
+              ),
+              // --- OPSI FILTER BARU DITAMBAHKAN DI SINI ---
+              ListTile(
+                title: const Text('Hari ini dan sebelumnya'),
+                onTap: () {
+                  setState(() {
+                    _activeFilterType = 'date';
+                    // Atur rentang dari tanggal yang sangat lama hingga hari ini
+                    _selectedDateRange = DateTimeRange(
+                      start: DateTime(2000), // Tanggal awal yang sangat lampau
+                      end: now, // Sampai hari ini
+                    );
+                    _selectedRepetitionCode = null; // Reset filter kode
+                    _filterDiscussions();
+                  });
+                  Navigator.pop(context);
+                  _showSnackBar('Filter diterapkan: Hari ini dan sebelumnya');
+                },
+              ),
+              // -------------------------------------------
+              ListTile(
+                title: const Text('Pilih Rentang Tanggal'),
+                onTap: () async {
+                  Navigator.pop(context); // Tutup dialog saat ini
+                  final pickedRange = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2101),
+                    initialDateRange: _selectedDateRange,
+                  );
+                  if (pickedRange != null) {
+                    setState(() {
+                      _activeFilterType = 'date';
+                      _selectedDateRange = pickedRange;
+                      _selectedRepetitionCode = null; // Reset filter kode
+                      _filterDiscussions();
+                      final startDate = DateFormat(
+                        'dd/MM/yy',
+                      ).format(pickedRange.start);
+                      final endDate = DateFormat(
+                        'dd/MM/yy',
+                      ).format(pickedRange.end);
+                      _showSnackBar('Filter diterapkan: $startDate - $endDate');
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final discussionsToShow = _searchController.text.isEmpty
-        ? _allDiscussions
-        : _filteredDiscussions;
+    // Tentukan list mana yang akan ditampilkan
+    final discussionsToShow =
+        (_activeFilterType != null || _searchController.text.isNotEmpty)
+        ? _filteredDiscussions
+        : _allDiscussions;
+
+    // Tentukan teks untuk kondisi kosong
+    String emptyText = 'Tidak ada diskusi. Tekan + untuk menambah.';
+    if (_searchController.text.isNotEmpty) {
+      emptyText = 'Diskusi tidak ditemukan.';
+    } else if (_activeFilterType != null) {
+      emptyText = 'Tidak ada diskusi yang cocok dengan filter.';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -295,26 +518,30 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 _isSearching = !_isSearching;
                 if (!_isSearching) {
                   _searchController.clear();
+                } else {
+                  // Jika mulai mencari, pastikan tidak ada filter aktif
+                  _clearFilters();
                 }
               });
             },
+          ),
+          // Tombol Filter
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterDialog,
+            tooltip: 'Filter Diskusi',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : discussionsToShow.isEmpty
-          ? Center(
-              child: Text(
-                _searchController.text.isNotEmpty
-                    ? 'Diskusi tidak ditemukan.'
-                    : 'Tidak ada diskusi. Tekan + untuk menambah.',
-              ),
-            )
+          ? Center(child: Text(emptyText))
           : ListView.builder(
               itemCount: discussionsToShow.length,
               itemBuilder: (context, index) {
                 final discussion = discussionsToShow[index];
+                // Dapatkan originalIndex dari _allDiscussions untuk state `_arePointsVisible`
                 final originalIndex = _allDiscussions.indexOf(discussion);
                 return _buildDiscussionCard(discussion, originalIndex);
               },
