@@ -89,6 +89,8 @@ class LocalFileService {
         .listSync()
         .whereType<File>()
         .where((item) => item.path.toLowerCase().endsWith('.json'))
+        // Baris ini ditambahkan untuk memfilter topic_config.json
+        .where((item) => path.basename(item.path) != 'topic_config.json')
         .map((item) => path.basenameWithoutExtension(item.path))
         .toList();
     fileNames.sort();
@@ -153,6 +155,7 @@ class LocalFileService {
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
+      // Jika file tidak ada, buat dengan struktur dasar
       await file.writeAsString(jsonEncode({'content': []}));
     }
     final jsonString = await file.readAsString();
