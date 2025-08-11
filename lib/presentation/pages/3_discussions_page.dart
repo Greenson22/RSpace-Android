@@ -166,8 +166,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     _showSnackBar('Semua filter telah dihapus.');
   }
 
-  // Lokasi: lib/presentation/pages/3_discussions_page.dart
-
   Future<void> _loadDiscussions() async {
     try {
       final discussions = await _fileService.loadDiscussions(
@@ -175,12 +173,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       );
       setState(() {
         _allDiscussions = discussions;
-        // Baris ini tidak lagi diperlukan karena _filterAndSortDiscussions akan menanganinya
-        // _filteredDiscussions = _allDiscussions;
         for (int i = 0; i < _allDiscussions.length; i++) {
           _arePointsVisible[i] = false;
         }
-        _filterAndSortDiscussions(); // <-- PERBAIKAN: Panggil fungsi ini
+        _filterAndSortDiscussions();
         _isLoading = false;
       });
     } catch (e) {
@@ -623,6 +619,39 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK MENGHITUNG TANGGAL <==
+  String _getNewDateForRepetitionCode(String code) {
+    final now = DateTime.now();
+    int daysToAdd;
+    switch (code) {
+      case 'R1D':
+        daysToAdd = 1;
+        break;
+      case 'R3D':
+        daysToAdd = 3;
+        break;
+      case 'R7D':
+        daysToAdd = 7;
+        break;
+      case 'R7D2':
+        daysToAdd = 14;
+        break;
+      case 'R7D3':
+        daysToAdd = 21;
+        break;
+      case 'R30D':
+        daysToAdd = 30;
+        break;
+      case 'R0D':
+      case 'Finish':
+      default:
+        daysToAdd = 0;
+        break;
+    }
+    final newDate = now.add(Duration(days: daysToAdd));
+    return DateFormat('yyyy-MM-dd').format(newDate);
+  }
+
   @override
   Widget build(BuildContext context) {
     final discussionsToShow =
@@ -715,10 +744,15 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   onDateChange: () => _changeDate(
                     (newDate) => setState(() => discussion.date = newDate),
                   ),
+                  // ==> PERUBAHAN LOGIKA onCodeChange <==
                   onCodeChange: () => _changeRepetitionCode(
                     discussion.repetitionCode,
-                    (newCode) =>
-                        setState(() => discussion.repetitionCode = newCode),
+                    (newCode) {
+                      setState(() {
+                        discussion.repetitionCode = newCode;
+                        discussion.date = _getNewDateForRepetitionCode(newCode);
+                      });
+                    },
                   ),
                   onRename: () => _showRenameDialog(
                     discussion.discussion,
@@ -784,10 +818,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       trailing: EditPopupMenu(
         onDateChange: () =>
             _changeDate((newDate) => setState(() => point.date = newDate)),
-        onCodeChange: () => _changeRepetitionCode(
-          point.repetitionCode,
-          (newCode) => setState(() => point.repetitionCode = newCode),
-        ),
+        // ==> PERUBAHAN LOGIKA onCodeChange <==
+        onCodeChange: () =>
+            _changeRepetitionCode(point.repetitionCode, (newCode) {
+              setState(() {
+                point.repetitionCode = newCode;
+                point.date = _getNewDateForRepetitionCode(newCode);
+              });
+            }),
         onRename: () => _showRenameDialog(
           point.pointText,
           (newName) => setState(() => point.pointText = newName),
