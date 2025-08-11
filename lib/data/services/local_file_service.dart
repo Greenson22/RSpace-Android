@@ -9,6 +9,17 @@ class SharedPreferencesService {
   static const String _sortAscendingKey = 'sort_ascending';
   static const String _filterTypeKey = 'filter_type';
   static const String _filterValueKey = 'filter_value';
+  static const String _themeKey = 'theme_preference';
+
+  Future<void> saveThemePreference(bool isDarkMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_themeKey, isDarkMode);
+  }
+
+  Future<bool> loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_themeKey) ?? false; // Default to light mode
+  }
 
   Future<void> saveSortPreferences(String sortType, bool sortAscending) async {
     final prefs = await SharedPreferences.getInstance();

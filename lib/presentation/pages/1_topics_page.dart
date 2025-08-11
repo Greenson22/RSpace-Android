@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
+import 'package:provider/provider.dart';
 import '../../data/services/local_file_service.dart';
+import '../providers/theme_provider.dart';
 import '2_subjects_page.dart';
 
 class TopicsPage extends StatefulWidget {
@@ -211,6 +213,7 @@ class _TopicsPageState extends State<TopicsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -245,6 +248,15 @@ class _TopicsPageState extends State<TopicsPage> {
               onPressed: _backupContents,
               tooltip: 'Backup Seluruh Konten',
             ),
+          IconButton(
+            icon: Icon(
+              themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
+            ),
+            onPressed: () {
+              themeProvider.darkTheme = !themeProvider.darkTheme;
+            },
+            tooltip: 'Ganti Tema',
+          ),
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: () {

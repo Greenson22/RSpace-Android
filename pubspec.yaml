@@ -40,6 +40,7 @@ dependencies:
   flutter_archive: ^6.0.3
   file_saver: ^0.3.1
   shared_preferences: ^2.5.3
+  provider: ^6.1.5
 
 
 dev_dependencies:

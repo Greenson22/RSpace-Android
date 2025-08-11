@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'presentation/pages/1_topics_page.dart';
 import 'presentation/theme/app_theme.dart';
+import 'presentation/providers/theme_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -11,11 +18,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Topics and Subjects Lister',
-      // Tema sekarang diambil dari file terpisah untuk kerapian
-      theme: AppTheme.lightTheme,
-      home: const TopicsPage(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'Topics and Subjects Lister',
+          // Tema sekarang diambil dari provider
+          theme: themeProvider.darkTheme
+              ? AppTheme.darkTheme
+              : AppTheme.lightTheme,
+          home: const TopicsPage(),
+        );
+      },
     );
   }
 }
