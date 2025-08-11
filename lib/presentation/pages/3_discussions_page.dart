@@ -22,6 +22,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   final LocalFileService _fileService = LocalFileService();
   bool _isLoading = true;
   List<Discussion> _discussions = [];
+  final Map<int, bool> _arePointsVisible = {}; // Untuk melacak visibilitas poin
   final List<String> _repetitionCodes = const [
     'R0D',
     'R1D',
@@ -46,6 +47,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       );
       setState(() {
         _discussions = discussions;
+        for (int i = 0; i < _discussions.length; i++) {
+          _arePointsVisible[i] = false; // Awalnya sembunyikan semua poin
+        }
         _isLoading = false;
       });
     } catch (e) {
@@ -123,6 +127,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         );
         setState(() {
           _discussions.add(newDiscussion);
+          _arePointsVisible[_discussions.length - 1] = false;
         });
         _saveDiscussions();
       },
@@ -247,8 +252,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: _discussions.length,
-              itemBuilder: (context, index) =>
-                  _buildDiscussionCard(_discussions[index]),
+              itemBuilder: (context, index) {
+                return _buildDiscussionCard(_discussions[index], index);
+              },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addDiscussion,
@@ -258,69 +264,86 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  Widget _buildDiscussionCard(Discussion discussion) {
+  Widget _buildDiscussionCard(Discussion discussion, int index) {
+    bool arePointsVisible = _arePointsVisible[index] ?? false;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              leading: const Icon(
-                Icons.chat_bubble_outline,
-                color: Colors.blue,
-              ),
-              title: Text(
-                discussion.discussion,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(
-                'Date: ${discussion.date} | Code: ${discussion.repetitionCode}',
-              ),
-              trailing: EditPopupMenu(
-                onDateChange: () => _changeDate((newDate) {
-                  setState(() => discussion.date = newDate);
-                }),
-                onCodeChange: () =>
-                    _changeRepetitionCode(discussion.repetitionCode, (newCode) {
-                      setState(() => discussion.repetitionCode = newCode);
-                    }),
-                onRename: () =>
-                    _showRenameDialog(discussion.discussion, (newName) {
-                      setState(() => discussion.discussion = newName);
-                    }),
-              ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
+            title: Text(
+              discussion.discussion,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            if (discussion.points.isNotEmpty)
-              Padding(
+            subtitle: Text(
+              'Date: ${discussion.date} | Code: ${discussion.repetitionCode}',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                EditPopupMenu(
+                  onDateChange: () => _changeDate((newDate) {
+                    setState(() => discussion.date = newDate);
+                  }),
+                  onCodeChange: () => _changeRepetitionCode(
+                    discussion.repetitionCode,
+                    (newCode) {
+                      setState(() => discussion.repetitionCode = newCode);
+                    },
+                  ),
+                  onRename: () =>
+                      _showRenameDialog(discussion.discussion, (newName) {
+                        setState(() => discussion.discussion = newName);
+                      }),
+                ),
+                // Tombol ekspansi hanya muncul jika ada poin
+                if (discussion.points.isNotEmpty)
+                  IconButton(
+                    icon: Icon(
+                      arePointsVisible ? Icons.expand_less : Icons.expand_more,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _arePointsVisible[index] = !arePointsVisible;
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+          if (discussion.points.isNotEmpty)
+            Visibility(
+              visible: arePointsVisible,
+              child: Padding(
                 padding: const EdgeInsets.only(
                   left: 30.0,
                   top: 8.0,
                   right: 16.0,
+                  bottom: 8.0,
                 ),
                 child: Column(
-                  children: discussion.points
-                      .map((point) => _buildPointTile(point))
-                      .toList(),
-                ),
-              ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Tambah Poin'),
-                onPressed: () => _addPoint(discussion),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  children: [
+                    ...discussion.points.map((point) => _buildPointTile(point)),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Tambah Poin'),
+                        onPressed: () => _addPoint(discussion),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
