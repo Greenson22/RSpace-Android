@@ -744,7 +744,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   Widget _buildDiscussionCard(Discussion discussion, int index) {
     bool arePointsVisible = _arePointsVisible[index] ?? false;
-    // ==> LOGIKA Tampilan Berdasarkan Status Selesai <==
     final bool isFinished = discussion.finished;
     final iconColor = isFinished ? Colors.green : Colors.blue;
     final iconData = isFinished
@@ -763,14 +762,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       child: Column(
         children: [
           ListTile(
-            leading: Icon(iconData, color: iconColor), // Icon dinamis
+            leading: Icon(iconData, color: iconColor),
             title: Text(
               discussion.discussion,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                decoration: isFinished
-                    ? TextDecoration.lineThrough
-                    : null, // Coret jika selesai
+                decoration: isFinished ? TextDecoration.lineThrough : null,
               ),
             ),
             subtitle: Text(subtitleText),
@@ -778,7 +775,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 EditPopupMenu(
-                  isFinished: isFinished, // Kirim status
+                  isFinished: isFinished,
+                  // ==> KIRIM FUNGSI onAddPoint <==
+                  onAddPoint: () => _addPoint(discussion),
                   onDateChange: () => _changeDate(
                     (newDate) => setState(() => discussion.date = newDate),
                   ),
@@ -796,7 +795,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                     (newName) =>
                         setState(() => discussion.discussion = newName),
                   ),
-                  // ==> KIRIM FUNGSI onMarkAsFinished <==
                   onMarkAsFinished: () => _markAsFinished(discussion),
                 ),
                 if (discussion.points.isNotEmpty)
@@ -824,22 +822,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 child: Column(
                   children: [
                     ...discussion.points.map((point) => _buildPointTile(point)),
-                    if (!isFinished) // Sembunyikan tombol jika sudah selesai
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Tambah Poin'),
-                          onPressed: () => _addPoint(discussion),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      ),
+                    // ==> TOMBOL TAMBAH POIN DIHAPUS DARI SINI <==
                   ],
                 ),
               ),

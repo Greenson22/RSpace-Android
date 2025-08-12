@@ -4,16 +4,18 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback onDateChange;
   final VoidCallback onCodeChange;
   final VoidCallback? onRename;
-  final VoidCallback? onMarkAsFinished; // ==> CALLBACK BARU <==
-  final bool isFinished; // ==> STATE BARU <==
+  final VoidCallback? onMarkAsFinished;
+  final VoidCallback? onAddPoint; // ==> CALLBACK BARU <==
+  final bool isFinished;
 
   const EditPopupMenu({
     super.key,
     required this.onDateChange,
     required this.onCodeChange,
     this.onRename,
-    this.onMarkAsFinished, // ==> DITAMBAHKAN <==
-    this.isFinished = false, // ==> DITAMBAHKAN <==
+    this.onMarkAsFinished,
+    this.onAddPoint, // ==> DITAMBAHKAN <==
+    this.isFinished = false,
   });
 
   @override
@@ -23,14 +25,24 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'edit_date') onDateChange();
         if (value == 'edit_code') onCodeChange();
         if (value == 'rename' && onRename != null) onRename!();
-        // ==> LOGIKA BARU <==
         if (value == 'finish' && onMarkAsFinished != null) onMarkAsFinished!();
+        if (value == 'add_point' && onAddPoint != null)
+          onAddPoint!(); // ==> LOGIKA BARU <==
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
 
-        // ==> KONDISI UNTUK MENAMPILKAN MENU <==
         if (!isFinished) {
+          // ==> MENU TAMBAH POIN DITAMBAHKAN DI SINI <==
+          if (onAddPoint != null) {
+            menuItems.add(
+              const PopupMenuItem<String>(
+                value: 'add_point',
+                child: Text('Tambah Poin'),
+              ),
+            );
+          }
+
           menuItems.addAll([
             const PopupMenuItem<String>(
               value: 'edit_date',
