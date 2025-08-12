@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import '../../data/services/local_file_service.dart';
+import '../providers/subject_provider.dart';
 import '../providers/theme_provider.dart';
 import '2_subjects_page.dart';
 
@@ -188,11 +189,10 @@ class _TopicsPageState extends State<TopicsPage> {
         recurseSubDirs: true,
       );
 
-      // Mengubah 'ext' menjadi 'fileExtension'
       String? savedPath = await FileSaver.instance.saveAs(
         name: zipFileName,
         bytes: await zipFile.readAsBytes(),
-        fileExtension: 'zip', // <-- PERUBAHAN DI SINI
+        fileExtension: 'zip',
         mimeType: MimeType.zip,
       );
 
@@ -303,15 +303,16 @@ class _TopicsPageState extends State<TopicsPage> {
                   leading: const Icon(Icons.folder_open, color: Colors.teal),
                   title: Text(folderName),
                   onTap: () {
+                    final folderPath = path.join(
+                      _fileService.getTopicsPath(),
+                      folderName,
+                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SubjectsPage(
-                          folderPath: path.join(
-                            _fileService.getTopicsPath(),
-                            folderName,
-                          ),
-                          topicName: folderName,
+                        builder: (context) => ChangeNotifierProvider(
+                          create: (_) => SubjectProvider(folderPath),
+                          child: SubjectsPage(topicName: folderName),
                         ),
                       ),
                     );
