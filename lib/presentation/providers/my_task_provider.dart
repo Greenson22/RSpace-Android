@@ -9,9 +9,13 @@ class MyTaskProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  // ==> STATE BARU UNTUK MODE PINDAH <==
-  bool _isReorderEnabled = false;
-  bool get isReorderEnabled => _isReorderEnabled;
+  // ==> STATE UNTUK URUTKAN KATEGORI (GLOBAL) <==
+  bool _isCategoryReorderEnabled = false;
+  bool get isCategoryReorderEnabled => _isCategoryReorderEnabled;
+
+  // ==> STATE UNTUK URUTKAN TASK (SPESIFIK) <==
+  String? _reorderingCategoryName;
+  String? get reorderingCategoryName => _reorderingCategoryName;
 
   List<TaskCategory> _categories = [];
   List<TaskCategory> get categories => _categories;
@@ -20,9 +24,30 @@ class MyTaskProvider with ChangeNotifier {
     fetchTasks();
   }
 
-  // ==> FUNGSI UNTUK TOGGLE MODE PINDAH <==
-  void toggleReorder() {
-    _isReorderEnabled = !_isReorderEnabled;
+  // ==> FUNGSI UNTUK TOGGLE MODE URUTKAN KATEGORI <==
+  void toggleCategoryReorder() {
+    _isCategoryReorderEnabled = !_isCategoryReorderEnabled;
+    // Pastikan mode urutkan task nonaktif jika mode urutkan kategori diaktifkan
+    if (_isCategoryReorderEnabled) {
+      _reorderingCategoryName = null;
+    }
+    notifyListeners();
+  }
+
+  // ==> FUNGSI UNTUK MENGAKTIFKAN MODE URUTKAN TASK <==
+  void enableTaskReordering(String categoryName) {
+    _reorderingCategoryName = categoryName;
+    // Pastikan mode urutkan kategori nonaktif
+    if (_isCategoryReorderEnabled) {
+      _isCategoryReorderEnabled = false;
+    }
+    notifyListeners();
+  }
+
+  // ==> FUNGSI UNTUK MENONAKTIFKAN SEMUA MODE URUT <==
+  void disableReordering() {
+    _reorderingCategoryName = null;
+    _isCategoryReorderEnabled = false; // Juga nonaktifkan mode kategori
     notifyListeners();
   }
 
@@ -43,6 +68,15 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   // --- Category Management ---
+  Future<void> reorderCategories(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = _categories.removeAt(oldIndex);
+    _categories.insert(newIndex, item);
+    await _saveTasks();
+  }
+
   Future<void> addCategory(String name, {String icon = 'task'}) async {
     final newCategory = TaskCategory(name: name, icon: icon, tasks: []);
     _categories.add(newCategory);
@@ -52,6 +86,9 @@ class MyTaskProvider with ChangeNotifier {
   Future<void> renameCategory(TaskCategory category, String newName) async {
     final index = _categories.indexWhere((c) => c == category);
     if (index != -1) {
+      if (_reorderingCategoryName == _categories[index].name) {
+        _reorderingCategoryName = newName;
+      }
       _categories[index] = TaskCategory(
         name: newName,
         icon: category.icon,
@@ -66,18 +103,7 @@ class MyTaskProvider with ChangeNotifier {
     await _saveTasks();
   }
 
-  Future<void> reorderCategories(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-    final item = _categories.removeAt(oldIndex);
-    _categories.insert(newIndex, item);
-    await _saveTasks();
-  }
-
   // --- Task Management ---
-
-  // ==> FUNGSI BARU UNTUK MENGURUTKAN TASK <==
   Future<void> reorderTasks(
     TaskCategory category,
     int oldIndex,
