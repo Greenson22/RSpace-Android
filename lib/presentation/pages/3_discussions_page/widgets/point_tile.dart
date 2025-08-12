@@ -1,26 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
-import '../../../widgets/edit_popup_menu.dart';
-import '../utils/repetition_code_utils.dart'; // <-- IMPORT BARU
+import '../../../../presentation/providers/discussion_provider.dart';
+import '../../../../presentation/widgets/edit_popup_menu.dart';
+import '../dialogs/discussion_dialogs.dart';
+import '../utils/repetition_code_utils.dart';
 
 class PointTile extends StatelessWidget {
   final Point point;
-  final VoidCallback onDateChange;
-  final VoidCallback onCodeChange;
-  final VoidCallback onRename;
-  // HAPUS: final Color Function(String) getColorForRepetitionCode;
 
-  const PointTile({
-    super.key,
-    required this.point,
-    required this.onDateChange,
-    required this.onCodeChange,
-    required this.onRename,
-    // HAPUS: required this.getColorForRepetitionCode,
-  });
+  const PointTile({super.key, required this.point});
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
+  void _renamePoint(BuildContext context, DiscussionProvider provider) {
+    showTextInputDialog(
+      context: context,
+      title: 'Ubah Nama Poin',
+      label: 'Teks Poin Baru',
+      initialValue: point.pointText,
+      onSave: (newName) {
+        provider.renamePoint(point, newName);
+        _showSnackBar(context, 'Poin berhasil diubah.');
+      },
+    );
+  }
+
+  void _changePointDate(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) async {
+    final newDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.tryParse(point.date) ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (newDate != null) {
+      provider.updatePointDate(point, newDate);
+      _showSnackBar(context, 'Tanggal poin berhasil diubah.');
+    }
+  }
+
+  void _changePointCode(BuildContext context, DiscussionProvider provider) {
+    showRepetitionCodeDialog(
+      context,
+      point.repetitionCode,
+      provider.repetitionCodes,
+      (newCode) {
+        provider.updatePointCode(point, newCode);
+        _showSnackBar(context, 'Kode repetisi poin berhasil diubah.');
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<DiscussionProvider>(context, listen: false);
     return ListTile(
       dense: true,
       leading: const Icon(Icons.arrow_right, color: Colors.grey),
@@ -41,9 +81,7 @@ class PointTile extends StatelessWidget {
             TextSpan(
               text: point.repetitionCode,
               style: TextStyle(
-                color: getColorForRepetitionCode(
-                  point.repetitionCode,
-                ), // <-- PANGGIL FUNGSI DARI UTILITAS
+                color: getColorForRepetitionCode(point.repetitionCode),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -51,9 +89,9 @@ class PointTile extends StatelessWidget {
         ),
       ),
       trailing: EditPopupMenu(
-        onDateChange: onDateChange,
-        onCodeChange: onCodeChange,
-        onRename: onRename,
+        onDateChange: () => _changePointDate(context, provider),
+        onCodeChange: () => _changePointCode(context, provider),
+        onRename: () => _renamePoint(context, provider),
       ),
       contentPadding: EdgeInsets.zero,
     );
