@@ -120,7 +120,8 @@ class TopicProvider with ChangeNotifier {
     _isBackingUp = true;
     notifyListeners();
     try {
-      final contentsPath = _pathService.contentsPath;
+      // Menunggu hasil Future dari _pathService.contentsPath
+      final contentsPath = await _pathService.contentsPath;
       final sourceDir = Directory(contentsPath);
 
       if (!await sourceDir.exists()) {
@@ -152,7 +153,8 @@ class TopicProvider with ChangeNotifier {
     }
   }
 
-  String getTopicsPath() {
-    return _pathService.topicsPath;
+  // Mengubah return type menjadi Future<String> dan menjadikannya async
+  Future<String> getTopicsPath() async {
+    return await _pathService.topicsPath;
   }
 }

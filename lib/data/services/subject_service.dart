@@ -108,7 +108,7 @@ class SubjectService {
   }
 
   Future<void> _saveSubjectMetadata(String topicPath, Subject subject) async {
-    final filePath = _pathService.getSubjectPath(topicPath, subject.name);
+    final filePath = await _pathService.getSubjectPath(topicPath, subject.name);
     final file = File(filePath);
     Map<String, dynamic> jsonData = {};
 
@@ -134,7 +134,7 @@ class SubjectService {
   Future<void> addSubject(String topicPath, String subjectName) async {
     if (subjectName.isEmpty)
       throw Exception('Nama subject tidak boleh kosong.');
-    final filePath = _pathService.getSubjectPath(topicPath, subjectName);
+    final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
     if (await file.exists())
       throw Exception('Subject dengan nama "$subjectName" sudah ada.');
@@ -157,7 +157,7 @@ class SubjectService {
     String subjectName,
     String newIcon,
   ) async {
-    final filePath = _pathService.getSubjectPath(topicPath, subjectName);
+    final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
     if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
 
@@ -176,8 +176,8 @@ class SubjectService {
     String newName,
   ) async {
     if (newName.isEmpty) throw Exception('Nama baru tidak boleh kosong.');
-    final oldPath = _pathService.getSubjectPath(topicPath, oldName);
-    final newPath = _pathService.getSubjectPath(topicPath, newName);
+    final oldPath = await _pathService.getSubjectPath(topicPath, oldName);
+    final newPath = await _pathService.getSubjectPath(topicPath, newName);
     final oldFile = File(oldPath);
     if (!await oldFile.exists())
       throw Exception('Subject yang ingin diubah tidak ditemukan.');
@@ -192,7 +192,7 @@ class SubjectService {
   }
 
   Future<void> deleteSubject(String topicPath, String subjectName) async {
-    final filePath = _pathService.getSubjectPath(topicPath, subjectName);
+    final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
     if (!await file.exists())
       throw Exception('Subject yang ingin dihapus tidak ditemukan.');

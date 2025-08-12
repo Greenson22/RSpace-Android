@@ -222,11 +222,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               topic: topic,
               onTap: isReorderActive
                   ? null
-                  : () {
-                      final folderPath = path.join(
-                        provider.getTopicsPath(),
-                        topic.name,
-                      );
+                  : () async {
+                      final topicsPath = await provider.getTopicsPath();
+                      final folderPath = path.join(topicsPath, topic.name);
                       Navigator.push(
                         context,
                         MaterialPageRoute(

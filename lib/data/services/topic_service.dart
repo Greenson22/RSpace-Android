@@ -11,15 +11,15 @@ class TopicService {
 
   // FUNGSI DIUBAH TOTAL UNTUK MEMBACA, MENGURUTKAN, DAN MEMPERBAIKI POSISI
   Future<List<Topic>> getTopics() async {
-    final directory = Directory(_pathService.topicsPath);
+    // Menggunakan await untuk mendapatkan topicsPath
+    final topicsPath = await _pathService.topicsPath;
+    final directory = Directory(topicsPath);
     if (!await directory.exists()) {
       try {
         await directory.create(recursive: true);
         return [];
       } catch (e) {
-        throw Exception(
-          'Gagal membuat direktori: ${_pathService.topicsPath}\nError: $e',
-        );
+        throw Exception('Gagal membuat direktori: $topicsPath\nError: $e');
       }
     }
 
@@ -86,7 +86,8 @@ class TopicService {
   }
 
   Future<Map<String, dynamic>> _getTopicConfig(String topicName) async {
-    final configPath = _pathService.getTopicConfigPath(topicName);
+    // Menggunakan await untuk mendapatkan configPath
+    final configPath = await _pathService.getTopicConfigPath(topicName);
     final configFile = File(configPath);
 
     if (await configFile.exists()) {
@@ -107,7 +108,8 @@ class TopicService {
   }
 
   Future<void> _saveTopicConfig(Topic topic) async {
-    final configPath = _pathService.getTopicConfigPath(topic.name);
+    // Menggunakan await untuk mendapatkan configPath
+    final configPath = await _pathService.getTopicConfigPath(topic.name);
     final configFile = File(configPath);
     try {
       await configFile.create(recursive: true);
@@ -130,7 +132,8 @@ class TopicService {
   Future<void> addTopic(String topicName) async {
     if (topicName.isEmpty) throw Exception('Nama topik tidak boleh kosong.');
 
-    final newTopicPath = _pathService.getTopicPath(topicName);
+    // Menggunakan await untuk mendapatkan newTopicPath
+    final newTopicPath = await _pathService.getTopicPath(topicName);
     final directory = Directory(newTopicPath);
 
     if (await directory.exists()) {
@@ -154,8 +157,9 @@ class TopicService {
 
   Future<void> renameTopic(String oldName, String newName) async {
     if (newName.isEmpty) throw Exception('Nama baru tidak boleh kosong.');
-    final oldPath = _pathService.getTopicPath(oldName);
-    final newPath = _pathService.getTopicPath(newName);
+    // Menggunakan await untuk mendapatkan oldPath dan newPath
+    final oldPath = await _pathService.getTopicPath(oldName);
+    final newPath = await _pathService.getTopicPath(newName);
     final oldDir = Directory(oldPath);
     if (!await oldDir.exists()) {
       throw Exception('Topik yang ingin diubah tidak ditemukan.');
@@ -178,7 +182,8 @@ class TopicService {
   }
 
   Future<void> deleteTopic(String topicName) async {
-    final topicPath = _pathService.getTopicPath(topicName);
+    // Menggunakan await untuk mendapatkan topicPath
+    final topicPath = await _pathService.getTopicPath(topicName);
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
       throw Exception('Topik yang ingin dihapus tidak ditemukan.');

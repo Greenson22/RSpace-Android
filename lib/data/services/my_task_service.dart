@@ -8,7 +8,8 @@ class MyTaskService {
   final PathService _pathService = PathService();
 
   Future<List<TaskCategory>> loadMyTasks() async {
-    final filePath = _pathService.myTasksPath;
+    // Menunggu hasil path dari _pathService
+    final filePath = await _pathService.myTasksPath;
     final file = File(filePath);
 
     if (!await file.exists()) {
@@ -25,7 +26,8 @@ class MyTaskService {
   }
 
   Future<void> saveMyTasks(List<TaskCategory> categories) async {
-    final filePath = _pathService.myTasksPath;
+    // Menunggu hasil path dari _pathService
+    final filePath = await _pathService.myTasksPath;
     final file = File(filePath);
     final newJsonData = {
       'categories': categories.map((c) => c.toJson()).toList(),
