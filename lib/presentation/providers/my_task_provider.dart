@@ -95,19 +95,32 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> toggleTaskChecked(TaskCategory category, MyTask task) async {
+  // ==> FUNGSI TOGGLE DIPERBARUI <==
+  Future<void> toggleTaskChecked(
+    TaskCategory category,
+    MyTask task, {
+    bool confirmUpdate = false, // Parameter untuk konfirmasi
+  }) async {
     final categoryIndex = _categories.indexOf(category);
     if (categoryIndex != -1) {
       final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
       if (taskIndex != -1) {
-        _categories[categoryIndex].tasks[taskIndex].checked =
-            !_categories[categoryIndex].tasks[taskIndex].checked;
+        final isChecking = !_categories[categoryIndex].tasks[taskIndex].checked;
+        _categories[categoryIndex].tasks[taskIndex].checked = isChecking;
+
+        // Jika dicentang (isChecking == true) dan user mengonfirmasi,
+        // update tanggal dan tambah count.
+        if (isChecking && confirmUpdate) {
+          _categories[categoryIndex].tasks[taskIndex].date = DateFormat(
+            'yyyy-MM-dd',
+          ).format(DateTime.now());
+          _categories[categoryIndex].tasks[taskIndex].count++; // Tambah count
+        }
         await _saveTasks();
       }
     }
   }
 
-  // ==> FUNGSI BARU UNTUK UPDATE DATE & COUNT <==
   Future<void> updateTaskDate(
     TaskCategory category,
     MyTask task,

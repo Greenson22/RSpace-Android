@@ -139,7 +139,6 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI DIALOG BARU <==
   Future<void> _showUpdateDateDialog(
     BuildContext context,
     TaskCategory category,
@@ -185,6 +184,29 @@ class MyTasksPage extends StatelessWidget {
           );
         }
       },
+    );
+  }
+
+  // ==> DIALOG KONFIRMASI BARU <==
+  Future<bool?> _showToggleConfirmationDialog(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Penyelesaian'),
+        content: const Text(
+          'Update tanggal ke hari ini dan tambah jumlah (count) sebanyak 1?',
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Batal'),
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          TextButton(
+            child: const Text('Ya, Update'),
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
     );
   }
 
@@ -276,10 +298,20 @@ class MyTasksPage extends StatelessWidget {
     MyTask task,
   ) {
     return ListTile(
+      // ==> LOGIKA CHECKBOX DIPERBARUI <==
       leading: Checkbox(
         value: task.checked,
-        onChanged: (bool? value) {
-          provider.toggleTaskChecked(category, task);
+        onChanged: (bool? value) async {
+          if (value == true) {
+            // Jika akan mencentang
+            final shouldUpdate = await _showToggleConfirmationDialog(context);
+            if (shouldUpdate == true) {
+              provider.toggleTaskChecked(category, task, confirmUpdate: true);
+            }
+          } else {
+            // Jika akan menghilangkan centang
+            provider.toggleTaskChecked(category, task, confirmUpdate: false);
+          }
         },
       ),
       title: Text(
@@ -289,9 +321,7 @@ class MyTasksPage extends StatelessWidget {
           color: task.checked ? Colors.grey : null,
         ),
       ),
-      // ==> SUBTITLE DIPERBARUI UNTUK MENAMPILKAN COUNT <==
       subtitle: Text('Due: ${task.date} | Count: ${task.count}'),
-      // ==> MENU DIPERBARUI <==
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
           if (value == 'rename') {
