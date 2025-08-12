@@ -2,14 +2,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
-import '../models/topic_model.dart'; // ==> DITAMBAHKAN
+import '../models/topic_model.dart';
 import 'path_service.dart';
 
 class TopicService {
   final PathService _pathService = PathService();
-  static const String _defaultIcon = '📁'; // ==> DITAMBAHKAN
+  static const String _defaultIcon = '📁';
 
-  // ==> FUNGSI DIUBAH UNTUK MENGEMBALIKAN List<Topic> <==
+  // FUNGSI DIUBAH TOTAL UNTUK MEMBACA, MENGURUTKAN, DAN MEMPERBAIKI POSISI
   Future<List<Topic>> getTopics() async {
     final directory = Directory(_pathService.topicsPath);
     if (!await directory.exists()) {
@@ -22,23 +22,70 @@ class TopicService {
         );
       }
     }
+
     final folderNames = directory
         .listSync()
         .whereType<Directory>()
         .map((item) => path.basename(item.path))
         .toList();
-    folderNames.sort();
 
-    final List<Topic> topics = [];
+    List<Topic> topics = [];
     for (var name in folderNames) {
-      final icon = await _getIconForTopic(name);
-      topics.add(Topic(name: name, icon: icon));
+      final config = await _getTopicConfig(name);
+      topics.add(
+        Topic(
+          name: name,
+          icon: config['icon'] as String? ?? _defaultIcon,
+          position: config['position'] as int? ?? -1,
+        ),
+      );
     }
-    return topics;
+
+    final positionedTopics = topics.where((t) => t.position != -1).toList();
+    final unpositionedTopics = topics.where((t) => t.position == -1).toList();
+
+    positionedTopics.sort((a, b) => a.position.compareTo(b.position));
+
+    int maxPosition = positionedTopics.isNotEmpty
+        ? positionedTopics
+              .map((t) => t.position)
+              .reduce((a, b) => a > b ? a : b)
+        : -1;
+
+    for (final topic in unpositionedTopics) {
+      maxPosition++;
+      topic.position = maxPosition;
+      await _saveTopicConfig(topic);
+    }
+
+    final allTopics = [...positionedTopics, ...unpositionedTopics];
+    allTopics.sort((a, b) => a.position.compareTo(b.position));
+
+    bool needsResave = false;
+    for (int i = 0; i < allTopics.length; i++) {
+      if (allTopics[i].position != i) {
+        allTopics[i].position = i;
+        needsResave = true;
+      }
+    }
+
+    if (needsResave) {
+      await saveTopicsOrder(allTopics);
+    }
+
+    return allTopics;
   }
 
-  // ==> FUNGSI BARU <==
-  Future<String> _getIconForTopic(String topicName) async {
+  // FUNGSI BARU UNTUK MENYIMPAN URUTAN SEMUA TOPIK
+  Future<void> saveTopicsOrder(List<Topic> topics) async {
+    for (int i = 0; i < topics.length; i++) {
+      final topic = topics[i];
+      topic.position = i;
+      await _saveTopicConfig(topic);
+    }
+  }
+
+  Future<Map<String, dynamic>> _getTopicConfig(String topicName) async {
     final configPath = _pathService.getTopicConfigPath(topicName);
     final configFile = File(configPath);
 
@@ -47,30 +94,37 @@ class TopicService {
         final jsonString = await configFile.readAsString();
         if (jsonString.isNotEmpty) {
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-          return jsonData['icon'] as String? ?? _defaultIcon;
+          return {
+            'icon': jsonData['icon'] as String? ?? _defaultIcon,
+            'position': jsonData['position'] as int?,
+          };
         }
       } catch (e) {
-        // Abaikan jika ada error baca/parse, gunakan ikon default
+        // Abaikan error dan gunakan config default
       }
     }
-    // Jika file tidak ada, atau kosong, atau error, buat file dengan ikon default
+    return {'icon': _defaultIcon, 'position': -1};
+  }
+
+  Future<void> _saveTopicConfig(Topic topic) async {
+    final configPath = _pathService.getTopicConfigPath(topic.name);
+    final configFile = File(configPath);
     try {
-      await configFile.writeAsString(jsonEncode({'icon': _defaultIcon}));
+      await configFile.create(recursive: true);
+      await configFile.writeAsString(jsonEncode(topic.toConfigJson()));
     } catch (e) {
       // Abaikan jika gagal menulis file
     }
-    return _defaultIcon;
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> updateTopicIcon(String topicName, String newIcon) async {
-    final configPath = _pathService.getTopicConfigPath(topicName);
-    final configFile = File(configPath);
-    try {
-      await configFile.writeAsString(jsonEncode({'icon': newIcon}));
-    } catch (e) {
-      throw Exception('Gagal memperbarui ikon topik: $e');
-    }
+    final config = await _getTopicConfig(topicName);
+    final topic = Topic(
+      name: topicName,
+      icon: newIcon,
+      position: config['position'] as int? ?? -1,
+    );
+    await _saveTopicConfig(topic);
   }
 
   Future<void> addTopic(String topicName) async {
@@ -85,8 +139,14 @@ class TopicService {
 
     try {
       await directory.create();
-      // ==> TAMBAHKAN PEMBUATAN FILE KONFIGURASI DEFAULT <==
-      await _getIconForTopic(topicName);
+      final currentTopics = await getTopics();
+      final newPosition = currentTopics.length;
+      final newTopic = Topic(
+        name: topicName,
+        icon: _defaultIcon,
+        position: newPosition,
+      );
+      await _saveTopicConfig(newTopic);
     } catch (e) {
       throw Exception('Gagal membuat topik: $e');
     }
@@ -94,21 +154,24 @@ class TopicService {
 
   Future<void> renameTopic(String oldName, String newName) async {
     if (newName.isEmpty) throw Exception('Nama baru tidak boleh kosong.');
-
     final oldPath = _pathService.getTopicPath(oldName);
     final newPath = _pathService.getTopicPath(newName);
-
     final oldDir = Directory(oldPath);
     if (!await oldDir.exists()) {
       throw Exception('Topik yang ingin diubah tidak ditemukan.');
     }
-
     if (await Directory(newPath).exists()) {
       throw Exception('Topik dengan nama "$newName" sudah ada.');
     }
-
     try {
+      final oldConfig = await _getTopicConfig(oldName);
       await oldDir.rename(newPath);
+      final newTopic = Topic(
+        name: newName,
+        icon: oldConfig['icon'] as String? ?? _defaultIcon,
+        position: oldConfig['position'] as int? ?? -1,
+      );
+      await _saveTopicConfig(newTopic);
     } catch (e) {
       throw Exception('Gagal mengubah nama topik: $e');
     }
@@ -117,13 +180,13 @@ class TopicService {
   Future<void> deleteTopic(String topicName) async {
     final topicPath = _pathService.getTopicPath(topicName);
     final directory = Directory(topicPath);
-
     if (!await directory.exists()) {
       throw Exception('Topik yang ingin dihapus tidak ditemukan.');
     }
-
     try {
       await directory.delete(recursive: true);
+      final remainingTopics = await getTopics();
+      await saveTopicsOrder(remainingTopics);
     } catch (e) {
       throw Exception('Gagal menghapus topik: $e');
     }

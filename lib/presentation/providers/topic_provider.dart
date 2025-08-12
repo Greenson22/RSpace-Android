@@ -9,10 +9,8 @@ import '../../data/services/topic_service.dart';
 import '../../data/services/path_service.dart';
 
 class TopicProvider with ChangeNotifier {
-  // --- DEPENDENSI BARU ---
   final TopicService _topicService = TopicService();
   final PathService _pathService = PathService();
-  // -----------------------
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -42,7 +40,6 @@ class TopicProvider with ChangeNotifier {
     });
 
     try {
-      // Menggunakan TopicService yang mengembalikan List<Topic>
       _allTopics = await _topicService.getTopics();
       _filterTopics();
     } finally {
@@ -69,7 +66,29 @@ class TopicProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- METODE CRUD MENGGUNAKAN TopicService ---
+  // ==> FUNGSI BARU UNTUK MENGUBAH URUTAN <==
+  Future<void> reorderTopics(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    final Topic item = _allTopics.removeAt(oldIndex);
+    _allTopics.insert(newIndex, item);
+
+    // Gunakan _isBackingUp untuk menampilkan indikator loading saat menyimpan
+    _isBackingUp = true;
+    notifyListeners();
+
+    try {
+      // Panggil service untuk menyimpan urutan baru secara permanen
+      await _topicService.saveTopicsOrder(_allTopics);
+    } finally {
+      _isBackingUp = false;
+      // Muat ulang data untuk memastikan state sinkron dengan file
+      await fetchTopics();
+    }
+  }
+
   Future<void> addTopic(String name) async {
     await _topicService.addTopic(name);
     await fetchTopics();
@@ -85,18 +104,15 @@ class TopicProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  // ==> FUNGSI YANG HILANG DITAMBAHKAN DI SINI <==
   Future<void> updateTopicIcon(String topicName, String newIcon) async {
     await _topicService.updateTopicIcon(topicName, newIcon);
-    await fetchTopics(); // Muat ulang data untuk merefresh UI
+    await fetchTopics();
   }
-  // ---------------------------------------------
 
   Future<String> backupContents() async {
     _isBackingUp = true;
     notifyListeners();
     try {
-      // Menggunakan PathService untuk mendapatkan path
       final contentsPath = _pathService.contentsPath;
       final sourceDir = Directory(contentsPath);
 
@@ -135,7 +151,6 @@ class TopicProvider with ChangeNotifier {
     }
   }
 
-  // Menggunakan PathService untuk mendapatkan path
   String getTopicsPath() {
     return _pathService.topicsPath;
   }

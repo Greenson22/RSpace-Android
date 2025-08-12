@@ -1,39 +1,37 @@
 import 'package:flutter/material.dart';
-import '../../../../data/models/topic_model.dart'; // ==> DITAMBAHKAN
+import '../../../../data/models/topic_model.dart';
 
 class TopicListTile extends StatelessWidget {
-  final Topic topic; // ==> DIGANTI DARI String ke Topic
+  final Topic topic;
   final VoidCallback onTap;
   final VoidCallback onRename;
   final VoidCallback onDelete;
-  final VoidCallback onIconChange; // ==> DITAMBAHKAN
+  final VoidCallback onIconChange;
 
   const TopicListTile({
     super.key,
-    required this.topic, // ==> DIGANTI
+    required this.topic,
     required this.onTap,
     required this.onRename,
     required this.onDelete,
-    required this.onIconChange, // ==> DITAMBAHKAN
+    required this.onIconChange,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        // ==> LEADING DIUBAH UNTUK MENAMPILKAN IKON <==
         leading: Text(topic.icon, style: const TextStyle(fontSize: 24)),
-        title: Text(topic.name), // ==> MENGGUNAKAN topic.name
+        title: Text(topic.name),
         onTap: onTap,
         trailing: PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'rename') onRename();
             if (value == 'delete') onDelete();
-            if (value == 'change_icon') onIconChange(); // ==> DITAMBAHKAN
+            if (value == 'change_icon') onIconChange();
           },
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
-            // ==> MENU BARU DITAMBAHKAN <==
             const PopupMenuItem(value: 'change_icon', child: Text('Ubah Ikon')),
             const PopupMenuDivider(),
             const PopupMenuItem(

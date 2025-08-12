@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import '../../data/models/topic_model.dart'; // ==> DITAMBAHKAN
+import '../../data/models/topic_model.dart';
 import '../providers/subject_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
@@ -67,7 +67,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  // ==> DIUBAH UNTUK MENERIMA Topic BUKAN String <==
   Future<void> _renameTopic(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showTopicTextInputDialog(
@@ -86,7 +85,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  // ==> DIUBAH UNTUK MENERIMA Topic BUKAN String <==
   Future<void> _deleteTopic(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showDeleteTopicConfirmationDialog(
@@ -103,7 +101,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH IKON <==
   Future<void> _changeIcon(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showIconPickerDialog(
@@ -215,16 +212,24 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         }
 
         final topicsToShow = provider.filteredTopics;
-        if (topicsToShow.isEmpty && provider.searchQuery.isNotEmpty) {
+        final isSearching = provider.searchQuery.isNotEmpty;
+
+        if (topicsToShow.isEmpty && isSearching) {
           return const Center(child: Text('Topik tidak ditemukan.'));
         }
 
-        return ListView.builder(
+        // ==> DIUBAH MENJADI ReorderableListView.builder <==
+        // Fitur reorder dinonaktifkan saat sedang mencari
+        return ReorderableListView.builder(
           itemCount: topicsToShow.length,
+          buildDefaultDragHandles:
+              !isSearching, // Tampilkan handle drag jika tidak sedang mencari
           itemBuilder: (context, index) {
-            final topic = topicsToShow[index]; // ==> Menggunakan objek Topic
+            final topic = topicsToShow[index];
             return TopicListTile(
-              topic: topic, // ==> Mengirim objek Topic
+              // Key harus unik untuk setiap item agar reordering bekerja
+              key: ValueKey(topic.name),
+              topic: topic,
               onTap: () {
                 final folderPath = path.join(
                   provider.getTopicsPath(),
@@ -242,9 +247,14 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               },
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
-              onIconChange: () =>
-                  _changeIcon(context, topic), // ==> Callback baru
+              onIconChange: () => _changeIcon(context, topic),
             );
+          },
+          // ==> Callback untuk menangani perubahan urutan <==
+          onReorder: (oldIndex, newIndex) {
+            if (!isSearching) {
+              provider.reorderTopics(oldIndex, newIndex);
+            }
           },
         );
       },
