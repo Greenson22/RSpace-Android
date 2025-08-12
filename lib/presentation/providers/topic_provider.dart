@@ -116,7 +116,7 @@ class TopicProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  Future<String> backupContents() async {
+  Future<String> backupContents({required String destinationPath}) async {
     _isBackingUp = true;
     notifyListeners();
     try {
@@ -129,9 +129,12 @@ class TopicProvider with ChangeNotifier {
 
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final zipFileName = 'backup_contents_$timestamp.zip';
+      final zipFile = File(path.join(destinationPath, zipFileName));
 
-      final tempDir = await Directory.systemTemp.createTemp();
-      final zipFile = File(path.join(tempDir.path, zipFileName));
+      // Memastikan direktori tujuan ada
+      if (!await Directory(destinationPath).exists()) {
+        await Directory(destinationPath).create(recursive: true);
+      }
 
       await ZipFile.createFromDirectory(
         sourceDir: sourceDir,
@@ -139,17 +142,8 @@ class TopicProvider with ChangeNotifier {
         recurseSubDirs: true,
       );
 
-      String? savedPath = await FileSaver.instance.saveAs(
-        name: zipFileName,
-        bytes: await zipFile.readAsBytes(),
-        fileExtension: 'zip',
-        mimeType: MimeType.zip,
-      );
-      await tempDir.delete(recursive: true);
-
-      return savedPath != null
-          ? 'Backup berhasil disimpan di folder Downloads'
-          : 'Backup dibatalkan atau gagal disimpan.';
+      // Mengembalikan pesan sukses yang lebih informatif
+      return 'Backup berhasil disimpan di: $destinationPath';
     } catch (e) {
       rethrow;
     } finally {

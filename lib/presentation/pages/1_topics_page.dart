@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
@@ -116,17 +117,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  Future<void> _backupContents(BuildContext context) async {
-    final provider = Provider.of<TopicProvider>(context, listen: false);
-    showAppSnackBar(context, 'Memulai proses backup...');
-    try {
-      final message = await provider.backupContents();
-      showAppSnackBar(context, message);
-    } catch (e) {
-      showAppSnackBar(context, 'Terjadi error saat backup: $e', isError: true);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -150,30 +140,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   : const Text('Topics')),
         actions: [
           if (!topicProvider.isReorderModeEnabled) ...[
-            Consumer<TopicProvider>(
-              builder: (context, provider, child) {
-                return provider.isBackingUp
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.backup),
-                        onPressed: () => _backupContents(context),
-                        tooltip: 'Backup Seluruh Konten',
-                      );
-              },
-            ),
             IconButton(
               icon: Icon(
                 themeProvider.darkTheme

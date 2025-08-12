@@ -125,3 +125,53 @@ Future<void> showDeleteTopicConfirmationDialog({
     },
   );
 }
+
+// DIALOG BARU UNTUK MEMINTA PATH BACKUP
+Future<String?> showBackupPathDialog(BuildContext context) async {
+  final controller = TextEditingController();
+  return await showDialog<String>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Pilih Folder Backup"),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              const Text(
+                "Masukkan path lengkap ke folder tujuan untuk menyimpan file backup.",
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: "Path Folder",
+                  hintText: "Contoh: /storage/emulated/0/Download",
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "CATATAN: Untuk pengalaman pengguna yang lebih baik, dialog ini disarankan untuk diganti dengan package 'file_picker' agar dapat memilih folder secara visual.",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                Navigator.of(context).pop(controller.text);
+              }
+            },
+            child: const Text('Simpan di Sini'),
+          ),
+        ],
+      );
+    },
+  );
+}
