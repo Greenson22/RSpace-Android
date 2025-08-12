@@ -56,6 +56,16 @@ class MyTaskProvider with ChangeNotifier {
     await _saveTasks();
   }
 
+  // ==> FUNGSI BARU UNTUK MENGURUTKAN KATEGORI <==
+  Future<void> reorderCategories(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = _categories.removeAt(oldIndex);
+    _categories.insert(newIndex, item);
+    await _saveTasks();
+  }
+
   // --- Task Management ---
 
   Future<void> addTask(TaskCategory category, String taskName) async {

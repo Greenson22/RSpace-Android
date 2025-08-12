@@ -270,7 +270,7 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> BAGIAN BODY DIPISAHKAN MENJADI WIDGET SENDIRI <==
+  // ==> BAGIAN BODY DIPISAHKAN DAN DIUBAH MENGGUNAKAN ReorderableListView <==
   Widget _buildBody(BuildContext context, MyTaskProvider provider) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -282,12 +282,21 @@ class MyTasksPage extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
+    return ReorderableListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
-        return _buildCategoryCard(context, provider, category);
+        // Setiap item harus memiliki Key yang unik untuk ReorderableListView
+        return _buildCategoryCard(
+          context,
+          provider,
+          category,
+          ValueKey(category),
+        );
+      },
+      onReorder: (oldIndex, newIndex) {
+        provider.reorderCategories(oldIndex, newIndex);
       },
     );
   }
@@ -296,8 +305,10 @@ class MyTasksPage extends StatelessWidget {
     BuildContext context,
     MyTaskProvider provider,
     TaskCategory category,
+    Key key, // ==> TAMBAHKAN PARAMETER KEY <==
   ) {
     return Card(
+      key: key, // ==> GUNAKAN KEY DI WIDGET CARD <==
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 3,
       child: ExpansionTile(
