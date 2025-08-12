@@ -1,5 +1,60 @@
 import 'package:flutter/material.dart';
 
+// ==> DIALOG BARU UNTUK MEMILIH IKON SUBJECT <==
+Future<void> showIconPickerDialog({
+  required BuildContext context,
+  required Function(String) onIconSelected,
+}) async {
+  // Daftar ikon berupa simbol emoji
+  final List<String> icons = [
+    '📄',
+    '📝',
+    '📓',
+    '🔖',
+    '🔗',
+    '📈',
+    '🧪',
+    '💬',
+    '💡',
+    '📌',
+    '🛠️',
+    '⚙️',
+  ];
+
+  return showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Pilih Ikon Baru'),
+        content: Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          alignment: WrapAlignment.center,
+          children: icons.map((iconSymbol) {
+            return InkWell(
+              onTap: () {
+                onIconSelected(iconSymbol);
+                Navigator.pop(context);
+              },
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(iconSymbol, style: const TextStyle(fontSize: 32)),
+              ),
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Batal'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 // Dialog untuk input teks (menambah/mengubah nama subject)
 Future<void> showSubjectTextInputDialog({
   required BuildContext context,

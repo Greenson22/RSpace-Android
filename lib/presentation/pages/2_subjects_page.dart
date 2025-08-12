@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
+import '../../data/models/subject_model.dart'; // ==> DITAMBAHKAN
 import '../providers/discussion_provider.dart';
 import '../providers/subject_provider.dart';
 import '3_discussions_page.dart';
@@ -62,16 +63,17 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  Future<void> _renameSubject(BuildContext context, String oldName) async {
+  // ==> DIUBAH UNTUK MENERIMA Subject <==
+  Future<void> _renameSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showSubjectTextInputDialog(
       context: context,
       title: 'Ubah Nama Subject',
       label: 'Nama Baru',
-      initialValue: oldName,
+      initialValue: subject.name,
       onSave: (newName) async {
         try {
-          await provider.renameSubject(oldName, newName);
+          await provider.renameSubject(subject.name, newName);
           _showSnackBar('Subject berhasil diubah menjadi "$newName".');
         } catch (e) {
           _showSnackBar(e.toString(), isError: true);
@@ -80,15 +82,16 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  Future<void> _deleteSubject(BuildContext context, String subjectName) async {
+  // ==> DIUBAH UNTUK MENERIMA Subject <==
+  Future<void> _deleteSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showDeleteConfirmationDialog(
       context: context,
-      subjectName: subjectName,
+      subjectName: subject.name,
       onDelete: () async {
         try {
-          await provider.deleteSubject(subjectName);
-          _showSnackBar('Subject "$subjectName" berhasil dihapus.');
+          await provider.deleteSubject(subject.name);
+          _showSnackBar('Subject "${subject.name}" berhasil dihapus.');
         } catch (e) {
           _showSnackBar(e.toString(), isError: true);
         }
@@ -96,15 +99,32 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  void _navigateToDiscussionsPage(BuildContext context, String subjectName) {
+  // ==> FUNGSI BARU UNTUK MENGUBAH IKON <==
+  Future<void> _changeIcon(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    final jsonFilePath = path.join(provider.topicPath, '$subjectName.json');
+    await showIconPickerDialog(
+      context: context,
+      onIconSelected: (newIcon) async {
+        try {
+          await provider.updateSubjectIcon(subject.name, newIcon);
+          _showSnackBar('Ikon untuk "${subject.name}" diubah.');
+        } catch (e) {
+          _showSnackBar('Gagal mengubah ikon: ${e.toString()}', isError: true);
+        }
+      },
+    );
+  }
+
+  // ==> DIUBAH UNTUK MENERIMA Subject <==
+  void _navigateToDiscussionsPage(BuildContext context, Subject subject) {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final jsonFilePath = path.join(provider.topicPath, '${subject.name}.json');
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(jsonFilePath),
-          child: DiscussionsPage(subjectName: subjectName),
+          child: DiscussionsPage(subjectName: subject.name),
         ),
       ),
     );
@@ -157,12 +177,15 @@ class _SubjectsPageState extends State<SubjectsPage> {
           return ListView.builder(
             itemCount: subjectsToShow.length,
             itemBuilder: (context, index) {
-              final subjectName = subjectsToShow[index];
+              final subject =
+                  subjectsToShow[index]; // ==> Menggunakan objek Subject
               return SubjectListTile(
-                subjectName: subjectName,
-                onTap: () => _navigateToDiscussionsPage(context, subjectName),
-                onRename: () => _renameSubject(context, subjectName),
-                onDelete: () => _deleteSubject(context, subjectName),
+                subject: subject, // ==> Mengirim objek Subject
+                onTap: () => _navigateToDiscussionsPage(context, subject),
+                onRename: () => _renameSubject(context, subject),
+                onDelete: () => _deleteSubject(context, subject),
+                onIconChange: () =>
+                    _changeIcon(context, subject), // ==> Callback baru
               );
             },
           );

@@ -1,6 +1,7 @@
 // lib/presentation/providers/subject_provider.dart
 
 import 'package:flutter/material.dart';
+import '../../data/models/subject_model.dart'; // ==> DITAMBAHKAN
 // Diubah dari local_file_service.dart ke subject_service.dart
 import '../../data/services/subject_service.dart';
 
@@ -16,11 +17,12 @@ class SubjectProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  List<String> _allSubjects = [];
-  List<String> get allSubjects => _allSubjects;
+  // ==> TIPE LIST DIUBAH <==
+  List<Subject> _allSubjects = [];
+  List<Subject> get allSubjects => _allSubjects;
 
-  List<String> _filteredSubjects = [];
-  List<String> get filteredSubjects => _filteredSubjects;
+  List<Subject> _filteredSubjects = [];
+  List<Subject> get filteredSubjects => _filteredSubjects;
 
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
@@ -29,7 +31,7 @@ class SubjectProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Memanggil metode dari SubjectService
+      // Memanggil metode dari SubjectService yang mengembalikan List<Subject>
       _allSubjects = await _subjectService.getSubjects(topicPath);
       _filteredSubjects = _allSubjects;
     } catch (e) {
@@ -45,9 +47,15 @@ class SubjectProvider with ChangeNotifier {
   void search(String query) {
     _searchQuery = query.toLowerCase();
     _filteredSubjects = _allSubjects
-        .where((subject) => subject.toLowerCase().contains(_searchQuery))
+        .where((subject) => subject.name.toLowerCase().contains(_searchQuery))
         .toList();
     notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK UPDATE IKON <==
+  Future<void> updateSubjectIcon(String subjectName, String newIcon) async {
+    await _subjectService.updateSubjectIcon(topicPath, subjectName, newIcon);
+    await fetchSubjects();
   }
 
   Future<void> addSubject(String name) async {

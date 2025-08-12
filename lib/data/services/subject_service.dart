@@ -2,17 +2,21 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
+import '../models/subject_model.dart'; // ==> DITAMBAHKAN
 import 'path_service.dart';
 
 class SubjectService {
   final PathService _pathService = PathService();
+  static const String _defaultIcon = '📄'; // ==> DITAMBAHKAN
 
-  Future<List<String>> getSubjects(String topicPath) async {
+  // ==> DIUBAH UNTUK MENGEMBALIKAN List<Subject> <==
+  Future<List<Subject>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
-    if (!await directory.exists())
+    if (!await directory.exists()) {
       throw Exception('Folder tidak ditemukan: $topicPath');
+    }
 
-    final fileNames = directory
+    final files = directory
         .listSync()
         .whereType<File>()
         .where(
@@ -20,26 +24,90 @@ class SubjectService {
               item.path.toLowerCase().endsWith('.json') &&
               path.basename(item.path) != 'topic_config.json',
         )
-        .map((item) => path.basenameWithoutExtension(item.path))
         .toList();
-    fileNames.sort();
-    return fileNames;
+
+    files.sort(
+      (a, b) => path.basename(a.path).compareTo(path.basename(b.path)),
+    );
+
+    final List<Subject> subjects = [];
+    for (var file in files) {
+      final name = path.basenameWithoutExtension(file.path);
+      final icon = await _getIconForSubject(file);
+      subjects.add(Subject(name: name, icon: icon));
+    }
+    return subjects;
   }
 
+  // ==> FUNGSI BARU UNTUK MEMBACA IKON DARI JSON <==
+  Future<String> _getIconForSubject(File subjectFile) async {
+    try {
+      if (!await subjectFile.exists()) {
+        return _defaultIcon;
+      }
+      final jsonString = await subjectFile.readAsString();
+      if (jsonString.isEmpty) {
+        return _defaultIcon;
+      }
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final metadata = jsonData['metadata'] as Map<String, dynamic>?;
+      return metadata?['icon'] as String? ?? _defaultIcon;
+    } catch (e) {
+      return _defaultIcon;
+    }
+  }
+
+  // ==> DIUBAH: MENAMBAHKAN METADATA SAAT FILE DIBUAT <==
   Future<void> addSubject(String topicPath, String subjectName) async {
-    if (subjectName.isEmpty)
+    if (subjectName.isEmpty) {
       throw Exception('Nama subject tidak boleh kosong.');
+    }
 
     final filePath = _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
 
-    if (await file.exists())
+    if (await file.exists()) {
       throw Exception('Subject dengan nama "$subjectName" sudah ada.');
+    }
 
     try {
-      await file.writeAsString(jsonEncode({'content': []}));
+      // Struktur JSON awal dengan metadata dan ikon default
+      final initialContent = {
+        'metadata': {'icon': _defaultIcon},
+        'content': [],
+      };
+      await file.writeAsString(jsonEncode(initialContent));
     } catch (e) {
       throw Exception('Gagal membuat subject: $e');
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK UPDATE IKON <==
+  Future<void> updateSubjectIcon(
+    String topicPath,
+    String subjectName,
+    String newIcon,
+  ) async {
+    final filePath = _pathService.getSubjectPath(topicPath, subjectName);
+    final file = File(filePath);
+
+    if (!await file.exists()) {
+      throw Exception('File subject tidak ditemukan.');
+    }
+
+    try {
+      final jsonString = await file.readAsString();
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      // Buat atau update metadata
+      final metadata = (jsonData['metadata'] as Map<String, dynamic>?) ?? {};
+      metadata['icon'] = newIcon;
+      jsonData['metadata'] = metadata;
+
+      const encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(encoder.convert(jsonData));
+    } catch (e) {
+      throw Exception('Gagal memperbarui ikon subject: $e');
     }
   }
 
@@ -54,10 +122,12 @@ class SubjectService {
     final newPath = _pathService.getSubjectPath(topicPath, newName);
     final oldFile = File(oldPath);
 
-    if (!await oldFile.exists())
+    if (!await oldFile.exists()) {
       throw Exception('Subject yang ingin diubah tidak ditemukan.');
-    if (await File(newPath).exists())
+    }
+    if (await File(newPath).exists()) {
       throw Exception('Subject dengan nama "$newName" sudah ada.');
+    }
 
     try {
       await oldFile.rename(newPath);
@@ -69,8 +139,9 @@ class SubjectService {
   Future<void> deleteSubject(String topicPath, String subjectName) async {
     final filePath = _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
-    if (!await file.exists())
+    if (!await file.exists()) {
       throw Exception('Subject yang ingin dihapus tidak ditemukan.');
+    }
 
     try {
       await file.delete();
