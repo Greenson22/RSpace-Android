@@ -1,6 +1,73 @@
+// lib/presentation/pages/1_topics_page/dialogs/topic_dialogs.dart
 import 'package:flutter/material.dart';
 
-// ==> DIALOG BARU UNTUK MEMILIH IKON <==
+// ==> DIALOG BARU UNTUK MEMASUKKAN PATH (BISA DIGUNAKAN UNTUK BACKUP & PENYIMPANAN) <==
+Future<void> showPathInputDialog({
+  required BuildContext context,
+  required String title,
+  required String label,
+  required String hint,
+  String initialValue = '',
+  required Function(String) onSave,
+}) async {
+  final controller = TextEditingController(text: initialValue);
+  return await showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(labelText: label, hintText: hint),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "CATATAN: Untuk pengalaman terbaik, disarankan menggunakan package 'file_picker' agar pengguna dapat memilih folder secara visual.",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                onSave(controller.text);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Dialog backup sekarang menggunakan showPathInputDialog
+Future<String?> showBackupPathDialog(BuildContext context) async {
+  String? resultPath;
+  await showPathInputDialog(
+    context: context,
+    title: "Pilih Folder Backup",
+    label: "Path Folder Backup",
+    hint: "Contoh: /storage/emulated/0/Download",
+    onSave: (path) {
+      resultPath = path;
+    },
+  );
+  return resultPath;
+}
+
+// ==> DIALOG BAWAAN YANG TIDAK BERUBAH <==
 Future<void> showIconPickerDialog({
   required BuildContext context,
   required Function(String) onIconSelected,
@@ -119,56 +186,6 @@ Future<void> showDeleteTopicConfirmationDialog({
               ); // Dialog ditutup setelah onDelete dipanggil
             },
             child: const Text('Hapus'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-// DIALOG BARU UNTUK MEMINTA PATH BACKUP
-Future<String?> showBackupPathDialog(BuildContext context) async {
-  final controller = TextEditingController();
-  return await showDialog<String>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text("Pilih Folder Backup"),
-        content: SingleChildScrollView(
-          child: ListBody(
-            children: <Widget>[
-              const Text(
-                "Masukkan path lengkap ke folder tujuan untuk menyimpan file backup.",
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: "Path Folder",
-                  hintText: "Contoh: /storage/emulated/0/Download",
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "CATATAN: Untuk pengalaman pengguna yang lebih baik, dialog ini disarankan untuk diganti dengan package 'file_picker' agar dapat memilih folder secara visual.",
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                Navigator.of(context).pop(controller.text);
-              }
-            },
-            child: const Text('Simpan di Sini'),
           ),
         ],
       );

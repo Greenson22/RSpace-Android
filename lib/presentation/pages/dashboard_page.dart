@@ -1,7 +1,8 @@
+// lib/presentation/pages/dashboard_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../data/services/shared_preferences_service.dart'; // Import SharedPreferencesService
+import '../../data/services/shared_preferences_service.dart';
 import '../providers/topic_provider.dart';
 import '1_topics_page.dart';
 import '1_topics_page/dialogs/topic_dialogs.dart';
@@ -53,69 +54,22 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PILIHAN PENYIMPANAN <==
-  Future<void> _showStorageSelectionDialog(BuildContext context) async {
+  // ==> DIALOG PEMILIHAN LOKASI PENYIMPANAN DIUBAH TOTAL <==
+  Future<void> _showStoragePathDialog(BuildContext context) async {
     final prefsService = SharedPreferencesService();
-    String currentSelection = await prefsService.loadStorageLocation();
+    final currentPath = await prefsService.loadCustomStoragePath() ?? '';
 
-    await showDialog(
+    await showPathInputDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Pilih Lokasi Penyimpanan'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<String>(
-                    title: const Text('Internal'),
-                    subtitle: const Text('Direktori privat aplikasi'),
-                    value: 'internal',
-                    groupValue: currentSelection,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDialogState(() => currentSelection = value);
-                      }
-                    },
-                  ),
-                  RadioListTile<String>(
-                    title: const Text('Eksternal'),
-                    subtitle: const Text('Direktori bersama (memerlukan izin)'),
-                    value: 'external',
-                    groupValue: currentSelection,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDialogState(() => currentSelection = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Aplikasi perlu dimulai ulang agar perubahan diterapkan sepenuhnya.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await prefsService.saveStorageLocation(currentSelection);
-                    Navigator.pop(context);
-                    showAppSnackBar(
-                      context,
-                      'Lokasi disimpan. Mohon restart aplikasi.',
-                    );
-                  },
-                  child: const Text('Simpan'),
-                ),
-              ],
-            );
-          },
+      title: 'Pilih Folder Penyimpanan Utama',
+      label: 'Path Folder',
+      initialValue: currentPath,
+      hint: 'Contoh: /storage/emulated/0/MyAppData',
+      onSave: (newPath) async {
+        await prefsService.saveCustomStoragePath(newPath);
+        showAppSnackBar(
+          context,
+          'Lokasi disimpan. Mohon restart aplikasi untuk menerapkan.',
         );
       },
     );
@@ -162,13 +116,13 @@ class _DashboardPageState extends State<DashboardPage> {
               onTap: () => _backupContents(context),
               child: _isBackingUp ? const CircularProgressIndicator() : null,
             ),
-            // ==> ITEM BARU, HANYA MUNCUL DI ANDROID <==
+            // ==> ITEM INI SEKARANG MEMANGGIL DIALOG BARU <==
             if (Platform.isAndroid)
               _buildDashboardItem(
                 context,
-                icon: Icons.storage_rounded,
+                icon: Icons.folder_open_rounded, // Ikon diubah
                 label: 'Penyimpanan',
-                onTap: () => _showStorageSelectionDialog(context),
+                onTap: () => _showStoragePathDialog(context),
               ),
           ],
         ),
