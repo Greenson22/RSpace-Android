@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../data/models/my_task_model.dart';
-import '../../data/services/local_file_service.dart';
+import '../../data/services/my_task_service.dart'; // DIUBAH: Menggunakan service yang baru
 
 class MyTaskProvider with ChangeNotifier {
-  final LocalFileService _fileService = LocalFileService();
+  final MyTaskService _myTaskService =
+      MyTaskService(); // DIUBAH: Menggunakan MyTaskService
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -19,7 +20,8 @@ class MyTaskProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _categories = await _fileService.loadMyTasks();
+      // Memanggil metode dari service yang baru
+      _categories = await _myTaskService.loadMyTasks();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -27,7 +29,8 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> _saveTasks() async {
-    await _fileService.saveMyTasks(_categories);
+    // Memanggil metode dari service yang baru
+    await _myTaskService.saveMyTasks(_categories);
     notifyListeners();
   }
 
@@ -38,7 +41,8 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> renameCategory(TaskCategory category, String newName) async {
-    final index = _categories.indexOf(category);
+    // Mencari index kategori berdasarkan nama unik, lebih aman
+    final index = _categories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
       _categories[index] = TaskCategory(
         name: newName,
@@ -50,7 +54,7 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> deleteCategory(TaskCategory category) async {
-    _categories.remove(category);
+    _categories.removeWhere((c) => c.name == category.name);
     await _saveTasks();
   }
 }

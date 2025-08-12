@@ -4,10 +4,14 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
-import '../../data/services/local_file_service.dart';
+import '../../data/services/topic_service.dart'; // DIUBAH
+import '../../data/services/path_service.dart'; // DIUBAH
 
 class TopicProvider with ChangeNotifier {
-  final LocalFileService _fileService = LocalFileService();
+  // --- DEPENDENSI BARU ---
+  final TopicService _topicService = TopicService();
+  final PathService _pathService = PathService();
+  // -----------------------
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -30,17 +34,21 @@ class TopicProvider with ChangeNotifier {
 
   Future<void> fetchTopics() async {
     _isLoading = true;
-    // Hindari notifikasi jika widget sudah di-dispose
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
+      if (hasListeners) {
+        notifyListeners();
+      }
     });
 
     try {
-      _allTopics = await _fileService.getTopics();
+      // Menggunakan TopicService
+      _allTopics = await _topicService.getTopics();
       _filterTopics();
     } finally {
       _isLoading = false;
-      notifyListeners();
+      if (hasListeners) {
+        notifyListeners();
+      }
     }
   }
 
@@ -60,26 +68,29 @@ class TopicProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // --- METODE CRUD MENGGUNAKAN TopicService ---
   Future<void> addTopic(String name) async {
-    await _fileService.addTopic(name);
+    await _topicService.addTopic(name);
     await fetchTopics();
   }
 
   Future<void> renameTopic(String oldName, String newName) async {
-    await _fileService.renameTopic(oldName, newName);
+    await _topicService.renameTopic(oldName, newName);
     await fetchTopics();
   }
 
   Future<void> deleteTopic(String topicName) async {
-    await _fileService.deleteTopic(topicName);
+    await _topicService.deleteTopic(topicName);
     await fetchTopics();
   }
+  // ---------------------------------------------
 
   Future<String> backupContents() async {
     _isBackingUp = true;
     notifyListeners();
     try {
-      final contentsPath = _fileService.getContentsPath();
+      // Menggunakan PathService untuk mendapatkan path
+      final contentsPath = _pathService.contentsPath;
       final sourceDir = Directory(contentsPath);
 
       if (!await sourceDir.exists()) {
@@ -117,7 +128,8 @@ class TopicProvider with ChangeNotifier {
     }
   }
 
+  // Menggunakan PathService untuk mendapatkan path
   String getTopicsPath() {
-    return _fileService.getTopicsPath();
+    return _pathService.topicsPath;
   }
 }

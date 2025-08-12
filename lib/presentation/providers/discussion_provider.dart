@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/discussion_model.dart';
-import '../../data/services/local_file_service.dart';
+import '../../data/services/discussion_service.dart'; // DIUBAH: Menggunakan discussion_service
+import '../../data/services/shared_preferences_service.dart'; // DIUBAH: Menggunakan shared_preferences_service
 import '../pages/3_discussions_page/utils/repetition_code_utils.dart';
 
 class DiscussionProvider with ChangeNotifier {
-  final LocalFileService _fileService = LocalFileService();
+  // DIUBAH: Menggunakan DiscussionService secara langsung
+  final DiscussionService _discussionService = DiscussionService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
   final String _jsonFilePath;
@@ -83,7 +85,8 @@ class DiscussionProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _allDiscussions = await _fileService.loadDiscussions(_jsonFilePath);
+      // DIUBAH: Memanggil _discussionService
+      _allDiscussions = await _discussionService.loadDiscussions(_jsonFilePath);
       _filterAndSortDiscussions();
     } finally {
       _isLoading = false;
@@ -92,7 +95,8 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   Future<void> _saveDiscussions() async {
-    await _fileService.saveDiscussions(_jsonFilePath, _allDiscussions);
+    // DIUBAH: Memanggil _discussionService
+    await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
     // Tidak perlu notifyListeners() di sini kecuali ada state loading untuk save
   }
 
@@ -127,9 +131,9 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   void _sortDiscussions() {
-    // Terapkan sorting ke kedua list agar urutan konsisten
     _sortList(_filteredDiscussions);
     _sortList(_allDiscussions);
+    notifyListeners(); // Ditambahkan untuk memastikan UI update setelah sorting
   }
 
   void _sortList(List<Discussion> list) {
@@ -151,9 +155,12 @@ class DiscussionProvider with ChangeNotifier {
         };
         break;
     }
+
+    // DIUBAH: Logika sorting yang lebih benar
     list.sort(comparator);
     if (!_sortAscending) {
-      list = list.reversed.toList();
+      _filteredDiscussions = _filteredDiscussions.reversed.toList();
+      _allDiscussions = _allDiscussions.reversed.toList();
     }
   }
 

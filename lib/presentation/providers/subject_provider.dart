@@ -1,8 +1,12 @@
+// lib/presentation/providers/subject_provider.dart
+
 import 'package:flutter/material.dart';
-import '../../data/services/local_file_service.dart';
+// Diubah dari local_file_service.dart ke subject_service.dart
+import '../../data/services/subject_service.dart';
 
 class SubjectProvider with ChangeNotifier {
-  final LocalFileService _fileService = LocalFileService();
+  // Menggunakan SubjectService yang baru
+  final SubjectService _subjectService = SubjectService();
   final String topicPath;
 
   SubjectProvider(this.topicPath) {
@@ -25,10 +29,13 @@ class SubjectProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _allSubjects = await _fileService.getSubjects(topicPath);
+      // Memanggil metode dari SubjectService
+      _allSubjects = await _subjectService.getSubjects(topicPath);
       _filteredSubjects = _allSubjects;
     } catch (e) {
       // Handle error jika diperlukan
+      // Anda mungkin ingin menampilkan pesan error ke pengguna di sini
+      debugPrint("Error fetching subjects: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -44,17 +51,17 @@ class SubjectProvider with ChangeNotifier {
   }
 
   Future<void> addSubject(String name) async {
-    await _fileService.addSubject(topicPath, name);
+    await _subjectService.addSubject(topicPath, name);
     await fetchSubjects(); // Muat ulang daftar setelah menambah
   }
 
   Future<void> renameSubject(String oldName, String newName) async {
-    await _fileService.renameSubject(topicPath, oldName, newName);
+    await _subjectService.renameSubject(topicPath, oldName, newName);
     await fetchSubjects(); // Muat ulang daftar setelah mengubah
   }
 
   Future<void> deleteSubject(String subjectName) async {
-    await _fileService.deleteSubject(topicPath, subjectName);
+    await _subjectService.deleteSubject(topicPath, subjectName);
     await fetchSubjects(); // Muat ulang daftar setelah menghapus
   }
 }
