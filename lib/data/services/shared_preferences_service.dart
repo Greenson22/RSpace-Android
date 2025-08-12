@@ -7,6 +7,7 @@ class SharedPreferencesService {
   static const String _filterTypeKey = 'filter_type';
   static const String _filterValueKey = 'filter_value';
   static const String _themeKey = 'theme_preference';
+  static const String _storageLocationKey = 'storage_location'; // ==> KEY BARU
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -53,5 +54,18 @@ class SharedPreferencesService {
     final filterType = prefs.getString(_filterTypeKey);
     final filterValue = prefs.getString(_filterValueKey);
     return {'filterType': filterType, 'filterValue': filterValue};
+  }
+
+  // ==> FUNGSI BARU UNTUK LOKASI PENYIMPANAN <==
+  Future<void> saveStorageLocation(String location) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_storageLocationKey, location);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT LOKASI PENYIMPANAN <==
+  Future<String> loadStorageLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Default ke 'internal' jika belum ada pilihan
+    return prefs.getString(_storageLocationKey) ?? 'internal';
   }
 }

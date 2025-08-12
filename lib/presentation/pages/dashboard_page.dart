@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../data/services/shared_preferences_service.dart'; // Import SharedPreferencesService
 import '../providers/topic_provider.dart';
 import '1_topics_page.dart';
 import '1_topics_page/dialogs/topic_dialogs.dart';
@@ -18,7 +19,6 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
 
   Future<void> _backupContents(BuildContext context) async {
-    // 1. Meminta pengguna untuk memilih path direktori
     final String? destinationPath = await showBackupPathDialog(context);
 
     if (destinationPath == null || destinationPath.isEmpty) {
@@ -26,8 +26,6 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    // Karena halaman ini tidak secara default memiliki TopicProvider,
-    // kita buat instance sementara khusus untuk operasi backup.
     final topicProvider = TopicProvider();
 
     setState(() {
@@ -36,7 +34,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
     showAppSnackBar(context, 'Memulai proses backup...');
     try {
-      // 2. Melewatkan path yang dipilih ke provider
       final message = await topicProvider.backupContents(
         destinationPath: destinationPath,
       );
@@ -54,6 +51,74 @@ class _DashboardPageState extends State<DashboardPage> {
         });
       }
     }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PILIHAN PENYIMPANAN <==
+  Future<void> _showStorageSelectionDialog(BuildContext context) async {
+    final prefsService = SharedPreferencesService();
+    String currentSelection = await prefsService.loadStorageLocation();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Pilih Lokasi Penyimpanan'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('Internal'),
+                    subtitle: const Text('Direktori privat aplikasi'),
+                    value: 'internal',
+                    groupValue: currentSelection,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => currentSelection = value);
+                      }
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Eksternal'),
+                    subtitle: const Text('Direktori bersama (memerlukan izin)'),
+                    value: 'external',
+                    groupValue: currentSelection,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => currentSelection = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Aplikasi perlu dimulai ulang agar perubahan diterapkan sepenuhnya.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await prefsService.saveStorageLocation(currentSelection);
+                    Navigator.pop(context);
+                    showAppSnackBar(
+                      context,
+                      'Lokasi disimpan. Mohon restart aplikasi.',
+                    );
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -95,9 +160,16 @@ class _DashboardPageState extends State<DashboardPage> {
               icon: Icons.backup_outlined,
               label: 'Backup',
               onTap: () => _backupContents(context),
-              // Menampilkan indikator loading saat backup berjalan
               child: _isBackingUp ? const CircularProgressIndicator() : null,
             ),
+            // ==> ITEM BARU, HANYA MUNCUL DI ANDROID <==
+            if (Platform.isAndroid)
+              _buildDashboardItem(
+                context,
+                icon: Icons.storage_rounded,
+                label: 'Penyimpanan',
+                onTap: () => _showStorageSelectionDialog(context),
+              ),
           ],
         ),
       ),
