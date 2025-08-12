@@ -3,9 +3,11 @@ import 'package:intl/intl.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/local_file_service.dart';
 import '3_discussions_page/dialogs/discussion_dialogs.dart';
+import '3_discussions_page/utils/repetition_code_utils.dart'; // <-- IMPORT BARU
 import '3_discussions_page/widgets/discussion_card.dart';
 
 class DiscussionsPage extends StatefulWidget {
+  // ... (Konstruktor tetap sama)
   final String jsonFilePath;
   final String subjectName;
 
@@ -20,7 +22,7 @@ class DiscussionsPage extends StatefulWidget {
 }
 
 class _DiscussionsPageState extends State<DiscussionsPage> {
-  // ... (properti state tetap sama)
+  // ... (Properti state tetap sama)
   final LocalFileService _fileService = LocalFileService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   bool _isLoading = true;
@@ -48,6 +50,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     'Finish',
   ];
 
+  // ... (Metode initState, dispose, load, save, filter, sort tetap sama)
   @override
   void initState() {
     super.initState();
@@ -61,7 +64,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
-  // --- DATA & STATE LOGIC (Tidak ada perubahan di sini) ---
   Future<void> _loadInitialData() async {
     await _loadPreferences();
     await _loadDiscussions();
@@ -280,7 +282,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         setState(() {
           discussion.repetitionCode = newCode;
           if (newCode != 'Finish') {
-            discussion.date = _getNewDateForRepetitionCode(newCode);
+            discussion.date = getNewDateForRepetitionCode(
+              newCode,
+            ); // <-- PANGGIL FUNGSI DARI UTILITAS
           }
         });
         _saveDiscussions();
@@ -337,7 +341,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     ) {
       setState(() {
         point.repetitionCode = newCode;
-        point.date = _getNewDateForRepetitionCode(newCode);
+        point.date = getNewDateForRepetitionCode(
+          newCode,
+        ); // <-- PANGGIL FUNGSI DARI UTILITAS
       });
       _saveDiscussions();
     });
@@ -358,7 +364,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // --- DIALOGS FOR FILTER & SORT ---
+  // --- DIALOGS FOR FILTER & SORT (Handlers) ---
 
   void _clearFilters() {
     setState(() {
@@ -371,355 +377,75 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     _showSnackBar('Semua filter telah dihapus.');
   }
 
-  Future<void> _showFilterDialog() async {
-    showDialog(
+  void _handleShowFilterDialog() {
+    showFilterDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Filter Diskusi'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.code),
-                title: const Text('Berdasarkan Kode Repetisi'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showRepetitionCodeFilterDialog();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.date_range),
-                title: const Text('Berdasarkan Tanggal'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDateFilterDialog();
-                },
-              ),
-            ],
-          ),
-          actions: [
-            if (_activeFilterType != null)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _clearFilters();
-                },
-                child: const Text('Hapus Filter'),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Tutup'),
-            ),
-          ],
-        );
+      isFilterActive: _activeFilterType != null,
+      onClearFilters: _clearFilters,
+      onShowRepetitionCodeFilter: _handleShowRepetitionCodeFilterDialog,
+      onShowDateFilter: _handleShowDateFilterDialog,
+    );
+  }
+
+  void _handleShowRepetitionCodeFilterDialog() {
+    showRepetitionCodeFilterDialog(
+      context: context,
+      repetitionCodes: _repetitionCodes,
+      onSelectCode: (code) {
+        setState(() {
+          _activeFilterType = 'code';
+          _selectedRepetitionCode = code;
+          _selectedDateRange = null;
+          _filterAndSortDiscussions();
+        });
+        _prefsService.saveFilterPreference('code', code);
+        _showSnackBar('Filter diterapkan: Kode = $code');
       },
     );
   }
 
-  Future<void> _showRepetitionCodeFilterDialog() async {
-    showDialog(
+  void _handleShowDateFilterDialog() {
+    showDateFilterDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Pilih Kode Repetisi'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _repetitionCodes.length,
-              itemBuilder: (context, index) {
-                final code = _repetitionCodes[index];
-                return ListTile(
-                  title: Text(code),
-                  onTap: () {
-                    setState(() {
-                      _activeFilterType = 'code';
-                      _selectedRepetitionCode = code;
-                      _selectedDateRange = null;
-                      _filterAndSortDiscussions();
-                    });
-                    _prefsService.saveFilterPreference('code', code);
-                    Navigator.pop(context);
-                    _showSnackBar('Filter diterapkan: Kode = $code');
-                  },
-                );
-              },
-            ),
-          ),
-        );
+      initialDateRange: _selectedDateRange,
+      onSelectRange: (range) {
+        setState(() {
+          _activeFilterType = 'date';
+          _selectedDateRange = range;
+          _selectedRepetitionCode = null;
+          _filterAndSortDiscussions();
+        });
+        final dateRangeString =
+            '${range.start.toIso8601String()}/${range.end.toIso8601String()}';
+        _prefsService.saveFilterPreference('date', dateRangeString);
+        final startDate = DateFormat('dd/MM/yy').format(range.start);
+        final endDate = DateFormat('dd/MM/yy').format(range.end);
+        _showSnackBar('Filter diterapkan: $startDate - $endDate');
       },
     );
   }
 
-  Future<void> _showDateFilterDialog() async {
-    final now = DateTime.now();
-    showDialog(
+  void _handleShowSortDialog() {
+    showSortDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Pilih Opsi Tanggal'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Hari Ini'),
-                onTap: () {
-                  final range = DateTimeRange(start: now, end: now);
-                  setState(() {
-                    _activeFilterType = 'date';
-                    _selectedDateRange = range;
-                    _selectedRepetitionCode = null;
-                    _filterAndSortDiscussions();
-                  });
-                  _prefsService.saveFilterPreference(
-                    'date',
-                    '${range.start.toIso8601String()}/${range.end.toIso8601String()}',
-                  );
-                  Navigator.pop(context);
-                  _showSnackBar('Filter diterapkan: Hari Ini');
-                },
-              ),
-              ListTile(
-                title: const Text('Hari ini dan sebelumnya'),
-                onTap: () {
-                  final range = DateTimeRange(start: DateTime(2000), end: now);
-                  setState(() {
-                    _activeFilterType = 'date';
-                    _selectedDateRange = range;
-                    _selectedRepetitionCode = null;
-                    _filterAndSortDiscussions();
-                  });
-                  _prefsService.saveFilterPreference(
-                    'date',
-                    '${range.start.toIso8601String()}/${range.end.toIso8601String()}',
-                  );
-                  Navigator.pop(context);
-                  _showSnackBar('Filter diterapkan: Hari ini dan sebelumnya');
-                },
-              ),
-              ListTile(
-                title: const Text('Pilih Rentang Tanggal'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final pickedRange = await showDateRangePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
-                    initialDateRange: _selectedDateRange,
-                  );
-                  if (pickedRange != null) {
-                    setState(() {
-                      _activeFilterType = 'date';
-                      _selectedDateRange = pickedRange;
-                      _selectedRepetitionCode = null;
-                      _filterAndSortDiscussions();
-                    });
-                    final dateRangeString =
-                        '${pickedRange.start.toIso8601String()}/${pickedRange.end.toIso8601String()}';
-                    _prefsService.saveFilterPreference('date', dateRangeString);
-                    final startDate = DateFormat(
-                      'dd/MM/yy',
-                    ).format(pickedRange.start);
-                    final endDate = DateFormat(
-                      'dd/MM/yy',
-                    ).format(pickedRange.end);
-                    _showSnackBar('Filter diterapkan: $startDate - $endDate');
-                  }
-                },
-              ),
-            ],
-          ),
-        );
+      initialSortType: _sortType,
+      initialSortAscending: _sortAscending,
+      onApplySort: (sortType, sortAscending) {
+        setState(() {
+          _sortType = sortType;
+          _sortAscending = sortAscending;
+          _sortDiscussions();
+        });
+        _prefsService.saveSortPreferences(_sortType, _sortAscending);
+        _showSnackBar('Diskusi telah diurutkan.');
       },
     );
   }
 
-  Future<void> _showSortDialog() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Urutkan Diskusi'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Urutkan berdasarkan:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  RadioListTile<String>(
-                    title: const Text('Tanggal'),
-                    value: 'date',
-                    groupValue: _sortType,
-                    onChanged: (value) =>
-                        setDialogState(() => _sortType = value!),
-                  ),
-                  RadioListTile<String>(
-                    title: const Text('Nama'),
-                    value: 'name',
-                    groupValue: _sortType,
-                    onChanged: (value) =>
-                        setDialogState(() => _sortType = value!),
-                  ),
-                  RadioListTile<String>(
-                    title: const Text('Kode Repetisi'),
-                    value: 'code',
-                    groupValue: _sortType,
-                    onChanged: (value) =>
-                        setDialogState(() => _sortType = value!),
-                  ),
-                  const Divider(),
-                  const Text(
-                    'Urutan:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  RadioListTile<bool>(
-                    title: const Text('Menaik (Ascending)'),
-                    value: true,
-                    groupValue: _sortAscending,
-                    onChanged: (value) =>
-                        setDialogState(() => _sortAscending = value!),
-                  ),
-                  RadioListTile<bool>(
-                    title: const Text('Menurun (Descending)'),
-                    value: false,
-                    groupValue: _sortAscending,
-                    onChanged: (value) =>
-                        setDialogState(() => _sortAscending = value!),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _sortDiscussions();
-                    });
-                    _prefsService.saveSortPreferences(
-                      _sortType,
-                      _sortAscending,
-                    );
-                    Navigator.pop(context);
-                    _showSnackBar('Diskusi telah diurutkan.');
-                  },
-                  child: const Text('Terapkan'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // --- UI HELPER METHODS (Tidak ada perubahan di sini) ---
-  Color _getColorForRepetitionCode(String code) {
-    switch (code) {
-      case 'R0D':
-        return Colors.orange.shade700;
-      case 'R1D':
-        return Colors.blue.shade600;
-      case 'R3D':
-        return Colors.teal.shade500;
-      case 'R7D':
-        return Colors.cyan.shade600;
-      case 'R7D2':
-        return Colors.purple.shade400;
-      case 'R7D3':
-        return Colors.indigo.shade500;
-      case 'R30D':
-        return Colors.brown.shade500;
-      case 'Finish':
-        return Colors.green.shade800;
-      default:
-        return Colors.grey.shade600;
-    }
-  }
-
-  String _getNewDateForRepetitionCode(String code) {
-    final now = DateTime.now();
-    int daysToAdd;
-    switch (code) {
-      case 'R1D':
-        daysToAdd = 1;
-        break;
-      case 'R3D':
-        daysToAdd = 3;
-        break;
-      case 'R7D':
-        daysToAdd = 7;
-        break;
-      case 'R7D2':
-        daysToAdd = 14;
-        break;
-      case 'R7D3':
-        daysToAdd = 21;
-        break;
-      case 'R30D':
-        daysToAdd = 30;
-        break;
-      default:
-        daysToAdd = 0;
-        break;
-    }
-    return DateFormat('yyyy-MM-dd').format(now.add(Duration(days: daysToAdd)));
-  }
-
-  Widget _getSubtitleRichText(Discussion discussion) {
-    if (discussion.finished) {
-      return Text(
-        'Selesai pada: ${discussion.finish_date}',
-        style: const TextStyle(
-          color: Colors.green,
-          fontStyle: FontStyle.italic,
-        ),
-      );
-    }
-    final dateText = discussion.date ?? 'N/A';
-    final codeText = discussion.repetitionCode;
-    Color dateColor = Colors.grey;
-    if (discussion.date != null) {
-      try {
-        final discussionDate = DateTime.parse(discussion.date!);
-        final today = DateTime.now();
-        if (discussionDate.isBefore(today.subtract(const Duration(days: -1)))) {
-          dateColor = Colors.red;
-        } else {
-          dateColor = Colors.amber.shade700;
-        }
-      } catch (e) {
-        /* fallback */
-      }
-    }
-    return RichText(
-      text: TextSpan(
-        style: Theme.of(context).textTheme.bodySmall,
-        children: [
-          const TextSpan(text: 'Date: '),
-          TextSpan(
-            text: dateText,
-            style: TextStyle(color: dateColor, fontWeight: FontWeight.bold),
-          ),
-          const TextSpan(text: ' | Code: '),
-          TextSpan(
-            text: codeText,
-            style: TextStyle(
-              color: _getColorForRepetitionCode(codeText),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // HAPUS SEMUA METODE UI HELPER DI SINI:
+  // _getColorForRepetitionCode
+  // _getNewDateForRepetitionCode
+  // _getSubtitleRichText
 
   // --- BUILD METHOD ---
 
@@ -758,15 +484,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               if (!_isSearching) _searchController.clear();
             }),
           ),
-          // PERBAIKAN DI SINI: Panggil fungsi dialog yang benar
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+            onPressed: _handleShowFilterDialog,
             tooltip: 'Filter Diskusi',
           ),
           IconButton(
             icon: const Icon(Icons.sort),
-            onPressed: _showSortDialog,
+            onPressed: _handleShowSortDialog,
             tooltip: 'Urutkan Diskusi',
           ),
         ],
@@ -780,6 +505,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               itemBuilder: (context, index) {
                 final discussion = discussionsToShow[index];
                 final originalIndex = _allDiscussions.indexOf(discussion);
+                // SEDERHANAKAN PEMANGGILAN DiscussionCard
                 return DiscussionCard(
                   discussion: discussion,
                   index: originalIndex,
@@ -788,8 +514,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                     () => _arePointsVisible[idx] =
                         !(_arePointsVisible[idx] ?? false),
                   ),
-                  getColorForRepetitionCode: _getColorForRepetitionCode,
-                  getSubtitleRichText: _getSubtitleRichText,
                   onAddPoint: () => _addPoint(discussion),
                   onMarkAsFinished: () => _markAsFinished(discussion),
                   onRename: () => _handleDiscussionRename(discussion),

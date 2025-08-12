@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../widgets/edit_popup_menu.dart';
+import '../utils/repetition_code_utils.dart'; // <-- IMPORT BARU
 
 class PointTile extends StatelessWidget {
   final Point point;
   final VoidCallback onDateChange;
   final VoidCallback onCodeChange;
   final VoidCallback onRename;
-  final Color Function(String) getColorForRepetitionCode;
+  // HAPUS: final Color Function(String) getColorForRepetitionCode;
 
   const PointTile({
     super.key,
@@ -15,7 +16,7 @@ class PointTile extends StatelessWidget {
     required this.onDateChange,
     required this.onCodeChange,
     required this.onRename,
-    required this.getColorForRepetitionCode,
+    // HAPUS: required this.getColorForRepetitionCode,
   });
 
   @override
@@ -40,7 +41,9 @@ class PointTile extends StatelessWidget {
             TextSpan(
               text: point.repetitionCode,
               style: TextStyle(
-                color: getColorForRepetitionCode(point.repetitionCode),
+                color: getColorForRepetitionCode(
+                  point.repetitionCode,
+                ), // <-- PANGGIL FUNGSI DARI UTILITAS
                 fontWeight: FontWeight.bold,
               ),
             ),

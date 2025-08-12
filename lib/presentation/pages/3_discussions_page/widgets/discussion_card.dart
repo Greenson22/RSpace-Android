@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../widgets/edit_popup_menu.dart';
+import 'discussion_subtitle.dart'; // <-- IMPORT WIDGET BARU
 import 'point_tile.dart';
 
 class DiscussionCard extends StatelessWidget {
@@ -8,22 +9,17 @@ class DiscussionCard extends StatelessWidget {
   final int index;
   final Map<int, bool> arePointsVisible;
 
-  // Callbacks untuk Aksi pada Diskusi (level Kartu)
   final VoidCallback onAddPoint;
   final VoidCallback onMarkAsFinished;
   final VoidCallback onRename;
   final VoidCallback onDiscussionDateChange;
   final VoidCallback onDiscussionCodeChange;
-
-  // Callbacks untuk Aksi pada Poin (diteruskan ke PointTile)
   final Function(Point) onPointDateChange;
   final Function(Point) onPointCodeChange;
   final Function(Point) onPointRename;
-
-  // Helper Functions dari Halaman Utama
   final Function(int) onToggleVisibility;
-  final Color Function(String) getColorForRepetitionCode;
-  final Widget Function(Discussion) getSubtitleRichText;
+  // HAPUS: final Color Function(String) getColorForRepetitionCode;
+  // HAPUS: final Widget Function(Discussion) getSubtitleRichText;
 
   const DiscussionCard({
     super.key,
@@ -39,8 +35,8 @@ class DiscussionCard extends StatelessWidget {
     required this.onPointCodeChange,
     required this.onPointRename,
     required this.onToggleVisibility,
-    required this.getColorForRepetitionCode,
-    required this.getSubtitleRichText,
+    // HAPUS: required this.getColorForRepetitionCode,
+    // HAPUS: required this.getSubtitleRichText,
   });
 
   @override
@@ -64,17 +60,17 @@ class DiscussionCard extends StatelessWidget {
                 decoration: isFinished ? TextDecoration.lineThrough : null,
               ),
             ),
-            subtitle: getSubtitleRichText(discussion),
+            subtitle: DiscussionSubtitle(
+              discussion: discussion,
+            ), // <-- GUNAKAN WIDGET BARU
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 EditPopupMenu(
                   isFinished: isFinished,
                   onAddPoint: onAddPoint,
-                  onDateChange:
-                      onDiscussionDateChange, // Gunakan callback untuk Diskusi
-                  onCodeChange:
-                      onDiscussionCodeChange, // Gunakan callback untuk Diskusi
+                  onDateChange: onDiscussionDateChange,
+                  onCodeChange: onDiscussionCodeChange,
                   onRename: onRename,
                   onMarkAsFinished: onMarkAsFinished,
                 ),
@@ -105,15 +101,10 @@ class DiscussionCard extends StatelessWidget {
                       .map(
                         (point) => PointTile(
                           point: point,
-                          onDateChange: () => onPointDateChange(
-                            point,
-                          ), // Teruskan callback point
-                          onCodeChange: () => onPointCodeChange(
-                            point,
-                          ), // Teruskan callback point
-                          onRename: () =>
-                              onPointRename(point), // Teruskan callback point
-                          getColorForRepetitionCode: getColorForRepetitionCode,
+                          onDateChange: () => onPointDateChange(point),
+                          onCodeChange: () => onPointCodeChange(point),
+                          onRename: () => onPointRename(point),
+                          // HAPUS: getColorForRepetitionCode, karena sudah dihandle di dalam PointTile
                         ),
                       )
                       .toList(),
