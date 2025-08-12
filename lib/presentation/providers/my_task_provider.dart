@@ -57,7 +57,7 @@ class MyTaskProvider with ChangeNotifier {
 
   Future<void> _saveTasks() async {
     await _myTaskService.saveMyTasks(_categories);
-    notifyListeners(); // <-- PENTING: Beri tahu UI untuk update
+    notifyListeners();
   }
 
   // --- Category Management ---
@@ -70,7 +70,7 @@ class MyTaskProvider with ChangeNotifier {
     await _saveTasks();
   }
 
-  Future<void> addCategory(String name, {String icon = 'task'}) async {
+  Future<void> addCategory(String name, {String icon = '📝'}) async {
     final newCategory = TaskCategory(name: name, icon: icon, tasks: []);
     _categories.add(newCategory);
     await _saveTasks();
@@ -96,7 +96,6 @@ class MyTaskProvider with ChangeNotifier {
     await _saveTasks();
   }
 
-  // ==> FUNGSI BARU UNTUK UBAH ICON <==
   Future<void> updateCategoryIcon(TaskCategory category, String newIcon) async {
     final index = _categories.indexWhere((c) => c.name == category.name);
     if (index != -1) {

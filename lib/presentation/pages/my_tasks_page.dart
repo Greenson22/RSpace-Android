@@ -78,15 +78,11 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> DIALOG BARU UNTUK MEMILIH ICON <==
+  // ==> DIALOG PEMILIHAN IKON DIPERBARUI UNTUK MENAMPILKAN SIMBOL <==
   void _showIconPickerDialog(BuildContext context, TaskCategory category) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
-    final Map<String, IconData> icons = {
-      'task': Icons.task,
-      'work': Icons.work,
-      'home': Icons.home,
-      'shopping': Icons.shopping_cart,
-    };
+    // Daftar ikon berupa simbol emoji
+    final List<String> icons = ['📝', '💼', '🏠', '🛒', '🎉', '💡', '❤️', '⭐'];
 
     showDialog(
       context: context,
@@ -95,17 +91,22 @@ class MyTasksPage extends StatelessWidget {
         content: Wrap(
           spacing: 16,
           runSpacing: 16,
-          children: icons.entries.map((entry) {
+          alignment: WrapAlignment.center,
+          children: icons.map((iconSymbol) {
             return InkWell(
               onTap: () {
-                provider.updateCategoryIcon(category, entry.key);
+                provider.updateCategoryIcon(category, iconSymbol);
                 Navigator.pop(context);
                 _showSnackBar(
                   context,
                   'Ikon untuk "${category.name}" berhasil diubah.',
                 );
               },
-              child: Icon(entry.value, size: 36),
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(iconSymbol, style: const TextStyle(fontSize: 32)),
+              ),
             );
           }).toList(),
         ),
@@ -279,7 +280,6 @@ class MyTasksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Daftarkan provider di sini agar state-nya terjaga
     return ChangeNotifierProvider(
       create: (_) => MyTaskProvider(),
       child: Consumer<MyTaskProvider>(
@@ -348,7 +348,7 @@ class MyTasksPage extends StatelessWidget {
           context,
           provider,
           category,
-          ValueKey(category.name), // Gunakan nama kategori sebagai key
+          ValueKey(category.name),
         );
       },
       onReorder: (oldIndex, newIndex) {
@@ -383,9 +383,13 @@ class MyTasksPage extends StatelessWidget {
       child: ExpansionTile(
         enabled: !isCategoryReorderMode,
         initiallyExpanded: isThisCategoryReorderingTask,
-        leading: Icon(
-          getIconData(category.icon), // <-- Ikon akan muncul dari sini
-          color: Theme.of(context).primaryColor,
+        // ==> IKON DITAMPILKAN MENGGUNAKAN TEXT WIDGET <==
+        leading: Text(
+          category.icon,
+          style: TextStyle(
+            fontSize: 28, // Ukuran ikon bisa disesuaikan
+            color: Theme.of(context).primaryColor,
+          ),
         ),
         title: Text(
           category.name,
@@ -403,7 +407,6 @@ class MyTasksPage extends StatelessWidget {
                   if (value == 'rename') {
                     _showRenameCategoryDialog(context, category);
                   } else if (value == 'change_icon') {
-                    // <-- PANGGIL DIALOG UBAH ICON
                     _showIconPickerDialog(context, category);
                   } else if (value == 'delete') {
                     _showDeleteCategoryDialog(context, category);
@@ -427,7 +430,6 @@ class MyTasksPage extends StatelessWidget {
                     value: 'rename',
                     child: Text('Ubah Nama'),
                   ),
-                  // ==> MENU BARU UNTUK UBAH ICON <==
                   const PopupMenuItem(
                     value: 'change_icon',
                     child: Text('Ubah Ikon'),

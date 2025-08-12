@@ -1,19 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Menangani konversi nama ikon string menjadi data ikon
-IconData getIconData(String iconName) {
-  switch (iconName) {
-    case 'work':
-      return Icons.work;
-    case 'home':
-      return Icons.home;
-    case 'shopping':
-      return Icons.shopping_cart;
-    default:
-      return Icons.task;
-  }
-}
-
 class MyTask {
   String name;
   int count;
@@ -43,7 +29,7 @@ class MyTask {
 
 class TaskCategory {
   final String name;
-  final String icon;
+  final String icon; // Akan berisi simbol seperti '📝', '💼', dll.
   final List<MyTask> tasks;
 
   TaskCategory({required this.name, required this.icon, required this.tasks});
@@ -53,7 +39,7 @@ class TaskCategory {
     List<MyTask> tasks = taskList.map((i) => MyTask.fromJson(i)).toList();
     return TaskCategory(
       name: json['name'] ?? 'Uncategorized',
-      icon: json['icon'] ?? 'task',
+      icon: json['icon'] ?? '📝', // Default icon adalah simbol pensil
       tasks: tasks,
     );
   }
