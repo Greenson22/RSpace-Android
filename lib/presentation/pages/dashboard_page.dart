@@ -1,6 +1,7 @@
 // lib/presentation/pages/dashboard_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart'; // ==> IMPORT BARU <==
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/topic_provider.dart';
@@ -20,6 +21,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
 
   Future<void> _backupContents(BuildContext context) async {
+    // Dialog backup tetap menggunakan input manual untuk fleksibilitas
     final String? destinationPath = await showBackupPathDialog(context);
 
     if (destinationPath == null || destinationPath.isEmpty) {
@@ -54,25 +56,29 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // ==> DIALOG PEMILIHAN LOKASI PENYIMPANAN DIUBAH TOTAL <==
+  // ==> FUNGSI INI SEKARANG MENGGUNAKAN file_picker <==
   Future<void> _showStoragePathDialog(BuildContext context) async {
-    final prefsService = SharedPreferencesService();
-    final currentPath = await prefsService.loadCustomStoragePath() ?? '';
+    // Membuka pemilih direktori visual
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Penyimpanan Utama',
+    );
 
-    await showPathInputDialog(
-      context: context,
-      title: 'Pilih Folder Penyimpanan Utama',
-      label: 'Path Folder',
-      initialValue: currentPath,
-      hint: 'Contoh: /storage/emulated/0/MyAppData',
-      onSave: (newPath) async {
-        await prefsService.saveCustomStoragePath(newPath);
+    if (selectedDirectory != null) {
+      // Jika pengguna memilih sebuah folder, simpan path-nya
+      final prefsService = SharedPreferencesService();
+      await prefsService.saveCustomStoragePath(selectedDirectory);
+      if (mounted) {
         showAppSnackBar(
           context,
           'Lokasi disimpan. Mohon restart aplikasi untuk menerapkan.',
         );
-      },
-    );
+      }
+    } else {
+      // Pengguna membatalkan pemilihan folder
+      if (mounted) {
+        showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+      }
+    }
   }
 
   @override
@@ -116,11 +122,10 @@ class _DashboardPageState extends State<DashboardPage> {
               onTap: () => _backupContents(context),
               child: _isBackingUp ? const CircularProgressIndicator() : null,
             ),
-            // ==> ITEM INI SEKARANG MEMANGGIL DIALOG BARU <==
             if (Platform.isAndroid)
               _buildDashboardItem(
                 context,
-                icon: Icons.folder_open_rounded, // Ikon diubah
+                icon: Icons.folder_open_rounded,
                 label: 'Penyimpanan',
                 onTap: () => _showStoragePathDialog(context),
               ),
