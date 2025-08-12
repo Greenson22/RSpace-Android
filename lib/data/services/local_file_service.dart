@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/discussion_model.dart';
+import '../models/my_task_model.dart';
 
 class SharedPreferencesService {
   static const String _sortTypeKey = 'sort_type';
@@ -64,6 +65,7 @@ class LocalFileService {
       '/home/lemon-manis-22/RikalG22/RSpace_data/data/contents/topics';
 
   String getContentsPath() {
+    // Mengembalikan path ke direktori 'contents'
     return path.dirname(_topicsPath);
   }
 
@@ -232,6 +234,58 @@ class LocalFileService {
     };
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(newJsonData));
+  }
+
+  Future<List<TaskCategory>> loadMyTasks() async {
+    final contentsPath = getContentsPath();
+    final filePath = path.join(contentsPath, 'my_tasks.json');
+    final file = File(filePath);
+
+    if (!await file.exists()) {
+      // Buat file default jika tidak ditemukan
+      await file.writeAsString(
+        jsonEncode({
+          "categories": [
+            {
+              "name": "Pekerjaan",
+              "icon": "work",
+              "tasks": [
+                {
+                  "name": "Selesaikan laporan mingguan",
+                  "count": 2,
+                  "date": "2024-08-15",
+                  "checked": false,
+                },
+                {
+                  "name": "Meeting dengan tim",
+                  "count": 1,
+                  "date": "2024-08-16",
+                  "checked": true,
+                },
+              ],
+            },
+            {
+              "name": "Rumah",
+              "icon": "home",
+              "tasks": [
+                {
+                  "name": "Bersihkan kamar",
+                  "count": 0,
+                  "date": "2024-08-18",
+                  "checked": false,
+                },
+              ],
+            },
+          ],
+        }),
+      );
+    }
+
+    final jsonString = await file.readAsString();
+    final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+    final categoriesList = jsonData['categories'] as List<dynamic>;
+
+    return categoriesList.map((item) => TaskCategory.fromJson(item)).toList();
   }
 
   String getTopicsPath() => _topicsPath;
