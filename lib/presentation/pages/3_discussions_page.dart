@@ -378,13 +378,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENANDAI SELESAI <==
   Future<void> _markAsFinished(Discussion discussion) async {
     setState(() {
       discussion.finished = true;
       discussion.repetitionCode = 'Finish';
       discussion.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      discussion.date = null; // Set tanggal repetisi menjadi null
+      discussion.date = null;
     });
     await _saveDiscussions();
     _showSnackBar('Diskusi "${discussion.discussion}" ditandai selesai.');
@@ -671,6 +670,86 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     return DateFormat('yyyy-MM-dd').format(newDate);
   }
 
+  // ==> FUNGSI BARU UNTUK WARNA KODE <==
+  // ==> FUNGSI UNTUK WARNA KODE DENGAN PALET BARU <==
+  Color _getColorForRepetitionCode(String code) {
+    switch (code) {
+      case 'R0D':
+        return Colors.orange.shade700; // Awal
+      case 'R1D':
+        return Colors.blue.shade600; // 1 Hari
+      case 'R3D':
+        return Colors.teal.shade500; // 3 Hari
+      case 'R7D':
+        return Colors.cyan.shade600; // 1 Minggu
+      case 'R7D2':
+        return Colors.purple.shade400; // 2 Minggu
+      case 'R7D3':
+        return Colors.indigo.shade500; // 3 Minggu
+      case 'R30D':
+        return Colors.brown.shade500; // 1 Bulan
+      case 'Finish':
+        return Colors.green.shade800; // Selesai
+      default:
+        return Colors.grey.shade600; // Default
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMBUAT SUBTITLE DENGAN WARNA <==
+  Widget _getSubtitleRichText(Discussion discussion) {
+    if (discussion.finished) {
+      return Text(
+        'Selesai pada: ${discussion.finish_date}',
+        style: const TextStyle(
+          color: Colors.green,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    final dateText = discussion.date ?? 'N/A';
+    final codeText = discussion.repetitionCode;
+
+    // Menentukan warna untuk tanggal
+    Color dateColor = Colors.grey;
+    if (discussion.date != null) {
+      try {
+        final discussionDate = DateTime.parse(discussion.date!);
+        final today = DateTime.now();
+        if (discussionDate.isAtSameMomentAs(today) ||
+            discussionDate.isBefore(today)) {
+          dateColor =
+              Colors.red; // Merah jika tanggal sudah lewat atau hari ini
+        } else {
+          dateColor = Colors.amber.shade700; // Kuning jika akan datang
+        }
+      } catch (e) {
+        // Biarkan warna default jika format tanggal salah
+      }
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: Theme.of(context).textTheme.bodySmall,
+        children: [
+          const TextSpan(text: 'Date: '),
+          TextSpan(
+            text: dateText,
+            style: TextStyle(color: dateColor, fontWeight: FontWeight.bold),
+          ),
+          const TextSpan(text: ' | Code: '),
+          TextSpan(
+            text: codeText,
+            style: TextStyle(
+              color: _getColorForRepetitionCode(codeText),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final discussionsToShow =
@@ -750,14 +829,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         ? Icons.check_circle
         : Icons.chat_bubble_outline;
 
-    String subtitleText;
-    if (isFinished) {
-      subtitleText = 'Selesai pada: ${discussion.finish_date}';
-    } else {
-      subtitleText =
-          'Date: ${discussion.date ?? 'N/A'} | Code: ${discussion.repetitionCode}';
-    }
-
     return Card(
       child: Column(
         children: [
@@ -770,13 +841,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 decoration: isFinished ? TextDecoration.lineThrough : null,
               ),
             ),
-            subtitle: Text(subtitleText),
+            // ==> MENGGUNAKAN RICHTEXT UNTUK SUBTITLE <==
+            subtitle: _getSubtitleRichText(discussion),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 EditPopupMenu(
                   isFinished: isFinished,
-                  // ==> KIRIM FUNGSI onAddPoint <==
                   onAddPoint: () => _addPoint(discussion),
                   onDateChange: () => _changeDate(
                     (newDate) => setState(() => discussion.date = newDate),
@@ -822,7 +893,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 child: Column(
                   children: [
                     ...discussion.points.map((point) => _buildPointTile(point)),
-                    // ==> TOMBOL TAMBAH POIN DIHAPUS DARI SINI <==
                   ],
                 ),
               ),
@@ -832,12 +902,35 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
+  // ==> MODIFIKASI: _buildPointTile JUGA MENGGUNAKAN WARNA <==
   Widget _buildPointTile(Point point) {
     return ListTile(
       dense: true,
       leading: const Icon(Icons.arrow_right, color: Colors.grey),
       title: Text(point.pointText),
-      subtitle: Text('Date: ${point.date} | Code: ${point.repetitionCode}'),
+      subtitle: RichText(
+        text: TextSpan(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
+          children: [
+            const TextSpan(text: 'Date: '),
+            TextSpan(
+              text: point.date,
+              style: const TextStyle(
+                color: Colors.amber,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const TextSpan(text: ' | Code: '),
+            TextSpan(
+              text: point.repetitionCode,
+              style: TextStyle(
+                color: _getColorForRepetitionCode(point.repetitionCode),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
       trailing: EditPopupMenu(
         onDateChange: () =>
             _changeDate((newDate) => setState(() => point.date = newDate)),
