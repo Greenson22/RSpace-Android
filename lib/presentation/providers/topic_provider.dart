@@ -27,8 +27,19 @@ class TopicProvider with ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
+  bool _isReorderModeEnabled = false;
+  bool get isReorderModeEnabled => _isReorderModeEnabled;
+
   TopicProvider() {
     fetchTopics();
+  }
+
+  void toggleReorderMode() {
+    _isReorderModeEnabled = !_isReorderModeEnabled;
+    if (!_isReorderModeEnabled) {
+      _filterTopics();
+    }
+    notifyListeners();
   }
 
   Future<void> fetchTopics() async {
@@ -66,7 +77,6 @@ class TopicProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH URUTAN <==
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) {
       newIndex -= 1;
@@ -75,16 +85,13 @@ class TopicProvider with ChangeNotifier {
     final Topic item = _allTopics.removeAt(oldIndex);
     _allTopics.insert(newIndex, item);
 
-    // Gunakan _isBackingUp untuk menampilkan indikator loading saat menyimpan
     _isBackingUp = true;
     notifyListeners();
 
     try {
-      // Panggil service untuk menyimpan urutan baru secara permanen
       await _topicService.saveTopicsOrder(_allTopics);
     } finally {
       _isBackingUp = false;
-      // Muat ulang data untuk memastikan state sinkron dengan file
       await fetchTopics();
     }
   }

@@ -130,70 +130,97 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final topicProvider = Provider.of<TopicProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Cari topik...',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.white70),
-                ),
-                style: const TextStyle(color: Colors.white),
-              )
-            : const Text('Topics'),
+        title: topicProvider.isReorderModeEnabled
+            ? const Text('Urutkan Topik')
+            : (_isSearching
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Cari topik...',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: Colors.white70),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    )
+                  : const Text('Topics')),
         actions: [
-          Consumer<TopicProvider>(
-            builder: (context, provider, child) {
-              return provider.isBackingUp
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+          if (!topicProvider.isReorderModeEnabled) ...[
+            Consumer<TopicProvider>(
+              builder: (context, provider, child) {
+                return provider.isBackingUp
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.backup),
-                      onPressed: () => _backupContents(context),
-                      tooltip: 'Backup Seluruh Konten',
-                    );
-            },
-          ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.backup),
+                        onPressed: () => _backupContents(context),
+                        tooltip: 'Backup Seluruh Konten',
+                      );
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                themeProvider.darkTheme
+                    ? Icons.wb_sunny
+                    : Icons.nightlight_round,
+              ),
+              onPressed: () =>
+                  themeProvider.darkTheme = !themeProvider.darkTheme,
+              tooltip: 'Ganti Tema',
+            ),
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) _searchController.clear();
+                });
+              },
+            ),
+          ],
           IconButton(
             icon: Icon(
-              themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
+              topicProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
             ),
-            onPressed: () => themeProvider.darkTheme = !themeProvider.darkTheme,
-            tooltip: 'Ganti Tema',
-          ),
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) _searchController.clear();
-              });
+              if (!topicProvider.isReorderModeEnabled && _isSearching) {
+                setState(() {
+                  _isSearching = false;
+                  _searchController.clear();
+                });
+              }
+              topicProvider.toggleReorderMode();
             },
+            tooltip: topicProvider.isReorderModeEnabled
+                ? 'Selesai Mengurutkan'
+                : 'Urutkan Topik',
           ),
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addTopic(context),
-        tooltip: 'Tambah Topik',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: topicProvider.isReorderModeEnabled
+          ? null
+          : FloatingActionButton(
+              onPressed: () => _addTopic(context),
+              tooltip: 'Tambah Topik',
+              child: const Icon(Icons.add),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -213,46 +240,45 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
         final topicsToShow = provider.filteredTopics;
         final isSearching = provider.searchQuery.isNotEmpty;
+        final isReorderActive = provider.isReorderModeEnabled && !isSearching;
 
         if (topicsToShow.isEmpty && isSearching) {
           return const Center(child: Text('Topik tidak ditemukan.'));
         }
 
-        // ==> DIUBAH MENJADI ReorderableListView.builder <==
-        // Fitur reorder dinonaktifkan saat sedang mencari
         return ReorderableListView.builder(
           itemCount: topicsToShow.length,
-          buildDefaultDragHandles:
-              !isSearching, // Tampilkan handle drag jika tidak sedang mencari
+          buildDefaultDragHandles: isReorderActive,
           itemBuilder: (context, index) {
             final topic = topicsToShow[index];
             return TopicListTile(
-              // Key harus unik untuk setiap item agar reordering bekerja
               key: ValueKey(topic.name),
               topic: topic,
-              onTap: () {
-                final folderPath = path.join(
-                  provider.getTopicsPath(),
-                  topic.name,
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChangeNotifierProvider(
-                      create: (_) => SubjectProvider(folderPath),
-                      child: SubjectsPage(topicName: topic.name),
-                    ),
-                  ),
-                );
-              },
+              onTap: isReorderActive
+                  ? null
+                  : () {
+                      final folderPath = path.join(
+                        provider.getTopicsPath(),
+                        topic.name,
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider(
+                            create: (_) => SubjectProvider(folderPath),
+                            child: SubjectsPage(topicName: topic.name),
+                          ),
+                        ),
+                      );
+                    },
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onIconChange: () => _changeIcon(context, topic),
+              isReorderActive: isReorderActive,
             );
           },
-          // ==> Callback untuk menangani perubahan urutan <==
           onReorder: (oldIndex, newIndex) {
-            if (!isSearching) {
+            if (isReorderActive) {
               provider.reorderTopics(oldIndex, newIndex);
             }
           },

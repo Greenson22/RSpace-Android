@@ -1,5 +1,3 @@
-// lib/presentation/providers/subject_provider.dart
-
 import 'package:flutter/material.dart';
 import '../../data/models/subject_model.dart';
 import '../../data/services/subject_service.dart';
@@ -24,6 +22,17 @@ class SubjectProvider with ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
+  bool _isReorderModeEnabled = false;
+  bool get isReorderModeEnabled => _isReorderModeEnabled;
+
+  void toggleReorderMode() {
+    _isReorderModeEnabled = !_isReorderModeEnabled;
+    if (!_isReorderModeEnabled) {
+      search(_searchQuery);
+    }
+    notifyListeners();
+  }
+
   Future<void> fetchSubjects() async {
     _isLoading = true;
     notifyListeners();
@@ -46,9 +55,8 @@ class SubjectProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH URUTAN <==
   Future<void> reorderSubjects(int oldIndex, int newIndex) async {
-    if (_searchQuery.isNotEmpty) return; // Cegah reorder saat mencari
+    if (_searchQuery.isNotEmpty) return;
 
     if (newIndex > oldIndex) {
       newIndex -= 1;
@@ -63,7 +71,6 @@ class SubjectProvider with ChangeNotifier {
     try {
       await _subjectService.saveSubjectsOrder(topicPath, _allSubjects);
     } finally {
-      // Muat ulang data untuk memastikan UI sinkron dengan data yang disimpan
       await fetchSubjects();
     }
   }
