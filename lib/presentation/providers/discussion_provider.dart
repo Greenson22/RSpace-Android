@@ -191,6 +191,15 @@ class DiscussionProvider with ChangeNotifier {
 
   void updateDiscussionDate(Discussion discussion, DateTime newDate) {
     discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
+    // Jika diubah tanggalnya, discussion dianggap aktif kembali
+    if (discussion.finished) {
+      discussion.finished = false;
+      discussion.finish_date = null;
+      // Jika kode-nya 'Finish', kembalikan ke default
+      if (discussion.repetitionCode == 'Finish') {
+        discussion.repetitionCode = 'R0D';
+      }
+    }
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
@@ -199,6 +208,14 @@ class DiscussionProvider with ChangeNotifier {
     discussion.repetitionCode = newCode;
     if (newCode != 'Finish') {
       discussion.date = getNewDateForRepetitionCode(newCode);
+      // Jika diubah kodenya, discussion dianggap aktif kembali
+      if (discussion.finished) {
+        discussion.finished = false;
+        discussion.finish_date = null;
+      }
+    } else {
+      // Jika kodenya diubah jadi 'Finish', tandai selesai
+      markAsFinished(discussion);
     }
     _filterAndSortDiscussions();
     _saveDiscussions();
@@ -215,6 +232,17 @@ class DiscussionProvider with ChangeNotifier {
     discussion.repetitionCode = 'Finish';
     discussion.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
     discussion.date = null;
+    _filterAndSortDiscussions();
+    _saveDiscussions();
+  }
+
+  // ==> FUNGSI BARU <==
+  void reactivateDiscussion(Discussion discussion) {
+    discussion.finished = false;
+    discussion.finish_date = null;
+    // Saat diaktifkan kembali, set tanggal ke hari ini dan kode default
+    discussion.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    discussion.repetitionCode = 'R0D';
     _filterAndSortDiscussions();
     _saveDiscussions();
   }

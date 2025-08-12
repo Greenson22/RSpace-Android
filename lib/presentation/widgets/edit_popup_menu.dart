@@ -5,7 +5,8 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback onCodeChange;
   final VoidCallback? onRename;
   final VoidCallback? onMarkAsFinished;
-  final VoidCallback? onAddPoint; // ==> CALLBACK BARU <==
+  final VoidCallback? onAddPoint;
+  final VoidCallback? onReactivate; // ==> CALLBACK BARU <==
   final bool isFinished;
 
   const EditPopupMenu({
@@ -14,7 +15,8 @@ class EditPopupMenu extends StatelessWidget {
     required this.onCodeChange,
     this.onRename,
     this.onMarkAsFinished,
-    this.onAddPoint, // ==> DITAMBAHKAN <==
+    this.onAddPoint,
+    this.onReactivate, // ==> DITAMBAHKAN <==
     this.isFinished = false,
   });
 
@@ -26,14 +28,16 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'edit_code') onCodeChange();
         if (value == 'rename' && onRename != null) onRename!();
         if (value == 'finish' && onMarkAsFinished != null) onMarkAsFinished!();
-        if (value == 'add_point' && onAddPoint != null)
-          onAddPoint!(); // ==> LOGIKA BARU <==
+        if (value == 'add_point' && onAddPoint != null) onAddPoint!();
+        if (value == 'reactivate' && onReactivate != null) {
+          onReactivate!();
+        } // ==> LOGIKA BARU <==
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
 
         if (!isFinished) {
-          // ==> MENU TAMBAH POIN DITAMBAHKAN DI SINI <==
+          // Menu untuk item yang BELUM selesai
           if (onAddPoint != null) {
             menuItems.add(
               const PopupMenuItem<String>(
@@ -42,7 +46,6 @@ class EditPopupMenu extends StatelessWidget {
               ),
             );
           }
-
           menuItems.addAll([
             const PopupMenuItem<String>(
               value: 'edit_date',
@@ -53,7 +56,6 @@ class EditPopupMenu extends StatelessWidget {
               child: Text('Ubah Kode Repetisi'),
             ),
           ]);
-
           if (onRename != null) {
             menuItems.add(
               const PopupMenuItem<String>(
@@ -72,11 +74,31 @@ class EditPopupMenu extends StatelessWidget {
             );
           }
         } else {
+          // Menu untuk item yang SUDAH selesai
+          menuItems.addAll([
+            const PopupMenuItem<String>(
+              value: 'edit_date',
+              child: Text('Ubah Tanggal'),
+            ),
+            const PopupMenuItem<String>(
+              value: 'edit_code',
+              child: Text('Ubah Kode Repetisi'),
+            ),
+          ]);
           if (onRename != null) {
             menuItems.add(
               const PopupMenuItem<String>(
                 value: 'rename',
                 child: Text('Ubah Nama'),
+              ),
+            );
+          }
+          if (onReactivate != null) {
+            menuItems.add(const PopupMenuDivider());
+            menuItems.add(
+              const PopupMenuItem<String>(
+                value: 'reactivate',
+                child: Text('Aktifkan Lagi'),
               ),
             );
           }

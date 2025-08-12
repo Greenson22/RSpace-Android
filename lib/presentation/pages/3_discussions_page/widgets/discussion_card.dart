@@ -88,6 +88,15 @@ class DiscussionCard extends StatelessWidget {
     _showSnackBar(context, 'Diskusi ditandai selesai.');
   }
 
+  // ==> FUNGSI BARU <==
+  void _reactivateDiscussion(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) {
+    provider.reactivateDiscussion(discussion);
+    _showSnackBar(context, 'Diskusi diaktifkan kembali.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -121,6 +130,10 @@ class DiscussionCard extends StatelessWidget {
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),
                   onMarkAsFinished: () => _markAsFinished(context, provider),
+                  onReactivate: () => _reactivateDiscussion(
+                    context,
+                    provider,
+                  ), // ==> DITAMBAHKAN <==
                 ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
