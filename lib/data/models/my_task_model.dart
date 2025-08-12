@@ -16,8 +16,8 @@ IconData getIconData(String iconName) {
 
 class MyTask {
   String name;
-  int count; // ==> Diubah dari final
-  String date; // ==> Diubah dari final
+  int count;
+  String date;
   bool checked;
 
   MyTask({

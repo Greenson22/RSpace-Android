@@ -78,6 +78,47 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // ==> DIALOG BARU UNTUK MEMILIH ICON <==
+  void _showIconPickerDialog(BuildContext context, TaskCategory category) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    final Map<String, IconData> icons = {
+      'task': Icons.task,
+      'work': Icons.work,
+      'home': Icons.home,
+      'shopping': Icons.shopping_cart,
+    };
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Ikon Baru'),
+        content: Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: icons.entries.map((entry) {
+            return InkWell(
+              onTap: () {
+                provider.updateCategoryIcon(category, entry.key);
+                Navigator.pop(context);
+                _showSnackBar(
+                  context,
+                  'Ikon untuk "${category.name}" berhasil diubah.',
+                );
+              },
+              child: Icon(entry.value, size: 36),
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Batal'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
   // --- Dialog untuk Task ---
   void _showAddTaskDialog(BuildContext context, TaskCategory category) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
@@ -238,6 +279,7 @@ class MyTasksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Daftarkan provider di sini agar state-nya terjaga
     return ChangeNotifierProvider(
       create: (_) => MyTaskProvider(),
       child: Consumer<MyTaskProvider>(
@@ -250,7 +292,6 @@ class MyTasksPage extends StatelessWidget {
             appBar: AppBar(
               title: const Text('My Tasks'),
               actions: [
-                // Tombol "Urutkan Kategori" hanya muncul jika tidak ada mode urut lain yang aktif
                 if (provider.reorderingCategoryName == null)
                   IconButton(
                     icon: Icon(
@@ -263,7 +304,6 @@ class MyTasksPage extends StatelessWidget {
                         : 'Urutkan Kategori',
                     onPressed: () => provider.toggleCategoryReorder(),
                   ),
-                // Tombol "Hapus Centang" hanya muncul jika tidak ada mode urut yang aktif
                 if (!isAnyReordering)
                   IconButton(
                     icon: const Icon(Icons.clear_all),
@@ -299,7 +339,6 @@ class MyTasksPage extends StatelessWidget {
     }
 
     return ReorderableListView.builder(
-      // Aktifkan drag handle hanya jika mode urutkan kategori aktif
       buildDefaultDragHandles: provider.isCategoryReorderEnabled,
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: provider.categories.length,
@@ -309,11 +348,10 @@ class MyTasksPage extends StatelessWidget {
           context,
           provider,
           category,
-          ValueKey(category),
+          ValueKey(category.name), // Gunakan nama kategori sebagai key
         );
       },
       onReorder: (oldIndex, newIndex) {
-        // Hanya izinkan reorder jika mode urutkan kategori aktif
         if (provider.isCategoryReorderEnabled) {
           provider.reorderCategories(oldIndex, newIndex);
         }
@@ -333,9 +371,6 @@ class MyTasksPage extends StatelessWidget {
     final isAnotherTaskReordering =
         provider.reorderingCategoryName != null &&
         !isThisCategoryReorderingTask;
-
-    // Kategori menjadi non-interaktif jika sedang mengurutkan kategori lain (mode global)
-    // atau jika sedang mengurutkan task di kategori lain.
     final isCardDisabled = isCategoryReorderMode || isAnotherTaskReordering;
 
     return Card(
@@ -346,12 +381,10 @@ class MyTasksPage extends StatelessWidget {
           ? Theme.of(context).disabledColor.withOpacity(0.1)
           : null,
       child: ExpansionTile(
-        // Tile bisa dibuka tutup jika tidak ada mode reorder global
-        // atau jika mode reorder task aktif untuk tile ini
         enabled: !isCategoryReorderMode,
         initiallyExpanded: isThisCategoryReorderingTask,
         leading: Icon(
-          getIconData(category.icon),
+          getIconData(category.icon), // <-- Ikon akan muncul dari sini
           color: Theme.of(context).primaryColor,
         ),
         title: Text(
@@ -365,11 +398,13 @@ class MyTasksPage extends StatelessWidget {
                 onPressed: () => provider.disableReordering(),
               )
             : PopupMenuButton<String>(
-                // Menu nonaktif jika ada mode reorder global atau reorder task di kategori lain
                 enabled: !isCardDisabled,
                 onSelected: (value) {
                   if (value == 'rename') {
                     _showRenameCategoryDialog(context, category);
+                  } else if (value == 'change_icon') {
+                    // <-- PANGGIL DIALOG UBAH ICON
+                    _showIconPickerDialog(context, category);
                   } else if (value == 'delete') {
                     _showDeleteCategoryDialog(context, category);
                   } else if (value == 'add_task') {
@@ -392,7 +427,15 @@ class MyTasksPage extends StatelessWidget {
                     value: 'rename',
                     child: Text('Ubah Nama'),
                   ),
-                  const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                  // ==> MENU BARU UNTUK UBAH ICON <==
+                  const PopupMenuItem(
+                    value: 'change_icon',
+                    child: Text('Ubah Ikon'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                  ),
                 ],
               ),
         children: [
@@ -468,7 +511,6 @@ class MyTasksPage extends StatelessWidget {
           ? const Icon(Icons.drag_handle)
           : Checkbox(
               value: task.checked,
-              // Checkbox nonaktif jika ada mode reorder APAPUN yang aktif
               onChanged: isCategoryReorderMode
                   ? null
                   : (bool? value) async {
