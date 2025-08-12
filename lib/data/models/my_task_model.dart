@@ -15,10 +15,10 @@ IconData getIconData(String iconName) {
 }
 
 class MyTask {
-  final String name;
+  String name; // ==> Diubah dari final
   final int count;
   final String date;
-  final bool checked;
+  bool checked; // ==> Diubah dari final
 
   MyTask({
     required this.name,

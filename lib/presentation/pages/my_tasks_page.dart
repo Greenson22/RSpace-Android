@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/data/models/my_task_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/my_task_provider.dart';
-import '1_topics_page/dialogs/topic_dialogs.dart'; // Menggunakan dialog yang sudah ada
+import '1_topics_page/dialogs/topic_dialogs.dart';
 
 class MyTasksPage extends StatelessWidget {
   const MyTasksPage({super.key});
@@ -13,6 +13,7 @@ class MyTasksPage extends StatelessWidget {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // --- Dialog untuk Kategori ---
   void _showAddCategoryDialog(BuildContext context) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
     showTopicTextInputDialog(
@@ -70,6 +71,67 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // --- Dialog untuk Task (FUNGSI BARU) ---
+  void _showAddTaskDialog(BuildContext context, TaskCategory category) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    showTopicTextInputDialog(
+      context: context,
+      title: 'Tambah Task Baru',
+      label: 'Nama Task',
+      onSave: (name) {
+        provider.addTask(category, name);
+        _showSnackBar(context, 'Task "$name" berhasil ditambahkan.');
+      },
+    );
+  }
+
+  void _showRenameTaskDialog(
+    BuildContext context,
+    TaskCategory category,
+    MyTask task,
+  ) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    showTopicTextInputDialog(
+      context: context,
+      title: 'Ubah Nama Task',
+      label: 'Nama Baru',
+      initialValue: task.name,
+      onSave: (newName) {
+        provider.renameTask(category, task, newName);
+        _showSnackBar(context, 'Task diubah menjadi "$newName".');
+      },
+    );
+  }
+
+  void _showDeleteTaskDialog(
+    BuildContext context,
+    TaskCategory category,
+    MyTask task,
+  ) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Task'),
+        content: Text('Anda yakin ingin menghapus task "${task.name}"?'),
+        actions: [
+          TextButton(
+            child: const Text('Batal'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text('Hapus'),
+            onPressed: () {
+              provider.deleteTask(category, task);
+              Navigator.pop(context);
+              _showSnackBar(context, 'Task "${task.name}" berhasil dihapus.');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -93,7 +155,7 @@ class MyTasksPage extends StatelessWidget {
               itemCount: provider.categories.length,
               itemBuilder: (context, index) {
                 final category = provider.categories[index];
-                return _buildCategoryCard(context, category);
+                return _buildCategoryCard(context, provider, category);
               },
             );
           },
@@ -105,11 +167,17 @@ class MyTasksPage extends StatelessWidget {
             tooltip: 'Tambah Kategori',
           ),
         ),
+        // ==> LOKASI FAB DIPINDAHKAN <==
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context, TaskCategory category) {
+  Widget _buildCategoryCard(
+    BuildContext context,
+    MyTaskProvider provider,
+    TaskCategory category,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 3,
@@ -128,40 +196,62 @@ class MyTasksPage extends StatelessWidget {
               _showRenameCategoryDialog(context, category);
             } else if (value == 'delete') {
               _showDeleteCategoryDialog(context, category);
+            } else if (value == 'add_task') {
+              // ==> OPSI BARU <==
+              _showAddTaskDialog(context, category);
             }
           },
           itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'add_task',
+              child: Text('Tambah Task'), // ==> OPSI BARU <==
+            ),
+            const PopupMenuDivider(),
             const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
             const PopupMenuItem(value: 'delete', child: Text('Hapus')),
           ],
         ),
-        children: category.tasks.map((task) => _buildTaskTile(task)).toList(),
+        children: category.tasks
+            .map((task) => _buildTaskTile(context, provider, category, task))
+            .toList(),
       ),
     );
   }
 
-  Widget _buildTaskTile(MyTask task) {
-    // ... (kode tile tugas tidak berubah)
+  Widget _buildTaskTile(
+    BuildContext context,
+    MyTaskProvider provider,
+    TaskCategory category,
+    MyTask task,
+  ) {
     return ListTile(
       leading: Checkbox(
         value: task.checked,
         onChanged: (bool? value) {
-          // Aksi saat checkbox diubah (belum diimplementasikan)
+          provider.toggleTaskChecked(category, task);
         },
       ),
       title: Text(
         task.name,
         style: TextStyle(
           decoration: task.checked ? TextDecoration.lineThrough : null,
+          color: task.checked ? Colors.grey : null,
         ),
       ),
       subtitle: Text('Due: ${task.date}'),
-      trailing: task.count > 0
-          ? Chip(
-              label: Text(task.count.toString()),
-              backgroundColor: Colors.blue.shade100,
-            )
-          : null,
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'rename') {
+            _showRenameTaskDialog(context, category, task);
+          } else if (value == 'delete') {
+            _showDeleteTaskDialog(context, category, task);
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
+          const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+        ],
+      ),
     );
   }
 }

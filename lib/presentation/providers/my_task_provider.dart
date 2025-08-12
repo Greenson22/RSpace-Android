@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Import intl package
 import '../../data/models/my_task_model.dart';
-import '../../data/services/my_task_service.dart'; // DIUBAH: Menggunakan service yang baru
+import '../../data/services/my_task_service.dart';
 
 class MyTaskProvider with ChangeNotifier {
-  final MyTaskService _myTaskService =
-      MyTaskService(); // DIUBAH: Menggunakan MyTaskService
+  final MyTaskService _myTaskService = MyTaskService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -20,7 +20,6 @@ class MyTaskProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Memanggil metode dari service yang baru
       _categories = await _myTaskService.loadMyTasks();
     } finally {
       _isLoading = false;
@@ -29,11 +28,11 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> _saveTasks() async {
-    // Memanggil metode dari service yang baru
     await _myTaskService.saveMyTasks(_categories);
     notifyListeners();
   }
 
+  // --- Category Management ---
   Future<void> addCategory(String name, {String icon = 'task'}) async {
     final newCategory = TaskCategory(name: name, icon: icon, tasks: []);
     _categories.add(newCategory);
@@ -41,7 +40,6 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> renameCategory(TaskCategory category, String newName) async {
-    // Mencari index kategori berdasarkan nama unik, lebih aman
     final index = _categories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
       _categories[index] = TaskCategory(
@@ -56,5 +54,56 @@ class MyTaskProvider with ChangeNotifier {
   Future<void> deleteCategory(TaskCategory category) async {
     _categories.removeWhere((c) => c.name == category.name);
     await _saveTasks();
+  }
+
+  // --- Task Management (METODE-METODE BARU) ---
+
+  Future<void> addTask(TaskCategory category, String taskName) async {
+    final newTask = MyTask(
+      name: taskName,
+      count: 0,
+      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      checked: false,
+    );
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      _categories[categoryIndex].tasks.add(newTask);
+      await _saveTasks();
+    }
+  }
+
+  Future<void> renameTask(
+    TaskCategory category,
+    MyTask task,
+    String newName,
+  ) async {
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      if (taskIndex != -1) {
+        _categories[categoryIndex].tasks[taskIndex].name = newName;
+        await _saveTasks();
+      }
+    }
+  }
+
+  Future<void> deleteTask(TaskCategory category, MyTask task) async {
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      _categories[categoryIndex].tasks.remove(task);
+      await _saveTasks();
+    }
+  }
+
+  Future<void> toggleTaskChecked(TaskCategory category, MyTask task) async {
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      if (taskIndex != -1) {
+        _categories[categoryIndex].tasks[taskIndex].checked =
+            !_categories[categoryIndex].tasks[taskIndex].checked;
+        await _saveTasks();
+      }
+    }
   }
 }
