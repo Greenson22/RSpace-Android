@@ -25,4 +25,32 @@ class MyTaskProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> _saveTasks() async {
+    await _fileService.saveMyTasks(_categories);
+    notifyListeners();
+  }
+
+  Future<void> addCategory(String name, {String icon = 'task'}) async {
+    final newCategory = TaskCategory(name: name, icon: icon, tasks: []);
+    _categories.add(newCategory);
+    await _saveTasks();
+  }
+
+  Future<void> renameCategory(TaskCategory category, String newName) async {
+    final index = _categories.indexOf(category);
+    if (index != -1) {
+      _categories[index] = TaskCategory(
+        name: newName,
+        icon: category.icon,
+        tasks: category.tasks,
+      );
+      await _saveTasks();
+    }
+  }
+
+  Future<void> deleteCategory(TaskCategory category) async {
+    _categories.remove(category);
+    await _saveTasks();
+  }
 }

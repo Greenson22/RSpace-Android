@@ -35,6 +35,10 @@ class MyTask {
       checked: json['checked'] ?? false,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'name': name, 'count': count, 'date': date, 'checked': checked};
+  }
 }
 
 class TaskCategory {
@@ -52,5 +56,13 @@ class TaskCategory {
       icon: json['icon'] ?? 'task',
       tasks: tasks,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'icon': icon,
+      'tasks': tasks.map((t) => t.toJson()).toList(),
+    };
   }
 }

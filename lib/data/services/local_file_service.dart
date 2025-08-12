@@ -288,5 +288,17 @@ class LocalFileService {
     return categoriesList.map((item) => TaskCategory.fromJson(item)).toList();
   }
 
+  Future<void> saveMyTasks(List<TaskCategory> categories) async {
+    final contentsPath = getContentsPath();
+    final filePath = path.join(contentsPath, 'my_tasks.json');
+    final file = File(filePath);
+
+    final newJsonData = {
+      'categories': categories.map((c) => c.toJson()).toList(),
+    };
+    const encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(newJsonData));
+  }
+
   String getTopicsPath() => _topicsPath;
 }
