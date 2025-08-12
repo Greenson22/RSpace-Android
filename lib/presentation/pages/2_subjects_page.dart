@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
+import 'package:provider/provider.dart';
 import '../../data/services/local_file_service.dart';
+import '../providers/discussion_provider.dart';
 import '3_discussions_page.dart';
 
 class SubjectsPage extends StatefulWidget {
@@ -228,15 +230,16 @@ class _SubjectsPageState extends State<SubjectsPage> {
                   leading: const Icon(Icons.description, color: Colors.orange),
                   title: Text(subjectName),
                   onTap: () {
+                    final jsonFilePath = path.join(
+                      widget.folderPath,
+                      '$subjectName.json',
+                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DiscussionsPage(
-                          jsonFilePath: path.join(
-                            widget.folderPath,
-                            '$subjectName.json',
-                          ),
-                          subjectName: subjectName,
+                        builder: (context) => ChangeNotifierProvider(
+                          create: (_) => DiscussionProvider(jsonFilePath),
+                          child: DiscussionsPage(subjectName: subjectName),
                         ),
                       ),
                     );
