@@ -4,8 +4,9 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
-import '../../data/services/topic_service.dart'; // DIUBAH
-import '../../data/services/path_service.dart'; // DIUBAH
+import '../../data/models/topic_model.dart';
+import '../../data/services/topic_service.dart';
+import '../../data/services/path_service.dart';
 
 class TopicProvider with ChangeNotifier {
   // --- DEPENDENSI BARU ---
@@ -19,11 +20,11 @@ class TopicProvider with ChangeNotifier {
   bool _isBackingUp = false;
   bool get isBackingUp => _isBackingUp;
 
-  List<String> _allTopics = [];
-  List<String> get allTopics => _allTopics;
+  List<Topic> _allTopics = [];
+  List<Topic> get allTopics => _allTopics;
 
-  List<String> _filteredTopics = [];
-  List<String> get filteredTopics => _filteredTopics;
+  List<Topic> _filteredTopics = [];
+  List<Topic> get filteredTopics => _filteredTopics;
 
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
@@ -41,7 +42,7 @@ class TopicProvider with ChangeNotifier {
     });
 
     try {
-      // Menggunakan TopicService
+      // Menggunakan TopicService yang mengembalikan List<Topic>
       _allTopics = await _topicService.getTopics();
       _filterTopics();
     } finally {
@@ -62,7 +63,7 @@ class TopicProvider with ChangeNotifier {
       _filteredTopics = _allTopics;
     } else {
       _filteredTopics = _allTopics
-          .where((topic) => topic.toLowerCase().contains(_searchQuery))
+          .where((topic) => topic.name.toLowerCase().contains(_searchQuery))
           .toList();
     }
     notifyListeners();
@@ -82,6 +83,12 @@ class TopicProvider with ChangeNotifier {
   Future<void> deleteTopic(String topicName) async {
     await _topicService.deleteTopic(topicName);
     await fetchTopics();
+  }
+
+  // ==> FUNGSI YANG HILANG DITAMBAHKAN DI SINI <==
+  Future<void> updateTopicIcon(String topicName, String newIcon) async {
+    await _topicService.updateTopicIcon(topicName, newIcon);
+    await fetchTopics(); // Muat ulang data untuk merefresh UI
   }
   // ---------------------------------------------
 

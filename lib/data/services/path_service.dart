@@ -17,4 +17,9 @@ class PathService {
   String getTopicPath(String topicName) {
     return path.join(topicsPath, topicName);
   }
+
+  // ==> FUNGSI BARU <==
+  String getTopicConfigPath(String topicName) {
+    return path.join(topicsPath, topicName, 'topic_config.json');
+  }
 }

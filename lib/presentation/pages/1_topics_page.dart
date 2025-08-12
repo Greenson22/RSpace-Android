@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
+import '../../data/models/topic_model.dart'; // ==> DITAMBAHKAN
 import '../providers/subject_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
@@ -14,7 +15,6 @@ class TopicsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Daftarkan TopicProvider di sini
     return ChangeNotifierProvider(
       create: (_) => TopicProvider(),
       child: const _TopicsPageContent(),
@@ -50,7 +50,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     super.dispose();
   }
 
-  // Aksi-aksi sekarang memanggil provider
   Future<void> _addTopic(BuildContext context) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showTopicTextInputDialog(
@@ -68,16 +67,17 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  Future<void> _renameTopic(BuildContext context, String oldName) async {
+  // ==> DIUBAH UNTUK MENERIMA Topic BUKAN String <==
+  Future<void> _renameTopic(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showTopicTextInputDialog(
       context: context,
       title: 'Ubah Nama Topik',
       label: 'Nama Baru',
-      initialValue: oldName,
+      initialValue: topic.name,
       onSave: (newName) async {
         try {
-          await provider.renameTopic(oldName, newName);
+          await provider.renameTopic(topic.name, newName);
           showAppSnackBar(context, 'Topik berhasil diubah menjadi "$newName".');
         } catch (e) {
           showAppSnackBar(context, e.toString(), isError: true);
@@ -86,15 +86,32 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  Future<void> _deleteTopic(BuildContext context, String topicName) async {
+  // ==> DIUBAH UNTUK MENERIMA Topic BUKAN String <==
+  Future<void> _deleteTopic(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showDeleteTopicConfirmationDialog(
       context: context,
-      topicName: topicName,
+      topicName: topic.name,
       onDelete: () async {
         try {
-          await provider.deleteTopic(topicName);
-          showAppSnackBar(context, 'Topik "$topicName" berhasil dihapus.');
+          await provider.deleteTopic(topic.name);
+          showAppSnackBar(context, 'Topik "${topic.name}" berhasil dihapus.');
+        } catch (e) {
+          showAppSnackBar(context, e.toString(), isError: true);
+        }
+      },
+    );
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGUBAH IKON <==
+  Future<void> _changeIcon(BuildContext context, Topic topic) async {
+    final provider = Provider.of<TopicProvider>(context, listen: false);
+    await showIconPickerDialog(
+      context: context,
+      onIconSelected: (newIcon) async {
+        try {
+          await provider.updateTopicIcon(topic.name, newIcon);
+          showAppSnackBar(context, 'Ikon untuk "${topic.name}" diubah.');
         } catch (e) {
           showAppSnackBar(context, e.toString(), isError: true);
         }
@@ -115,7 +132,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
   @override
   Widget build(BuildContext context) {
-    // Dapatkan instance dari provider
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
@@ -133,7 +149,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               )
             : const Text('Topics'),
         actions: [
-          // Gunakan Consumer untuk bagian yang perlu update spesifik
           Consumer<TopicProvider>(
             builder: (context, provider, child) {
               return provider.isBackingUp
@@ -207,26 +222,28 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         return ListView.builder(
           itemCount: topicsToShow.length,
           itemBuilder: (context, index) {
-            final folderName = topicsToShow[index];
+            final topic = topicsToShow[index]; // ==> Menggunakan objek Topic
             return TopicListTile(
-              topicName: folderName,
+              topic: topic, // ==> Mengirim objek Topic
               onTap: () {
                 final folderPath = path.join(
                   provider.getTopicsPath(),
-                  folderName,
+                  topic.name,
                 );
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ChangeNotifierProvider(
                       create: (_) => SubjectProvider(folderPath),
-                      child: SubjectsPage(topicName: folderName),
+                      child: SubjectsPage(topicName: topic.name),
                     ),
                   ),
                 );
               },
-              onRename: () => _renameTopic(context, folderName),
-              onDelete: () => _deleteTopic(context, folderName),
+              onRename: () => _renameTopic(context, topic),
+              onDelete: () => _deleteTopic(context, topic),
+              onIconChange: () =>
+                  _changeIcon(context, topic), // ==> Callback baru
             );
           },
         );
