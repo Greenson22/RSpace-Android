@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import '../../data/models/subject_model.dart'; // ==> DITAMBAHKAN
+import '../../data/models/subject_model.dart';
 import '../providers/discussion_provider.dart';
 import '../providers/subject_provider.dart';
 import '3_discussions_page.dart';
@@ -63,7 +63,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> DIUBAH UNTUK MENERIMA Subject <==
   Future<void> _renameSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showSubjectTextInputDialog(
@@ -82,7 +81,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> DIUBAH UNTUK MENERIMA Subject <==
   Future<void> _deleteSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showDeleteConfirmationDialog(
@@ -99,7 +97,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH IKON <==
   Future<void> _changeIcon(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showIconPickerDialog(
@@ -115,7 +112,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> DIUBAH UNTUK MENERIMA Subject <==
   void _navigateToDiscussionsPage(BuildContext context, Subject subject) {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final jsonFilePath = path.join(provider.topicPath, '${subject.name}.json');
@@ -170,23 +166,29 @@ class _SubjectsPageState extends State<SubjectsPage> {
           }
 
           final subjectsToShow = provider.filteredSubjects;
-          if (subjectsToShow.isEmpty && provider.searchQuery.isNotEmpty) {
+          final isSearching = provider.searchQuery.isNotEmpty;
+
+          if (subjectsToShow.isEmpty && isSearching) {
             return const Center(child: Text('Subject tidak ditemukan.'));
           }
 
-          return ListView.builder(
+          // ==> DIUBAH MENJADI ReorderableListView.builder <==
+          return ReorderableListView.builder(
             itemCount: subjectsToShow.length,
+            buildDefaultDragHandles: !isSearching,
             itemBuilder: (context, index) {
-              final subject =
-                  subjectsToShow[index]; // ==> Menggunakan objek Subject
+              final subject = subjectsToShow[index];
               return SubjectListTile(
-                subject: subject, // ==> Mengirim objek Subject
+                key: ValueKey(subject.name), // Key penting untuk reordering
+                subject: subject,
                 onTap: () => _navigateToDiscussionsPage(context, subject),
                 onRename: () => _renameSubject(context, subject),
                 onDelete: () => _deleteSubject(context, subject),
-                onIconChange: () =>
-                    _changeIcon(context, subject), // ==> Callback baru
+                onIconChange: () => _changeIcon(context, subject),
               );
+            },
+            onReorder: (oldIndex, newIndex) {
+              provider.reorderSubjects(oldIndex, newIndex);
             },
           );
         },

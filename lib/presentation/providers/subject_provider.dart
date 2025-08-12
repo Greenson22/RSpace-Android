@@ -1,12 +1,10 @@
 // lib/presentation/providers/subject_provider.dart
 
 import 'package:flutter/material.dart';
-import '../../data/models/subject_model.dart'; // ==> DITAMBAHKAN
-// Diubah dari local_file_service.dart ke subject_service.dart
+import '../../data/models/subject_model.dart';
 import '../../data/services/subject_service.dart';
 
 class SubjectProvider with ChangeNotifier {
-  // Menggunakan SubjectService yang baru
   final SubjectService _subjectService = SubjectService();
   final String topicPath;
 
@@ -17,7 +15,6 @@ class SubjectProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  // ==> TIPE LIST DIUBAH <==
   List<Subject> _allSubjects = [];
   List<Subject> get allSubjects => _allSubjects;
 
@@ -31,12 +28,9 @@ class SubjectProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Memanggil metode dari SubjectService yang mengembalikan List<Subject>
       _allSubjects = await _subjectService.getSubjects(topicPath);
       _filteredSubjects = _allSubjects;
     } catch (e) {
-      // Handle error jika diperlukan
-      // Anda mungkin ingin menampilkan pesan error ke pengguna di sini
       debugPrint("Error fetching subjects: $e");
     } finally {
       _isLoading = false;
@@ -52,7 +46,28 @@ class SubjectProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK UPDATE IKON <==
+  // ==> FUNGSI BARU UNTUK MENGUBAH URUTAN <==
+  Future<void> reorderSubjects(int oldIndex, int newIndex) async {
+    if (_searchQuery.isNotEmpty) return; // Cegah reorder saat mencari
+
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    final Subject item = _allSubjects.removeAt(oldIndex);
+    _allSubjects.insert(newIndex, item);
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _subjectService.saveSubjectsOrder(topicPath, _allSubjects);
+    } finally {
+      // Muat ulang data untuk memastikan UI sinkron dengan data yang disimpan
+      await fetchSubjects();
+    }
+  }
+
   Future<void> updateSubjectIcon(String subjectName, String newIcon) async {
     await _subjectService.updateSubjectIcon(topicPath, subjectName, newIcon);
     await fetchSubjects();
@@ -60,16 +75,16 @@ class SubjectProvider with ChangeNotifier {
 
   Future<void> addSubject(String name) async {
     await _subjectService.addSubject(topicPath, name);
-    await fetchSubjects(); // Muat ulang daftar setelah menambah
+    await fetchSubjects();
   }
 
   Future<void> renameSubject(String oldName, String newName) async {
     await _subjectService.renameSubject(topicPath, oldName, newName);
-    await fetchSubjects(); // Muat ulang daftar setelah mengubah
+    await fetchSubjects();
   }
 
   Future<void> deleteSubject(String subjectName) async {
     await _subjectService.deleteSubject(topicPath, subjectName);
-    await fetchSubjects(); // Muat ulang daftar setelah menghapus
+    await fetchSubjects();
   }
 }

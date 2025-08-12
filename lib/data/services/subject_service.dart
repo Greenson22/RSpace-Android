@@ -2,14 +2,14 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
-import '../models/subject_model.dart'; // ==> DITAMBAHKAN
+import '../models/subject_model.dart';
 import 'path_service.dart';
 
 class SubjectService {
   final PathService _pathService = PathService();
-  static const String _defaultIcon = '📄'; // ==> DITAMBAHKAN
+  static const String _defaultIcon = '📄';
 
-  // ==> DIUBAH UNTUK MENGEMBALIKAN List<Subject> <==
+  // FUNGSI DIUBAH TOTAL UNTUK MEMBACA, MENGURUTKAN, DAN MEMPERBAIKI POSISI
   Future<List<Subject>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
@@ -26,54 +26,124 @@ class SubjectService {
         )
         .toList();
 
-    files.sort(
-      (a, b) => path.basename(a.path).compareTo(path.basename(b.path)),
-    );
-
-    final List<Subject> subjects = [];
+    List<Subject> subjects = [];
     for (var file in files) {
       final name = path.basenameWithoutExtension(file.path);
-      final icon = await _getIconForSubject(file);
-      subjects.add(Subject(name: name, icon: icon));
+      final metadata = await _getSubjectMetadata(file);
+      subjects.add(
+        Subject(
+          name: name,
+          icon: metadata['icon'] as String? ?? _defaultIcon,
+          position: metadata['position'] as int? ?? -1,
+        ),
+      );
     }
-    return subjects;
+
+    final positionedSubjects = subjects.where((s) => s.position != -1).toList();
+    final unpositionedSubjects = subjects
+        .where((s) => s.position == -1)
+        .toList();
+
+    positionedSubjects.sort((a, b) => a.position.compareTo(b.position));
+
+    int maxPosition = positionedSubjects.isNotEmpty
+        ? positionedSubjects
+              .map((s) => s.position)
+              .reduce((a, b) => a > b ? a : b)
+        : -1;
+
+    for (final subject in unpositionedSubjects) {
+      maxPosition++;
+      subject.position = maxPosition;
+      await _saveSubjectMetadata(topicPath, subject);
+    }
+
+    final allSubjects = [...positionedSubjects, ...unpositionedSubjects];
+    allSubjects.sort((a, b) => a.position.compareTo(b.position));
+
+    bool needsResave = false;
+    for (int i = 0; i < allSubjects.length; i++) {
+      if (allSubjects[i].position != i) {
+        allSubjects[i].position = i;
+        needsResave = true;
+      }
+    }
+
+    if (needsResave) {
+      await saveSubjectsOrder(topicPath, allSubjects);
+    }
+
+    return allSubjects;
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBACA IKON DARI JSON <==
-  Future<String> _getIconForSubject(File subjectFile) async {
+  // FUNGSI BARU UNTUK MENYIMPAN URUTAN SEMUA SUBJECT
+  Future<void> saveSubjectsOrder(
+    String topicPath,
+    List<Subject> subjects,
+  ) async {
+    for (int i = 0; i < subjects.length; i++) {
+      final subject = subjects[i];
+      subject.position = i;
+      await _saveSubjectMetadata(topicPath, subject);
+    }
+  }
+
+  Future<Map<String, dynamic>> _getSubjectMetadata(File subjectFile) async {
     try {
-      if (!await subjectFile.exists()) {
-        return _defaultIcon;
-      }
+      if (!await subjectFile.exists())
+        return {'icon': _defaultIcon, 'position': -1};
       final jsonString = await subjectFile.readAsString();
-      if (jsonString.isEmpty) {
-        return _defaultIcon;
-      }
+      if (jsonString.isEmpty) return {'icon': _defaultIcon, 'position': -1};
+
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      final metadata = jsonData['metadata'] as Map<String, dynamic>?;
-      return metadata?['icon'] as String? ?? _defaultIcon;
+      final metadata = jsonData['metadata'] as Map<String, dynamic>? ?? {};
+
+      return {
+        'icon': metadata['icon'] as String? ?? _defaultIcon,
+        'position': metadata['position'] as int?,
+      };
     } catch (e) {
-      return _defaultIcon;
+      return {'icon': _defaultIcon, 'position': -1};
     }
   }
 
-  // ==> DIUBAH: MENAMBAHKAN METADATA SAAT FILE DIBUAT <==
-  Future<void> addSubject(String topicPath, String subjectName) async {
-    if (subjectName.isEmpty) {
-      throw Exception('Nama subject tidak boleh kosong.');
+  Future<void> _saveSubjectMetadata(String topicPath, Subject subject) async {
+    final filePath = _pathService.getSubjectPath(topicPath, subject.name);
+    final file = File(filePath);
+    Map<String, dynamic> jsonData = {};
+
+    try {
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        if (jsonString.isNotEmpty) {
+          jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        }
+      }
+    } catch (e) {
+      // Jika file corrupt, buat ulang dengan data baru
+      jsonData = {};
     }
 
+    jsonData['metadata'] = {'icon': subject.icon, 'position': subject.position};
+    jsonData['content'] ??= [];
+
+    const encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(jsonData));
+  }
+
+  Future<void> addSubject(String topicPath, String subjectName) async {
+    if (subjectName.isEmpty)
+      throw Exception('Nama subject tidak boleh kosong.');
     final filePath = _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
-
-    if (await file.exists()) {
+    if (await file.exists())
       throw Exception('Subject dengan nama "$subjectName" sudah ada.');
-    }
 
     try {
-      // Struktur JSON awal dengan metadata dan ikon default
+      final currentSubjects = await getSubjects(topicPath);
+      final newPosition = currentSubjects.length;
       final initialContent = {
-        'metadata': {'icon': _defaultIcon},
+        'metadata': {'icon': _defaultIcon, 'position': newPosition},
         'content': [],
       };
       await file.writeAsString(jsonEncode(initialContent));
@@ -82,7 +152,6 @@ class SubjectService {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK UPDATE IKON <==
   Future<void> updateSubjectIcon(
     String topicPath,
     String subjectName,
@@ -90,25 +159,15 @@ class SubjectService {
   ) async {
     final filePath = _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
+    if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
 
-    if (!await file.exists()) {
-      throw Exception('File subject tidak ditemukan.');
-    }
-
-    try {
-      final jsonString = await file.readAsString();
-      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-
-      // Buat atau update metadata
-      final metadata = (jsonData['metadata'] as Map<String, dynamic>?) ?? {};
-      metadata['icon'] = newIcon;
-      jsonData['metadata'] = metadata;
-
-      const encoder = JsonEncoder.withIndent('  ');
-      await file.writeAsString(encoder.convert(jsonData));
-    } catch (e) {
-      throw Exception('Gagal memperbarui ikon subject: $e');
-    }
+    final metadata = await _getSubjectMetadata(file);
+    final subject = Subject(
+      name: subjectName,
+      icon: newIcon,
+      position: metadata['position'] as int? ?? -1,
+    );
+    await _saveSubjectMetadata(topicPath, subject);
   }
 
   Future<void> renameSubject(
@@ -117,17 +176,13 @@ class SubjectService {
     String newName,
   ) async {
     if (newName.isEmpty) throw Exception('Nama baru tidak boleh kosong.');
-
     final oldPath = _pathService.getSubjectPath(topicPath, oldName);
     final newPath = _pathService.getSubjectPath(topicPath, newName);
     final oldFile = File(oldPath);
-
-    if (!await oldFile.exists()) {
+    if (!await oldFile.exists())
       throw Exception('Subject yang ingin diubah tidak ditemukan.');
-    }
-    if (await File(newPath).exists()) {
+    if (await File(newPath).exists())
       throw Exception('Subject dengan nama "$newName" sudah ada.');
-    }
 
     try {
       await oldFile.rename(newPath);
@@ -139,12 +194,13 @@ class SubjectService {
   Future<void> deleteSubject(String topicPath, String subjectName) async {
     final filePath = _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
-    if (!await file.exists()) {
+    if (!await file.exists())
       throw Exception('Subject yang ingin dihapus tidak ditemukan.');
-    }
 
     try {
       await file.delete();
+      final remainingSubjects = await getSubjects(topicPath);
+      await saveSubjectsOrder(topicPath, remainingSubjects);
     } catch (e) {
       throw Exception('Gagal menghapus subject: $e');
     }
