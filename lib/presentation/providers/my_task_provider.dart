@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Import intl package
+import 'package:intl/intl.dart';
 import '../../data/models/my_task_model.dart';
 import '../../data/services/my_task_service.dart';
 
@@ -56,7 +56,7 @@ class MyTaskProvider with ChangeNotifier {
     await _saveTasks();
   }
 
-  // --- Task Management (METODE-METODE BARU) ---
+  // --- Task Management ---
 
   Future<void> addTask(TaskCategory category, String taskName) async {
     final newTask = MyTask(
@@ -102,6 +102,39 @@ class MyTaskProvider with ChangeNotifier {
       if (taskIndex != -1) {
         _categories[categoryIndex].tasks[taskIndex].checked =
             !_categories[categoryIndex].tasks[taskIndex].checked;
+        await _saveTasks();
+      }
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK UPDATE DATE & COUNT <==
+  Future<void> updateTaskDate(
+    TaskCategory category,
+    MyTask task,
+    DateTime newDate,
+  ) async {
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      if (taskIndex != -1) {
+        _categories[categoryIndex].tasks[taskIndex].date = DateFormat(
+          'yyyy-MM-dd',
+        ).format(newDate);
+        await _saveTasks();
+      }
+    }
+  }
+
+  Future<void> updateTaskCount(
+    TaskCategory category,
+    MyTask task,
+    int newCount,
+  ) async {
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      if (taskIndex != -1) {
+        _categories[categoryIndex].tasks[taskIndex].count = newCount;
         await _saveTasks();
       }
     }

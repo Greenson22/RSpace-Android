@@ -6,6 +6,7 @@ Future<void> showTopicTextInputDialog({
   required String label,
   String initialValue = '',
   required Function(String) onSave,
+  TextInputType keyboardType = TextInputType.text, // ==> DITAMBAHKAN
 }) async {
   final controller = TextEditingController(text: initialValue);
   return showDialog<void>(
@@ -17,6 +18,7 @@ Future<void> showTopicTextInputDialog({
           controller: controller,
           autofocus: true,
           decoration: InputDecoration(labelText: label),
+          keyboardType: keyboardType, // ==> DIGUNAKAN DI SINI
         ),
         actions: [
           TextButton(

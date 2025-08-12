@@ -7,10 +7,17 @@ import '1_topics_page/dialogs/topic_dialogs.dart';
 class MyTasksPage extends StatelessWidget {
   const MyTasksPage({super.key});
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showSnackBar(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
   }
 
   // --- Dialog untuk Kategori ---
@@ -71,7 +78,7 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // --- Dialog untuk Task (FUNGSI BARU) ---
+  // --- Dialog untuk Task ---
   void _showAddTaskDialog(BuildContext context, TaskCategory category) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
     showTopicTextInputDialog(
@@ -132,6 +139,55 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // ==> FUNGSI DIALOG BARU <==
+  Future<void> _showUpdateDateDialog(
+    BuildContext context,
+    TaskCategory category,
+    MyTask task,
+  ) async {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    final initialDate = DateTime.tryParse(task.date) ?? DateTime.now();
+    final newDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    if (newDate != null) {
+      provider.updateTaskDate(category, task, newDate);
+      _showSnackBar(context, 'Tanggal task berhasil diubah.');
+    }
+  }
+
+  void _showUpdateCountDialog(
+    BuildContext context,
+    TaskCategory category,
+    MyTask task,
+  ) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    showTopicTextInputDialog(
+      context: context,
+      title: 'Ubah Jumlah (Count)',
+      label: 'Jumlah Baru',
+      initialValue: task.count.toString(),
+      keyboardType: TextInputType.number,
+      onSave: (newValue) {
+        final newCount = int.tryParse(newValue);
+        if (newCount != null) {
+          provider.updateTaskCount(category, task, newCount);
+          _showSnackBar(context, 'Jumlah task berhasil diubah.');
+        } else {
+          _showSnackBar(
+            context,
+            'Input tidak valid. Harap masukkan angka.',
+            isError: true,
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -167,7 +223,6 @@ class MyTasksPage extends StatelessWidget {
             tooltip: 'Tambah Kategori',
           ),
         ),
-        // ==> LOKASI FAB DIPINDAHKAN <==
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
@@ -197,15 +252,11 @@ class MyTasksPage extends StatelessWidget {
             } else if (value == 'delete') {
               _showDeleteCategoryDialog(context, category);
             } else if (value == 'add_task') {
-              // ==> OPSI BARU <==
               _showAddTaskDialog(context, category);
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'add_task',
-              child: Text('Tambah Task'), // ==> OPSI BARU <==
-            ),
+            const PopupMenuItem(value: 'add_task', child: Text('Tambah Task')),
             const PopupMenuDivider(),
             const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
             const PopupMenuItem(value: 'delete', child: Text('Hapus')),
@@ -238,18 +289,30 @@ class MyTasksPage extends StatelessWidget {
           color: task.checked ? Colors.grey : null,
         ),
       ),
-      subtitle: Text('Due: ${task.date}'),
+      // ==> SUBTITLE DIPERBARUI UNTUK MENAMPILKAN COUNT <==
+      subtitle: Text('Due: ${task.date} | Count: ${task.count}'),
+      // ==> MENU DIPERBARUI <==
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
           if (value == 'rename') {
             _showRenameTaskDialog(context, category, task);
+          } else if (value == 'edit_date') {
+            _showUpdateDateDialog(context, category, task);
+          } else if (value == 'edit_count') {
+            _showUpdateCountDialog(context, category, task);
           } else if (value == 'delete') {
             _showDeleteTaskDialog(context, category, task);
           }
         },
         itemBuilder: (context) => [
           const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
-          const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+          const PopupMenuItem(value: 'edit_date', child: Text('Ubah Tanggal')),
+          const PopupMenuItem(value: 'edit_count', child: Text('Ubah Jumlah')),
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
