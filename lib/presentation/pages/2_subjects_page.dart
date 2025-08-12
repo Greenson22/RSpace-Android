@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../data/services/local_file_service.dart';
 import '../providers/discussion_provider.dart';
 import '3_discussions_page.dart';
+import '2_subjects_page/dialogs/subject_dialogs.dart';
+import '2_subjects_page/widgets/subject_list_tile.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String folderPath;
@@ -65,43 +67,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  Future<void> _showTextInputDialog({
-    required String title,
-    required String label,
-    String initialValue = '',
-    required Function(String) onSave,
-  }) async {
-    final controller = TextEditingController(text: initialValue);
-    return showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(labelText: label),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                onSave(controller.text);
-                Navigator.pop(context);
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _addSubject() async {
-    await _showTextInputDialog(
+    await showSubjectTextInputDialog(
+      context: context,
       title: 'Tambah Subject Baru',
       label: 'Nama Subject',
       onSave: (name) async {
@@ -117,7 +85,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
   }
 
   Future<void> _renameSubject(String oldName) async {
-    await _showTextInputDialog(
+    await showSubjectTextInputDialog(
+      context: context,
       title: 'Ubah Nama Subject',
       label: 'Nama Baru',
       initialValue: oldName,
@@ -134,36 +103,31 @@ class _SubjectsPageState extends State<SubjectsPage> {
   }
 
   Future<void> _deleteSubject(String subjectName) async {
-    return showDialog<void>(
+    await showDeleteConfirmationDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Hapus Subject'),
-          content: Text('Anda yakin ingin menghapus subject "$subjectName"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await _fileService.deleteSubject(
-                    widget.folderPath,
-                    subjectName,
-                  );
-                  _showSnackBar('Subject "$subjectName" berhasil dihapus.');
-                  _refreshSubjects();
-                  if (mounted) Navigator.pop(context);
-                } catch (e) {
-                  _showSnackBar(e.toString(), isError: true);
-                }
-              },
-              child: const Text('Hapus'),
-            ),
-          ],
-        );
+      subjectName: subjectName,
+      onDelete: () async {
+        try {
+          await _fileService.deleteSubject(widget.folderPath, subjectName);
+          _showSnackBar('Subject "$subjectName" berhasil dihapus.');
+          _refreshSubjects();
+        } catch (e) {
+          _showSnackBar(e.toString(), isError: true);
+        }
       },
+    );
+  }
+
+  void _navigateToDiscussionsPage(String subjectName) {
+    final jsonFilePath = path.join(widget.folderPath, '$subjectName.json');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider(
+          create: (_) => DiscussionProvider(jsonFilePath),
+          child: DiscussionsPage(subjectName: subjectName),
+        ),
+      ),
     );
   }
 
@@ -225,42 +189,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
             itemCount: subjectsToShow.length,
             itemBuilder: (context, index) {
               final subjectName = subjectsToShow[index];
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.description, color: Colors.orange),
-                  title: Text(subjectName),
-                  onTap: () {
-                    final jsonFilePath = path.join(
-                      widget.folderPath,
-                      '$subjectName.json',
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider(
-                          create: (_) => DiscussionProvider(jsonFilePath),
-                          child: DiscussionsPage(subjectName: subjectName),
-                        ),
-                      ),
-                    );
-                  },
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'rename') _renameSubject(subjectName);
-                      if (value == 'delete') _deleteSubject(subjectName);
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'rename',
-                        child: Text('Ubah Nama'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Hapus'),
-                      ),
-                    ],
-                  ),
-                ),
+              return SubjectListTile(
+                subjectName: subjectName,
+                onTap: () => _navigateToDiscussionsPage(subjectName),
+                onRename: () => _renameSubject(subjectName),
+                onDelete: () => _deleteSubject(subjectName),
               );
             },
           );
