@@ -187,7 +187,6 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> DIALOG KONFIRMASI BARU <==
   Future<bool?> _showToggleConfirmationDialog(BuildContext context) async {
     return showDialog<bool>(
       context: context,
@@ -210,43 +209,86 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // ==> DIALOG KONFIRMASI BARU <==
+  void _showUncheckAllConfirmationDialog(BuildContext context) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Konfirmasi'),
+        content: const Text(
+          'Anda yakin ingin menghapus semua centang dari task?',
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Batal'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+          TextButton(
+            child: const Text('Ya, Hapus'),
+            onPressed: () {
+              provider.uncheckAllTasks();
+              Navigator.of(dialogContext).pop();
+              _showSnackBar(context, 'Semua centang telah dihapus.');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => MyTaskProvider(),
-      child: Scaffold(
-        appBar: AppBar(title: const Text('My Tasks')),
-        body: Consumer<MyTaskProvider>(
-          builder: (context, provider, child) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (provider.categories.isEmpty) {
-              return const Center(
-                child: Text('Tidak ada kategori. Tekan + untuk menambah.'),
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.only(bottom: 80),
-              itemCount: provider.categories.length,
-              itemBuilder: (context, index) {
-                final category = provider.categories[index];
-                return _buildCategoryCard(context, provider, category);
-              },
-            );
-          },
-        ),
-        floatingActionButton: Builder(
-          builder: (context) => FloatingActionButton(
-            onPressed: () => _showAddCategoryDialog(context),
-            child: const Icon(Icons.add),
-            tooltip: 'Tambah Kategori',
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      // ==> WIDGET SCENE DIBUNGKUS DENGAN CONSUMER <==
+      child: Consumer<MyTaskProvider>(
+        builder: (context, provider, child) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('My Tasks'),
+              // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.clear_all),
+                  tooltip: 'Hapus Semua Centang',
+                  onPressed: () => _showUncheckAllConfirmationDialog(context),
+                ),
+              ],
+            ),
+            body: _buildBody(context, provider),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => _showAddCategoryDialog(context),
+              child: const Icon(Icons.add),
+              tooltip: 'Tambah Kategori',
+            ),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerFloat,
+          );
+        },
       ),
+    );
+  }
+
+  // ==> BAGIAN BODY DIPISAHKAN MENJADI WIDGET SENDIRI <==
+  Widget _buildBody(BuildContext context, MyTaskProvider provider) {
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.categories.isEmpty) {
+      return const Center(
+        child: Text('Tidak ada kategori. Tekan + untuk menambah.'),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: provider.categories.length,
+      itemBuilder: (context, index) {
+        final category = provider.categories[index];
+        return _buildCategoryCard(context, provider, category);
+      },
     );
   }
 
@@ -298,18 +340,15 @@ class MyTasksPage extends StatelessWidget {
     MyTask task,
   ) {
     return ListTile(
-      // ==> LOGIKA CHECKBOX DIPERBARUI <==
       leading: Checkbox(
         value: task.checked,
         onChanged: (bool? value) async {
           if (value == true) {
-            // Jika akan mencentang
             final shouldUpdate = await _showToggleConfirmationDialog(context);
             if (shouldUpdate == true) {
               provider.toggleTaskChecked(category, task, confirmUpdate: true);
             }
           } else {
-            // Jika akan menghilangkan centang
             provider.toggleTaskChecked(category, task, confirmUpdate: false);
           }
         },

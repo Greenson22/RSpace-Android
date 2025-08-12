@@ -95,11 +95,10 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI TOGGLE DIPERBARUI <==
   Future<void> toggleTaskChecked(
     TaskCategory category,
     MyTask task, {
-    bool confirmUpdate = false, // Parameter untuk konfirmasi
+    bool confirmUpdate = false,
   }) async {
     final categoryIndex = _categories.indexOf(category);
     if (categoryIndex != -1) {
@@ -108,13 +107,11 @@ class MyTaskProvider with ChangeNotifier {
         final isChecking = !_categories[categoryIndex].tasks[taskIndex].checked;
         _categories[categoryIndex].tasks[taskIndex].checked = isChecking;
 
-        // Jika dicentang (isChecking == true) dan user mengonfirmasi,
-        // update tanggal dan tambah count.
         if (isChecking && confirmUpdate) {
           _categories[categoryIndex].tasks[taskIndex].date = DateFormat(
             'yyyy-MM-dd',
           ).format(DateTime.now());
-          _categories[categoryIndex].tasks[taskIndex].count++; // Tambah count
+          _categories[categoryIndex].tasks[taskIndex].count++;
         }
         await _saveTasks();
       }
@@ -151,5 +148,17 @@ class MyTaskProvider with ChangeNotifier {
         await _saveTasks();
       }
     }
+  }
+
+  // ==> FUNGSI BARU UNTUK HAPUS SEMUA CENTANG <==
+  Future<void> uncheckAllTasks() async {
+    for (final category in _categories) {
+      for (final task in category.tasks) {
+        if (task.checked) {
+          task.checked = false;
+        }
+      }
+    }
+    await _saveTasks();
   }
 }
