@@ -498,7 +498,29 @@ class MyTasksPage extends StatelessWidget {
           color: task.checked ? Colors.grey : null,
         ),
       ),
-      subtitle: Text('Due: ${task.date} | Count: ${task.count}'),
+      subtitle: RichText(
+        text: TextSpan(
+          style: Theme.of(context).textTheme.bodySmall,
+          children: [
+            const TextSpan(text: 'Due: '),
+            TextSpan(
+              text: task.date,
+              style: const TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const TextSpan(text: ' | Count: '),
+            TextSpan(
+              text: task.count.toString(),
+              style: const TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
       trailing: isReordering || isCategoryReorderMode
           ? null
           : PopupMenuButton<String>(
