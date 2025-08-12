@@ -209,7 +209,6 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> DIALOG KONFIRMASI BARU <==
   void _showUncheckAllConfirmationDialog(BuildContext context) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
     showDialog(
@@ -241,14 +240,22 @@ class MyTasksPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => MyTaskProvider(),
-      // ==> WIDGET SCENE DIBUNGKUS DENGAN CONSUMER <==
       child: Consumer<MyTaskProvider>(
         builder: (context, provider, child) {
           return Scaffold(
             appBar: AppBar(
               title: const Text('My Tasks'),
-              // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
               actions: [
+                // ==> TOMBOL UNTUK MODE PINDAH <==
+                IconButton(
+                  icon: Icon(
+                    provider.isReorderEnabled ? Icons.done : Icons.drag_handle,
+                  ),
+                  tooltip: provider.isReorderEnabled
+                      ? 'Selesai Mengurutkan'
+                      : 'Aktifkan Mode Urutkan',
+                  onPressed: () => provider.toggleReorder(),
+                ),
                 IconButton(
                   icon: const Icon(Icons.clear_all),
                   tooltip: 'Hapus Semua Centang',
@@ -257,11 +264,13 @@ class MyTasksPage extends StatelessWidget {
               ],
             ),
             body: _buildBody(context, provider),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => _showAddCategoryDialog(context),
-              child: const Icon(Icons.add),
-              tooltip: 'Tambah Kategori',
-            ),
+            floatingActionButton: provider.isReorderEnabled
+                ? null // Sembunyikan FAB saat mode reorder aktif
+                : FloatingActionButton(
+                    onPressed: () => _showAddCategoryDialog(context),
+                    child: const Icon(Icons.add),
+                    tooltip: 'Tambah Kategori',
+                  ),
             floatingActionButtonLocation:
                 FloatingActionButtonLocation.centerFloat,
           );
@@ -270,7 +279,6 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> BAGIAN BODY DIPISAHKAN DAN DIUBAH MENGGUNAKAN ReorderableListView <==
   Widget _buildBody(BuildContext context, MyTaskProvider provider) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -282,12 +290,14 @@ class MyTasksPage extends StatelessWidget {
       );
     }
 
+    // Gunakan ReorderableListView jika mode pindah aktif
     return ReorderableListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: provider.categories.length,
+      // Menonaktifkan/mengaktifkan reorder berdasarkan state provider
+      buildDefaultDragHandles: provider.isReorderEnabled,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
-        // Setiap item harus memiliki Key yang unik untuk ReorderableListView
         return _buildCategoryCard(
           context,
           provider,
@@ -296,7 +306,10 @@ class MyTasksPage extends StatelessWidget {
         );
       },
       onReorder: (oldIndex, newIndex) {
-        provider.reorderCategories(oldIndex, newIndex);
+        // Hanya izinkan reorder jika mode aktif
+        if (provider.isReorderEnabled) {
+          provider.reorderCategories(oldIndex, newIndex);
+        }
       },
     );
   }
@@ -305,13 +318,15 @@ class MyTasksPage extends StatelessWidget {
     BuildContext context,
     MyTaskProvider provider,
     TaskCategory category,
-    Key key, // ==> TAMBAHKAN PARAMETER KEY <==
+    Key key,
   ) {
     return Card(
-      key: key, // ==> GUNAKAN KEY DI WIDGET CARD <==
+      key: key,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       elevation: 3,
       child: ExpansionTile(
+        // Nonaktifkan ekspansi saat mode reorder aktif
+        enabled: !provider.isReorderEnabled,
         leading: Icon(
           getIconData(category.icon),
           color: Theme.of(context).primaryColor,
@@ -320,28 +335,73 @@ class MyTasksPage extends StatelessWidget {
           category.name,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'rename') {
-              _showRenameCategoryDialog(context, category);
-            } else if (value == 'delete') {
-              _showDeleteCategoryDialog(context, category);
-            } else if (value == 'add_task') {
-              _showAddTaskDialog(context, category);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'add_task', child: Text('Tambah Task')),
-            const PopupMenuDivider(),
-            const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
-            const PopupMenuItem(value: 'delete', child: Text('Hapus')),
-          ],
-        ),
-        children: category.tasks
-            .map((task) => _buildTaskTile(context, provider, category, task))
-            .toList(),
+        // Sembunyikan menu saat mode reorder aktif
+        trailing: provider.isReorderEnabled
+            ? const SizedBox.shrink()
+            : PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'rename') {
+                    _showRenameCategoryDialog(context, category);
+                  } else if (value == 'delete') {
+                    _showDeleteCategoryDialog(context, category);
+                  } else if (value == 'add_task') {
+                    _showAddTaskDialog(context, category);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'add_task',
+                    child: Text('Tambah Task'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Text('Ubah Nama'),
+                  ),
+                  const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                ],
+              ),
+        // ==> LOGIKA BARU UNTUK MENAMPILKAN TASK <==
+        children: [_buildTaskList(context, provider, category)],
       ),
     );
+  }
+
+  // ==> WIDGET BARU UNTUK DAFTAR TASK <==
+  Widget _buildTaskList(
+    BuildContext context,
+    MyTaskProvider provider,
+    TaskCategory category,
+  ) {
+    if (provider.isReorderEnabled) {
+      // Jika mode reorder aktif, gunakan ReorderableListView untuk tasks
+      return ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: category.tasks.length,
+        buildDefaultDragHandles: true, // Handle untuk drag ada di setiap tile
+        itemBuilder: (context, index) {
+          final task = category.tasks[index];
+          return _buildTaskTile(
+            context,
+            provider,
+            category,
+            task,
+            ValueKey(task), // Key penting untuk reordering
+          );
+        },
+        onReorder: (oldIndex, newIndex) {
+          provider.reorderTasks(category, oldIndex, newIndex);
+        },
+      );
+    } else {
+      // Jika tidak, gunakan Column seperti biasa
+      return Column(
+        children: category.tasks.map((task) {
+          return _buildTaskTile(context, provider, category, task, null);
+        }).toList(),
+      );
+    }
   }
 
   Widget _buildTaskTile(
@@ -349,20 +409,35 @@ class MyTasksPage extends StatelessWidget {
     MyTaskProvider provider,
     TaskCategory category,
     MyTask task,
+    Key? key, // Key bisa null jika tidak di dalam ReorderableListView
   ) {
     return ListTile(
+      key: key,
       leading: Checkbox(
         value: task.checked,
-        onChanged: (bool? value) async {
-          if (value == true) {
-            final shouldUpdate = await _showToggleConfirmationDialog(context);
-            if (shouldUpdate == true) {
-              provider.toggleTaskChecked(category, task, confirmUpdate: true);
-            }
-          } else {
-            provider.toggleTaskChecked(category, task, confirmUpdate: false);
-          }
-        },
+        // Nonaktifkan checkbox saat mode reorder aktif
+        onChanged: provider.isReorderEnabled
+            ? null
+            : (bool? value) async {
+                if (value == true) {
+                  final shouldUpdate = await _showToggleConfirmationDialog(
+                    context,
+                  );
+                  if (shouldUpdate == true) {
+                    provider.toggleTaskChecked(
+                      category,
+                      task,
+                      confirmUpdate: true,
+                    );
+                  }
+                } else {
+                  provider.toggleTaskChecked(
+                    category,
+                    task,
+                    confirmUpdate: false,
+                  );
+                }
+              },
       ),
       title: Text(
         task.name,
@@ -372,29 +447,38 @@ class MyTasksPage extends StatelessWidget {
         ),
       ),
       subtitle: Text('Due: ${task.date} | Count: ${task.count}'),
-      trailing: PopupMenuButton<String>(
-        onSelected: (value) {
-          if (value == 'rename') {
-            _showRenameTaskDialog(context, category, task);
-          } else if (value == 'edit_date') {
-            _showUpdateDateDialog(context, category, task);
-          } else if (value == 'edit_count') {
-            _showUpdateCountDialog(context, category, task);
-          } else if (value == 'delete') {
-            _showDeleteTaskDialog(context, category, task);
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
-          const PopupMenuItem(value: 'edit_date', child: Text('Ubah Tanggal')),
-          const PopupMenuItem(value: 'edit_count', child: Text('Ubah Jumlah')),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      // Sembunyikan menu saat mode reorder aktif
+      trailing: provider.isReorderEnabled
+          ? const SizedBox.shrink()
+          : PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'rename') {
+                  _showRenameTaskDialog(context, category, task);
+                } else if (value == 'edit_date') {
+                  _showUpdateDateDialog(context, category, task);
+                } else if (value == 'edit_count') {
+                  _showUpdateCountDialog(context, category, task);
+                } else if (value == 'delete') {
+                  _showDeleteTaskDialog(context, category, task);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
+                const PopupMenuItem(
+                  value: 'edit_date',
+                  child: Text('Ubah Tanggal'),
+                ),
+                const PopupMenuItem(
+                  value: 'edit_count',
+                  child: Text('Ubah Jumlah'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -9,11 +9,21 @@ class MyTaskProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+  // ==> STATE BARU UNTUK MODE PINDAH <==
+  bool _isReorderEnabled = false;
+  bool get isReorderEnabled => _isReorderEnabled;
+
   List<TaskCategory> _categories = [];
   List<TaskCategory> get categories => _categories;
 
   MyTaskProvider() {
     fetchTasks();
+  }
+
+  // ==> FUNGSI UNTUK TOGGLE MODE PINDAH <==
+  void toggleReorder() {
+    _isReorderEnabled = !_isReorderEnabled;
+    notifyListeners();
   }
 
   Future<void> fetchTasks() async {
@@ -40,7 +50,7 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> renameCategory(TaskCategory category, String newName) async {
-    final index = _categories.indexWhere((c) => c.name == category.name);
+    final index = _categories.indexWhere((c) => c == category);
     if (index != -1) {
       _categories[index] = TaskCategory(
         name: newName,
@@ -52,11 +62,10 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> deleteCategory(TaskCategory category) async {
-    _categories.removeWhere((c) => c.name == category.name);
+    _categories.remove(category);
     await _saveTasks();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGURUTKAN KATEGORI <==
   Future<void> reorderCategories(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) {
       newIndex -= 1;
@@ -67,6 +76,23 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   // --- Task Management ---
+
+  // ==> FUNGSI BARU UNTUK MENGURUTKAN TASK <==
+  Future<void> reorderTasks(
+    TaskCategory category,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final categoryIndex = _categories.indexOf(category);
+    if (categoryIndex != -1) {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final task = _categories[categoryIndex].tasks.removeAt(oldIndex);
+      _categories[categoryIndex].tasks.insert(newIndex, task);
+      await _saveTasks();
+    }
+  }
 
   Future<void> addTask(TaskCategory category, String taskName) async {
     final newTask = MyTask(
@@ -160,7 +186,6 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK HAPUS SEMUA CENTANG <==
   Future<void> uncheckAllTasks() async {
     for (final category in _categories) {
       for (final task in category.tasks) {
