@@ -9,6 +9,9 @@ import '../../data/services/local_file_service.dart';
 import '../providers/subject_provider.dart';
 import '../providers/theme_provider.dart';
 import '2_subjects_page.dart';
+import '1_topics_page/dialogs/topic_dialogs.dart';
+import '1_topics_page/widgets/topic_list_tile.dart';
+import '1_topics_page/utils/scaffold_messenger_utils.dart'; // Import file utils
 
 class TopicsPage extends StatefulWidget {
   const TopicsPage({super.key});
@@ -54,111 +57,53 @@ class _TopicsPageState extends State<TopicsPage> {
     });
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : null,
-      ),
-    );
-  }
-
-  Future<void> _showTextInputDialog({
-    required String title,
-    required String label,
-    String initialValue = '',
-    required Function(String) onSave,
-  }) async {
-    final controller = TextEditingController(text: initialValue);
-    return showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(labelText: label),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                onSave(controller.text);
-                Navigator.pop(context);
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _addTopic() async {
-    await _showTextInputDialog(
+    await showTopicTextInputDialog(
+      context: context,
       title: 'Tambah Topik Baru',
       label: 'Nama Topik',
       onSave: (name) async {
         try {
           await _fileService.addTopic(name);
-          _showSnackBar('Topik "$name" berhasil ditambahkan.');
+          showAppSnackBar(context, 'Topik "$name" berhasil ditambahkan.');
           _refreshTopics();
         } catch (e) {
-          _showSnackBar(e.toString(), isError: true);
+          showAppSnackBar(context, e.toString(), isError: true);
         }
       },
     );
   }
 
   Future<void> _renameTopic(String oldName) async {
-    await _showTextInputDialog(
+    await showTopicTextInputDialog(
+      context: context,
       title: 'Ubah Nama Topik',
       label: 'Nama Baru',
       initialValue: oldName,
       onSave: (newName) async {
         try {
           await _fileService.renameTopic(oldName, newName);
-          _showSnackBar('Topik berhasil diubah menjadi "$newName".');
+          showAppSnackBar(context, 'Topik berhasil diubah menjadi "$newName".');
           _refreshTopics();
         } catch (e) {
-          _showSnackBar(e.toString(), isError: true);
+          showAppSnackBar(context, e.toString(), isError: true);
         }
       },
     );
   }
 
   Future<void> _deleteTopic(String topicName) async {
-    return showDialog<void>(
+    await showDeleteTopicConfirmationDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Hapus Topik'),
-          content: Text('Anda yakin ingin menghapus topik "$topicName"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await _fileService.deleteTopic(topicName);
-                  _showSnackBar('Topik "$topicName" berhasil dihapus.');
-                  _refreshTopics();
-                  if (mounted) Navigator.pop(context);
-                } catch (e) {
-                  _showSnackBar(e.toString(), isError: true);
-                }
-              },
-              child: const Text('Hapus'),
-            ),
-          ],
-        );
+      topicName: topicName,
+      onDelete: () async {
+        try {
+          await _fileService.deleteTopic(topicName);
+          showAppSnackBar(context, 'Topik "$topicName" berhasil dihapus.');
+          _refreshTopics();
+        } catch (e) {
+          showAppSnackBar(context, e.toString(), isError: true);
+        }
       },
     );
   }
@@ -167,7 +112,7 @@ class _TopicsPageState extends State<TopicsPage> {
     setState(() {
       _isBackingUp = true;
     });
-    _showSnackBar('Memulai proses backup...', isError: false);
+    showAppSnackBar(context, 'Memulai proses backup...');
 
     try {
       final contentsPath = _fileService.getContentsPath();
@@ -197,13 +142,16 @@ class _TopicsPageState extends State<TopicsPage> {
       );
 
       if (savedPath != null) {
-        _showSnackBar('Backup berhasil disimpan di folder Downloads');
+        showAppSnackBar(
+          context,
+          'Backup berhasil disimpan di folder Downloads',
+        );
       } else {
-        _showSnackBar('Backup dibatalkan atau gagal disimpan.');
+        showAppSnackBar(context, 'Backup dibatalkan atau gagal disimpan.');
       }
       await tempDir.delete(recursive: true);
     } catch (e) {
-      _showSnackBar('Terjadi error saat backup: $e', isError: true);
+      showAppSnackBar(context, 'Terjadi error saat backup: $e', isError: true);
     } finally {
       setState(() {
         _isBackingUp = false;
@@ -298,42 +246,25 @@ class _TopicsPageState extends State<TopicsPage> {
             itemCount: topicsToShow.length,
             itemBuilder: (context, index) {
               final folderName = topicsToShow[index];
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.folder_open, color: Colors.teal),
-                  title: Text(folderName),
-                  onTap: () {
-                    final folderPath = path.join(
-                      _fileService.getTopicsPath(),
-                      folderName,
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider(
-                          create: (_) => SubjectProvider(folderPath),
-                          child: SubjectsPage(topicName: folderName),
-                        ),
+              return TopicListTile(
+                topicName: folderName,
+                onTap: () {
+                  final folderPath = path.join(
+                    _fileService.getTopicsPath(),
+                    folderName,
+                  );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChangeNotifierProvider(
+                        create: (_) => SubjectProvider(folderPath),
+                        child: SubjectsPage(topicName: folderName),
                       ),
-                    );
-                  },
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'rename') _renameTopic(folderName);
-                      if (value == 'delete') _deleteTopic(folderName);
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'rename',
-                        child: Text('Ubah Nama'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Hapus'),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
+                onRename: () => _renameTopic(folderName),
+                onDelete: () => _deleteTopic(folderName),
               );
             },
           );
