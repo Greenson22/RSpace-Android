@@ -1,6 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+// Daftar kode repetisi yang terpusat
+const List<String> kRepetitionCodes = [
+  'R0D',
+  'R1D',
+  'R3D',
+  'R7D',
+  'R7D2',
+  'R7D3',
+  'R30D',
+  'Finish',
+];
+
+// Fungsi untuk mendapatkan indeks kode, berguna untuk perbandingan
+int getRepetitionCodeIndex(String code) {
+  final index = kRepetitionCodes.indexOf(code);
+  return index == -1 ? 999 : index; // Beri nilai besar jika tidak ditemukan
+}
+
 Color getColorForRepetitionCode(String code) {
   switch (code) {
     case 'R0D':

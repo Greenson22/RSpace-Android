@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/discussion_model.dart';
-import '../../data/services/discussion_service.dart'; // DIUBAH: Menggunakan discussion_service
-import '../../data/services/shared_preferences_service.dart'; // DIUBAH: Menggunakan shared_preferences_service
+import '../../data/services/discussion_service.dart';
+import '../../data/services/shared_preferences_service.dart';
 import '../pages/3_discussions_page/utils/repetition_code_utils.dart';
 
 class DiscussionProvider with ChangeNotifier {
-  // DIUBAH: Menggunakan DiscussionService secara langsung
   final DiscussionService _discussionService = DiscussionService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
@@ -43,16 +42,8 @@ class DiscussionProvider with ChangeNotifier {
   bool _sortAscending = true;
   bool get sortAscending => _sortAscending;
 
-  final List<String> repetitionCodes = const [
-    'R0D',
-    'R1D',
-    'R3D',
-    'R7D',
-    'R7D2',
-    'R7D3',
-    'R30D',
-    'Finish',
-  ];
+  // ==> MENGGUNAKAN DAFTAR KODE TERPUSAT <==
+  final List<String> repetitionCodes = kRepetitionCodes;
 
   // --- DATA LOGIC ---
 
@@ -85,7 +76,6 @@ class DiscussionProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // DIUBAH: Memanggil _discussionService
       _allDiscussions = await _discussionService.loadDiscussions(_jsonFilePath);
       _filterAndSortDiscussions();
     } finally {
@@ -95,9 +85,7 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   Future<void> _saveDiscussions() async {
-    // DIUBAH: Memanggil _discussionService
     await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
-    // Tidak perlu notifyListeners() di sini kecuali ada state loading untuk save
   }
 
   void _filterAndSortDiscussions() {
@@ -108,11 +96,14 @@ class DiscussionProvider with ChangeNotifier {
       );
       bool matchesFilter = true;
       if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
-        matchesFilter = discussion.repetitionCode == _selectedRepetitionCode;
+        // ==> FILTER BERDASARKAN KODE EFEKTIF <==
+        matchesFilter =
+            discussion.effectiveRepetitionCode == _selectedRepetitionCode;
       } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
         try {
-          if (discussion.date == null) return false;
-          final discussionDate = DateTime.parse(discussion.date!);
+          // ==> FILTER BERDASARKAN TANGGAL EFEKTIF <==
+          if (discussion.effectiveDate == null) return false;
+          final discussionDate = DateTime.parse(discussion.effectiveDate!);
           final startDate = _selectedDateRange!.start;
           final endDate = _selectedDateRange!.end.add(const Duration(days: 1));
           matchesFilter =
@@ -133,7 +124,7 @@ class DiscussionProvider with ChangeNotifier {
   void _sortDiscussions() {
     _sortList(_filteredDiscussions);
     _sortList(_allDiscussions);
-    notifyListeners(); // Ditambahkan untuk memastikan UI update setelah sorting
+    notifyListeners();
   }
 
   void _sortList(List<Discussion> list) {
@@ -144,19 +135,24 @@ class DiscussionProvider with ChangeNotifier {
             a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
         break;
       case 'code':
-        comparator = (a, b) => a.repetitionCode.compareTo(b.repetitionCode);
+        // ==> SORT BERDASARKAN KODE EFEKTIF <==
+        comparator = (a, b) => getRepetitionCodeIndex(
+          a.effectiveRepetitionCode,
+        ).compareTo(getRepetitionCodeIndex(b.effectiveRepetitionCode));
         break;
       default: // date
         comparator = (a, b) {
-          if (a.date == null && b.date == null) return 0;
-          if (a.date == null) return _sortAscending ? 1 : -1;
-          if (b.date == null) return _sortAscending ? -1 : 1;
-          return DateTime.parse(a.date!).compareTo(DateTime.parse(b.date!));
+          // ==> SORT BERDASARKAN TANGGAL EFEKTIF <==
+          if (a.effectiveDate == null && b.effectiveDate == null) return 0;
+          if (a.effectiveDate == null) return _sortAscending ? 1 : -1;
+          if (b.effectiveDate == null) return _sortAscending ? -1 : 1;
+          return DateTime.parse(
+            a.effectiveDate!,
+          ).compareTo(DateTime.parse(b.effectiveDate!));
         };
         break;
     }
 
-    // DIUBAH: Logika sorting yang lebih benar
     list.sort(comparator);
     if (!_sortAscending) {
       _filteredDiscussions = _filteredDiscussions.reversed.toList();
@@ -185,17 +181,15 @@ class DiscussionProvider with ChangeNotifier {
       repetitionCode: 'R0D',
     );
     discussion.points.add(newPoint);
-    notifyListeners();
+    _filterAndSortDiscussions(); // Panggil sort untuk update UI
     _saveDiscussions();
   }
 
   void updateDiscussionDate(Discussion discussion, DateTime newDate) {
     discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
-    // Jika diubah tanggalnya, discussion dianggap aktif kembali
     if (discussion.finished) {
       discussion.finished = false;
       discussion.finish_date = null;
-      // Jika kode-nya 'Finish', kembalikan ke default
       if (discussion.repetitionCode == 'Finish') {
         discussion.repetitionCode = 'R0D';
       }
@@ -208,13 +202,11 @@ class DiscussionProvider with ChangeNotifier {
     discussion.repetitionCode = newCode;
     if (newCode != 'Finish') {
       discussion.date = getNewDateForRepetitionCode(newCode);
-      // Jika diubah kodenya, discussion dianggap aktif kembali
       if (discussion.finished) {
         discussion.finished = false;
         discussion.finish_date = null;
       }
     } else {
-      // Jika kodenya diubah jadi 'Finish', tandai selesai
       markAsFinished(discussion);
     }
     _filterAndSortDiscussions();
@@ -229,18 +221,15 @@ class DiscussionProvider with ChangeNotifier {
 
   void markAsFinished(Discussion discussion) {
     discussion.finished = true;
-    discussion.repetitionCode = 'Finish';
     discussion.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    discussion.date = null;
+    // Tidak perlu mengubah date atau code, getter akan menanganinya
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
 
-  // ==> FUNGSI BARU <==
   void reactivateDiscussion(Discussion discussion) {
     discussion.finished = false;
     discussion.finish_date = null;
-    // Saat diaktifkan kembali, set tanggal ke hari ini dan kode default
     discussion.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
     discussion.repetitionCode = 'R0D';
     _filterAndSortDiscussions();
@@ -249,14 +238,14 @@ class DiscussionProvider with ChangeNotifier {
 
   void updatePointDate(Point point, DateTime newDate) {
     point.date = DateFormat('yyyy-MM-dd').format(newDate);
-    notifyListeners();
+    _filterAndSortDiscussions();
     _saveDiscussions();
   }
 
   void updatePointCode(Point point, String newCode) {
     point.repetitionCode = newCode;
     point.date = getNewDateForRepetitionCode(newCode);
-    notifyListeners();
+    _filterAndSortDiscussions();
     _saveDiscussions();
   }
 

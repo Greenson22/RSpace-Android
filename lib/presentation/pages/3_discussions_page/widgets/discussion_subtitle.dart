@@ -19,13 +19,14 @@ class DiscussionSubtitle extends StatelessWidget {
       );
     }
 
-    final dateText = discussion.date ?? 'N/A';
-    final codeText = discussion.repetitionCode;
+    // ==> MENGGUNAKAN GETTER EFEKTIF <==
+    final dateText = discussion.effectiveDate ?? 'N/A';
+    final codeText = discussion.effectiveRepetitionCode;
     Color dateColor = Colors.grey;
 
-    if (discussion.date != null) {
+    if (discussion.effectiveDate != null) {
       try {
-        final discussionDate = DateTime.parse(discussion.date!);
+        final discussionDate = DateTime.parse(discussion.effectiveDate!);
         final today = DateTime.now();
         if (discussionDate.isBefore(today.subtract(const Duration(days: -1)))) {
           dateColor = Colors.red;

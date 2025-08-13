@@ -1,3 +1,6 @@
+import 'dart:math';
+import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart';
+
 class Point {
   String pointText;
   String repetitionCode;
@@ -42,6 +45,33 @@ class Discussion {
     this.finished = false, // Default value
     this.finish_date,
   });
+
+  // ==> GETTER BARU UNTUK MENDAPATKAN POINT DENGAN KODE REPETISI TERKECIL <==
+  Point? get _pointWithMinRepetitionCode {
+    if (points.isEmpty) {
+      return null;
+    }
+    // Mengurutkan poin berdasarkan indeks kode repetisinya
+    final sortedPoints = List<Point>.from(points)
+      ..sort(
+        (a, b) => getRepetitionCodeIndex(
+          a.repetitionCode,
+        ).compareTo(getRepetitionCodeIndex(b.repetitionCode)),
+      );
+    return sortedPoints.first;
+  }
+
+  // ==> GETTER BARU UNTUK LOGIKA KODE REPETISI EFEKTIF <==
+  String get effectiveRepetitionCode {
+    if (finished) return 'Finish';
+    return _pointWithMinRepetitionCode?.repetitionCode ?? repetitionCode;
+  }
+
+  // ==> GETTER BARU UNTUK LOGIKA TANGGAL EFEKTIF <==
+  String? get effectiveDate {
+    if (finished) return finish_date;
+    return _pointWithMinRepetitionCode?.date ?? date;
+  }
 
   factory Discussion.fromJson(Map<String, dynamic> json) {
     var pointsListFromJson = json['points'] as List<dynamic>?;
