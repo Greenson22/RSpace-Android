@@ -62,42 +62,37 @@ class SubjectService {
       );
     }
 
-    // Logika pengurutan subjek tetap sama
-    final positionedSubjects = subjects.where((s) => s.position != -1).toList();
-    final unpositionedSubjects = subjects
-        .where((s) => s.position == -1)
-        .toList();
+    // ==> PERUBAHAN: LOGIKA PENGURUTAN BARU BERDASARKAN REPETITION CODE <==
+    // Urutkan daftar subjek berdasarkan indeks dari repetitionCode mereka.
+    subjects.sort((a, b) {
+      // Anggap subjek tanpa kode repetisi memiliki prioritas terendah.
+      final codeA = a.repetitionCode;
+      final codeB = b.repetitionCode;
 
-    positionedSubjects.sort((a, b) => a.position.compareTo(b.position));
+      if (codeA == null && codeB == null) return 0;
+      if (codeA == null) return 1; // Pindahkan 'a' ke akhir.
+      if (codeB == null) return -1; // Pindahkan 'b' ke akhir.
 
-    int maxPosition = positionedSubjects.isNotEmpty
-        ? positionedSubjects
-              .map((s) => s.position)
-              .reduce((a, b) => a > b ? a : b)
-        : -1;
+      final indexA = getRepetitionCodeIndex(codeA);
+      final indexB = getRepetitionCodeIndex(codeB);
+      return indexA.compareTo(indexB);
+    });
 
-    for (final subject in unpositionedSubjects) {
-      maxPosition++;
-      subject.position = maxPosition;
-      await _saveSubjectMetadata(topicPath, subject);
-    }
-
-    final allSubjects = [...positionedSubjects, ...unpositionedSubjects];
-    allSubjects.sort((a, b) => a.position.compareTo(b.position));
-
+    // Setelah diurutkan, perbarui posisi setiap subjek sesuai urutan baru.
     bool needsResave = false;
-    for (int i = 0; i < allSubjects.length; i++) {
-      if (allSubjects[i].position != i) {
-        allSubjects[i].position = i;
+    for (int i = 0; i < subjects.length; i++) {
+      if (subjects[i].position != i) {
+        subjects[i].position = i;
         needsResave = true;
       }
     }
 
+    // Jika ada perubahan posisi, simpan urutan baru ke file.
     if (needsResave) {
-      await saveSubjectsOrder(topicPath, allSubjects);
+      await saveSubjectsOrder(topicPath, subjects);
     }
 
-    return allSubjects;
+    return subjects;
   }
 
   // ==> FUNGSI BARU UNTUK MEMPROSES DISKUSI <==
@@ -254,10 +249,9 @@ class SubjectService {
       throw Exception('Subject dengan nama "$subjectName" sudah ada.');
 
     try {
-      final currentSubjects = await getSubjects(topicPath);
-      final newPosition = currentSubjects.length;
+      // Tidak perlu menetapkan posisi secara manual lagi karena akan dihitung ulang
       final initialContent = {
-        'metadata': {'icon': _defaultIcon, 'position': newPosition},
+        'metadata': {'icon': _defaultIcon, 'position': -1}, // Posisi awal -1
         'content': [],
       };
       await file.writeAsString(jsonEncode(initialContent));
@@ -313,8 +307,8 @@ class SubjectService {
 
     try {
       await file.delete();
-      final remainingSubjects = await getSubjects(topicPath);
-      await saveSubjectsOrder(topicPath, remainingSubjects);
+      // Panggil getSubjects untuk memicu pengurutan ulang dan penyimpanan posisi baru
+      await getSubjects(topicPath);
     } catch (e) {
       throw Exception('Gagal menghapus subject: $e');
     }
