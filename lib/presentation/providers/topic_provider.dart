@@ -1,6 +1,6 @@
+// lib/presentation/providers/topic_provider.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
@@ -120,7 +120,6 @@ class TopicProvider with ChangeNotifier {
     _isBackingUp = true;
     notifyListeners();
     try {
-      // Menunggu hasil Future dari _pathService.contentsPath
       final contentsPath = await _pathService.contentsPath;
       final sourceDir = Directory(contentsPath);
 
@@ -134,7 +133,6 @@ class TopicProvider with ChangeNotifier {
       final zipFileName = 'backup-topics-$timestamp.zip';
       final zipFile = File(path.join(destinationPath, zipFileName));
 
-      // Memastikan direktori tujuan ada
       if (!await Directory(destinationPath).exists()) {
         await Directory(destinationPath).create(recursive: true);
       }
@@ -145,7 +143,6 @@ class TopicProvider with ChangeNotifier {
         recurseSubDirs: true,
       );
 
-      // Mengembalikan pesan sukses yang lebih informatif
       return 'Backup berhasil disimpan di: $destinationPath';
     } catch (e) {
       rethrow;
@@ -155,13 +152,33 @@ class TopicProvider with ChangeNotifier {
     }
   }
 
-  // Mengubah return type menjadi Future<String> dan menjadikannya async
-  Future<String> getTopicsPath() async {
-    return await _pathService.topicsPath;
+  Future<void> importContents(File zipFile) async {
+    try {
+      final topicsPath = await _pathService.topicsPath;
+      final myTasksPath = await _pathService.myTasksPath;
+      final contentsPath = await _pathService.contentsPath;
+
+      final topicsDir = Directory(topicsPath);
+      final myTasksFile = File(myTasksPath);
+
+      if (await topicsDir.exists()) {
+        await topicsDir.delete(recursive: true);
+      }
+
+      if (await myTasksFile.exists()) {
+        await myTasksFile.delete();
+      }
+
+      await ZipFile.extractToDirectory(
+        zipFile: zipFile,
+        destinationDir: Directory(contentsPath),
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // FUNGSI BARU UNTUK MENDAPATKAN PATH CONTENTS
-  Future<String> getContentsPath() async {
-    return await _pathService.contentsPath;
+  Future<String> getTopicsPath() async {
+    return await _pathService.topicsPath;
   }
 }

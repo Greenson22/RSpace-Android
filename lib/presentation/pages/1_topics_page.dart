@@ -1,3 +1,5 @@
+// lib/presentation/pages/1_topics_page.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -16,10 +18,9 @@ class TopicsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TopicProvider(),
-      child: const _TopicsPageContent(),
-    );
+    // DIUBAH: ChangeNotifierProvider dihapus dari sini.
+    // Provider sekarang diambil dari level atas (main.dart).
+    return const _TopicsPageContent();
   }
 }
 
@@ -37,11 +38,13 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   void initState() {
     super.initState();
+    // DIUBAH: Sekarang aman untuk memanggil provider di initState
+    // karena provider sudah ada sebelum widget ini dibuat.
+    // Namun, kita tidak perlu memanggil fetchTopics() di sini karena
+    // constructor TopicProvider sudah melakukannya.
+    final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     _searchController.addListener(() {
-      Provider.of<TopicProvider>(
-        context,
-        listen: false,
-      ).search(_searchController.text);
+      topicProvider.search(_searchController.text);
     });
   }
 
@@ -119,7 +122,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final topicProvider = Provider.of<TopicProvider>(context);
 
     return Scaffold(

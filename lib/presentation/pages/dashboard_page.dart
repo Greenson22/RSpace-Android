@@ -1,13 +1,12 @@
 // lib/presentation/pages/dashboard_page.dart
-import 'dart:async'; // DITAMBAHKAN: untuk Stream
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_archive/flutter_archive.dart'; // DIIMPOR
-import 'package:intl/intl.dart'; // DITAMBAHKAN: untuk format tanggal/waktu
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
-import '../providers/theme_provider.dart'; // DIIMPOR
+import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
 import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
@@ -22,14 +21,12 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
-  bool _isImporting = false; // DITAMBAHKAN
-  late Stream<DateTime> _clockStream; // DITAMBAHKAN
+  bool _isImporting = false;
+  late Stream<DateTime> _clockStream;
 
-  // DITAMBAHKAN: initState untuk memulai stream jam
   @override
   void initState() {
     super.initState();
-    // Membuat stream yang menghasilkan DateTime.now() setiap detik
     _clockStream = Stream.periodic(
       const Duration(seconds: 1),
       (_) => DateTime.now(),
@@ -46,7 +43,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    final topicProvider = TopicProvider();
+    final topicProvider = Provider.of<TopicProvider>(context, listen: false);
 
     setState(() {
       _isBackingUp = true;
@@ -73,7 +70,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // FUNGSI BARU UNTUK IMPORT
   Future<void> _importContents(BuildContext context) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -85,24 +81,20 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
+    final confirmed = await _showImportConfirmationDialog(context);
+    if (!confirmed) {
+      if (mounted) showAppSnackBar(context, 'Import dibatalkan oleh pengguna.');
+      return;
+    }
+
     setState(() => _isImporting = true);
     showAppSnackBar(context, 'Memulai proses import...');
 
     try {
       final zipFile = File(result.files.single.path!);
-      final topicProvider = TopicProvider();
-      final contentsPath = await topicProvider.getContentsPath();
-      final contentsDir = Directory(contentsPath);
-      final dataDir = contentsDir.parent;
+      final topicProvider = Provider.of<TopicProvider>(context, listen: false);
 
-      if (await contentsDir.exists()) {
-        await contentsDir.delete(recursive: true);
-      }
-
-      await ZipFile.extractToDirectory(
-        zipFile: zipFile,
-        destinationDir: dataDir,
-      );
+      await topicProvider.importContents(zipFile);
 
       if (mounted) {
         showAppSnackBar(
@@ -123,6 +115,29 @@ class _DashboardPageState extends State<DashboardPage> {
         setState(() => _isImporting = false);
       }
     }
+  }
+
+  Future<bool> _showImportConfirmationDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Konfirmasi Import'),
+            content: const Text(
+              'PERINGATAN: Tindakan ini akan menghapus semua folder "topics" dan file "my_tasks.json" saat ini, lalu menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Batal'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              TextButton(
+                child: const Text('Lanjutkan'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<void> _showStoragePathDialog(BuildContext context) async {
@@ -165,12 +180,9 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
-      // DIUBAH: Menggunakan Column untuk menampung jam dan GridView
       body: Column(
         children: [
-          // DITAMBAHKAN: Widget untuk menampilkan tanggal dan jam
           _buildClock(),
-          // Expanded untuk memastikan GridView mengisi sisa ruang
           Expanded(
             child: Center(
               child: GridView.count(
@@ -215,7 +227,6 @@ class _DashboardPageState extends State<DashboardPage> {
                         ? const CircularProgressIndicator()
                         : null,
                   ),
-                  // DITAMBAHKAN: Tombol Import
                   _buildDashboardItem(
                     context,
                     icon: Icons.restore,
@@ -241,16 +252,13 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // DITAMBAHKAN: Widget baru untuk membangun tampilan jam
   Widget _buildClock() {
     return StreamBuilder<DateTime>(
       stream: _clockStream,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final now = snapshot.data!;
-          // Format: Rabu, 13 Agustus 2025
           final dateFormatter = DateFormat('EEEE, d MMMM yyyy', 'id_ID');
-          // Format: 13:03:45
           final timeFormatter = DateFormat('HH:mm:ss');
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -271,7 +279,6 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           );
         }
-        // Tampilkan placeholder jika stream belum menghasilkan data
         return const SizedBox(height: 80);
       },
     );
