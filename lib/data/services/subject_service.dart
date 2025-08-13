@@ -3,19 +3,28 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
 import '../models/subject_model.dart';
+import '../models/discussion_model.dart'; // DIIMPOR
 import 'path_service.dart';
+import 'discussion_service.dart'; // DIIMPOR
+import 'shared_preferences_service.dart'; // DIIMPOR
+import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart'; // DIIMPOR
 
 class SubjectService {
   final PathService _pathService = PathService();
+  final DiscussionService _discussionService =
+      DiscussionService(); // DITAMBAHKAN
+  final SharedPreferencesService _prefsService =
+      SharedPreferencesService(); // DITAMBAHKAN
   static const String _defaultIcon = '📄';
 
-  // FUNGSI DIUBAH TOTAL UNTUK MEMBACA, MENGURUTKAN, DAN MEMPERBAIKI POSISI
+  // FUNGSI INI DIUBAH SECARA SIGNIFIKAN
   Future<List<Subject>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
       throw Exception('Folder tidak ditemukan: $topicPath');
     }
 
+    // Mengambil file-file subject
     final files = directory
         .listSync()
         .whereType<File>()
@@ -26,19 +35,34 @@ class SubjectService {
         )
         .toList();
 
+    // Memuat preferensi filter dan sort
+    final sortPrefs = await _prefsService.loadSortPreferences();
+    final filterPrefs = await _prefsService.loadFilterPreference();
+
     List<Subject> subjects = [];
     for (var file in files) {
       final name = path.basenameWithoutExtension(file.path);
       final metadata = await _getSubjectMetadata(file);
+
+      // Memuat dan memproses diskusi untuk mendapatkan date & code yang relevan
+      final relevantDiscussionInfo = await _getRelevantDiscussionInfo(
+        file.path,
+        sortPrefs,
+        filterPrefs,
+      );
+
       subjects.add(
         Subject(
           name: name,
           icon: metadata['icon'] as String? ?? _defaultIcon,
           position: metadata['position'] as int? ?? -1,
+          date: relevantDiscussionInfo['date'], // DITAMBAHKAN
+          repetitionCode: relevantDiscussionInfo['code'], // DITAMBAHKAN
         ),
       );
     }
 
+    // Logika pengurutan subjek tetap sama
     final positionedSubjects = subjects.where((s) => s.position != -1).toList();
     final unpositionedSubjects = subjects
         .where((s) => s.position == -1)
@@ -76,7 +100,97 @@ class SubjectService {
     return allSubjects;
   }
 
-  // FUNGSI BARU UNTUK MENYIMPAN URUTAN SEMUA SUBJECT
+  // ==> FUNGSI BARU UNTUK MEMPROSES DISKUSI <==
+  Future<Map<String, String?>> _getRelevantDiscussionInfo(
+    String subjectJsonPath,
+    Map<String, dynamic> sortPrefs,
+    Map<String, String?> filterPrefs,
+  ) async {
+    try {
+      List<Discussion> discussions = await _discussionService.loadDiscussions(
+        subjectJsonPath,
+      );
+
+      // 1. Terapkan Filter
+      List<Discussion> filteredDiscussions = discussions.where((discussion) {
+        final filterType = filterPrefs['filterType'];
+        if (filterType == null) return true;
+
+        if (filterType == 'code') {
+          return discussion.effectiveRepetitionCode ==
+              filterPrefs['filterValue'];
+        } else if (filterType == 'date' && filterPrefs['filterValue'] != null) {
+          try {
+            if (discussion.effectiveDate == null) return false;
+            final discussionDate = DateTime.parse(discussion.effectiveDate!);
+            final normalizedDate = DateTime(
+              discussionDate.year,
+              discussionDate.month,
+              discussionDate.day,
+            );
+
+            final dates = filterPrefs['filterValue']!.split('/');
+            final startDate = DateTime.parse(dates[0]);
+            final endDate = DateTime.parse(dates[1]);
+
+            return !normalizedDate.isBefore(startDate) &&
+                !normalizedDate.isAfter(endDate);
+          } catch (e) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
+
+      if (filteredDiscussions.isEmpty) {
+        return {'date': null, 'code': null};
+      }
+
+      // 2. Terapkan Sort
+      final sortType = sortPrefs['sortType'] as String;
+      final sortAscending = sortPrefs['sortAscending'] as bool;
+
+      Comparator<Discussion> comparator;
+      switch (sortType) {
+        case 'name':
+          comparator = (a, b) =>
+              a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
+          break;
+        case 'code':
+          comparator = (a, b) => getRepetitionCodeIndex(
+            a.effectiveRepetitionCode,
+          ).compareTo(getRepetitionCodeIndex(b.effectiveRepetitionCode));
+          break;
+        default: // date
+          comparator = (a, b) {
+            if (a.effectiveDate == null && b.effectiveDate == null) return 0;
+            if (a.effectiveDate == null) return sortAscending ? 1 : -1;
+            if (b.effectiveDate == null) return sortAscending ? -1 : 1;
+            return DateTime.parse(
+              a.effectiveDate!,
+            ).compareTo(DateTime.parse(b.effectiveDate!));
+          };
+          break;
+      }
+
+      filteredDiscussions.sort(comparator);
+      if (!sortAscending) {
+        filteredDiscussions = filteredDiscussions.reversed.toList();
+      }
+
+      // 3. Ambil info dari diskusi pertama
+      final relevantDiscussion = filteredDiscussions.first;
+      return {
+        'date': relevantDiscussion.effectiveDate,
+        'code': relevantDiscussion.effectiveRepetitionCode,
+      };
+    } catch (e) {
+      return {'date': null, 'code': null};
+    }
+  }
+
+  // Sisanya dari file ini tetap sama...
+  // ... (saveSubjectsOrder, _getSubjectMetadata, _saveSubjectMetadata, etc.)
   Future<void> saveSubjectsOrder(
     String topicPath,
     List<Subject> subjects,
