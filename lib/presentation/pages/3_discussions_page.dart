@@ -6,8 +6,13 @@ import '3_discussions_page/widgets/discussion_card.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
+  final VoidCallback? onFilterOrSortChanged; // ==> DITAMBAHKAN: Callback
 
-  const DiscussionsPage({super.key, required this.subjectName});
+  const DiscussionsPage({
+    super.key,
+    required this.subjectName,
+    this.onFilterOrSortChanged, // ==> DITAMBAHKAN: Di konstruktor
+  });
 
   @override
   State<DiscussionsPage> createState() => _DiscussionsPageState();
@@ -102,6 +107,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             initialSortAscending: provider.sortAscending,
             onApplySort: (sortType, sortAscending) {
               provider.applySort(sortType, sortAscending);
+              // ==> PANGGIL CALLBACK DI SINI <==
+              widget.onFilterOrSortChanged?.call();
               _showSnackBar('Diskusi telah diurutkan.');
             },
           ),
@@ -156,6 +163,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       isFilterActive: provider.activeFilterType != null,
       onClearFilters: () {
         provider.clearFilters();
+        // ==> PANGGIL CALLBACK DI SINI <==
+        widget.onFilterOrSortChanged?.call();
         _showSnackBar('Semua filter telah dihapus.');
       },
       onShowRepetitionCodeFilter: () => showRepetitionCodeFilterDialog(
@@ -163,15 +172,18 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         repetitionCodes: provider.repetitionCodes,
         onSelectCode: (code) {
           provider.applyCodeFilter(code);
+          // ==> PANGGIL CALLBACK DI SINI <==
+          widget.onFilterOrSortChanged?.call();
           _showSnackBar('Filter diterapkan: Kode = $code');
         },
       ),
       onShowDateFilter: () => showDateFilterDialog(
         context: context,
-        initialDateRange:
-            null, // You can enhance this by storing range in provider
+        initialDateRange: null,
         onSelectRange: (range) {
           provider.applyDateFilter(range);
+          // ==> PANGGIL CALLBACK DI SINI <==
+          widget.onFilterOrSortChanged?.call();
           _showSnackBar('Filter tanggal diterapkan.');
         },
       ),

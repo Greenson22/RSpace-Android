@@ -25,6 +25,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
   void initState() {
     super.initState();
     final provider = Provider.of<SubjectProvider>(context, listen: false);
+    // Kita panggil fetchSubjects di sini sekali saat halaman pertama kali dibuka
+    provider.fetchSubjects();
     _searchController.addListener(() {
       provider.search(_searchController.text);
     });
@@ -112,15 +114,30 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
+  // ==> FUNGSI INI DIUBAH UNTUK MENGIRIM CALLBACK <==
   void _navigateToDiscussionsPage(BuildContext context, Subject subject) {
-    final provider = Provider.of<SubjectProvider>(context, listen: false);
-    final jsonFilePath = path.join(provider.topicPath, '${subject.name}.json');
+    // Dapatkan provider dari context saat ini
+    final subjectProvider = Provider.of<SubjectProvider>(
+      context,
+      listen: false,
+    );
+    final jsonFilePath = path.join(
+      subjectProvider.topicPath,
+      '${subject.name}.json',
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(jsonFilePath),
-          child: DiscussionsPage(subjectName: subject.name),
+          // Kirim fungsi yang memanggil fetchSubjects sebagai callback
+          child: DiscussionsPage(
+            subjectName: subject.name,
+            onFilterOrSortChanged: () {
+              subjectProvider.fetchSubjects();
+            },
+          ),
         ),
       ),
     );

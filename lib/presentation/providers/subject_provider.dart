@@ -7,7 +7,8 @@ class SubjectProvider with ChangeNotifier {
   final String topicPath;
 
   SubjectProvider(this.topicPath) {
-    fetchSubjects();
+    // Dihapus dari sini agar tidak terpanggil dua kali saat inisialisasi
+    // fetchSubjects();
   }
 
   bool _isLoading = true;
@@ -33,9 +34,17 @@ class SubjectProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> PERUBAHAN UTAMA DI FUNGSI INI <==
   Future<void> fetchSubjects() async {
     _isLoading = true;
-    notifyListeners();
+    // Gunakan addPostFrameCallback untuk menunda notifyListeners
+    // Ini memastikan kita tidak memanggilnya selama proses build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (hasListeners) {
+        notifyListeners();
+      }
+    });
+
     try {
       _allSubjects = await _subjectService.getSubjects(topicPath);
       _filteredSubjects = _allSubjects;
@@ -43,7 +52,10 @@ class SubjectProvider with ChangeNotifier {
       debugPrint("Error fetching subjects: $e");
     } finally {
       _isLoading = false;
-      notifyListeners();
+      // notifyListeners() di akhir aman karena proses async sudah selesai
+      if (hasListeners) {
+        notifyListeners();
+      }
     }
   }
 
