@@ -173,6 +173,9 @@ Future<void> showDateFilterDialog({
   required DateTimeRange? initialDateRange,
 }) async {
   final now = DateTime.now();
+  // **PERUBAHAN:** Buat variabel 'today' yang bersih dari komponen waktu
+  final today = DateTime(now.year, now.month, now.day);
+
   showDialog(
     context: context,
     builder: (context) {
@@ -184,14 +187,16 @@ Future<void> showDateFilterDialog({
             ListTile(
               title: const Text('Hari Ini'),
               onTap: () {
-                onSelectRange(DateTimeRange(start: now, end: now));
+                // **PERUBAHAN:** Gunakan 'today' untuk start dan end
+                onSelectRange(DateTimeRange(start: today, end: today));
                 Navigator.pop(context);
               },
             ),
             ListTile(
               title: const Text('Hari ini dan sebelumnya'),
               onTap: () {
-                onSelectRange(DateTimeRange(start: DateTime(2000), end: now));
+                // **PERUBAHAN:** Gunakan 'today' untuk end
+                onSelectRange(DateTimeRange(start: DateTime(2000), end: today));
                 Navigator.pop(context);
               },
             ),

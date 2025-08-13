@@ -42,7 +42,6 @@ class DiscussionProvider with ChangeNotifier {
   bool _sortAscending = true;
   bool get sortAscending => _sortAscending;
 
-  // ==> MENGGUNAKAN DAFTAR KODE TERPUSAT <==
   final List<String> repetitionCodes = kRepetitionCodes;
 
   // --- DATA LOGIC ---
@@ -96,21 +95,31 @@ class DiscussionProvider with ChangeNotifier {
       );
       bool matchesFilter = true;
       if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
-        // ==> FILTER BERDASARKAN KODE EFEKTIF <==
         matchesFilter =
             discussion.effectiveRepetitionCode == _selectedRepetitionCode;
       } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
         try {
-          // ==> FILTER BERDASARKAN TANGGAL EFEKTIF <==
           if (discussion.effectiveDate == null) return false;
+
           final discussionDate = DateTime.parse(discussion.effectiveDate!);
+
+          // **PERUBAHAN:** Normalisasi tanggal diskusi untuk menghapus komponen waktu
+          final normalizedDiscussionDate = DateTime(
+            discussionDate.year,
+            discussionDate.month,
+            discussionDate.day,
+          );
+
           final startDate = _selectedDateRange!.start;
-          final endDate = _selectedDateRange!.end.add(const Duration(days: 1));
+          final endDate = _selectedDateRange!.end;
+
+          // **PERUBAHAN:** Logika perbandingan yang lebih kuat untuk rentang inklusif
+          // Apakah tanggal diskusi TIDAK SEBELUM tanggal mulai (artinya, sama atau sesudah)
+          // DAN
+          // Apakah tanggal diskusi TIDAK SESUDAH tanggal akhir (artinya, sama atau sebelum)
           matchesFilter =
-              discussionDate.isAfter(
-                startDate.subtract(const Duration(days: 1)),
-              ) &&
-              discussionDate.isBefore(endDate);
+              !normalizedDiscussionDate.isBefore(startDate) &&
+              !normalizedDiscussionDate.isAfter(endDate);
         } catch (e) {
           matchesFilter = false;
         }
@@ -135,14 +144,12 @@ class DiscussionProvider with ChangeNotifier {
             a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
         break;
       case 'code':
-        // ==> SORT BERDASARKAN KODE EFEKTIF <==
         comparator = (a, b) => getRepetitionCodeIndex(
           a.effectiveRepetitionCode,
         ).compareTo(getRepetitionCodeIndex(b.effectiveRepetitionCode));
         break;
       default: // date
         comparator = (a, b) {
-          // ==> SORT BERDASARKAN TANGGAL EFEKTIF <==
           if (a.effectiveDate == null && b.effectiveDate == null) return 0;
           if (a.effectiveDate == null) return _sortAscending ? 1 : -1;
           if (b.effectiveDate == null) return _sortAscending ? -1 : 1;
@@ -181,7 +188,7 @@ class DiscussionProvider with ChangeNotifier {
       repetitionCode: 'R0D',
     );
     discussion.points.add(newPoint);
-    _filterAndSortDiscussions(); // Panggil sort untuk update UI
+    _filterAndSortDiscussions();
     _saveDiscussions();
   }
 
@@ -222,7 +229,6 @@ class DiscussionProvider with ChangeNotifier {
   void markAsFinished(Discussion discussion) {
     discussion.finished = true;
     discussion.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    // Tidak perlu mengubah date atau code, getter akan menanganinya
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
