@@ -1,14 +1,15 @@
 // lib/presentation/pages/dashboard_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart'; // ==> IMPORT BARU <==
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/topic_provider.dart';
 import '1_topics_page.dart';
-import '1_topics_page/dialogs/topic_dialogs.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'my_tasks_page.dart';
+// Dialog tidak lagi dibutuhkan di sini, jadi bisa dihapus importnya jika mau
+// import '1_topics_page/dialogs/topic_dialogs.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -20,11 +21,14 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
 
+  // ==> FUNGSI BACKUP SEKARANG JUGA MENGGUNAKAN file_picker <==
   Future<void> _backupContents(BuildContext context) async {
-    // Dialog backup tetap menggunakan input manual untuk fleksibilitas
-    final String? destinationPath = await showBackupPathDialog(context);
+    // Membuka pemilih folder visual untuk memilih tujuan backup
+    String? destinationPath = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Tujuan Backup',
+    );
 
-    if (destinationPath == null || destinationPath.isEmpty) {
+    if (destinationPath == null) {
       if (mounted) showAppSnackBar(context, 'Backup dibatalkan.');
       return;
     }
@@ -56,7 +60,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // ==> FUNGSI INI SEKARANG MENGGUNAKAN file_picker <==
   Future<void> _showStoragePathDialog(BuildContext context) async {
     // Membuka pemilih direktori visual
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
