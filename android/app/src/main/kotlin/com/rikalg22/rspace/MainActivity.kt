@@ -1,4 +1,4 @@
-package com.example.my_aplication
+package com.rikalg22.rspace
 
 import io.flutter.embedding.android.FlutterActivity
 
