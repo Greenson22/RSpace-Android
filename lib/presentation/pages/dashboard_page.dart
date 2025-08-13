@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart'; // DITAMBAHKAN: untuk format tanggal/waktu
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
+import '../providers/theme_provider.dart'; // DIIMPOR
 import '../providers/topic_provider.dart';
 import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
@@ -93,8 +94,23 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
+            ),
+            onPressed: () {
+              themeProvider.darkTheme = !themeProvider.darkTheme;
+            },
+            tooltip: 'Ganti Tema',
+          ),
+        ],
+      ),
       // DIUBAH: Menggunakan Column untuk menampung jam dan GridView
       body: Column(
         children: [

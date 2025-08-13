@@ -141,16 +141,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         actions: [
           if (!topicProvider.isReorderModeEnabled) ...[
             IconButton(
-              icon: Icon(
-                themeProvider.darkTheme
-                    ? Icons.wb_sunny
-                    : Icons.nightlight_round,
-              ),
-              onPressed: () =>
-                  themeProvider.darkTheme = !themeProvider.darkTheme,
-              tooltip: 'Ganti Tema',
-            ),
-            IconButton(
               icon: Icon(_isSearching ? Icons.close : Icons.search),
               onPressed: () {
                 setState(() {
