@@ -23,17 +23,6 @@ class SubjectProvider with ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  bool _isReorderModeEnabled = false;
-  bool get isReorderModeEnabled => _isReorderModeEnabled;
-
-  void toggleReorderMode() {
-    _isReorderModeEnabled = !_isReorderModeEnabled;
-    if (!_isReorderModeEnabled) {
-      search(_searchQuery);
-    }
-    notifyListeners();
-  }
-
   // ==> PERUBAHAN UTAMA DI FUNGSI INI <==
   Future<void> fetchSubjects() async {
     _isLoading = true;
@@ -65,26 +54,6 @@ class SubjectProvider with ChangeNotifier {
         .where((subject) => subject.name.toLowerCase().contains(_searchQuery))
         .toList();
     notifyListeners();
-  }
-
-  Future<void> reorderSubjects(int oldIndex, int newIndex) async {
-    if (_searchQuery.isNotEmpty) return;
-
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-
-    final Subject item = _allSubjects.removeAt(oldIndex);
-    _allSubjects.insert(newIndex, item);
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      await _subjectService.saveSubjectsOrder(topicPath, _allSubjects);
-    } finally {
-      await fetchSubjects();
-    }
   }
 
   Future<void> updateSubjectIcon(String subjectName, String newIcon) async {

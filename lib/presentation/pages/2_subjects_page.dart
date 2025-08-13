@@ -149,47 +149,27 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: subjectProvider.isReorderModeEnabled
-            ? const Text('Urutkan Subject')
-            : (_isSearching
-                  ? TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Cari subject...',
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(color: Colors.white70),
-                      ),
-                      style: const TextStyle(color: Colors.white),
-                    )
-                  : Text('Subjects in ${widget.topicName}')),
+        title: (_isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Cari subject...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+              )
+            : Text('Subjects in ${widget.topicName}')),
         actions: [
-          if (!subjectProvider.isReorderModeEnabled)
-            IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  if (!_isSearching) _searchController.clear();
-                });
-              },
-            ),
           IconButton(
-            icon: Icon(
-              subjectProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
-            ),
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: () {
-              if (!subjectProvider.isReorderModeEnabled && _isSearching) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-              }
-              subjectProvider.toggleReorderMode();
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) _searchController.clear();
+              });
             },
-            tooltip: subjectProvider.isReorderModeEnabled
-                ? 'Selesai Mengurutkan'
-                : 'Urutkan Subject',
           ),
         ],
       ),
@@ -206,44 +186,32 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
           final subjectsToShow = provider.filteredSubjects;
           final isSearching = provider.searchQuery.isNotEmpty;
-          final isReorderActive = provider.isReorderModeEnabled && !isSearching;
 
           if (subjectsToShow.isEmpty && isSearching) {
             return const Center(child: Text('Subject tidak ditemukan.'));
           }
 
-          return ReorderableListView.builder(
+          return ListView.builder(
             itemCount: subjectsToShow.length,
-            buildDefaultDragHandles: isReorderActive,
             itemBuilder: (context, index) {
               final subject = subjectsToShow[index];
               return SubjectListTile(
                 key: ValueKey(subject.name),
                 subject: subject,
-                onTap: isReorderActive
-                    ? null
-                    : () => _navigateToDiscussionsPage(context, subject),
+                onTap: () => _navigateToDiscussionsPage(context, subject),
                 onRename: () => _renameSubject(context, subject),
                 onDelete: () => _deleteSubject(context, subject),
                 onIconChange: () => _changeIcon(context, subject),
-                isReorderActive: isReorderActive,
               );
-            },
-            onReorder: (oldIndex, newIndex) {
-              if (isReorderActive) {
-                provider.reorderSubjects(oldIndex, newIndex);
-              }
             },
           );
         },
       ),
-      floatingActionButton: subjectProvider.isReorderModeEnabled
-          ? null
-          : FloatingActionButton(
-              onPressed: () => _addSubject(context),
-              tooltip: 'Tambah Subject',
-              child: const Icon(Icons.add),
-            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addSubject(context),
+        tooltip: 'Tambah Subject',
+        child: const Icon(Icons.add),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
