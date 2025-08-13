@@ -3,6 +3,7 @@ import 'dart:async'; // DITAMBAHKAN: untuk Stream
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_archive/flutter_archive.dart'; // DIIMPOR
 import 'package:intl/intl.dart'; // DITAMBAHKAN: untuk format tanggal/waktu
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
@@ -21,6 +22,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
+  bool _isImporting = false; // DITAMBAHKAN
   late Stream<DateTime> _clockStream; // DITAMBAHKAN
 
   // DITAMBAHKAN: initState untuk memulai stream jam
@@ -67,6 +69,58 @@ class _DashboardPageState extends State<DashboardPage> {
         setState(() {
           _isBackingUp = false;
         });
+      }
+    }
+  }
+
+  // FUNGSI BARU UNTUK IMPORT
+  Future<void> _importContents(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+    );
+
+    if (result == null || result.files.single.path == null) {
+      if (mounted) showAppSnackBar(context, 'Import dibatalkan.');
+      return;
+    }
+
+    setState(() => _isImporting = true);
+    showAppSnackBar(context, 'Memulai proses import...');
+
+    try {
+      final zipFile = File(result.files.single.path!);
+      final topicProvider = TopicProvider();
+      final contentsPath = await topicProvider.getContentsPath();
+      final contentsDir = Directory(contentsPath);
+      final dataDir = contentsDir.parent;
+
+      if (await contentsDir.exists()) {
+        await contentsDir.delete(recursive: true);
+      }
+
+      await ZipFile.extractToDirectory(
+        zipFile: zipFile,
+        destinationDir: dataDir,
+      );
+
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'Import berhasil. Mohon restart aplikasi untuk menerapkan perubahan.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'Terjadi error saat import: $e',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isImporting = false);
       }
     }
   }
@@ -158,6 +212,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     label: 'Backup',
                     onTap: () => _backupContents(context),
                     child: _isBackingUp
+                        ? const CircularProgressIndicator()
+                        : null,
+                  ),
+                  // DITAMBAHKAN: Tombol Import
+                  _buildDashboardItem(
+                    context,
+                    icon: Icons.restore,
+                    label: 'Import',
+                    onTap: () => _importContents(context),
+                    child: _isImporting
                         ? const CircularProgressIndicator()
                         : null,
                   ),

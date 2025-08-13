@@ -128,8 +128,10 @@ class TopicProvider with ChangeNotifier {
         throw Exception('Direktori "contents" tidak ditemukan.');
       }
 
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final zipFileName = 'backup_contents_$timestamp.zip';
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
+      final zipFileName = 'backup-topics-$timestamp.zip';
       final zipFile = File(path.join(destinationPath, zipFileName));
 
       // Memastikan direktori tujuan ada
@@ -156,5 +158,10 @@ class TopicProvider with ChangeNotifier {
   // Mengubah return type menjadi Future<String> dan menjadikannya async
   Future<String> getTopicsPath() async {
     return await _pathService.topicsPath;
+  }
+
+  // FUNGSI BARU UNTUK MENDAPATKAN PATH CONTENTS
+  Future<String> getContentsPath() async {
+    return await _pathService.contentsPath;
   }
 }
