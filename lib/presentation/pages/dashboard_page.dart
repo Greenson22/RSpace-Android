@@ -8,9 +8,10 @@ import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
-import '../theme/app_theme.dart'; // Import AppTheme
+import '../theme/app_theme.dart';
 import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
+import 'about_page.dart';
 import 'my_tasks_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -157,6 +158,17 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: () => themeProvider.darkTheme = !themeProvider.darkTheme,
             tooltip: 'Ganti Tema',
           ),
+          // ==> TOMBOL TENTANG DIPINDAHKAN KE SINI <==
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutPage()),
+              );
+            },
+            tooltip: 'Tentang Aplikasi',
+          ),
         ],
       ),
       body: SafeArea(
@@ -223,6 +235,7 @@ class _DashboardPageState extends State<DashboardPage> {
             gradientColors: AppTheme.gradientColors5,
             onTap: () => _showStoragePathDialog(context),
           ),
+        // ==> TOMBOL TENTANG DIHAPUS DARI GRID <==
       ],
     );
   }
