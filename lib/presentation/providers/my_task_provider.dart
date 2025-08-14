@@ -1,3 +1,4 @@
+// lib/presentation/providers/my_task_provider.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/my_task_model.dart';
@@ -15,11 +16,25 @@ class MyTaskProvider with ChangeNotifier {
   String? _reorderingCategoryName;
   String? get reorderingCategoryName => _reorderingCategoryName;
 
-  List<TaskCategory> _categories = [];
-  List<TaskCategory> get categories => _categories;
+  bool _showHiddenCategories = false; // ==> DITAMBAHKAN
+  bool get showHiddenCategories => _showHiddenCategories; // ==> DITAMBAHKAN
+
+  List<TaskCategory> _allCategories = [];
+  List<TaskCategory> get categories {
+    if (_showHiddenCategories) {
+      return _allCategories;
+    }
+    return _allCategories.where((c) => !c.isHidden).toList();
+  }
 
   MyTaskProvider() {
     fetchTasks();
+  }
+
+  // ==> FUNGSI BARU <==
+  void toggleShowHidden() {
+    _showHiddenCategories = !_showHiddenCategories;
+    notifyListeners();
   }
 
   void toggleCategoryReorder() {
@@ -48,7 +63,7 @@ class MyTaskProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _categories = await _myTaskService.loadMyTasks();
+      _allCategories = await _myTaskService.loadMyTasks();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -56,7 +71,7 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> _saveTasks() async {
-    await _myTaskService.saveMyTasks(_categories);
+    await _myTaskService.saveMyTasks(_allCategories);
     notifyListeners();
   }
 
@@ -65,44 +80,65 @@ class MyTaskProvider with ChangeNotifier {
     if (newIndex > oldIndex) {
       newIndex -= 1;
     }
-    final item = _categories.removeAt(oldIndex);
-    _categories.insert(newIndex, item);
+    final item = _allCategories.removeAt(oldIndex);
+    _allCategories.insert(newIndex, item);
     await _saveTasks();
   }
 
   Future<void> addCategory(String name, {String icon = '📝'}) async {
-    final newCategory = TaskCategory(name: name, icon: icon, tasks: []);
-    _categories.add(newCategory);
+    final newCategory = TaskCategory(
+      name: name,
+      icon: icon,
+      tasks: [],
+      isHidden: false,
+    );
+    _allCategories.add(newCategory);
     await _saveTasks();
   }
 
   Future<void> renameCategory(TaskCategory category, String newName) async {
-    final index = _categories.indexWhere((c) => c.name == category.name);
+    final index = _allCategories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
-      if (_reorderingCategoryName == _categories[index].name) {
+      if (_reorderingCategoryName == _allCategories[index].name) {
         _reorderingCategoryName = newName;
       }
-      _categories[index] = TaskCategory(
+      _allCategories[index] = TaskCategory(
         name: newName,
         icon: category.icon,
         tasks: category.tasks,
+        isHidden: category.isHidden,
       );
       await _saveTasks();
     }
   }
 
   Future<void> deleteCategory(TaskCategory category) async {
-    _categories.removeWhere((c) => c.name == category.name);
+    _allCategories.removeWhere((c) => c.name == category.name);
     await _saveTasks();
   }
 
   Future<void> updateCategoryIcon(TaskCategory category, String newIcon) async {
-    final index = _categories.indexWhere((c) => c.name == category.name);
+    final index = _allCategories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
-      _categories[index] = TaskCategory(
+      _allCategories[index] = TaskCategory(
         name: category.name,
         icon: newIcon,
         tasks: category.tasks,
+        isHidden: category.isHidden,
+      );
+      await _saveTasks();
+    }
+  }
+
+  // ==> FUNGSI BARU <==
+  Future<void> toggleCategoryVisibility(TaskCategory category) async {
+    final index = _allCategories.indexWhere((c) => c.name == category.name);
+    if (index != -1) {
+      _allCategories[index] = TaskCategory(
+        name: category.name,
+        icon: category.icon,
+        tasks: category.tasks,
+        isHidden: !category.isHidden,
       );
       await _saveTasks();
     }
@@ -114,13 +150,13 @@ class MyTaskProvider with ChangeNotifier {
     int oldIndex,
     int newIndex,
   ) async {
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
-      final task = _categories[categoryIndex].tasks.removeAt(oldIndex);
-      _categories[categoryIndex].tasks.insert(newIndex, task);
+      final task = _allCategories[categoryIndex].tasks.removeAt(oldIndex);
+      _allCategories[categoryIndex].tasks.insert(newIndex, task);
       await _saveTasks();
     }
   }
@@ -132,9 +168,9 @@ class MyTaskProvider with ChangeNotifier {
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       checked: false,
     );
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
-      _categories[categoryIndex].tasks.add(newTask);
+      _allCategories[categoryIndex].tasks.add(newTask);
       await _saveTasks();
     }
   }
@@ -144,20 +180,20 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task,
     String newName,
   ) async {
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
-      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
       if (taskIndex != -1) {
-        _categories[categoryIndex].tasks[taskIndex].name = newName;
+        _allCategories[categoryIndex].tasks[taskIndex].name = newName;
         await _saveTasks();
       }
     }
   }
 
   Future<void> deleteTask(TaskCategory category, MyTask task) async {
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
-      _categories[categoryIndex].tasks.remove(task);
+      _allCategories[categoryIndex].tasks.remove(task);
       await _saveTasks();
     }
   }
@@ -167,18 +203,19 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task, {
     bool confirmUpdate = false,
   }) async {
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
-      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
       if (taskIndex != -1) {
-        final isChecking = !_categories[categoryIndex].tasks[taskIndex].checked;
-        _categories[categoryIndex].tasks[taskIndex].checked = isChecking;
+        final isChecking =
+            !_allCategories[categoryIndex].tasks[taskIndex].checked;
+        _allCategories[categoryIndex].tasks[taskIndex].checked = isChecking;
 
         if (isChecking && confirmUpdate) {
-          _categories[categoryIndex].tasks[taskIndex].date = DateFormat(
+          _allCategories[categoryIndex].tasks[taskIndex].date = DateFormat(
             'yyyy-MM-dd',
           ).format(DateTime.now());
-          _categories[categoryIndex].tasks[taskIndex].count++;
+          _allCategories[categoryIndex].tasks[taskIndex].count++;
         }
         await _saveTasks();
       }
@@ -190,11 +227,11 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task,
     DateTime newDate,
   ) async {
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
-      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
       if (taskIndex != -1) {
-        _categories[categoryIndex].tasks[taskIndex].date = DateFormat(
+        _allCategories[categoryIndex].tasks[taskIndex].date = DateFormat(
           'yyyy-MM-dd',
         ).format(newDate);
         await _saveTasks();
@@ -207,18 +244,18 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task,
     int newCount,
   ) async {
-    final categoryIndex = _categories.indexOf(category);
+    final categoryIndex = _allCategories.indexOf(category);
     if (categoryIndex != -1) {
-      final taskIndex = _categories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
       if (taskIndex != -1) {
-        _categories[categoryIndex].tasks[taskIndex].count = newCount;
+        _allCategories[categoryIndex].tasks[taskIndex].count = newCount;
         await _saveTasks();
       }
     }
   }
 
   Future<void> uncheckAllTasks() async {
-    for (final category in _categories) {
+    for (final category in _allCategories) {
       for (final task in category.tasks) {
         if (task.checked) {
           task.checked = false;

@@ -1,3 +1,4 @@
+// lib/presentation/pages/my_tasks_page.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/data/models/my_task_model.dart';
 import 'package:provider/provider.dart';
@@ -81,7 +82,6 @@ class MyTasksPage extends StatelessWidget {
   // ==> DIALOG PEMILIHAN IKON DIPERBARUI UNTUK MENAMPILKAN SIMBOL <==
   void _showIconPickerDialog(BuildContext context, TaskCategory category) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
-    // Daftar ikon berupa simbol emoji
     final List<String> icons = ['📝', '💼', '🏠', '🛒', '🎉', '💡', '❤️', '⭐'];
 
     showDialog(
@@ -118,6 +118,14 @@ class MyTasksPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // ==> FUNGSI BARU <==
+  void _toggleVisibility(BuildContext context, TaskCategory category) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    provider.toggleCategoryVisibility(category);
+    final message = category.isHidden ? 'ditampilkan kembali' : 'disembunyikan';
+    _showSnackBar(context, 'Kategori "${category.name}" berhasil $message.');
   }
 
   // --- Dialog untuk Task ---
@@ -292,7 +300,18 @@ class MyTasksPage extends StatelessWidget {
             appBar: AppBar(
               title: const Text('My Tasks'),
               actions: [
-                if (provider.reorderingCategoryName == null)
+                if (provider.reorderingCategoryName == null) ...[
+                  IconButton(
+                    icon: Icon(
+                      provider.showHiddenCategories
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    tooltip: provider.showHiddenCategories
+                        ? 'Sembunyikan Kategori Tersembunyi'
+                        : 'Tampilkan Kategori Tersembunyi',
+                    onPressed: () => provider.toggleShowHidden(),
+                  ),
                   IconButton(
                     icon: Icon(
                       provider.isCategoryReorderEnabled
@@ -304,6 +323,7 @@ class MyTasksPage extends StatelessWidget {
                         : 'Urutkan Kategori',
                     onPressed: () => provider.toggleCategoryReorder(),
                   ),
+                ],
                 if (!isAnyReordering)
                   IconButton(
                     icon: const Icon(Icons.clear_all),
@@ -333,8 +353,13 @@ class MyTasksPage extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (provider.categories.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada kategori. Tekan + untuk menambah.'),
+      return Center(
+        child: Text(
+          provider.showHiddenCategories
+              ? 'Tidak ada kategori. Tekan + untuk menambah.'
+              : 'Tidak ada kategori yang terlihat.\nCoba tampilkan kategori tersembunyi.',
+          textAlign: TextAlign.center,
+        ),
       );
     }
 
@@ -365,6 +390,8 @@ class MyTasksPage extends StatelessWidget {
     TaskCategory category,
     Key key,
   ) {
+    final theme = Theme.of(context);
+    final isHidden = category.isHidden;
     final isThisCategoryReorderingTask =
         provider.reorderingCategoryName == category.name;
     final isCategoryReorderMode = provider.isCategoryReorderEnabled;
@@ -373,27 +400,37 @@ class MyTasksPage extends StatelessWidget {
         !isThisCategoryReorderingTask;
     final isCardDisabled = isCategoryReorderMode || isAnotherTaskReordering;
 
+    // ==> PERUBAHAN TAMPILAN UNTUK ITEM TERSEMBUNYI <==
+    final Color cardColor = isHidden
+        ? theme.disabledColor.withOpacity(0.1)
+        : (isAnotherTaskReordering
+              ? theme.disabledColor.withOpacity(0.1)
+              : theme.cardColor);
+    final Color? textColor = isHidden ? theme.disabledColor : null;
+    final double elevation = isHidden ? 1 : 3;
+
     return Card(
       key: key,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 3,
-      color: isAnotherTaskReordering
-          ? Theme.of(context).disabledColor.withOpacity(0.1)
-          : null,
+      elevation: elevation,
+      color: cardColor,
       child: ExpansionTile(
         enabled: !isCategoryReorderMode,
         initiallyExpanded: isThisCategoryReorderingTask,
-        // ==> IKON DITAMPILKAN MENGGUNAKAN TEXT WIDGET <==
         leading: Text(
           category.icon,
           style: TextStyle(
-            fontSize: 28, // Ukuran ikon bisa disesuaikan
-            color: Theme.of(context).primaryColor,
+            fontSize: 28,
+            color: isHidden ? textColor : theme.primaryColor,
           ),
         ),
         title: Text(
           category.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: textColor,
+          ),
         ),
         trailing: isThisCategoryReorderingTask
             ? TextButton.icon(
@@ -408,6 +445,8 @@ class MyTasksPage extends StatelessWidget {
                     _showRenameCategoryDialog(context, category);
                   } else if (value == 'change_icon') {
                     _showIconPickerDialog(context, category);
+                  } else if (value == 'toggle_visibility') {
+                    _toggleVisibility(context, category); // ==> DIPANGGIL
                   } else if (value == 'delete') {
                     _showDeleteCategoryDialog(context, category);
                   } else if (value == 'add_task') {
@@ -434,6 +473,11 @@ class MyTasksPage extends StatelessWidget {
                     value: 'change_icon',
                     child: Text('Ubah Ikon'),
                   ),
+                  PopupMenuItem(
+                    value: 'toggle_visibility',
+                    child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                  ),
+                  const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'delete',
                     child: Text('Hapus', style: TextStyle(color: Colors.red)),
@@ -446,6 +490,7 @@ class MyTasksPage extends StatelessWidget {
             provider,
             category,
             isThisCategoryReorderingTask,
+            isHidden,
           ),
         ],
       ),
@@ -457,6 +502,7 @@ class MyTasksPage extends StatelessWidget {
     MyTaskProvider provider,
     TaskCategory category,
     bool isReordering,
+    bool isParentHidden,
   ) {
     if (isReordering) {
       return ReorderableListView.builder(
@@ -472,6 +518,7 @@ class MyTasksPage extends StatelessWidget {
             category,
             task,
             isReordering,
+            isParentHidden,
             ValueKey(task),
           );
         },
@@ -489,6 +536,7 @@ class MyTasksPage extends StatelessWidget {
                 category,
                 task,
                 isReordering,
+                isParentHidden,
                 null,
               ),
             )
@@ -503,17 +551,19 @@ class MyTasksPage extends StatelessWidget {
     TaskCategory category,
     MyTask task,
     bool isReordering,
+    bool isParentHidden,
     Key? key,
   ) {
     final isCategoryReorderMode = provider.isCategoryReorderEnabled;
+    final textColor = isParentHidden || task.checked ? Colors.grey : null;
 
     return ListTile(
       key: key,
       leading: isReordering
-          ? const Icon(Icons.drag_handle)
+          ? Icon(Icons.drag_handle, color: textColor)
           : Checkbox(
               value: task.checked,
-              onChanged: isCategoryReorderMode
+              onChanged: isCategoryReorderMode || isParentHidden
                   ? null
                   : (bool? value) async {
                       if (value == true) {
@@ -539,33 +589,35 @@ class MyTasksPage extends StatelessWidget {
         task.name,
         style: TextStyle(
           decoration: task.checked ? TextDecoration.lineThrough : null,
-          color: task.checked ? Colors.grey : null,
+          color: textColor,
         ),
       ),
       subtitle: RichText(
         text: TextSpan(
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: textColor),
           children: [
             const TextSpan(text: 'Due: '),
             TextSpan(
               text: task.date,
-              style: const TextStyle(
-                color: Colors.blue,
+              style: TextStyle(
+                color: isParentHidden ? textColor : Colors.blue,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const TextSpan(text: ' | Count: '),
             TextSpan(
               text: task.count.toString(),
-              style: const TextStyle(
-                color: Colors.orange,
+              style: TextStyle(
+                color: isParentHidden ? textColor : Colors.orange,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
       ),
-      trailing: isReordering || isCategoryReorderMode
+      trailing: isReordering || isCategoryReorderMode || isParentHidden
           ? null
           : PopupMenuButton<String>(
               onSelected: (value) {

@@ -1,3 +1,4 @@
+// lib/data/models/my_task_model.dart
 import 'package:flutter/material.dart';
 
 class MyTask {
@@ -29,18 +30,25 @@ class MyTask {
 
 class TaskCategory {
   final String name;
-  final String icon; // Akan berisi simbol seperti '📝', '💼', dll.
+  final String icon;
   final List<MyTask> tasks;
+  final bool isHidden; // ==> DITAMBAHKAN
 
-  TaskCategory({required this.name, required this.icon, required this.tasks});
+  TaskCategory({
+    required this.name,
+    required this.icon,
+    required this.tasks,
+    this.isHidden = false, // ==> DITAMBAHKAN
+  });
 
   factory TaskCategory.fromJson(Map<String, dynamic> json) {
     var taskList = json['tasks'] as List;
     List<MyTask> tasks = taskList.map((i) => MyTask.fromJson(i)).toList();
     return TaskCategory(
       name: json['name'] ?? 'Uncategorized',
-      icon: json['icon'] ?? '📝', // Default icon adalah simbol pensil
+      icon: json['icon'] ?? '📝',
       tasks: tasks,
+      isHidden: json['isHidden'] ?? false, // ==> DITAMBAHKAN
     );
   }
 
@@ -49,6 +57,7 @@ class TaskCategory {
       'name': name,
       'icon': icon,
       'tasks': tasks.map((t) => t.toJson()).toList(),
+      'isHidden': isHidden, // ==> DITAMBAHKAN
     };
   }
 }
