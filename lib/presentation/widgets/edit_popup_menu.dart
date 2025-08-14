@@ -1,3 +1,4 @@
+// lib/presentation/widgets/edit_popup_menu.dart
 import 'package:flutter/material.dart';
 
 class EditPopupMenu extends StatelessWidget {
@@ -6,8 +7,9 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback? onRename;
   final VoidCallback? onMarkAsFinished;
   final VoidCallback? onAddPoint;
-  final VoidCallback? onReactivate; // ==> CALLBACK BARU <==
+  final VoidCallback? onReactivate;
   final bool isFinished;
+  final bool hasPoints;
 
   const EditPopupMenu({
     super.key,
@@ -16,8 +18,9 @@ class EditPopupMenu extends StatelessWidget {
     this.onRename,
     this.onMarkAsFinished,
     this.onAddPoint,
-    this.onReactivate, // ==> DITAMBAHKAN <==
+    this.onReactivate,
     this.isFinished = false,
+    this.hasPoints = false,
   });
 
   @override
@@ -29,9 +32,7 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'rename' && onRename != null) onRename!();
         if (value == 'finish' && onMarkAsFinished != null) onMarkAsFinished!();
         if (value == 'add_point' && onAddPoint != null) onAddPoint!();
-        if (value == 'reactivate' && onReactivate != null) {
-          onReactivate!();
-        } // ==> LOGIKA BARU <==
+        if (value == 'reactivate' && onReactivate != null) onReactivate!();
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
@@ -46,16 +47,18 @@ class EditPopupMenu extends StatelessWidget {
               ),
             );
           }
-          menuItems.addAll([
-            const PopupMenuItem<String>(
-              value: 'edit_date',
-              child: Text('Ubah Tanggal'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'edit_code',
-              child: Text('Ubah Kode Repetisi'),
-            ),
-          ]);
+          if (!hasPoints) {
+            menuItems.addAll([
+              const PopupMenuItem<String>(
+                value: 'edit_date',
+                child: Text('Ubah Tanggal'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'edit_code',
+                child: Text('Ubah Kode Repetisi'),
+              ),
+            ]);
+          }
           if (onRename != null) {
             menuItems.add(
               const PopupMenuItem<String>(
@@ -64,7 +67,9 @@ class EditPopupMenu extends StatelessWidget {
               ),
             );
           }
-          if (onMarkAsFinished != null) {
+          // --- PERUBAHAN DI SINI ---
+          // Opsi "Tandai Selesai" hanya muncul jika tidak ada points
+          if (onMarkAsFinished != null && !hasPoints) {
             menuItems.add(const PopupMenuDivider());
             menuItems.add(
               const PopupMenuItem<String>(
@@ -75,16 +80,18 @@ class EditPopupMenu extends StatelessWidget {
           }
         } else {
           // Menu untuk item yang SUDAH selesai
-          menuItems.addAll([
-            const PopupMenuItem<String>(
-              value: 'edit_date',
-              child: Text('Ubah Tanggal'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'edit_code',
-              child: Text('Ubah Kode Repetisi'),
-            ),
-          ]);
+          if (!hasPoints) {
+            menuItems.addAll([
+              const PopupMenuItem<String>(
+                value: 'edit_date',
+                child: Text('Ubah Tanggal'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'edit_code',
+                child: Text('Ubah Kode Repetisi'),
+              ),
+            ]);
+          }
           if (onRename != null) {
             menuItems.add(
               const PopupMenuItem<String>(

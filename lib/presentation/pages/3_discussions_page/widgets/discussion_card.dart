@@ -15,7 +15,7 @@ class DiscussionCard extends StatelessWidget {
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
   final double? panelWidth;
-  final bool isLinux; // ==> DITAMBAHKAN
+  final bool isLinux;
 
   const DiscussionCard({
     super.key,
@@ -24,7 +24,7 @@ class DiscussionCard extends StatelessWidget {
     required this.arePointsVisible,
     required this.onToggleVisibility,
     this.panelWidth,
-    this.isLinux = false, // ==> DITAMBAHKAN
+    this.isLinux = false,
   });
 
   void _showSnackBar(BuildContext context, String message) {
@@ -33,7 +33,6 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK KONTEKS MENU KLIK KANAN <==
   void _showContextMenu(
     BuildContext context,
     Offset position,
@@ -42,6 +41,7 @@ class DiscussionCard extends StatelessWidget {
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
     final bool isFinished = discussion.finished;
+    final bool hasPoints = discussion.points.isNotEmpty;
 
     showMenu<String>(
       context: context,
@@ -55,22 +55,25 @@ class DiscussionCard extends StatelessWidget {
             value: 'add_point',
             child: Text('Tambah Poin'),
           ),
-        const PopupMenuItem<String>(
-          value: 'edit_date',
-          child: Text('Ubah Tanggal'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit_code',
-          child: Text('Ubah Kode Repetisi'),
-        ),
+        if (!hasPoints) ...[
+          const PopupMenuItem<String>(
+            value: 'edit_date',
+            child: Text('Ubah Tanggal'),
+          ),
+          const PopupMenuItem<String>(
+            value: 'edit_code',
+            child: Text('Ubah Kode Repetisi'),
+          ),
+        ],
         const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
         const PopupMenuDivider(),
-        if (!isFinished)
+        // --- PERUBAHAN DI SINI ---
+        if (!isFinished && !hasPoints)
           const PopupMenuItem<String>(
             value: 'finish',
             child: Text('Tandai Selesai'),
-          )
-        else
+          ),
+        if (isFinished)
           const PopupMenuItem<String>(
             value: 'reactivate',
             child: Text('Aktifkan Lagi'),
@@ -201,7 +204,6 @@ class DiscussionCard extends StatelessWidget {
       sortedPoints.addAll(reversedPoints);
     }
 
-    // ==> KONTEN CARD DIBUNGKUS DENGAN GESTUREDETECTOR JIKA isLinux true <==
     final cardContent = Card(
       child: Column(
         children: [
@@ -227,10 +229,10 @@ class DiscussionCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ==> TOMBOL TIGA TITIK HANYA TAMPIL JIKA BUKAN LINUX <==
                 if (!isLinux)
                   EditPopupMenu(
                     isFinished: isFinished,
+                    hasPoints: discussion.points.isNotEmpty,
                     onAddPoint: () => _addPoint(context, provider),
                     onDateChange: () =>
                         _changeDiscussionDate(context, provider),
