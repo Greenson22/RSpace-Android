@@ -11,6 +11,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final bool isLinux;
+  final bool isCompact;
 
   const SubjectListTile({
     super.key,
@@ -21,9 +22,9 @@ class SubjectListTile extends StatelessWidget {
     required this.onIconChange,
     required this.onToggleVisibility,
     this.isLinux = false,
+    this.isCompact = false,
   });
 
-  // FUNGSI BARU UNTUK MENU KONTEKS SUBJECT
   void _showContextMenu(BuildContext context, Offset position) {
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
@@ -71,12 +72,15 @@ class SubjectListTile extends StatelessWidget {
 
     final double verticalMargin = isLinux ? 4 : 8;
     final double horizontalMargin = isLinux ? 8 : 16;
-    final EdgeInsets padding = isLinux
-        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
-        : const EdgeInsets.all(16.0);
-    final double iconFontSize = isLinux ? 22 : 28;
-    final double titleFontSize = isLinux ? 15 : 18;
-    final double subtitleFontSize = isLinux ? 11 : 12;
+
+    final EdgeInsets padding = isCompact
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
+        : (isLinux
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+              : const EdgeInsets.all(16.0));
+    final double iconFontSize = isCompact ? 20 : (isLinux ? 22 : 28);
+    final double titleFontSize = isCompact ? 14 : (isLinux ? 15 : 18);
+    final double subtitleFontSize = isCompact ? 10 : (isLinux ? 11 : 12);
 
     final tileContent = Material(
       borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
@@ -90,18 +94,20 @@ class SubjectListTile extends StatelessWidget {
           padding: padding,
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+              if (!isCompact)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    subject.icon,
+                    style: TextStyle(fontSize: iconFontSize, color: textColor),
+                  ),
                 ),
-                child: Text(
-                  subject.icon,
-                  style: TextStyle(fontSize: iconFontSize, color: textColor),
-                ),
-              ),
-              const SizedBox(width: 12),
+              if (!isCompact) const SizedBox(width: 12),
+              // *** PERBAIKAN DI SINI ***
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -44,12 +44,23 @@ class _TopicsPanelState extends State<TopicsPanel> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      children: [
-        _buildTopicsToolbar(context, topicProvider),
-        const Divider(height: 1),
-        Expanded(child: _buildTopicsList(context, topicProvider)),
-      ],
+    // Menggunakan LayoutBuilder untuk mendapatkan lebar panel
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          children: [
+            _buildTopicsToolbar(context, topicProvider),
+            const Divider(height: 1),
+            Expanded(
+              child: _buildTopicsList(
+                context,
+                topicProvider,
+                constraints.maxWidth, // Meneruskan lebar ke daftar list
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -128,7 +139,11 @@ class _TopicsPanelState extends State<TopicsPanel> {
     );
   }
 
-  Widget _buildTopicsList(BuildContext context, TopicProvider topicProvider) {
+  Widget _buildTopicsList(
+    BuildContext context,
+    TopicProvider topicProvider,
+    double panelWidth, // Menerima lebar panel
+  ) {
     if (topicProvider.allTopics.isEmpty) {
       return const Center(child: Text('Tidak ada topik untuk ditampilkan.'));
     }
@@ -167,6 +182,8 @@ class _TopicsPanelState extends State<TopicsPanel> {
           onToggleVisibility: () =>
               _toggleVisibility(context, topicProvider, topic),
           isLinux: true, // Menerapkan gaya ringkas untuk Linux
+          // Menentukan apakah layout harus lebih ringkas berdasarkan lebar panel
+          isCompact: panelWidth < 280,
         );
       },
       onReorder: (oldIndex, newIndex) {

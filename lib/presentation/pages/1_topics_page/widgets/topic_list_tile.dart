@@ -11,6 +11,7 @@ class TopicListTile extends StatelessWidget {
   final VoidCallback onToggleVisibility;
   final bool isReorderActive;
   final bool isLinux;
+  final bool isCompact;
 
   const TopicListTile({
     super.key,
@@ -22,6 +23,7 @@ class TopicListTile extends StatelessWidget {
     required this.onToggleVisibility,
     this.isReorderActive = false,
     this.isLinux = false,
+    this.isCompact = false,
   });
 
   void _showContextMenu(BuildContext context, Offset position) {
@@ -29,7 +31,6 @@ class TopicListTile extends StatelessWidget {
         Overlay.of(context).context.findRenderObject() as RenderBox;
     final bool isHidden = topic.isHidden;
 
-    // ==> PERBAIKAN DI SINI <==
     showMenu<String>(
       context: context,
       position: RelativeRect.fromRect(
@@ -69,11 +70,14 @@ class TopicListTile extends StatelessWidget {
 
     final double verticalMargin = isLinux ? 4 : 8;
     final double horizontalMargin = isLinux ? 8 : 16;
-    final EdgeInsets padding = isLinux
-        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-        : const EdgeInsets.symmetric(horizontal: 12, vertical: 16);
-    final double iconFontSize = isLinux ? 22 : 28;
-    final double titleFontSize = isLinux ? 15 : 18;
+
+    final EdgeInsets padding = isCompact
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
+        : (isLinux
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+              : const EdgeInsets.symmetric(horizontal: 12, vertical: 16));
+    final double iconFontSize = isCompact ? 20 : (isLinux ? 22 : 28);
+    final double titleFontSize = isCompact ? 14 : (isLinux ? 15 : 18);
 
     final tileContent = Material(
       borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
@@ -87,18 +91,20 @@ class TopicListTile extends StatelessWidget {
           padding: padding,
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+              if (!isCompact)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    topic.icon,
+                    style: TextStyle(fontSize: iconFontSize, color: textColor),
+                  ),
                 ),
-                child: Text(
-                  topic.icon,
-                  style: TextStyle(fontSize: iconFontSize, color: textColor),
-                ),
-              ),
-              const SizedBox(width: 12),
+              if (!isCompact) const SizedBox(width: 12),
+              // *** PERBAIKAN DI SINI ***
               Expanded(
                 child: Text(
                   topic.name,

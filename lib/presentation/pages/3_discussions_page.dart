@@ -9,12 +9,14 @@ class DiscussionsPage extends StatefulWidget {
   final String subjectName;
   final VoidCallback? onFilterOrSortChanged;
   final bool isEmbedded; // ==> PARAMETER BARU
+  final double? panelWidth; // ==> PARAMETER BARU
 
   const DiscussionsPage({
     super.key,
     required this.subjectName,
     this.onFilterOrSortChanged,
     this.isEmbedded = false, // ==> NILAI DEFAULT
+    this.panelWidth, // ==> NILAI DEFAULT null
   });
 
   @override
@@ -163,6 +165,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onToggleVisibility: (idx) => setState(
             () => _arePointsVisible[idx] = !(_arePointsVisible[idx] ?? false),
           ),
+          panelWidth: widget.panelWidth, // Meneruskan lebar ke card
         );
       },
     );

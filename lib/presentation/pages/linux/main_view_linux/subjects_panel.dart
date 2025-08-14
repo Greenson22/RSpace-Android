@@ -50,19 +50,29 @@ class _SubjectsPanelState extends State<SubjectsPanel> {
       return const Center(child: Text('Pilih sebuah topik dari panel kiri'));
     }
 
-    return ChangeNotifierProvider.value(
-      value: widget.subjectProvider!,
-      child: Consumer<SubjectProvider>(
-        builder: (context, subjectProvider, child) {
-          return Column(
-            children: [
-              _buildSubjectsToolbar(context, subjectProvider),
-              const Divider(height: 1),
-              Expanded(child: _buildSubjectsList(context, subjectProvider)),
-            ],
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ChangeNotifierProvider.value(
+          value: widget.subjectProvider!,
+          child: Consumer<SubjectProvider>(
+            builder: (context, subjectProvider, child) {
+              return Column(
+                children: [
+                  _buildSubjectsToolbar(context, subjectProvider),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: _buildSubjectsList(
+                      context,
+                      subjectProvider,
+                      constraints.maxWidth,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -125,6 +135,7 @@ class _SubjectsPanelState extends State<SubjectsPanel> {
   Widget _buildSubjectsList(
     BuildContext context,
     SubjectProvider subjectProvider,
+    double panelWidth,
   ) {
     if (subjectProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -180,6 +191,7 @@ class _SubjectsPanelState extends State<SubjectsPanel> {
           onToggleVisibility: () =>
               _toggleSubjectVisibility(context, subjectProvider, subject),
           isLinux: true, // Menerapkan gaya ringkas untuk Linux
+          isCompact: panelWidth < 320,
         );
       },
     );

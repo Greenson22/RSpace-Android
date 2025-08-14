@@ -44,25 +44,30 @@ class _DiscussionsPanelState extends State<DiscussionsPanel> {
       return const Center(child: Text('Pilih sebuah subjek dari panel tengah'));
     }
 
-    return ChangeNotifierProvider.value(
-      value: widget.discussionProvider!,
-      child: Consumer<DiscussionProvider>(
-        builder: (context, discussionProvider, child) {
-          return Column(
-            children: [
-              _buildDiscussionsToolbar(context, discussionProvider),
-              const Divider(height: 1),
-              Expanded(
-                child: DiscussionsPage(
-                  subjectName: widget.selectedSubjectName!,
-                  onFilterOrSortChanged: widget.onFilterOrSortChanged,
-                  isEmbedded: true,
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ChangeNotifierProvider.value(
+          value: widget.discussionProvider!,
+          child: Consumer<DiscussionProvider>(
+            builder: (context, discussionProvider, child) {
+              return Column(
+                children: [
+                  _buildDiscussionsToolbar(context, discussionProvider),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: DiscussionsPage(
+                      subjectName: widget.selectedSubjectName!,
+                      onFilterOrSortChanged: widget.onFilterOrSortChanged,
+                      isEmbedded: true,
+                      panelWidth: constraints.maxWidth, // Meneruskan lebar
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

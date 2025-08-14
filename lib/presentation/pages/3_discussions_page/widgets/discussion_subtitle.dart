@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/widgets/discussion_subtitle.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -6,26 +7,29 @@ import '../utils/repetition_code_utils.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
   final Discussion discussion;
+  final bool isCompact; // Properti baru
 
-  const DiscussionSubtitle({super.key, required this.discussion});
+  const DiscussionSubtitle({
+    super.key,
+    required this.discussion,
+    this.isCompact = false, // Nilai default
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Jika diskusi sudah selesai, tampilkan tanggal selesai.
     if (discussion.finished) {
       return Text(
         'Selesai pada: ${discussion.finish_date}',
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.green,
           fontStyle: FontStyle.italic,
+          fontSize: isCompact ? 11 : 12,
         ),
       );
     }
 
-    // Ambil provider untuk mendapatkan pengaturan filter.
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
-    // Filter points yang sesuai dengan kriteria filter aktif.
     final visiblePoints = discussion.points
         .where((point) => provider.doesPointMatchFilter(point))
         .toList();
@@ -33,9 +37,7 @@ class DiscussionSubtitle extends StatelessWidget {
     String? displayDate;
     String? displayCode;
 
-    // === LOGIKA BARU DENGAN PRIORITAS TANGGAL TERTUA ===
     if (visiblePoints.isNotEmpty) {
-      // 1. Temukan repetition code terendah di antara point yang terlihat.
       int minCodeIndex = 999;
       for (var point in visiblePoints) {
         final codeIndex = getRepetitionCodeIndex(point.repetitionCode);
@@ -44,7 +46,6 @@ class DiscussionSubtitle extends StatelessWidget {
         }
       }
 
-      // 2. Saring lagi untuk mendapatkan semua point dengan code terendah itu.
       final lowestCodePoints = visiblePoints
           .where(
             (point) =>
@@ -52,33 +53,27 @@ class DiscussionSubtitle extends StatelessWidget {
           )
           .toList();
 
-      // 3. Urutkan kelompok point tersebut berdasarkan tanggal (tertua ke terbaru).
       lowestCodePoints.sort((a, b) {
         final dateA = DateTime.tryParse(a.date);
         final dateB = DateTime.tryParse(b.date);
         if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1; // Pindahkan null ke akhir
-        if (dateB == null) return -1; // Pindahkan null ke akhir
-        return dateA.compareTo(dateB); // Ascending (tertua dulu)
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+        return dateA.compareTo(dateB);
       });
 
-      // 4. Ambil point pertama (yang paling relevan) dari daftar yang sudah diurutkan.
       if (lowestCodePoints.isNotEmpty) {
         final relevantPoint = lowestCodePoints.first;
         displayDate = relevantPoint.date;
         displayCode = relevantPoint.repetitionCode;
       } else {
-        // Fallback jika terjadi kasus aneh, meskipun seharusnya tidak terjadi.
         displayDate = discussion.effectiveDate;
         displayCode = discussion.effectiveRepetitionCode;
       }
     } else {
-      // Jika tidak ada point yang lolos filter (atau tidak ada point sama sekali),
-      // gunakan logika getter efektif dari model Discussion seperti sebelumnya.
       displayDate = discussion.effectiveDate;
       displayCode = discussion.effectiveRepetitionCode;
     }
-    // === AKHIR LOGIKA BARU ===
 
     final dateText = displayDate ?? 'N/A';
     final codeText = displayCode ?? 'N/A';
@@ -88,7 +83,6 @@ class DiscussionSubtitle extends StatelessWidget {
       try {
         final discussionDate = DateTime.parse(displayDate);
         final today = DateTime.now();
-        // Warnai merah jika tanggalnya sebelum hari ini
         if (discussionDate.isBefore(
           DateTime(today.year, today.month, today.day),
         )) {
@@ -97,13 +91,15 @@ class DiscussionSubtitle extends StatelessWidget {
           dateColor = Colors.amber.shade700;
         }
       } catch (e) {
-        // Biarkan warna default jika parsing tanggal gagal
+        // Biarkan warna default
       }
     }
 
     return RichText(
       text: TextSpan(
-        style: Theme.of(context).textTheme.bodySmall,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontSize: isCompact ? 11 : 12, // Ukuran font dinamis
+        ),
         children: [
           const TextSpan(text: 'Date: '),
           TextSpan(

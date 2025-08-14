@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/widgets/discussion_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -13,6 +14,7 @@ class DiscussionCard extends StatelessWidget {
   final int index;
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
+  final double? panelWidth;
 
   const DiscussionCard({
     super.key,
@@ -20,6 +22,7 @@ class DiscussionCard extends StatelessWidget {
     required this.index,
     required this.arePointsVisible,
     required this.onToggleVisibility,
+    this.panelWidth,
   });
 
   void _showSnackBar(BuildContext context, String message) {
@@ -89,7 +92,6 @@ class DiscussionCard extends StatelessWidget {
     _showSnackBar(context, 'Diskusi ditandai selesai.');
   }
 
-  // ==> FUNGSI BARU <==
   void _reactivateDiscussion(
     BuildContext context,
     DiscussionProvider provider,
@@ -100,6 +102,8 @@ class DiscussionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isCompact = panelWidth != null && panelWidth! < 450;
+
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
     final bool isFinished = discussion.finished;
@@ -108,7 +112,6 @@ class DiscussionCard extends StatelessWidget {
         ? Icons.check_circle
         : Icons.chat_bubble_outline;
 
-    // ==> LOGIKA PENGURUTAN UNTUK POINTS <==
     final sortedPoints = List<Point>.from(discussion.points);
     final sortType = provider.sortType;
     final sortAscending = provider.sortAscending;
@@ -141,21 +144,33 @@ class DiscussionCard extends StatelessWidget {
       sortedPoints.clear();
       sortedPoints.addAll(reversedPoints);
     }
-    // ==> AKHIR DARI LOGIKA PENGURUTAN <==
 
     return Card(
       child: Column(
         children: [
           ListTile(
-            leading: Icon(iconData, color: iconColor),
+            // *** PERBAIKAN DI SINI ***
+            // ListTile sudah menangani tata letak leading, title, subtitle, dan trailing secara internal
+            // sehingga pembungkusan manual dengan Expanded tidak diperlukan dan justru bisa menyebabkan error.
+            // ListTile secara default akan memberikan sisa ruang untuk `title` dan `subtitle`.
+            leading: Icon(
+              iconData,
+              color: iconColor,
+              size: isCompact ? 22 : 24,
+            ),
             title: Text(
               discussion.discussion,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: isFinished ? TextDecoration.lineThrough : null,
+                fontSize: isCompact ? 14.5 : 16,
               ),
+              overflow: TextOverflow.ellipsis, // Menambahkan overflow
             ),
-            subtitle: DiscussionSubtitle(discussion: discussion),
+            subtitle: DiscussionSubtitle(
+              discussion: discussion,
+              isCompact: isCompact,
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -166,10 +181,7 @@ class DiscussionCard extends StatelessWidget {
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),
                   onMarkAsFinished: () => _markAsFinished(context, provider),
-                  onReactivate: () => _reactivateDiscussion(
-                    context,
-                    provider,
-                  ), // ==> DITAMBAHKAN <==
+                  onReactivate: () => _reactivateDiscussion(context, provider),
                 ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
@@ -189,16 +201,11 @@ class DiscussionCard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(30.0, 8.0, 16.0, 8.0),
                 child: Column(
-                  // Menggunakan daftar points yang sudah diurutkan
                   children: sortedPoints.map((point) {
-                    // Memeriksa apakah point cocok dengan filter
                     final bool isPointActive = provider.doesPointMatchFilter(
                       point,
                     );
-                    return PointTile(
-                      point: point,
-                      isActive: isPointActive, // Meneruskan status ke PointTile
-                    );
+                    return PointTile(point: point, isActive: isPointActive);
                   }).toList(),
                 ),
               ),
