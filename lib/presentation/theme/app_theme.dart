@@ -24,13 +24,12 @@ class AppTheme {
   ];
 
   static final ThemeData lightTheme = ThemeData(
-    primarySwatch: Colors.teal,
+    primarySwatch: Colors.purple, // DIUBAH
     brightness: Brightness.light,
     scaffoldBackgroundColor: Colors.grey[100], // Latar belakang lebih lembut
     visualDensity: VisualDensity.adaptivePlatformDensity,
     appBarTheme: AppBarTheme(
-      // DIUBAH
-      backgroundColor: Colors.teal, // Warna solid untuk halaman lain
+      backgroundColor: Colors.purple, // DIUBAH
       foregroundColor: Colors.white,
       elevation: 2,
     ),
@@ -45,22 +44,23 @@ class AppTheme {
       contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      // DITAMBAHKAN
-      backgroundColor: Colors.teal[600],
+      backgroundColor: Colors.purple[600], // DIUBAH
       foregroundColor: Colors.white,
     ),
+    colorScheme: ColorScheme.fromSwatch(
+      primarySwatch: Colors.purple,
+    ).copyWith(secondary: Colors.purpleAccent),
   );
 
   static final ThemeData darkTheme = ThemeData(
-    primarySwatch: Colors.teal,
+    primarySwatch: Colors.purple, // DIUBAH
     brightness: Brightness.dark,
     scaffoldBackgroundColor: const Color(
       0xFF121212,
     ), // Latar belakang gelap standar
     visualDensity: VisualDensity.adaptivePlatformDensity,
     appBarTheme: AppBarTheme(
-      // DIUBAH
-      backgroundColor: Colors.grey[900], // Warna solid untuk tema gelap
+      backgroundColor: Colors.grey[900],
       foregroundColor: Colors.white,
       elevation: 2,
     ),
@@ -74,9 +74,12 @@ class AppTheme {
       contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      // DITAMBAHKAN
-      backgroundColor: Colors.teal[300],
+      backgroundColor: Colors.purple[300], // DIUBAH
       foregroundColor: Colors.black,
     ),
+    colorScheme: ColorScheme.fromSwatch(
+      primarySwatch: Colors.purple,
+      brightness: Brightness.dark,
+    ).copyWith(secondary: Colors.purpleAccent),
   );
 }
