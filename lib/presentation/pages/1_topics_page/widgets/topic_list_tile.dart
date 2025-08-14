@@ -1,3 +1,4 @@
+// lib/presentation/pages/1_topics_page/widgets/topic_list_tile.dart
 import 'package:flutter/material.dart';
 import '../../../../data/models/topic_model.dart';
 
@@ -7,8 +8,9 @@ class TopicListTile extends StatelessWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
-  final VoidCallback onToggleVisibility; // ==> DITAMBAHKAN
+  final VoidCallback onToggleVisibility;
   final bool isReorderActive;
+  final bool isLinux; // ==> PARAMETER BARU <==
 
   const TopicListTile({
     super.key,
@@ -17,13 +19,13 @@ class TopicListTile extends StatelessWidget {
     required this.onRename,
     required this.onDelete,
     required this.onIconChange,
-    required this.onToggleVisibility, // ==> DITAMBAHKAN
+    required this.onToggleVisibility,
     this.isReorderActive = false,
+    this.isLinux = false, // ==> NILAI DEFAULT <==
   });
 
   @override
   Widget build(BuildContext context) {
-    // ==> PERUBAHAN Tampilan untuk item yang tersembunyi <==
     final bool isHidden = topic.isHidden;
     final Color cardColor = isHidden
         ? Theme.of(context).disabledColor.withOpacity(0.1)
@@ -31,53 +33,63 @@ class TopicListTile extends StatelessWidget {
     final Color? textColor = isHidden ? Theme.of(context).disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
+    // ==> PENYESUAIAN UKURAN UNTUK LINUX <==
+    final double verticalMargin = isLinux ? 4 : 8;
+    final double horizontalMargin = isLinux ? 8 : 16;
+    final EdgeInsets padding = isLinux
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+        : const EdgeInsets.symmetric(horizontal: 12, vertical: 16);
+    final double iconFontSize = isLinux ? 22 : 28;
+    final double titleFontSize = isLinux ? 15 : 18;
+
     return Card(
-      elevation: elevation, // DIUBAH
-      color: cardColor, // DIUBAH
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: elevation,
+      color: cardColor,
+      margin: EdgeInsets.symmetric(
+        horizontal: horizontalMargin,
+        vertical: verticalMargin,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+      ),
       child: Material(
-        borderRadius: BorderRadius.circular(15),
-        color: Colors.transparent, // DIUBAH
+        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+        color: Colors.transparent,
         child: InkWell(
           onTap: isReorderActive ? null : onTap,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
           splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
           highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            padding: padding,
             child: Row(
               children: [
-                // Icon Container
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     topic.icon,
-                    style: TextStyle(fontSize: 28, color: textColor), // DIUBAH
+                    style: TextStyle(fontSize: iconFontSize, color: textColor),
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Topic Name
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     topic.name,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: textColor, // DIUBAH
+                      color: textColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Reorder Handle or Popup Menu
                 if (isReorderActive)
                   ReorderableDragStartListener(
-                    index:
-                        0, // Indeks ini akan di-handle oleh ReorderableListView
+                    index: 0,
                     child: const Padding(
                       padding: EdgeInsets.all(8.0),
                       child: Icon(Icons.drag_handle),
@@ -88,8 +100,7 @@ class TopicListTile extends StatelessWidget {
                     onSelected: (value) {
                       if (value == 'rename') onRename();
                       if (value == 'change_icon') onIconChange();
-                      if (value == 'toggle_visibility')
-                        onToggleVisibility(); // DIUBAH
+                      if (value == 'toggle_visibility') onToggleVisibility();
                       if (value == 'delete') onDelete();
                     },
                     itemBuilder: (context) => [
@@ -101,7 +112,6 @@ class TopicListTile extends StatelessWidget {
                         value: 'change_icon',
                         child: Text('Ubah Ikon'),
                       ),
-                      // ==> OPSI MENU BARU <==
                       PopupMenuItem<String>(
                         value: 'toggle_visibility',
                         child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),

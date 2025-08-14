@@ -1,12 +1,12 @@
 // lib/presentation/pages/linux/main_view_linux/topics_panel.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/data/models/topic_model.dart';
+import 'package:my_aplication/presentation/pages/1_topics_page/dialogs/topic_dialogs.dart';
+import 'package:my_aplication/presentation/pages/1_topics_page/utils/scaffold_messenger_utils.dart';
+import 'package:my_aplication/presentation/pages/1_topics_page/widgets/topic_list_tile.dart';
+import 'package:my_aplication/presentation/providers/topic_provider.dart';
 import 'package:provider/provider.dart';
-import '../../../../data/models/topic_model.dart';
-import '../../../providers/topic_provider.dart';
-import '../../1_topics_page/dialogs/topic_dialogs.dart';
-import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
-import '../../1_topics_page/widgets/topic_list_tile.dart';
 
 class TopicsPanel extends StatefulWidget {
   final Function(Topic) onTopicSelected;
@@ -166,6 +166,7 @@ class _TopicsPanelState extends State<TopicsPanel> {
           onIconChange: () => _changeIcon(context, topicProvider, topic),
           onToggleVisibility: () =>
               _toggleVisibility(context, topicProvider, topic),
+          isLinux: true, // Menerapkan gaya ringkas untuk Linux
         );
       },
       onReorder: (oldIndex, newIndex) {

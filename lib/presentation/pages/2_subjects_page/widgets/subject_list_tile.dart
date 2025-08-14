@@ -1,3 +1,4 @@
+// lib/presentation/pages/2_subjects_page/widgets/subject_list_tile.dart
 import 'package:flutter/material.dart';
 import '../../../../data/models/subject_model.dart';
 import '../../3_discussions_page/utils/repetition_code_utils.dart';
@@ -8,7 +9,8 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
-  final VoidCallback onToggleVisibility; // ==> DITAMBAHKAN
+  final VoidCallback onToggleVisibility;
+  final bool isLinux; // ==> PARAMETER BARU <==
 
   const SubjectListTile({
     super.key,
@@ -17,7 +19,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onRename,
     required this.onDelete,
     required this.onIconChange,
-    required this.onToggleVisibility, // ==> DITAMBAHKAN
+    required this.onToggleVisibility,
+    this.isLinux = false, // ==> NILAI DEFAULT <==
   });
 
   @override
@@ -25,8 +28,6 @@ class SubjectListTile extends StatelessWidget {
     final theme = Theme.of(context);
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
-
-    // ==> PERUBAHAN Tampilan untuk item yang tersembunyi <==
     final bool isHidden = subject.isHidden;
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
@@ -34,63 +35,74 @@ class SubjectListTile extends StatelessWidget {
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
+    // ==> PENYESUAIAN UKURAN UNTUK LINUX <==
+    final double verticalMargin = isLinux ? 4 : 8;
+    final double horizontalMargin = isLinux ? 8 : 16;
+    final EdgeInsets padding = isLinux
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+        : const EdgeInsets.all(16.0);
+    final double iconFontSize = isLinux ? 22 : 28;
+    final double titleFontSize = isLinux ? 15 : 18;
+    final double subtitleFontSize = isLinux ? 11 : 12;
+
     return Card(
-      elevation: elevation, // DIUBAH
-      color: cardColor, // DIUBAH
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: elevation,
+      color: cardColor,
+      margin: EdgeInsets.symmetric(
+        horizontal: horizontalMargin,
+        vertical: verticalMargin,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
         splashColor: theme.primaryColor.withOpacity(0.1),
         highlightColor: theme.primaryColor.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: padding,
           child: Row(
             children: [
-              // Icon
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: theme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   subject.icon,
-                  style: TextStyle(fontSize: 28, color: textColor), // DIUBAH
+                  style: TextStyle(fontSize: iconFontSize, color: textColor),
                 ),
               ),
-              const SizedBox(width: 16),
-              // Name and Subtitle
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       subject.name,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: titleFontSize,
                         fontWeight: FontWeight.w600,
-                        color: textColor, // DIUBAH
+                        color: textColor,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (hasSubtitle) ...[
                       const SizedBox(height: 4),
-                      _buildSubtitle(context, textColor), // DIUBAH
+                      _buildSubtitle(context, textColor, subtitleFontSize),
                     ],
                   ],
                 ),
               ),
-              // Popup Menu
               PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'rename') onRename();
                   if (value == 'delete') onDelete();
                   if (value == 'change_icon') onIconChange();
-                  if (value == 'toggle_visibility') {
-                    onToggleVisibility(); // ==> DIPANGGIL
-                  }
+                  if (value == 'toggle_visibility') onToggleVisibility();
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -101,7 +113,6 @@ class SubjectListTile extends StatelessWidget {
                     value: 'change_icon',
                     child: Text('Ubah Ikon'),
                   ),
-                  // ==> OPSI MENU BARU <==
                   PopupMenuItem<String>(
                     value: 'toggle_visibility',
                     child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
@@ -120,14 +131,16 @@ class SubjectListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context, Color? textColor) {
-    // DIUBAH
+  Widget _buildSubtitle(
+    BuildContext context,
+    Color? textColor,
+    double fontSize,
+  ) {
     return RichText(
       text: TextSpan(
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontSize: 12,
-          color: textColor,
-        ), // DIUBAH
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontSize: fontSize, color: textColor),
         children: [
           if (subject.date != null)
             WidgetSpan(
@@ -135,10 +148,8 @@ class SubjectListTile extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4.0),
                 child: Icon(
                   Icons.calendar_today_outlined,
-                  size: 12,
-                  color: subject.isHidden
-                      ? textColor
-                      : Colors.amber[800], // DIUBAH
+                  size: fontSize,
+                  color: subject.isHidden ? textColor : Colors.amber[800],
                 ),
               ),
               alignment: PlaceholderAlignment.middle,
@@ -147,9 +158,7 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.date,
               style: TextStyle(
-                color: subject.isHidden
-                    ? textColor
-                    : Colors.amber[800], // DIUBAH
+                color: subject.isHidden ? textColor : Colors.amber[800],
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -161,12 +170,10 @@ class SubjectListTile extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4.0),
                 child: Icon(
                   Icons.repeat,
-                  size: 12,
+                  size: fontSize,
                   color: subject.isHidden
                       ? textColor
-                      : getColorForRepetitionCode(
-                          subject.repetitionCode!,
-                        ), // DIUBAH
+                      : getColorForRepetitionCode(subject.repetitionCode!),
                 ),
               ),
               alignment: PlaceholderAlignment.middle,
@@ -177,9 +184,7 @@ class SubjectListTile extends StatelessWidget {
               style: TextStyle(
                 color: subject.isHidden
                     ? textColor
-                    : getColorForRepetitionCode(
-                        subject.repetitionCode!,
-                      ), // DIUBAH
+                    : getColorForRepetitionCode(subject.repetitionCode!),
                 fontWeight: FontWeight.bold,
               ),
             ),

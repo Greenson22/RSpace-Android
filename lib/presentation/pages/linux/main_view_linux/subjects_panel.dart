@@ -1,12 +1,13 @@
 // lib/presentation/pages/linux/main_view_linux/subjects_panel.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/data/models/subject_model.dart';
+import 'package:my_aplication/presentation/pages/1_topics_page/utils/scaffold_messenger_utils.dart';
+import 'package:my_aplication/presentation/pages/2_subjects_page/dialogs/subject_dialogs.dart'
+    as subject_dialogs;
+import 'package:my_aplication/presentation/pages/2_subjects_page/widgets/subject_list_tile.dart';
+import 'package:my_aplication/presentation/providers/subject_provider.dart';
 import 'package:provider/provider.dart';
-import '../../../../data/models/subject_model.dart';
-import '../../../providers/subject_provider.dart';
-import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
-import '../../2_subjects_page/dialogs/subject_dialogs.dart' as subject_dialogs;
-import '../../2_subjects_page/widgets/subject_list_tile.dart';
 
 class SubjectsPanel extends StatefulWidget {
   final SubjectProvider? subjectProvider;
@@ -178,6 +179,7 @@ class _SubjectsPanelState extends State<SubjectsPanel> {
               _changeSubjectIcon(context, subjectProvider, subject),
           onToggleVisibility: () =>
               _toggleSubjectVisibility(context, subjectProvider, subject),
+          isLinux: true, // Menerapkan gaya ringkas untuk Linux
         );
       },
     );
