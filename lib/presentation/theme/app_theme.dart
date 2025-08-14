@@ -1,6 +1,17 @@
+// lib/presentation/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  // ==> DAFTAR WARNA PRIMER YANG BISA DIPILIH <==
+  static final List<Color> selectableColors = [
+    Colors.purple,
+    Colors.blue,
+    Colors.teal,
+    Colors.orange,
+    Colors.red,
+    Colors.green,
+  ];
+
   // Palet Warna gradasi untuk dashboard
   static const List<Color> gradientColors1 = [
     Color(0xFF64B5F6),
@@ -23,41 +34,46 @@ class AppTheme {
     Color(0xFF9C27B0),
   ];
 
-  static final ThemeData lightTheme = ThemeData(
-    primarySwatch: Colors.purple, // DIUBAH
+  // ==> FUNGSI BARU UNTUK MEMBUAT THEME SECARA DINAMIS <==
+  static ThemeData getTheme(Color primaryColor, bool isDark) {
+    if (isDark) {
+      return _darkTheme(primaryColor);
+    }
+    return _lightTheme(primaryColor);
+  }
+
+  static ThemeData _lightTheme(Color primaryColor) => ThemeData(
+    primarySwatch: _createMaterialColor(primaryColor),
     brightness: Brightness.light,
-    scaffoldBackgroundColor: Colors.grey[100], // Latar belakang lebih lembut
+    scaffoldBackgroundColor: Colors.grey[100],
     visualDensity: VisualDensity.adaptivePlatformDensity,
     appBarTheme: AppBarTheme(
-      backgroundColor: Colors.purple, // DIUBAH
+      backgroundColor: primaryColor,
       foregroundColor: Colors.white,
       elevation: 2,
     ),
     cardTheme: CardThemeData(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ), // Kartu lebih bulat
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
     listTileTheme: const ListTileThemeData(
       contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: Colors.purple[600], // DIUBAH
+      backgroundColor: primaryColor,
       foregroundColor: Colors.white,
     ),
     colorScheme: ColorScheme.fromSwatch(
-      primarySwatch: Colors.purple,
-    ).copyWith(secondary: Colors.purpleAccent),
+      primarySwatch: _createMaterialColor(primaryColor),
+      brightness: Brightness.light,
+    ).copyWith(secondary: primaryColor),
   );
 
-  static final ThemeData darkTheme = ThemeData(
-    primarySwatch: Colors.purple, // DIUBAH
+  static ThemeData _darkTheme(Color primaryColor) => ThemeData(
+    primarySwatch: _createMaterialColor(primaryColor),
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: const Color(
-      0xFF121212,
-    ), // Latar belakang gelap standar
+    scaffoldBackgroundColor: const Color(0xFF121212),
     visualDensity: VisualDensity.adaptivePlatformDensity,
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.grey[900],
@@ -65,7 +81,7 @@ class AppTheme {
       elevation: 2,
     ),
     cardTheme: CardThemeData(
-      elevation: 4, // Shadow lebih terlihat di tema gelap
+      elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       color: Colors.grey[850],
@@ -74,12 +90,33 @@ class AppTheme {
       contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: Colors.purple[300], // DIUBAH
-      foregroundColor: Colors.black,
+      backgroundColor: primaryColor,
+      foregroundColor: Colors.white,
     ),
     colorScheme: ColorScheme.fromSwatch(
-      primarySwatch: Colors.purple,
+      primarySwatch: _createMaterialColor(primaryColor),
       brightness: Brightness.dark,
-    ).copyWith(secondary: Colors.purpleAccent),
+    ).copyWith(secondary: primaryColor),
   );
+
+  // Helper untuk membuat MaterialColor dari satu Color
+  static MaterialColor _createMaterialColor(Color color) {
+    List strengths = <double>[.05];
+    Map<int, Color> swatch = {};
+    final int r = color.red, g = color.green, b = color.blue;
+
+    for (int i = 1; i < 10; i++) {
+      strengths.add(0.1 * i);
+    }
+    for (var strength in strengths) {
+      final double ds = 0.5 - strength;
+      swatch[(strength * 1000).round()] = Color.fromRGBO(
+        r + ((ds < 0 ? r : (255 - r)) * ds).round(),
+        g + ((ds < 0 ? g : (255 - g)) * ds).round(),
+        b + ((ds < 0 ? b : (255 - b)) * ds).round(),
+        1,
+      );
+    }
+    return MaterialColor(color.value, swatch);
+  }
 }

@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/dashboard_page.dart';
 import 'presentation/pages/my_tasks_page.dart';
-import 'presentation/theme/app_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -37,16 +36,11 @@ void main() async {
   }
 
   runApp(
-    // DIUBAH: Menggunakan MultiProvider
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(
-          create: (_) => TopicProvider(),
-        ), // TopicProvider ditambahkan di sini
-        ChangeNotifierProvider(
-          create: (_) => StatisticsProvider(),
-        ), // DITAMBAHKAN
+        ChangeNotifierProvider(create: (_) => TopicProvider()),
+        ChangeNotifierProvider(create: (_) => StatisticsProvider()),
       ],
       child: const MyApp(),
     ),
@@ -63,9 +57,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'Topics and Subjects Lister',
-          theme: themeProvider.darkTheme
-              ? AppTheme.darkTheme
-              : AppTheme.lightTheme,
+          theme: themeProvider
+              .currentTheme, // DIUBAH untuk menggunakan tema dinamis
           home: const DashboardPage(),
         );
       },

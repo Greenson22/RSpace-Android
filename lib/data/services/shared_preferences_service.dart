@@ -9,6 +9,19 @@ class SharedPreferencesService {
   static const String _themeKey = 'theme_preference';
   // MENGGANTI _storageLocationKey MENJADI _customStoragePathKey
   static const String _customStoragePathKey = 'custom_storage_path';
+  static const String _primaryColorKey = 'primary_color'; // DITAMBAHKAN
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN WARNA PRIMER <==
+  Future<void> savePrimaryColor(int colorValue) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_primaryColorKey, colorValue);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT WARNA PRIMER <==
+  Future<int?> loadPrimaryColor() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_primaryColorKey);
+  }
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();

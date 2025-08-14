@@ -141,6 +141,45 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PEMILIH WARNA <==
+  void _showColorPickerDialog(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pilih Warna Primer'),
+          content: Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            alignment: WrapAlignment.center,
+            children: AppTheme.selectableColors.map((color) {
+              return GestureDetector(
+                onTap: () {
+                  themeProvider.setPrimaryColor(color);
+                  Navigator.of(context).pop();
+                },
+                child: CircleAvatar(
+                  backgroundColor: color,
+                  radius: 20,
+                  child: themeProvider.primaryColor == color
+                      ? const Icon(Icons.check, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Tutup'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -152,6 +191,12 @@ class _DashboardPageState extends State<DashboardPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // ==> TOMBOL BARU UNTUK GANTI WARNA <==
+          IconButton(
+            icon: const Icon(Icons.color_lens_outlined),
+            onPressed: () => _showColorPickerDialog(context),
+            tooltip: 'Ganti Warna Primer',
+          ),
           IconButton(
             icon: Icon(
               themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
