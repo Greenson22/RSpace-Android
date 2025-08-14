@@ -105,7 +105,10 @@ class _MainViewLinuxState extends State<MainViewLinux> {
         children: [
           Expanded(
             flex: _topicFlex.round(),
-            child: TopicsPanel(onTopicSelected: _onTopicSelected),
+            child: TopicsPanel(
+              onTopicSelected: _onTopicSelected,
+              selectedTopic: _selectedTopic, // ==> DITAMBAHKAN
+            ),
           ),
           // Pembatas yang dapat digeser (resizable)
           GestureDetector(
@@ -137,6 +140,7 @@ class _MainViewLinuxState extends State<MainViewLinux> {
               subjectProvider: _subjectProvider,
               onSubjectSelected: _onSubjectSelected,
               onAddSubject: _onAddSubject,
+              selectedSubject: _selectedSubject, // ==> DITAMBAHKAN
             ),
           ),
           // Pembatas kedua yang dapat digeser

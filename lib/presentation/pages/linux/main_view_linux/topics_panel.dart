@@ -10,8 +10,13 @@ import 'package:provider/provider.dart';
 
 class TopicsPanel extends StatefulWidget {
   final Function(Topic) onTopicSelected;
+  final Topic? selectedTopic; // ==> DITAMBAHKAN
 
-  const TopicsPanel({super.key, required this.onTopicSelected});
+  const TopicsPanel({
+    super.key,
+    required this.onTopicSelected,
+    this.selectedTopic, // ==> DITAMBAHKAN
+  });
 
   @override
   State<TopicsPanel> createState() => _TopicsPanelState();
@@ -184,6 +189,8 @@ class _TopicsPanelState extends State<TopicsPanel> {
           isLinux: true, // Menerapkan gaya ringkas untuk Linux
           // Menentukan apakah layout harus lebih ringkas berdasarkan lebar panel
           isCompact: panelWidth < 280,
+          isSelected:
+              widget.selectedTopic?.name == topic.name, // ==> DITAMBAHKAN
         );
       },
       onReorder: (oldIndex, newIndex) {

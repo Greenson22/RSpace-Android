@@ -12,6 +12,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onToggleVisibility;
   final bool isLinux;
   final bool isCompact;
+  final bool isSelected; // ==> DITAMBAHKAN
 
   const SubjectListTile({
     super.key,
@@ -23,6 +24,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onToggleVisibility,
     this.isLinux = false,
     this.isCompact = false,
+    this.isSelected = false, // ==> DITAMBAHKAN
   });
 
   void _showContextMenu(BuildContext context, Offset position) {
@@ -64,9 +66,15 @@ class SubjectListTile extends StatelessWidget {
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
     final bool isHidden = subject.isHidden;
-    final Color cardColor = isHidden
-        ? theme.disabledColor.withOpacity(0.1)
-        : theme.cardColor;
+    // ==> LOGIKA WARNA DIPERBARUI <==
+    Color cardColor;
+    if (isSelected) {
+      cardColor = theme.primaryColor.withOpacity(0.3);
+    } else if (isHidden) {
+      cardColor = theme.disabledColor.withOpacity(0.1);
+    } else {
+      cardColor = theme.cardColor;
+    }
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 

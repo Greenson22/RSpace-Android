@@ -13,12 +13,14 @@ class SubjectsPanel extends StatefulWidget {
   final SubjectProvider? subjectProvider;
   final Function(Subject) onSubjectSelected;
   final VoidCallback onAddSubject;
+  final Subject? selectedSubject; // ==> DITAMBAHKAN
 
   const SubjectsPanel({
     super.key,
     required this.subjectProvider,
     required this.onSubjectSelected,
     required this.onAddSubject,
+    this.selectedSubject, // ==> DITAMBAHKAN
   });
 
   @override
@@ -192,6 +194,8 @@ class _SubjectsPanelState extends State<SubjectsPanel> {
               _toggleSubjectVisibility(context, subjectProvider, subject),
           isLinux: true, // Menerapkan gaya ringkas untuk Linux
           isCompact: panelWidth < 320,
+          isSelected:
+              widget.selectedSubject?.name == subject.name, // ==> DITAMBAHKAN
         );
       },
     );

@@ -12,6 +12,7 @@ class TopicListTile extends StatelessWidget {
   final bool isReorderActive;
   final bool isLinux;
   final bool isCompact;
+  final bool isSelected; // ==> DITAMBAHKAN
 
   const TopicListTile({
     super.key,
@@ -24,6 +25,7 @@ class TopicListTile extends StatelessWidget {
     this.isReorderActive = false,
     this.isLinux = false,
     this.isCompact = false,
+    this.isSelected = false, // ==> DITAMBAHKAN
   });
 
   void _showContextMenu(BuildContext context, Offset position) {
@@ -61,11 +63,18 @@ class TopicListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final bool isHidden = topic.isHidden;
-    final Color cardColor = isHidden
-        ? Theme.of(context).disabledColor.withOpacity(0.1)
-        : Theme.of(context).cardColor;
-    final Color? textColor = isHidden ? Theme.of(context).disabledColor : null;
+    // ==> LOGIKA WARNA DIPERBARUI <==
+    Color cardColor;
+    if (isSelected) {
+      cardColor = theme.primaryColor.withOpacity(0.3);
+    } else if (isHidden) {
+      cardColor = theme.disabledColor.withOpacity(0.1);
+    } else {
+      cardColor = theme.cardColor;
+    }
+    final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
     final double verticalMargin = isLinux ? 4 : 8;
