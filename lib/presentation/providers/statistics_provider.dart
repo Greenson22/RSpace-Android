@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
+import '../../data/models/discussion_model.dart';
 import '../../data/models/statistics_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/my_task_service.dart';
@@ -31,27 +32,26 @@ class StatisticsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      int topicCount = 0;
-      int subjectCount = 0;
-      int discussionCount = 0;
-      int finishedDiscussionCount = 0;
-      int pointCount = 0;
-      int taskCategoryCount = 0;
-      int taskCount = 0;
-      int completedTaskCount = 0;
+      int totalSubjectCount = 0;
+      int totalDiscussionCount = 0;
+      int totalFinishedDiscussionCount = 0;
+      int totalPointCount = 0;
+      List<TopicStatistics> perTopicStats = [];
+      // ==> MAP BARU UNTUK MENGHITUNG REPETITION CODE <==
+      Map<String, int> repetitionCodeCounts = {};
 
-      // 1. Dapatkan Topik
       final topics = await _topicService.getTopics();
-      topicCount = topics.length;
-
       final topicsPath = await _pathService.topicsPath;
 
-      // 2. Iterasi setiap topik untuk mendapatkan subjek dan diskusi
       for (final topic in topics) {
+        int currentTopicSubjectCount = 0;
+        int currentTopicDiscussionCount = 0;
+        int currentTopicPointCount = 0;
+
         final topicPath = path.join(topicsPath, topic.name);
         try {
           final subjects = await _subjectService.getSubjects(topicPath);
-          subjectCount += subjects.length;
+          currentTopicSubjectCount = subjects.length;
 
           for (final subject in subjects) {
             final subjectJsonPath = path.join(
@@ -61,21 +61,42 @@ class StatisticsProvider with ChangeNotifier {
             final discussions = await _discussionService.loadDiscussions(
               subjectJsonPath,
             );
-            discussionCount += discussions.length;
+            currentTopicDiscussionCount += discussions.length;
 
             for (final discussion in discussions) {
               if (discussion.finished) {
-                finishedDiscussionCount++;
+                totalFinishedDiscussionCount++;
               }
-              pointCount += discussion.points.length;
+              currentTopicPointCount += discussion.points.length;
+
+              // ==> LOGIKA PENGHITUNGAN REPETITION CODE <==
+              final code = discussion.effectiveRepetitionCode;
+              repetitionCodeCounts[code] =
+                  (repetitionCodeCounts[code] ?? 0) + 1;
             }
           }
         } catch (e) {
           debugPrint('Could not process topic "${topic.name}": $e');
         }
+
+        perTopicStats.add(
+          TopicStatistics(
+            topicName: topic.name,
+            topicIcon: topic.icon,
+            subjectCount: currentTopicSubjectCount,
+            discussionCount: currentTopicDiscussionCount,
+            pointCount: currentTopicPointCount,
+          ),
+        );
+
+        totalSubjectCount += currentTopicSubjectCount;
+        totalDiscussionCount += currentTopicDiscussionCount;
+        totalPointCount += currentTopicPointCount;
       }
 
-      // 3. Dapatkan statistik MyTasks
+      int taskCategoryCount = 0;
+      int taskCount = 0;
+      int completedTaskCount = 0;
       final taskCategories = await _myTaskService.loadMyTasks();
       taskCategoryCount = taskCategories.length;
       for (final category in taskCategories) {
@@ -88,18 +109,21 @@ class StatisticsProvider with ChangeNotifier {
       }
 
       _stats = AppStatistics(
-        topicCount: topicCount,
-        subjectCount: subjectCount,
-        discussionCount: discussionCount,
-        finishedDiscussionCount: finishedDiscussionCount,
-        pointCount: pointCount,
+        topicCount: topics.length,
+        subjectCount: totalSubjectCount,
+        discussionCount: totalDiscussionCount,
+        finishedDiscussionCount: totalFinishedDiscussionCount,
+        pointCount: totalPointCount,
         taskCategoryCount: taskCategoryCount,
         taskCount: taskCount,
         completedTaskCount: completedTaskCount,
+        perTopicStats: perTopicStats,
+        // ==> MASUKKAN MAP REPETITION CODE KE STATS <==
+        repetitionCodeCounts: repetitionCodeCounts,
       );
     } catch (e) {
       debugPrint("Error generating statistics: $e");
-      _stats = AppStatistics(); // Reset jika ada error
+      _stats = AppStatistics();
     } finally {
       _isLoading = false;
       notifyListeners();
