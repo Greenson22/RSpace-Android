@@ -13,6 +13,7 @@ import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'my_tasks_page.dart';
+import 'statistics_page.dart'; // DITAMBAHKAN
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -158,7 +159,6 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: () => themeProvider.darkTheme = !themeProvider.darkTheme,
             tooltip: 'Ganti Tema',
           ),
-          // ==> TOMBOL TENTANG DIPINDAHKAN KE SINI <==
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
@@ -172,13 +172,23 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            const _DashboardHeader(),
-            const SizedBox(height: 20),
-            _buildGridView(context),
-          ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // Memuat ulang data dari provider yang relevan
+            await Provider.of<TopicProvider>(
+              context,
+              listen: false,
+            ).fetchTopics();
+            // Jika ada provider lain di dashboard, panggil juga di sini
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              const _DashboardHeader(),
+              const SizedBox(height: 20),
+              _buildGridView(context),
+            ],
+          ),
         ),
       ),
     );
@@ -228,14 +238,26 @@ class _DashboardPageState extends State<DashboardPage> {
               ? const CircularProgressIndicator(color: Colors.white)
               : null,
         ),
+        // ==> ITEM STATISTIK DITAMBAHKAN <==
+        _DashboardItem(
+          icon: Icons.pie_chart_outline_rounded,
+          label: 'Statistik',
+          gradientColors: AppTheme.gradientColors5,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const StatisticsPage()),
+            );
+          },
+        ),
         if (Platform.isAndroid)
           _DashboardItem(
             icon: Icons.folder_open_rounded,
             label: 'Penyimpanan',
-            gradientColors: AppTheme.gradientColors5,
+            // Menggunakan warna gradien baru agar tidak sama dengan Statistik
+            gradientColors: const [Color(0xFF78909C), Color(0xFF546E7A)],
             onTap: () => _showStoragePathDialog(context),
           ),
-        // ==> TOMBOL TENTANG DIHAPUS DARI GRID <==
       ],
     );
   }

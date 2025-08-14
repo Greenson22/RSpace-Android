@@ -3,7 +3,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:my_aplication/presentation/providers/topic_provider.dart'; // DIIMPOR
+import 'package:my_aplication/presentation/providers/statistics_provider.dart';
+import 'package:my_aplication/presentation/providers/topic_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/dashboard_page.dart';
@@ -43,6 +44,9 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => TopicProvider(),
         ), // TopicProvider ditambahkan di sini
+        ChangeNotifierProvider(
+          create: (_) => StatisticsProvider(),
+        ), // DITAMBAHKAN
       ],
       child: const MyApp(),
     ),
