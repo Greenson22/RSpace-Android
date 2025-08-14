@@ -25,7 +25,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
   void initState() {
     super.initState();
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    // Kita panggil fetchSubjects di sini sekali saat halaman pertama kali dibuka
     provider.fetchSubjects();
     _searchController.addListener(() {
       provider.search(_searchController.text);
@@ -114,9 +113,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI INI DIUBAH UNTUK MENGIRIM CALLBACK <==
   void _navigateToDiscussionsPage(BuildContext context, Subject subject) {
-    // Dapatkan provider dari context saat ini
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
@@ -131,7 +128,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(jsonFilePath),
-          // Kirim fungsi yang memanggil fetchSubjects sebagai callback
           child: DiscussionsPage(
             subjectName: subject.name,
             onFilterOrSortChanged: () {
@@ -145,22 +141,15 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final subjectProvider = Provider.of<SubjectProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: (_isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Cari subject...',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.white70),
-                ),
-                style: const TextStyle(color: Colors.white),
-              )
-            : Text('Subjects in ${widget.topicName}')),
+        title: _isSearching
+            ? _buildSearchField()
+            : Text(
+                'Subjects: ${widget.topicName}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -172,6 +161,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             },
           ),
         ],
+        elevation: 0,
       ),
       body: Consumer<SubjectProvider>(
         builder: (context, provider, child) {
@@ -179,9 +169,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (provider.allSubjects.isEmpty) {
-            return const Center(
-              child: Text('Tidak ada subject. Tekan + untuk menambah.'),
-            );
+            return _buildEmptyState();
           }
 
           final subjectsToShow = provider.filteredSubjects;
@@ -192,6 +180,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.only(top: 8, bottom: 80),
             itemCount: subjectsToShow.length,
             itemBuilder: (context, index) {
               final subject = subjectsToShow[index];
@@ -207,12 +196,51 @@ class _SubjectsPageState extends State<SubjectsPage> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addSubject(context),
         tooltip: 'Tambah Subject',
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Subject'),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      autofocus: true,
+      decoration: const InputDecoration(
+        hintText: 'Cari subject...',
+        border: InputBorder.none,
+        hintStyle: TextStyle(color: Colors.white70),
+      ),
+      style: const TextStyle(color: Colors.white, fontSize: 18),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.class_outlined, size: 80, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Belum Ada Subject',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tekan tombol + untuk menambah subject di topik ini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+          ),
+        ],
+      ),
     );
   }
 }
