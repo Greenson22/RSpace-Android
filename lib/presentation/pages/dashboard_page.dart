@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
+import '../theme/app_theme.dart'; // Import AppTheme
 import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'my_tasks_page.dart';
@@ -22,16 +23,6 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
   bool _isImporting = false;
-  late Stream<DateTime> _clockStream;
-
-  @override
-  void initState() {
-    super.initState();
-    _clockStream = Stream.periodic(
-      const Duration(seconds: 1),
-      (_) => DateTime.now(),
-    );
-  }
 
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
@@ -45,28 +36,21 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
 
-    setState(() {
-      _isBackingUp = true;
-    });
-
+    setState(() => _isBackingUp = true);
     showAppSnackBar(context, 'Memulai proses backup...');
     try {
       final message = await topicProvider.backupContents(
         destinationPath: destinationPath,
       );
-      showAppSnackBar(context, message);
+      if (mounted) showAppSnackBar(context, message);
     } catch (e) {
       String errorMessage = 'Terjadi error saat backup: $e';
       if (e is FileSystemException) {
         errorMessage = 'Error: Gagal menulis file. Periksa izin aplikasi.';
       }
-      showAppSnackBar(context, errorMessage, isError: true);
+      if (mounted) showAppSnackBar(context, errorMessage, isError: true);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isBackingUp = false;
-        });
-      }
+      if (mounted) setState(() => _isBackingUp = false);
     }
   }
 
@@ -93,9 +77,7 @@ class _DashboardPageState extends State<DashboardPage> {
     try {
       final zipFile = File(result.files.single.path!);
       final topicProvider = Provider.of<TopicProvider>(context, listen: false);
-
       await topicProvider.importContents(zipFile);
-
       if (mounted) {
         showAppSnackBar(
           context,
@@ -111,9 +93,7 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isImporting = false);
-      }
+      if (mounted) setState(() => _isImporting = false);
     }
   }
 
@@ -123,7 +103,7 @@ class _DashboardPageState extends State<DashboardPage> {
           builder: (context) => AlertDialog(
             title: const Text('Konfirmasi Import'),
             content: const Text(
-              'PERINGATAN: Tindakan ini akan menghapus semua folder "topics" dan file "my_tasks.json" saat ini, lalu menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
+              'PERINGATAN: Tindakan ini akan menghapus semua data "topics" dan "my_tasks.json" saat ini, lalu menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
             ),
             actions: [
               TextButton(
@@ -155,9 +135,7 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       }
     } else {
-      if (mounted) {
-        showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
-      }
+      if (mounted) showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
     }
   }
 
@@ -167,146 +145,208 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: Icon(
               themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
             ),
-            onPressed: () {
-              themeProvider.darkTheme = !themeProvider.darkTheme;
-            },
+            onPressed: () => themeProvider.darkTheme = !themeProvider.darkTheme,
             tooltip: 'Ganti Tema',
           ),
         ],
       ),
-      body: Column(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            const _DashboardHeader(),
+            const SizedBox(height: 20),
+            _buildGridView(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridView(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: <Widget>[
+        _DashboardItem(
+          icon: Icons.topic_outlined,
+          label: 'Topics',
+          gradientColors: AppTheme.gradientColors1,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TopicsPage()),
+          ),
+        ),
+        _DashboardItem(
+          icon: Icons.task_alt,
+          label: 'My Tasks',
+          gradientColors: AppTheme.gradientColors2,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyTasksPage()),
+          ),
+        ),
+        _DashboardItem(
+          icon: Icons.backup_outlined,
+          label: 'Backup',
+          gradientColors: AppTheme.gradientColors3,
+          onTap: () => _backupContents(context),
+          child: _isBackingUp
+              ? const CircularProgressIndicator(color: Colors.white)
+              : null,
+        ),
+        _DashboardItem(
+          icon: Icons.restore,
+          label: 'Import',
+          gradientColors: AppTheme.gradientColors4,
+          onTap: () => _importContents(context),
+          child: _isImporting
+              ? const CircularProgressIndicator(color: Colors.white)
+              : null,
+        ),
+        if (Platform.isAndroid)
+          _DashboardItem(
+            icon: Icons.folder_open_rounded,
+            label: 'Penyimpanan',
+            gradientColors: AppTheme.gradientColors5,
+            onTap: () => _showStoragePathDialog(context),
+          ),
+      ],
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildClock(),
-          Expanded(
-            child: Center(
-              child: GridView.count(
-                crossAxisCount: 2,
-                padding: const EdgeInsets.all(20),
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
-                shrinkWrap: true,
-                children: <Widget>[
-                  _buildDashboardItem(
-                    context,
-                    icon: Icons.topic_outlined,
-                    label: 'Topics',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const TopicsPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDashboardItem(
-                    context,
-                    icon: Icons.task_alt,
-                    label: 'My Tasks',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MyTasksPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDashboardItem(
-                    context,
-                    icon: Icons.backup_outlined,
-                    label: 'Backup',
-                    onTap: () => _backupContents(context),
-                    child: _isBackingUp
-                        ? const CircularProgressIndicator()
-                        : null,
-                  ),
-                  _buildDashboardItem(
-                    context,
-                    icon: Icons.restore,
-                    label: 'Import',
-                    onTap: () => _importContents(context),
-                    child: _isImporting
-                        ? const CircularProgressIndicator()
-                        : null,
-                  ),
-                  if (Platform.isAndroid)
-                    _buildDashboardItem(
-                      context,
-                      icon: Icons.folder_open_rounded,
-                      label: 'Penyimpanan',
-                      onTap: () => _showStoragePathDialog(context),
-                    ),
-                ],
-              ),
+          Text(
+            'Selamat Datang!',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          StreamBuilder<DateTime>(
+            stream: Stream.periodic(
+              const Duration(seconds: 1),
+              (_) => DateTime.now(),
             ),
+            builder: (context, snapshot) {
+              final now = snapshot.data ?? DateTime.now();
+              final date = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(now);
+              final time = DateFormat('HH:mm:ss').format(now);
+              return Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, size: 16),
+                  const SizedBox(width: 8),
+                  Text(date, style: Theme.of(context).textTheme.bodyMedium),
+                  const Spacer(),
+                  Text(
+                    time,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildClock() {
-    return StreamBuilder<DateTime>(
-      stream: _clockStream,
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          final now = snapshot.data!;
-          final dateFormatter = DateFormat('EEEE, d MMMM yyyy', 'id_ID');
-          final timeFormatter = DateFormat('HH:mm:ss');
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Column(
-              children: [
-                Text(
-                  dateFormatter.format(now),
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  timeFormatter.format(now),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontFamily: 'monospace'),
-                ),
-              ],
-            ),
-          );
-        }
-        return const SizedBox(height: 80);
-      },
-    );
-  }
+class _DashboardItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final List<Color> gradientColors;
+  final Widget? child;
 
-  Widget _buildDashboardItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Widget? child,
-  }) {
-    return InkWell(
-      onTap: onTap,
+  const _DashboardItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.gradientColors,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
       borderRadius: BorderRadius.circular(15),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        child:
-            child ??
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(icon, size: 50, color: Theme.of(context).primaryColor),
-                const SizedBox(height: 10),
-                Text(label, style: const TextStyle(fontSize: 18)),
-              ],
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        splashColor: Colors.white.withOpacity(0.3),
+        highlightColor: Colors.white.withOpacity(0.1),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: gradientColors.last.withOpacity(0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child:
+              child ??
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(icon, size: 40, color: Colors.white),
+                  const SizedBox(height: 12),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+        ),
       ),
     );
   }
