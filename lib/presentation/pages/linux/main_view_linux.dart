@@ -15,6 +15,7 @@ import '../3_discussions_page.dart';
 import '../1_topics_page/dialogs/topic_dialogs.dart'; // Impor untuk dialog
 import '../2_subjects_page/dialogs/subject_dialogs.dart'
     as subject_dialogs; // Impor untuk dialog subjek
+import '../3_discussions_page/dialogs/discussion_dialogs.dart'; // Impor untuk dialog diskusi
 import 'package:my_aplication/presentation/pages/1_topics_page/utils/scaffold_messenger_utils.dart'; // Impor untuk snackbar
 
 /// A view that combines Topics, Subjects, and Discussions in a three-panel layout for Linux.
@@ -29,14 +30,17 @@ class _MainViewLinuxState extends State<MainViewLinux> {
   Topic? _selectedTopic;
   Subject? _selectedSubject;
 
-  // Controller dan state untuk panel topik
+  // Controllers dan state untuk semua panel
   final TextEditingController _topicSearchController = TextEditingController();
   bool _isSearchingTopics = false;
 
-  // Controller dan state untuk panel subjek
   final TextEditingController _subjectSearchController =
       TextEditingController();
   bool _isSearchingSubjects = false;
+
+  final TextEditingController _discussionSearchController =
+      TextEditingController();
+  bool _isSearchingDiscussions = false;
 
   // Kelola provider di level State untuk kontrol yang lebih baik
   SubjectProvider? _subjectProvider;
@@ -55,7 +59,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     });
 
     _subjectSearchController.addListener(() {
-      // Pastikan subjectProvider tidak null sebelum digunakan
       _subjectProvider?.search(_subjectSearchController.text);
     });
   }
@@ -64,6 +67,7 @@ class _MainViewLinuxState extends State<MainViewLinux> {
   void dispose() {
     _topicSearchController.dispose();
     _subjectSearchController.dispose();
+    _discussionSearchController.dispose();
     super.dispose();
   }
 
@@ -79,9 +83,11 @@ class _MainViewLinuxState extends State<MainViewLinux> {
         _selectedSubject = null;
         _discussionProvider = null;
 
-        // Reset state pencarian subjek
+        // Reset state pencarian panel bawahannya
         _isSearchingSubjects = false;
         _subjectSearchController.clear();
+        _isSearchingDiscussions = false;
+        _discussionSearchController.clear();
 
         _subjectProvider = SubjectProvider(newTopicPath);
         _subjectProvider!.fetchSubjects();
@@ -106,6 +112,11 @@ class _MainViewLinuxState extends State<MainViewLinux> {
 
     setState(() {
       _selectedSubject = subject;
+
+      // Reset state pencarian diskusi
+      _isSearchingDiscussions = false;
+      _discussionSearchController.clear();
+
       _discussionProvider = DiscussionProvider(subjectJsonPath);
     });
   }
@@ -139,8 +150,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     );
   }
 
-  // ... _buildTopicsPanel dan _buildTopicsList tidak berubah ...
-  /// Membangun panel daftar Topik (Panel 1).
   Widget _buildTopicsPanel(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
 
@@ -277,13 +286,11 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     );
   }
 
-  /// Membangun panel daftar Subjek (Panel 2).
   Widget _buildSubjectsPanel(BuildContext context) {
     if (_selectedTopic == null) {
       return const Center(child: Text('Pilih sebuah topik dari panel kiri'));
     }
 
-    // Consumer diperlukan agar SubjectProvider yang dinamis dapat diakses
     return Consumer<SubjectProvider>(
       builder: (context, subjectProvider, child) {
         return Column(
@@ -351,7 +358,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     );
   }
 
-  /// Membangun daftar Subjek untuk Panel 2.
   Widget _buildSubjectsList(
     BuildContext context,
     SubjectProvider subjectProvider,
@@ -395,7 +401,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
       );
     }
 
-    // Karena ReorderableListView tidak diperlukan di sini, kita gunakan ListView.builder biasa.
     return ListView.builder(
       itemCount: subjectsToShow.length,
       itemBuilder: (context, index) {
@@ -415,7 +420,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     );
   }
 
-  /// Membangun panel halaman Diskusi (Panel 3).
   Widget _buildDiscussionsPanel(BuildContext context) {
     if (_selectedSubject == null) {
       return const Center(child: Text('Pilih sebuah subjek dari panel tengah'));
@@ -423,18 +427,137 @@ class _MainViewLinuxState extends State<MainViewLinux> {
 
     return Consumer<DiscussionProvider>(
       builder: (context, discussionProvider, child) {
-        return DiscussionsPage(
-          subjectName: _selectedSubject!.name,
-          onFilterOrSortChanged: () {
-            _subjectProvider?.fetchSubjects();
-          },
+        return Column(
+          children: [
+            _buildDiscussionsToolbar(context, discussionProvider),
+            const Divider(height: 1),
+            Expanded(
+              child: DiscussionsPage(
+                subjectName: _selectedSubject!.name,
+                onFilterOrSortChanged: () {
+                  _subjectProvider?.fetchSubjects();
+                },
+                isEmbedded: true,
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
-  // ... (helper methods untuk dialog topik tidak berubah) ...
-  // Helper methods untuk dialog topik
+  Widget _buildDiscussionsToolbar(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _isSearchingDiscussions
+                ? TextField(
+                    controller: _discussionSearchController,
+                    autofocus: true,
+                    onChanged: (value) => provider.searchQuery = value,
+                    decoration: const InputDecoration(
+                      hintText: 'Cari diskusi...',
+                      border: InputBorder.none,
+                    ),
+                  )
+                : const Text(
+                    "Discussions",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+          ),
+          IconButton(
+            icon: Icon(_isSearchingDiscussions ? Icons.close : Icons.search),
+            tooltip: 'Cari Diskusi',
+            onPressed: () {
+              setState(() {
+                _isSearchingDiscussions = !_isSearchingDiscussions;
+                if (!_isSearchingDiscussions) {
+                  _discussionSearchController.clear();
+                  provider.searchQuery = '';
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filter Diskusi',
+            onPressed: () => _showLinuxFilterDialog(context, provider),
+          ),
+          IconButton(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Urutkan Diskusi',
+            onPressed: () => showSortDialog(
+              context: context,
+              initialSortType: provider.sortType,
+              initialSortAscending: provider.sortAscending,
+              onApplySort: (sortType, sortAscending) {
+                provider.applySort(sortType, sortAscending);
+                // ==> PERBAIKAN DI SINI <==
+                _subjectProvider?.fetchSubjects();
+                showAppSnackBar(context, 'Diskusi telah diurutkan.');
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Tambah Diskusi',
+            onPressed: () => _addDiscussion(context, provider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addDiscussion(BuildContext context, DiscussionProvider provider) {
+    showTextInputDialog(
+      context: context,
+      title: 'Tambah Diskusi Baru',
+      label: 'Nama Diskusi',
+      onSave: (name) {
+        provider.addDiscussion(name);
+        showAppSnackBar(context, 'Diskusi "$name" berhasil ditambahkan.');
+      },
+    );
+  }
+
+  void _showLinuxFilterDialog(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) {
+    showFilterDialog(
+      context: context,
+      isFilterActive: provider.activeFilterType != null,
+      onClearFilters: () {
+        provider.clearFilters();
+        _subjectProvider?.fetchSubjects();
+        showAppSnackBar(context, 'Semua filter telah dihapus.');
+      },
+      onShowRepetitionCodeFilter: () => showRepetitionCodeFilterDialog(
+        context: context,
+        repetitionCodes: provider.repetitionCodes,
+        onSelectCode: (code) {
+          provider.applyCodeFilter(code);
+          _subjectProvider?.fetchSubjects();
+          showAppSnackBar(context, 'Filter diterapkan: Kode = $code');
+        },
+      ),
+      onShowDateFilter: () => showDateFilterDialog(
+        context: context,
+        initialDateRange: null,
+        onSelectRange: (range) {
+          provider.applyDateFilter(range);
+          _subjectProvider?.fetchSubjects();
+          showAppSnackBar(context, 'Filter tanggal diterapkan.');
+        },
+      ),
+    );
+  }
+
   Future<void> _addTopic(BuildContext context, TopicProvider provider) async {
     await showTopicTextInputDialog(
       context: context,
@@ -524,7 +647,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     }
   }
 
-  // Helper methods untuk dialog subjek
   Future<void> _addSubject(
     BuildContext context,
     SubjectProvider provider,
