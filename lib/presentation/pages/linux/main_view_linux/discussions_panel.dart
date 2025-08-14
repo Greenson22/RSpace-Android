@@ -59,7 +59,8 @@ class _DiscussionsPanelState extends State<DiscussionsPanel> {
                       subjectName: widget.selectedSubjectName!,
                       onFilterOrSortChanged: widget.onFilterOrSortChanged,
                       isEmbedded: true,
-                      panelWidth: constraints.maxWidth, // Meneruskan lebar
+                      panelWidth: constraints.maxWidth,
+                      isLinux: true, // ==> DITAMBAHKAN
                     ),
                   ),
                 ],

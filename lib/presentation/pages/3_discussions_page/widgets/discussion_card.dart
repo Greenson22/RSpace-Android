@@ -15,6 +15,7 @@ class DiscussionCard extends StatelessWidget {
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
   final double? panelWidth;
+  final bool isLinux; // ==> DITAMBAHKAN
 
   const DiscussionCard({
     super.key,
@@ -23,12 +24,67 @@ class DiscussionCard extends StatelessWidget {
     required this.arePointsVisible,
     required this.onToggleVisibility,
     this.panelWidth,
+    this.isLinux = false, // ==> DITAMBAHKAN
   });
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  // ==> FUNGSI BARU UNTUK KONTEKS MENU KLIK KANAN <==
+  void _showContextMenu(
+    BuildContext context,
+    Offset position,
+    DiscussionProvider provider,
+  ) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final bool isFinished = discussion.finished;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        if (!isFinished)
+          const PopupMenuItem<String>(
+            value: 'add_point',
+            child: Text('Tambah Poin'),
+          ),
+        const PopupMenuItem<String>(
+          value: 'edit_date',
+          child: Text('Ubah Tanggal'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'edit_code',
+          child: Text('Ubah Kode Repetisi'),
+        ),
+        const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
+        const PopupMenuDivider(),
+        if (!isFinished)
+          const PopupMenuItem<String>(
+            value: 'finish',
+            child: Text('Tandai Selesai'),
+          )
+        else
+          const PopupMenuItem<String>(
+            value: 'reactivate',
+            child: Text('Aktifkan Lagi'),
+          ),
+      ],
+    ).then((value) {
+      if (value == null) return;
+      if (value == 'add_point') _addPoint(context, provider);
+      if (value == 'edit_date') _changeDiscussionDate(context, provider);
+      if (value == 'edit_code') _changeDiscussionCode(context, provider);
+      if (value == 'rename') _renameDiscussion(context, provider);
+      if (value == 'finish') _markAsFinished(context, provider);
+      if (value == 'reactivate') _reactivateDiscussion(context, provider);
+    });
   }
 
   void _renameDiscussion(BuildContext context, DiscussionProvider provider) {
@@ -145,14 +201,11 @@ class DiscussionCard extends StatelessWidget {
       sortedPoints.addAll(reversedPoints);
     }
 
-    return Card(
+    // ==> KONTEN CARD DIBUNGKUS DENGAN GESTUREDETECTOR JIKA isLinux true <==
+    final cardContent = Card(
       child: Column(
         children: [
           ListTile(
-            // *** PERBAIKAN DI SINI ***
-            // ListTile sudah menangani tata letak leading, title, subtitle, dan trailing secara internal
-            // sehingga pembungkusan manual dengan Expanded tidak diperlukan dan justru bisa menyebabkan error.
-            // ListTile secara default akan memberikan sisa ruang untuk `title` dan `subtitle`.
             leading: Icon(
               iconData,
               color: iconColor,
@@ -165,7 +218,7 @@ class DiscussionCard extends StatelessWidget {
                 decoration: isFinished ? TextDecoration.lineThrough : null,
                 fontSize: isCompact ? 14.5 : 16,
               ),
-              overflow: TextOverflow.ellipsis, // Menambahkan overflow
+              overflow: TextOverflow.ellipsis,
             ),
             subtitle: DiscussionSubtitle(
               discussion: discussion,
@@ -174,15 +227,20 @@ class DiscussionCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                EditPopupMenu(
-                  isFinished: isFinished,
-                  onAddPoint: () => _addPoint(context, provider),
-                  onDateChange: () => _changeDiscussionDate(context, provider),
-                  onCodeChange: () => _changeDiscussionCode(context, provider),
-                  onRename: () => _renameDiscussion(context, provider),
-                  onMarkAsFinished: () => _markAsFinished(context, provider),
-                  onReactivate: () => _reactivateDiscussion(context, provider),
-                ),
+                // ==> TOMBOL TIGA TITIK HANYA TAMPIL JIKA BUKAN LINUX <==
+                if (!isLinux)
+                  EditPopupMenu(
+                    isFinished: isFinished,
+                    onAddPoint: () => _addPoint(context, provider),
+                    onDateChange: () =>
+                        _changeDiscussionDate(context, provider),
+                    onCodeChange: () =>
+                        _changeDiscussionCode(context, provider),
+                    onRename: () => _renameDiscussion(context, provider),
+                    onMarkAsFinished: () => _markAsFinished(context, provider),
+                    onReactivate: () =>
+                        _reactivateDiscussion(context, provider),
+                  ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
                     icon: Icon(
@@ -213,5 +271,16 @@ class DiscussionCard extends StatelessWidget {
         ],
       ),
     );
+
+    if (isLinux) {
+      return GestureDetector(
+        onSecondaryTapUp: (details) {
+          _showContextMenu(context, details.globalPosition, provider);
+        },
+        child: cardContent,
+      );
+    }
+
+    return cardContent;
   }
 }

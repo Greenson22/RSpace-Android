@@ -8,15 +8,17 @@ import '3_discussions_page/widgets/discussion_card.dart';
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
   final VoidCallback? onFilterOrSortChanged;
-  final bool isEmbedded; // ==> PARAMETER BARU
-  final double? panelWidth; // ==> PARAMETER BARU
+  final bool isEmbedded;
+  final double? panelWidth;
+  final bool isLinux; // ==> DITAMBAHKAN
 
   const DiscussionsPage({
     super.key,
     required this.subjectName,
     this.onFilterOrSortChanged,
-    this.isEmbedded = false, // ==> NILAI DEFAULT
-    this.panelWidth, // ==> NILAI DEFAULT null
+    this.isEmbedded = false,
+    this.panelWidth,
+    this.isLinux = false, // ==> DITAMBAHKAN
   });
 
   @override
@@ -66,7 +68,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
 
-    // ==> LOGIKA BARU <==
     // Jika disematkan, hanya kembalikan body-nya saja.
     if (widget.isEmbedded) {
       return _buildBody(provider);
@@ -149,10 +150,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.only(
-        top: 8,
-        bottom: 8,
-      ), // Padding untuk estetika
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       itemCount: discussionsToShow.length,
       itemBuilder: (context, index) {
         final discussion = discussionsToShow[index];
@@ -165,7 +163,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onToggleVisibility: (idx) => setState(
             () => _arePointsVisible[idx] = !(_arePointsVisible[idx] ?? false),
           ),
-          panelWidth: widget.panelWidth, // Meneruskan lebar ke card
+          panelWidth: widget.panelWidth,
+          isLinux: widget.isLinux, // ==> isLinux DITERUSKAN KE CARD
         );
       },
     );
