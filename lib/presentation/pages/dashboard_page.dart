@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // DITAMBAHKAN
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
@@ -13,7 +14,7 @@ import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'my_tasks_page.dart';
-import 'statistics_page.dart'; // DITAMBAHKAN
+import 'statistics_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -26,6 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
   bool _isImporting = false;
 
+  // ... (fungsi backup, import, dll. tidak berubah) ...
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Tujuan Backup',
@@ -141,38 +143,103 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PEMILIH WARNA <==
+  // ==> DIALOG PEMILIH WARNA DIUBAH TOTAL <==
   void _showColorPickerDialog(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    Color pickerColor = themeProvider.primaryColor;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Pilih Warna Primer'),
-          content: Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            alignment: WrapAlignment.center,
-            children: AppTheme.selectableColors.map((color) {
-              return GestureDetector(
-                onTap: () {
-                  themeProvider.setPrimaryColor(color);
-                  Navigator.of(context).pop();
-                },
-                child: CircleAvatar(
-                  backgroundColor: color,
-                  radius: 20,
-                  child: themeProvider.primaryColor == color
-                      ? const Icon(Icons.check, color: Colors.white)
-                      : null,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Color Wheel
+                ColorPicker(
+                  pickerColor: pickerColor,
+                  onColorChanged: (color) => pickerColor = color,
+                  labelTypes: const [ColorLabelType.hex],
+                  pickerAreaHeightPercent: 0.8,
+                  enableAlpha: false,
                 ),
-              );
-            }).toList(),
+                const Divider(),
+                // 2. Warna Preset
+                Text(
+                  'Pilihan Warna',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                BlockPicker(
+                  pickerColor: pickerColor,
+                  onColorChanged: (color) {
+                    pickerColor = color;
+                    themeProvider.setPrimaryColor(pickerColor);
+                    Navigator.of(context).pop();
+                  },
+                  availableColors: AppTheme.selectableColors,
+                  layoutBuilder: (context, colors, child) {
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: colors.map((color) => child(color)).toList(),
+                    );
+                  },
+                ),
+                const Divider(),
+                // 3. Warna Terakhir Digunakan
+                Consumer<ThemeProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.recentColors.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Warna Terakhir Digunakan',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        BlockPicker(
+                          pickerColor: pickerColor,
+                          onColorChanged: (color) {
+                            pickerColor = color;
+                            themeProvider.setPrimaryColor(pickerColor);
+                            Navigator.of(context).pop();
+                          },
+                          availableColors: provider.recentColors,
+                          layoutBuilder: (context, colors, child) {
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: colors
+                                  .map((color) => child(color))
+                                  .toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-          actions: [
+          actions: <Widget>[
             TextButton(
+              child: const Text('Batal'),
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Tutup'),
+            ),
+            TextButton(
+              child: const Text('Pilih'),
+              onPressed: () {
+                themeProvider.setPrimaryColor(pickerColor);
+                Navigator.of(context).pop();
+              },
             ),
           ],
         );
@@ -191,7 +258,6 @@ class _DashboardPageState extends State<DashboardPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          // ==> TOMBOL BARU UNTUK GANTI WARNA <==
           IconButton(
             icon: const Icon(Icons.color_lens_outlined),
             onPressed: () => _showColorPickerDialog(context),
@@ -219,12 +285,10 @@ class _DashboardPageState extends State<DashboardPage> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            // Memuat ulang data dari provider yang relevan
             await Provider.of<TopicProvider>(
               context,
               listen: false,
             ).fetchTopics();
-            // Jika ada provider lain di dashboard, panggil juga di sini
           },
           child: ListView(
             padding: const EdgeInsets.all(16.0),
@@ -238,6 +302,8 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+
+  // ... (Sisa dari build dan widget lainnya tidak berubah) ...
 
   Widget _buildGridView(BuildContext context) {
     return GridView.count(

@@ -7,17 +7,29 @@ class SharedPreferencesService {
   static const String _filterTypeKey = 'filter_type';
   static const String _filterValueKey = 'filter_value';
   static const String _themeKey = 'theme_preference';
-  // MENGGANTI _storageLocationKey MENJADI _customStoragePathKey
   static const String _customStoragePathKey = 'custom_storage_path';
-  static const String _primaryColorKey = 'primary_color'; // DITAMBAHKAN
+  static const String _primaryColorKey = 'primary_color';
+  static const String _recentColorsKey = 'recent_colors'; // DITAMBAHKAN
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN WARNA PRIMER <==
+  // ==> FUNGSI BARU UNTUK MENYIMPAN RIWAYAT WARNA <==
+  Future<void> saveRecentColors(List<int> colorValues) async {
+    final prefs = await SharedPreferences.getInstance();
+    final stringList = colorValues.map((v) => v.toString()).toList();
+    await prefs.setStringList(_recentColorsKey, stringList);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT RIWAYAT WARNA <==
+  Future<List<int>> loadRecentColors() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stringList = prefs.getStringList(_recentColorsKey) ?? [];
+    return stringList.map((s) => int.parse(s)).toList();
+  }
+
   Future<void> savePrimaryColor(int colorValue) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_primaryColorKey, colorValue);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMUAT WARNA PRIMER <==
   Future<int?> loadPrimaryColor() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_primaryColorKey);
@@ -70,13 +82,11 @@ class SharedPreferencesService {
     return {'filterType': filterType, 'filterValue': filterValue};
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN PATH KUSTOM <==
   Future<void> saveCustomStoragePath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_customStoragePathKey, path);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMUAT PATH KUSTOM <==
   Future<String?> loadCustomStoragePath() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_customStoragePathKey);
