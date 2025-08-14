@@ -7,6 +7,7 @@ class TopicListTile extends StatelessWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
+  final VoidCallback onToggleVisibility; // ==> DITAMBAHKAN
   final bool isReorderActive;
 
   const TopicListTile({
@@ -16,18 +17,28 @@ class TopicListTile extends StatelessWidget {
     required this.onRename,
     required this.onDelete,
     required this.onIconChange,
+    required this.onToggleVisibility, // ==> DITAMBAHKAN
     this.isReorderActive = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // ==> PERUBAHAN Tampilan untuk item yang tersembunyi <==
+    final bool isHidden = topic.isHidden;
+    final Color cardColor = isHidden
+        ? Theme.of(context).disabledColor.withOpacity(0.1)
+        : Theme.of(context).cardColor;
+    final Color? textColor = isHidden ? Theme.of(context).disabledColor : null;
+    final double elevation = isHidden ? 1 : 3;
+
     return Card(
-      elevation: 3,
+      elevation: elevation, // DIUBAH
+      color: cardColor, // DIUBAH
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Material(
         borderRadius: BorderRadius.circular(15),
-        color: Theme.of(context).cardColor,
+        color: Colors.transparent, // DIUBAH
         child: InkWell(
           onTap: isReorderActive ? null : onTap,
           borderRadius: BorderRadius.circular(15),
@@ -44,16 +55,20 @@ class TopicListTile extends StatelessWidget {
                     color: Theme.of(context).primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(topic.icon, style: const TextStyle(fontSize: 28)),
+                  child: Text(
+                    topic.icon,
+                    style: TextStyle(fontSize: 28, color: textColor), // DIUBAH
+                  ),
                 ),
                 const SizedBox(width: 16),
                 // Topic Name
                 Expanded(
                   child: Text(
                     topic.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
+                      color: textColor, // DIUBAH
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -73,6 +88,8 @@ class TopicListTile extends StatelessWidget {
                     onSelected: (value) {
                       if (value == 'rename') onRename();
                       if (value == 'change_icon') onIconChange();
+                      if (value == 'toggle_visibility')
+                        onToggleVisibility(); // DIUBAH
                       if (value == 'delete') onDelete();
                     },
                     itemBuilder: (context) => [
@@ -83,6 +100,11 @@ class TopicListTile extends StatelessWidget {
                       const PopupMenuItem(
                         value: 'change_icon',
                         child: Text('Ubah Ikon'),
+                      ),
+                      // ==> OPSI MENU BARU <==
+                      PopupMenuItem<String>(
+                        value: 'toggle_visibility',
+                        child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
                       ),
                       const PopupMenuDivider(),
                       const PopupMenuItem(

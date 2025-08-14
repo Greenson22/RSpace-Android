@@ -30,6 +30,9 @@ class TopicProvider with ChangeNotifier {
   bool _isReorderModeEnabled = false;
   bool get isReorderModeEnabled => _isReorderModeEnabled;
 
+  bool _showHiddenTopics = false; // ==> DITAMBAHKAN
+  bool get showHiddenTopics => _showHiddenTopics; // ==> DITAMBAHKAN
+
   TopicProvider() {
     fetchTopics();
   }
@@ -40,6 +43,12 @@ class TopicProvider with ChangeNotifier {
       _filterTopics();
     }
     notifyListeners();
+  }
+
+  // ==> FUNGSI BARU <==
+  void toggleShowHidden() {
+    _showHiddenTopics = !_showHiddenTopics;
+    _filterTopics();
   }
 
   Future<void> fetchTopics() async {
@@ -67,10 +76,22 @@ class TopicProvider with ChangeNotifier {
   }
 
   void _filterTopics() {
-    if (_searchQuery.isEmpty) {
-      _filteredTopics = _allTopics;
+    List<Topic> tempTopics;
+
+    // Filter berdasarkan status isHidden
+    if (_showHiddenTopics) {
+      tempTopics = _allTopics; // Tampilkan semua
     } else {
-      _filteredTopics = _allTopics
+      tempTopics = _allTopics
+          .where((topic) => !topic.isHidden)
+          .toList(); // Sembunyikan yang tersembunyi
+    }
+
+    // Filter berdasarkan query pencarian
+    if (_searchQuery.isEmpty) {
+      _filteredTopics = tempTopics;
+    } else {
+      _filteredTopics = tempTopics
           .where((topic) => topic.name.toLowerCase().contains(_searchQuery))
           .toList();
     }
@@ -113,6 +134,12 @@ class TopicProvider with ChangeNotifier {
 
   Future<void> updateTopicIcon(String topicName, String newIcon) async {
     await _topicService.updateTopicIcon(topicName, newIcon);
+    await fetchTopics();
+  }
+
+  // ==> FUNGSI BARU <==
+  Future<void> toggleTopicVisibility(String topicName, bool isHidden) async {
+    await _topicService.updateTopicVisibility(topicName, isHidden);
     await fetchTopics();
   }
 

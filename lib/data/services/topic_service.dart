@@ -37,6 +37,7 @@ class TopicService {
           name: name,
           icon: config['icon'] as String? ?? _defaultIcon,
           position: config['position'] as int? ?? -1,
+          isHidden: config['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
         ),
       );
     }
@@ -98,13 +99,15 @@ class TopicService {
           return {
             'icon': jsonData['icon'] as String? ?? _defaultIcon,
             'position': jsonData['position'] as int?,
+            'isHidden':
+                jsonData['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
           };
         }
       } catch (e) {
         // Abaikan error dan gunakan config default
       }
     }
-    return {'icon': _defaultIcon, 'position': -1};
+    return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
   }
 
   Future<void> _saveTopicConfig(Topic topic) async {
@@ -119,12 +122,25 @@ class TopicService {
     }
   }
 
+  // ==> FUNGSI BARU <==
+  Future<void> updateTopicVisibility(String topicName, bool isHidden) async {
+    final config = await _getTopicConfig(topicName);
+    final topic = Topic(
+      name: topicName,
+      icon: config['icon'] as String? ?? _defaultIcon,
+      position: config['position'] as int? ?? -1,
+      isHidden: isHidden,
+    );
+    await _saveTopicConfig(topic);
+  }
+
   Future<void> updateTopicIcon(String topicName, String newIcon) async {
     final config = await _getTopicConfig(topicName);
     final topic = Topic(
       name: topicName,
       icon: newIcon,
       position: config['position'] as int? ?? -1,
+      isHidden: config['isHidden'] as bool? ?? false,
     );
     await _saveTopicConfig(topic);
   }
@@ -174,6 +190,7 @@ class TopicService {
         name: newName,
         icon: oldConfig['icon'] as String? ?? _defaultIcon,
         position: oldConfig['position'] as int? ?? -1,
+        isHidden: oldConfig['isHidden'] as bool? ?? false,
       );
       await _saveTopicConfig(newTopic);
     } catch (e) {

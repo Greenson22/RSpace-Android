@@ -120,6 +120,19 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
+  // ==> FUNGSI BARU <==
+  Future<void> _toggleVisibility(BuildContext context, Topic topic) async {
+    final provider = Provider.of<TopicProvider>(context, listen: false);
+    final newVisibility = !topic.isHidden;
+    try {
+      await provider.toggleTopicVisibility(topic.name, newVisibility);
+      final message = newVisibility ? 'disembunyikan' : 'ditampilkan kembali';
+      showAppSnackBar(context, 'Topik "${topic.name}" berhasil $message.');
+    } catch (e) {
+      showAppSnackBar(context, e.toString(), isError: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
@@ -150,6 +163,18 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   if (!_isSearching) _searchController.clear();
                 });
               },
+            ),
+            // ==> TOMBOL BARU UNTUK MENAMPILKAN/SEMBUNYIKAN TOPIK <==
+            IconButton(
+              icon: Icon(
+                topicProvider.showHiddenTopics
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+              ),
+              onPressed: () => topicProvider.toggleShowHidden(),
+              tooltip: topicProvider.showHiddenTopics
+                  ? 'Sembunyikan Topik Tersembunyi'
+                  : 'Tampilkan Topik Tersembunyi',
             ),
           ],
           IconButton(
@@ -203,6 +228,13 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         if (topicsToShow.isEmpty && isSearching) {
           return const Center(child: Text('Topik tidak ditemukan.'));
         }
+        if (topicsToShow.isEmpty && !provider.showHiddenTopics) {
+          return const Center(
+            child: Text(
+              'Tidak ada topik yang terlihat. Coba tampilkan topik tersembunyi.',
+            ),
+          );
+        }
 
         return ReorderableListView.builder(
           itemCount: topicsToShow.length,
@@ -230,6 +262,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onIconChange: () => _changeIcon(context, topic),
+              onToggleVisibility: () =>
+                  _toggleVisibility(context, topic), // ==> DITAMBAHKAN
               isReorderActive: isReorderActive,
             );
           },
