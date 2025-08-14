@@ -1,4 +1,4 @@
-// lib/presentation/pages/dashboard_page_linux.dart
+// lib/presentation/pages/linux/dashboard_page_linux.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -6,7 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/topic_provider.dart';
-import '../1_topics_page.dart';
+// DIUBAH: Import MainViewLinux yang baru
+import 'main_view_linux.dart';
 import '../1_topics_page/utils/scaffold_messenger_utils.dart';
 import '../my_tasks_page.dart';
 import '../statistics_page.dart';
@@ -26,14 +27,14 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
   bool _isBackingUp = false;
   bool _isImporting = false;
 
-  // Daftar halaman yang akan ditampilkan di area konten
+  // DIUBAH: Ganti TopicsPage dengan MainViewLinux
   final List<Widget> _pages = [
-    const TopicsPage(),
+    const MainViewLinux(),
     const MyTasksPage(),
     const StatisticsPage(),
   ];
 
-  // Fungsi untuk backup (sama seperti sebelumnya)
+  // ... (sisa fungsi _backupContents, _importContents, _showImportConfirmationDialog tidak berubah) ...
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Tujuan Backup',
@@ -64,7 +65,6 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
     }
   }
 
-  // Fungsi untuk import (sama seperti sebelumnya)
   Future<void> _importContents(BuildContext context) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -152,12 +152,11 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
                 size: 32,
               ),
             ),
-            // Daftar menu utama di sidebar
             destinations: const <NavigationRailDestination>[
               NavigationRailDestination(
                 icon: Icon(Icons.topic_outlined),
                 selectedIcon: Icon(Icons.topic),
-                label: Text('Topics'),
+                label: Text('Content'), // Label diubah agar lebih umum
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.task_alt_outlined),
@@ -170,7 +169,6 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
                 label: Text('Statistik'),
               ),
             ],
-            // Menu tambahan di bagian bawah sidebar
             trailing: Expanded(
               child: Align(
                 alignment: Alignment.bottomCenter,
@@ -182,14 +180,13 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
             ),
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          // Area konten utama yang akan berubah sesuai pilihan di sidebar
           Expanded(child: _pages[_selectedIndex]),
         ],
       ),
     );
   }
 
-  // Widget untuk menu tambahan (Backup, Import, About)
+  // ... (sisa dari _buildTrailingMenu tidak berubah) ...
   Widget _buildTrailingMenu(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
