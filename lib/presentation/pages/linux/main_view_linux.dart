@@ -29,6 +29,10 @@ class _MainViewLinuxState extends State<MainViewLinux> {
   Topic? _selectedTopic;
   Subject? _selectedSubject;
 
+  // Controller dan state untuk fungsionalitas baru di panel topik
+  final TextEditingController _topicSearchController = TextEditingController();
+  bool _isSearchingTopics = false;
+
   // Kelola provider di level State untuk kontrol yang lebih baik
   SubjectProvider? _subjectProvider;
   DiscussionProvider? _discussionProvider;
@@ -38,6 +42,20 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     super.initState();
     // Inisialisasi provider dengan path kosong. Akan diperbarui saat topik dipilih.
     _subjectProvider = SubjectProvider('');
+
+    // Listener untuk search controller topik
+    _topicSearchController.addListener(() {
+      Provider.of<TopicProvider>(
+        context,
+        listen: false,
+      ).search(_topicSearchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _topicSearchController.dispose();
+    super.dispose();
   }
 
   /// Dipanggil ketika pengguna memilih sebuah topik dari daftar.
@@ -126,22 +144,6 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     if (topicProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (topicProvider.allTopics.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Tidak ada topik.'),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Tambah Topik'),
-              onPressed: () => _addTopic(context, topicProvider),
-            ),
-          ],
-        ),
-      );
-    }
 
     return Column(
       children: [
@@ -149,11 +151,66 @@ class _MainViewLinuxState extends State<MainViewLinux> {
           padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
-              const Expanded(
-                child: Text(
-                  "Topics",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Expanded(
+                child: _isSearchingTopics
+                    ? TextField(
+                        controller: _topicSearchController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Cari topik...',
+                          border: InputBorder.none,
+                        ),
+                      )
+                    : const Text(
+                        "Topics",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+              if (!topicProvider.isReorderModeEnabled)
+                IconButton(
+                  icon: Icon(_isSearchingTopics ? Icons.close : Icons.search),
+                  tooltip: "Cari Topik",
+                  onPressed: () {
+                    setState(() {
+                      _isSearchingTopics = !_isSearchingTopics;
+                      if (!_isSearchingTopics) {
+                        _topicSearchController.clear();
+                      }
+                    });
+                  },
                 ),
+              if (!topicProvider.isReorderModeEnabled)
+                IconButton(
+                  icon: Icon(
+                    topicProvider.showHiddenTopics
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  tooltip: topicProvider.showHiddenTopics
+                      ? 'Sembunyikan Topik Tersembunyi'
+                      : 'Tampilkan Topik Tersembunyi',
+                  onPressed: () => topicProvider.toggleShowHidden(),
+                ),
+              IconButton(
+                icon: Icon(
+                  topicProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
+                ),
+                tooltip: topicProvider.isReorderModeEnabled
+                    ? 'Selesai Mengurutkan'
+                    : 'Urutkan Topik',
+                onPressed: () {
+                  if (topicProvider.isReorderModeEnabled &&
+                      _isSearchingTopics) {
+                    setState(() {
+                      _isSearchingTopics = false;
+                      _topicSearchController.clear();
+                    });
+                  }
+                  topicProvider.toggleReorderMode();
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.add),
@@ -163,29 +220,60 @@ class _MainViewLinuxState extends State<MainViewLinux> {
             ],
           ),
         ),
-        const Divider(),
-        Expanded(
-          child: ListView.builder(
-            itemCount: topicProvider.filteredTopics.length,
-            itemBuilder: (context, index) {
-              final topic = topicProvider.filteredTopics[index];
-              return TopicListTile(
-                topic: topic,
-                onTap: () => _onTopicSelected(topic),
-                // Aksi-aksi ini sekarang hanya placeholder, perlu implementasi dialog jika diperlukan
-                onRename: () {},
-                onDelete: () {},
-                onIconChange: () {},
-                onToggleVisibility: () {},
-              );
-            },
-          ),
-        ),
+        const Divider(height: 1),
+        Expanded(child: _buildTopicsList(context, topicProvider)),
       ],
     );
   }
 
-  /// Membangun panel daftar Subjek (Panel 2).
+  Widget _buildTopicsList(BuildContext context, TopicProvider topicProvider) {
+    if (topicProvider.allTopics.isEmpty) {
+      return const Center(child: Text('Tidak ada topik untuk ditampilkan.'));
+    }
+
+    final topicsToShow = topicProvider.filteredTopics;
+    final isSearching = topicProvider.searchQuery.isNotEmpty;
+    final isReorderActive = topicProvider.isReorderModeEnabled && !isSearching;
+
+    if (topicsToShow.isEmpty) {
+      if (isSearching) {
+        return const Center(child: Text('Topik tidak ditemukan.'));
+      }
+      if (!topicProvider.showHiddenTopics) {
+        return const Center(
+          child: Text(
+            'Tidak ada topik terlihat.\nCoba tampilkan topik tersembunyi.',
+            textAlign: TextAlign.center,
+          ),
+        );
+      }
+    }
+
+    return ReorderableListView.builder(
+      itemCount: topicsToShow.length,
+      buildDefaultDragHandles: isReorderActive,
+      itemBuilder: (context, index) {
+        final topic = topicsToShow[index];
+        return TopicListTile(
+          key: ValueKey(topic.name),
+          topic: topic,
+          isReorderActive: isReorderActive,
+          onTap: isReorderActive ? null : () => _onTopicSelected(topic),
+          onRename: () => _renameTopic(context, topicProvider, topic),
+          onDelete: () => _deleteTopic(context, topicProvider, topic),
+          onIconChange: () => _changeIcon(context, topicProvider, topic),
+          onToggleVisibility: () =>
+              _toggleVisibility(context, topicProvider, topic),
+        );
+      },
+      onReorder: (oldIndex, newIndex) {
+        if (isReorderActive) {
+          topicProvider.reorderTopics(oldIndex, newIndex);
+        }
+      },
+    );
+  }
+
   Widget _buildSubjectsPanel(BuildContext context) {
     if (_selectedTopic == null) {
       return const Center(child: Text('Pilih sebuah topik dari panel kiri'));
@@ -222,7 +310,7 @@ class _MainViewLinuxState extends State<MainViewLinux> {
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       "Subjects",
                       style: TextStyle(
@@ -285,7 +373,7 @@ class _MainViewLinuxState extends State<MainViewLinux> {
     );
   }
 
-  // Helper methods untuk dialog
+  // Helper methods untuk dialog topik
   Future<void> _addTopic(BuildContext context, TopicProvider provider) async {
     await showTopicTextInputDialog(
       context: context,
@@ -300,6 +388,79 @@ class _MainViewLinuxState extends State<MainViewLinux> {
         }
       },
     );
+  }
+
+  Future<void> _renameTopic(
+    BuildContext context,
+    TopicProvider provider,
+    Topic topic,
+  ) async {
+    await showTopicTextInputDialog(
+      context: context,
+      title: 'Ubah Nama Topik',
+      label: 'Nama Baru',
+      initialValue: topic.name,
+      onSave: (newName) async {
+        try {
+          await provider.renameTopic(topic.name, newName);
+          showAppSnackBar(context, 'Topik diubah menjadi "$newName".');
+        } catch (e) {
+          showAppSnackBar(context, e.toString(), isError: true);
+        }
+      },
+    );
+  }
+
+  Future<void> _deleteTopic(
+    BuildContext context,
+    TopicProvider provider,
+    Topic topic,
+  ) async {
+    await showDeleteTopicConfirmationDialog(
+      context: context,
+      topicName: topic.name,
+      onDelete: () async {
+        try {
+          await provider.deleteTopic(topic.name);
+          showAppSnackBar(context, 'Topik "${topic.name}" berhasil dihapus.');
+        } catch (e) {
+          showAppSnackBar(context, e.toString(), isError: true);
+        }
+      },
+    );
+  }
+
+  Future<void> _changeIcon(
+    BuildContext context,
+    TopicProvider provider,
+    Topic topic,
+  ) async {
+    await showIconPickerDialog(
+      context: context,
+      onIconSelected: (newIcon) async {
+        try {
+          await provider.updateTopicIcon(topic.name, newIcon);
+          showAppSnackBar(context, 'Ikon untuk "${topic.name}" diubah.');
+        } catch (e) {
+          showAppSnackBar(context, e.toString(), isError: true);
+        }
+      },
+    );
+  }
+
+  Future<void> _toggleVisibility(
+    BuildContext context,
+    TopicProvider provider,
+    Topic topic,
+  ) async {
+    final newVisibility = !topic.isHidden;
+    try {
+      await provider.toggleTopicVisibility(topic.name, newVisibility);
+      final message = newVisibility ? 'disembunyikan' : 'ditampilkan kembali';
+      showAppSnackBar(context, 'Topik "${topic.name}" berhasil $message.');
+    } catch (e) {
+      showAppSnackBar(context, e.toString(), isError: true);
+    }
   }
 
   Future<void> _addSubject(
