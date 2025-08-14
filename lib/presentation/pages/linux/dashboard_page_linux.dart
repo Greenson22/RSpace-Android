@@ -3,9 +3,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/theme_provider.dart';
 import '../../providers/topic_provider.dart';
+import '../../theme/app_theme.dart';
 // DIUBAH: Import MainViewLinux yang baru
 import 'main_view_linux.dart';
 import '../1_topics_page/utils/scaffold_messenger_utils.dart';
@@ -131,6 +134,107 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
         false;
   }
 
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PEMILIH WARNA <==
+  void _showColorPickerDialog(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    Color pickerColor = themeProvider.primaryColor;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pilih Warna Primer'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ColorPicker(
+                  pickerColor: pickerColor,
+                  onColorChanged: (color) => pickerColor = color,
+                  labelTypes: const [ColorLabelType.hex],
+                  pickerAreaHeightPercent: 0.8,
+                  enableAlpha: false,
+                ),
+                const Divider(),
+                Text(
+                  'Pilihan Warna',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                BlockPicker(
+                  pickerColor: pickerColor,
+                  onColorChanged: (color) {
+                    pickerColor = color;
+                    themeProvider.setPrimaryColor(pickerColor);
+                    Navigator.of(context).pop();
+                  },
+                  availableColors: AppTheme.selectableColors,
+                  layoutBuilder: (context, colors, child) {
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: colors.map((color) => child(color)).toList(),
+                    );
+                  },
+                ),
+                const Divider(),
+                Consumer<ThemeProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.recentColors.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Warna Terakhir Digunakan',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        BlockPicker(
+                          pickerColor: pickerColor,
+                          onColorChanged: (color) {
+                            pickerColor = color;
+                            themeProvider.setPrimaryColor(pickerColor);
+                            Navigator.of(context).pop();
+                          },
+                          availableColors: provider.recentColors,
+                          layoutBuilder: (context, colors, child) {
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: colors
+                                  .map((color) => child(color))
+                                  .toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Batal'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Pilih'),
+              onPressed: () {
+                themeProvider.setPrimaryColor(pickerColor);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,9 +292,27 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
 
   // ... (sisa dari _buildTrailingMenu tidak berubah) ...
   Widget _buildTrailingMenu(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // ==> TOMBOL-TOMBOL BARU DITAMBAHKAN DI SINI <==
+        IconButton(
+          icon: const Icon(Icons.color_lens_outlined),
+          tooltip: 'Ganti Warna Primer',
+          onPressed: () => _showColorPickerDialog(context),
+        ),
+        const SizedBox(height: 16),
+        IconButton(
+          icon: Icon(
+            themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
+          ),
+          tooltip: 'Ganti Tema',
+          onPressed: () => themeProvider.darkTheme = !themeProvider.darkTheme,
+        ),
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 16),
         IconButton(
           icon: _isBackingUp
               ? const SizedBox(
