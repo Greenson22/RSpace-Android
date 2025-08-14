@@ -87,36 +87,86 @@ class DiscussionProvider with ChangeNotifier {
     await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
+  // ==> FUNGSI BARU UNTUK MENDAPATKAN INFO EFEKTIF UNTUK SORT/FILTER <==
+  Map<String, String?> _getEffectiveDiscussionInfoForSorting(
+    Discussion discussion,
+  ) {
+    if (discussion.finished) {
+      return {'date': discussion.finish_date, 'code': 'Finish'};
+    }
+
+    final visiblePoints = discussion.points
+        .where((point) => doesPointMatchFilter(point))
+        .toList();
+
+    if (visiblePoints.isNotEmpty) {
+      int minCodeIndex = 999;
+      for (var point in visiblePoints) {
+        final codeIndex = getRepetitionCodeIndex(point.repetitionCode);
+        if (codeIndex < minCodeIndex) {
+          minCodeIndex = codeIndex;
+        }
+      }
+
+      final lowestCodePoints = visiblePoints
+          .where(
+            (point) =>
+                getRepetitionCodeIndex(point.repetitionCode) == minCodeIndex,
+          )
+          .toList();
+
+      lowestCodePoints.sort((a, b) {
+        final dateA = DateTime.tryParse(a.date);
+        final dateB = DateTime.tryParse(b.date);
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+        return dateA.compareTo(dateB);
+      });
+
+      if (lowestCodePoints.isNotEmpty) {
+        final relevantPoint = lowestCodePoints.first;
+        return {
+          'date': relevantPoint.date,
+          'code': relevantPoint.repetitionCode,
+        };
+      }
+    }
+
+    // Fallback ke logika model jika tidak ada point yang relevan
+    return {
+      'date': discussion.effectiveDate,
+      'code': discussion.effectiveRepetitionCode,
+    };
+  }
+
   void _filterAndSortDiscussions() {
     final query = _searchQuery.toLowerCase();
     _filteredDiscussions = _allDiscussions.where((discussion) {
       final matchesSearchQuery = discussion.discussion.toLowerCase().contains(
         query,
       );
+      if (!matchesSearchQuery) return false;
+
+      // === LOGIKA FILTER DIUBAH UNTUK MENGGUNAKAN FUNGSI BARU ===
       bool matchesFilter = true;
+      final effectiveInfo = _getEffectiveDiscussionInfoForSorting(discussion);
+      final effectiveDate = effectiveInfo['date'];
+      final effectiveCode = effectiveInfo['code'];
+
       if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
-        matchesFilter =
-            discussion.effectiveRepetitionCode == _selectedRepetitionCode;
+        matchesFilter = effectiveCode == _selectedRepetitionCode;
       } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
         try {
-          if (discussion.effectiveDate == null) return false;
-
-          final discussionDate = DateTime.parse(discussion.effectiveDate!);
-
-          // **PERUBAHAN:** Normalisasi tanggal diskusi untuk menghapus komponen waktu
+          if (effectiveDate == null) return false;
+          final discussionDate = DateTime.parse(effectiveDate);
           final normalizedDiscussionDate = DateTime(
             discussionDate.year,
             discussionDate.month,
             discussionDate.day,
           );
-
           final startDate = _selectedDateRange!.start;
           final endDate = _selectedDateRange!.end;
-
-          // **PERUBAHAN:** Logika perbandingan yang lebih kuat untuk rentang inklusif
-          // Apakah tanggal diskusi TIDAK SEBELUM tanggal mulai (artinya, sama atau sesudah)
-          // DAN
-          // Apakah tanggal diskusi TIDAK SESUDAH tanggal akhir (artinya, sama atau sebelum)
           matchesFilter =
               !normalizedDiscussionDate.isBefore(startDate) &&
               !normalizedDiscussionDate.isAfter(endDate);
@@ -124,62 +174,62 @@ class DiscussionProvider with ChangeNotifier {
           matchesFilter = false;
         }
       }
-      return matchesSearchQuery && matchesFilter;
+      return matchesFilter;
     }).toList();
-    _sortDiscussions();
-    notifyListeners();
-  }
 
-  void _sortDiscussions() {
-    _sortList(_filteredDiscussions);
-    _sortList(_allDiscussions);
-    notifyListeners();
-  }
+    // === LOGIKA SORT DIUBAH UNTUK MENGGUNAKAN FUNGSI BARU ===
+    _filteredDiscussions.sort((a, b) {
+      final infoA = _getEffectiveDiscussionInfoForSorting(a);
+      final infoB = _getEffectiveDiscussionInfoForSorting(b);
 
-  void _sortList(List<Discussion> list) {
-    Comparator<Discussion> comparator;
-    switch (_sortType) {
-      case 'name':
-        comparator = (a, b) =>
-            a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
-        break;
-      case 'code':
-        comparator = (a, b) => getRepetitionCodeIndex(
-          a.effectiveRepetitionCode,
-        ).compareTo(getRepetitionCodeIndex(b.effectiveRepetitionCode));
-        break;
-      default: // date
-        comparator = (a, b) {
-          if (a.effectiveDate == null && b.effectiveDate == null) return 0;
-          if (a.effectiveDate == null) return _sortAscending ? 1 : -1;
-          if (b.effectiveDate == null) return _sortAscending ? -1 : 1;
-          return DateTime.parse(
-            a.effectiveDate!,
-          ).compareTo(DateTime.parse(b.effectiveDate!));
-        };
-        break;
-    }
+      int result;
+      switch (_sortType) {
+        case 'name':
+          result = a.discussion.toLowerCase().compareTo(
+            b.discussion.toLowerCase(),
+          );
+          break;
+        case 'code':
+          final codeA = infoA['code'] ?? '';
+          final codeB = infoB['code'] ?? '';
+          result = getRepetitionCodeIndex(
+            codeA,
+          ).compareTo(getRepetitionCodeIndex(codeB));
+          break;
+        default: // date
+          final dateA = infoA['date'];
+          final dateB = infoB['date'];
+          if (dateA == null && dateB == null) {
+            result = 0;
+          } else if (dateA == null) {
+            result = 1;
+          } else if (dateB == null) {
+            result = -1;
+          } else {
+            result = DateTime.parse(dateA).compareTo(DateTime.parse(dateB));
+          }
+          break;
+      }
+      return result;
+    });
 
-    list.sort(comparator);
     if (!_sortAscending) {
       _filteredDiscussions = _filteredDiscussions.reversed.toList();
-      _allDiscussions = _allDiscussions.reversed.toList();
     }
+
+    notifyListeners();
   }
 
-  // FUNGSI BARU UNTUK MEMERIKSA POINT TERHADAP FILTER AKTIF
+  // FUNGSI LAMA _sortDiscussions dan _sortList sudah tidak diperlukan
+  // karena logikanya sudah terintegrasi di dalam _filterAndSortDiscussions.
+
   bool doesPointMatchFilter(Point point) {
-    // Jika tidak ada filter, semua point cocok
     if (_activeFilterType == null) {
       return true;
     }
-
-    // Logika filter berdasarkan kode
     if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
       return point.repetitionCode == _selectedRepetitionCode;
-    }
-    // Logika filter berdasarkan tanggal
-    else if (_activeFilterType == 'date' && _selectedDateRange != null) {
+    } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
       try {
         final pointDate = DateTime.parse(point.date);
         final normalizedPointDate = DateTime(
@@ -189,18 +239,16 @@ class DiscussionProvider with ChangeNotifier {
         );
         final startDate = _selectedDateRange!.start;
         final endDate = _selectedDateRange!.end;
-        // Memeriksa apakah tanggal point berada dalam rentang yang dipilih
         return !normalizedPointDate.isBefore(startDate) &&
             !normalizedPointDate.isAfter(endDate);
       } catch (e) {
         return false;
       }
     }
-    // Jika tipe filter tidak diketahui, anggap saja cocok
     return true;
   }
 
-  // --- ACTIONS ---
+  // --- ACTIONS (Tidak ada perubahan di bawah ini) ---
 
   void addDiscussion(String name) {
     final newDiscussion = Discussion(
