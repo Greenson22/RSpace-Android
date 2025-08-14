@@ -8,8 +8,13 @@ import '../utils/repetition_code_utils.dart';
 
 class PointTile extends StatelessWidget {
   final Point point;
+  final bool isActive; // PROPERTI BARU
 
-  const PointTile({super.key, required this.point});
+  const PointTile({
+    super.key,
+    required this.point,
+    this.isActive = true, // DIBERI NILAI DEFAULT
+  });
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -61,19 +66,34 @@ class PointTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
+
+    // Menentukan warna berdasarkan status aktif/tidak aktif
+    final Color defaultTextColor =
+        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final Color inactiveColor = Colors.grey;
+    final Color effectiveTextColor = isActive
+        ? defaultTextColor
+        : inactiveColor;
+
     return ListTile(
       dense: true,
       leading: const Icon(Icons.arrow_right, color: Colors.grey),
-      title: Text(point.pointText),
+      title: Text(
+        point.pointText,
+        style: TextStyle(color: effectiveTextColor), // Warna diterapkan di sini
+      ),
       subtitle: RichText(
         text: TextSpan(
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 12,
+            color: effectiveTextColor,
+          ), // dan di sini
           children: [
             const TextSpan(text: 'Date: '),
             TextSpan(
               text: point.date,
-              style: const TextStyle(
-                color: Colors.amber,
+              style: TextStyle(
+                color: isActive ? Colors.amber : inactiveColor, // dan di sini
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -81,7 +101,9 @@ class PointTile extends StatelessWidget {
             TextSpan(
               text: point.repetitionCode,
               style: TextStyle(
-                color: getColorForRepetitionCode(point.repetitionCode),
+                color: isActive
+                    ? getColorForRepetitionCode(point.repetitionCode)
+                    : inactiveColor, // dan di sini
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -4,6 +4,7 @@ import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
 import '../../../../presentation/widgets/edit_popup_menu.dart';
 import '../dialogs/discussion_dialogs.dart';
+import '../utils/repetition_code_utils.dart';
 import 'discussion_subtitle.dart';
 import 'point_tile.dart';
 
@@ -107,6 +108,41 @@ class DiscussionCard extends StatelessWidget {
         ? Icons.check_circle
         : Icons.chat_bubble_outline;
 
+    // ==> LOGIKA PENGURUTAN UNTUK POINTS <==
+    final sortedPoints = List<Point>.from(discussion.points);
+    final sortType = provider.sortType;
+    final sortAscending = provider.sortAscending;
+
+    Comparator<Point> comparator;
+    switch (sortType) {
+      case 'name':
+        comparator = (a, b) =>
+            a.pointText.toLowerCase().compareTo(b.pointText.toLowerCase());
+        break;
+      case 'code':
+        comparator = (a, b) => getRepetitionCodeIndex(
+          a.repetitionCode,
+        ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
+        break;
+      default: // date
+        comparator = (a, b) {
+          final dateA = DateTime.tryParse(a.date);
+          final dateB = DateTime.tryParse(b.date);
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return sortAscending ? 1 : -1;
+          if (dateB == null) return sortAscending ? -1 : 1;
+          return dateA.compareTo(dateB);
+        };
+        break;
+    }
+    sortedPoints.sort(comparator);
+    if (!sortAscending) {
+      final reversedPoints = sortedPoints.reversed.toList();
+      sortedPoints.clear();
+      sortedPoints.addAll(reversedPoints);
+    }
+    // ==> AKHIR DARI LOGIKA PENGURUTAN <==
+
     return Card(
       child: Column(
         children: [
@@ -153,9 +189,17 @@ class DiscussionCard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(30.0, 8.0, 16.0, 8.0),
                 child: Column(
-                  children: discussion.points
-                      .map((point) => PointTile(point: point))
-                      .toList(),
+                  // Menggunakan daftar points yang sudah diurutkan
+                  children: sortedPoints.map((point) {
+                    // Memeriksa apakah point cocok dengan filter
+                    final bool isPointActive = provider.doesPointMatchFilter(
+                      point,
+                    );
+                    return PointTile(
+                      point: point,
+                      isActive: isPointActive, // Meneruskan status ke PointTile
+                    );
+                  }).toList(),
                 ),
               ),
             ),

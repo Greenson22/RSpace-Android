@@ -167,6 +167,39 @@ class DiscussionProvider with ChangeNotifier {
     }
   }
 
+  // FUNGSI BARU UNTUK MEMERIKSA POINT TERHADAP FILTER AKTIF
+  bool doesPointMatchFilter(Point point) {
+    // Jika tidak ada filter, semua point cocok
+    if (_activeFilterType == null) {
+      return true;
+    }
+
+    // Logika filter berdasarkan kode
+    if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
+      return point.repetitionCode == _selectedRepetitionCode;
+    }
+    // Logika filter berdasarkan tanggal
+    else if (_activeFilterType == 'date' && _selectedDateRange != null) {
+      try {
+        final pointDate = DateTime.parse(point.date);
+        final normalizedPointDate = DateTime(
+          pointDate.year,
+          pointDate.month,
+          pointDate.day,
+        );
+        final startDate = _selectedDateRange!.start;
+        final endDate = _selectedDateRange!.end;
+        // Memeriksa apakah tanggal point berada dalam rentang yang dipilih
+        return !normalizedPointDate.isBefore(startDate) &&
+            !normalizedPointDate.isAfter(endDate);
+      } catch (e) {
+        return false;
+      }
+    }
+    // Jika tipe filter tidak diketahui, anggap saja cocok
+    return true;
+  }
+
   // --- ACTIONS ---
 
   void addDiscussion(String name) {
