@@ -9,20 +9,23 @@ class PathService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
   Future<String> get _baseDataPath async {
-    if (Platform.isAndroid) {
-      // ==> PERUBAHAN UTAMA: Meminta izin MANAGE_EXTERNAL_STORAGE <==
-      // Izin ini lebih kuat dan diperlukan untuk Android 11+
-      if (!await Permission.manageExternalStorage.request().isGranted) {
-        throw Exception(
-          'Izin "Akses semua file" diperlukan untuk menyimpan data di folder pilihan Anda.',
-        );
+    // ==> LOGIKA DIGABUNGKAN UNTUK ANDROID DAN LINUX <==
+    if (Platform.isAndroid || Platform.isLinux) {
+      // Minta izin hanya jika di Android
+      if (Platform.isAndroid) {
+        if (!await Permission.manageExternalStorage.request().isGranted) {
+          throw Exception(
+            'Izin "Akses semua file" diperlukan untuk menyimpan data di folder pilihan Anda.',
+          );
+        }
       }
 
-      // Coba muat path kustom yang disimpan pengguna
+      // Coba muat path kustom yang disimpan pengguna (berlaku untuk Android & Linux)
       String? customPath = await _prefsService.loadCustomStoragePath();
 
       if (customPath != null && customPath.isNotEmpty) {
         final customDir = Directory(customPath);
+        // Pastikan path kustom ada, jika tidak buat baru
         if (!await customDir.exists()) {
           await customDir.create(recursive: true);
         }
@@ -34,35 +37,38 @@ class PathService {
         return dataDir.path;
       }
 
-      // Jika tidak ada path kustom, gunakan folder Download sebagai default
-      Directory? externalDir = await getExternalStorageDirectory();
-      if (externalDir == null) {
-        throw Exception(
-          "Tidak dapat menemukan direktori penyimpanan eksternal.",
+      // === LOGIKA DEFAULT JIKA TIDAK ADA PATH KUSTOM ===
+      Directory? baseDir;
+      if (Platform.isAndroid) {
+        // Default untuk Android: folder Download
+        Directory? externalDir = await getExternalStorageDirectory();
+        if (externalDir == null) {
+          throw Exception(
+            "Tidak dapat menemukan direktori penyimpanan eksternal.",
+          );
+        }
+        final rootDir = Directory(
+          path.join(externalDir.path, '..', '..', '..', '..'),
         );
+        baseDir = Directory(path.join(rootDir.path, 'Download'));
+      } else if (Platform.isLinux) {
+        // Default untuk Linux: folder Documents
+        baseDir = await getApplicationDocumentsDirectory();
       }
 
-      // Membuat path ke folder Download secara manual dari root
-      // Direktori root biasanya 4 level di atas direktori data aplikasi
-      final rootDir = Directory(
-        path.join(externalDir.path, '..', '..', '..', '..'),
-      );
-      final downloadDirPath = path.join(rootDir.path, 'Download');
-
-      final defaultDir = Directory(downloadDirPath);
+      if (baseDir == null) {
+        throw Exception("Tidak dapat menentukan direktori default.");
+      }
 
       final defaultAppDir = Directory(
-        path.join(defaultDir.path, 'RSpace_App', 'RSpace_data', 'data'),
+        path.join(baseDir.path, 'RSpace_App', 'data'),
       );
       if (!await defaultAppDir.exists()) {
         await defaultAppDir.create(recursive: true);
       }
       return defaultAppDir.path;
-    } else if (Platform.isLinux) {
-      // Path untuk Linux tidak berubah
-      return '/home/lemon-manis-22/RikalG22/RSpace_data/data';
     } else {
-      // Fallback untuk OS lain
+      // Fallback untuk OS lain (Windows, macOS, iOS)
       final directory = await getApplicationDocumentsDirectory();
       return path.join(directory.path, 'data');
     }

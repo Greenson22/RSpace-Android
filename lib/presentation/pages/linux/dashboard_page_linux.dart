@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/services/shared_preferences_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/topic_provider.dart';
 import '../../theme/app_theme.dart';
@@ -37,7 +38,7 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
     const StatisticsPage(),
   ];
 
-  // ... (sisa fungsi _backupContents, _importContents, _showImportConfirmationDialog tidak berubah) ...
+  // ... (fungsi _backupContents, _importContents, _showImportConfirmationDialog tidak berubah) ...
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Tujuan Backup',
@@ -132,6 +133,26 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
           ),
         ) ??
         false;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PENYIMPANAN <==
+  Future<void> _showStoragePathDialog(BuildContext context) async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Penyimpanan Utama',
+    );
+
+    if (selectedDirectory != null) {
+      final prefsService = SharedPreferencesService();
+      await prefsService.saveCustomStoragePath(selectedDirectory);
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'Lokasi disimpan. Mohon restart aplikasi untuk menerapkan.',
+        );
+      }
+    } else {
+      if (mounted) showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+    }
   }
 
   // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PEMILIH WARNA <==
@@ -335,6 +356,13 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
               : const Icon(Icons.restore_outlined),
           tooltip: 'Import Data',
           onPressed: _isImporting ? null : () => _importContents(context),
+        ),
+        const SizedBox(height: 16),
+        // ==> TOMBOL PENYIMPANAN DITAMBAHKAN DI SINI <==
+        IconButton(
+          icon: const Icon(Icons.folder_open_rounded),
+          tooltip: 'Pilih Lokasi Penyimpanan',
+          onPressed: () => _showStoragePathDialog(context),
         ),
         const SizedBox(height: 16),
         IconButton(
