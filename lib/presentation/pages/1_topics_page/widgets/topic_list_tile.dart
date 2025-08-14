@@ -12,7 +12,7 @@ class TopicListTile extends StatelessWidget {
   final bool isReorderActive;
   final bool isLinux;
   final bool isCompact;
-  final bool isSelected; // ==> DITAMBAHKAN
+  final bool isSelected;
 
   const TopicListTile({
     super.key,
@@ -25,7 +25,7 @@ class TopicListTile extends StatelessWidget {
     this.isReorderActive = false,
     this.isLinux = false,
     this.isCompact = false,
-    this.isSelected = false, // ==> DITAMBAHKAN
+    this.isSelected = false,
   });
 
   void _showContextMenu(BuildContext context, Offset position) {
@@ -65,15 +65,10 @@ class TopicListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isHidden = topic.isHidden;
-    // ==> LOGIKA WARNA DIPERBARUI <==
-    Color cardColor;
-    if (isSelected) {
-      cardColor = theme.primaryColor.withOpacity(0.3);
-    } else if (isHidden) {
-      cardColor = theme.disabledColor.withOpacity(0.1);
-    } else {
-      cardColor = theme.cardColor;
-    }
+    // ==> PERUBAHAN: Logika warna latar tidak lagi dipengaruhi isSelected <==
+    final Color cardColor = isHidden
+        ? theme.disabledColor.withOpacity(0.1)
+        : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
@@ -113,7 +108,6 @@ class TopicListTile extends StatelessWidget {
                   ),
                 ),
               if (!isCompact) const SizedBox(width: 12),
-              // *** PERBAIKAN DI SINI ***
               Expanded(
                 child: Text(
                   topic.name,
@@ -174,8 +168,12 @@ class TopicListTile extends StatelessWidget {
         horizontal: horizontalMargin,
         vertical: verticalMargin,
       ),
+      // ==> PERUBAHAN: Menambahkan border jika item dipilih <==
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+        side: isSelected
+            ? BorderSide(color: theme.primaryColor, width: 2.0)
+            : BorderSide.none,
       ),
       child: isLinux
           ? GestureDetector(

@@ -12,7 +12,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onToggleVisibility;
   final bool isLinux;
   final bool isCompact;
-  final bool isSelected; // ==> DITAMBAHKAN
+  final bool isSelected;
 
   const SubjectListTile({
     super.key,
@@ -24,7 +24,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onToggleVisibility,
     this.isLinux = false,
     this.isCompact = false,
-    this.isSelected = false, // ==> DITAMBAHKAN
+    this.isSelected = false,
   });
 
   void _showContextMenu(BuildContext context, Offset position) {
@@ -66,15 +66,10 @@ class SubjectListTile extends StatelessWidget {
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
     final bool isHidden = subject.isHidden;
-    // ==> LOGIKA WARNA DIPERBARUI <==
-    Color cardColor;
-    if (isSelected) {
-      cardColor = theme.primaryColor.withOpacity(0.3);
-    } else if (isHidden) {
-      cardColor = theme.disabledColor.withOpacity(0.1);
-    } else {
-      cardColor = theme.cardColor;
-    }
+    // ==> PERUBAHAN: Logika warna latar tidak lagi dipengaruhi isSelected <==
+    final Color cardColor = isHidden
+        ? theme.disabledColor.withOpacity(0.1)
+        : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
@@ -115,7 +110,6 @@ class SubjectListTile extends StatelessWidget {
                   ),
                 ),
               if (!isCompact) const SizedBox(width: 12),
-              // *** PERBAIKAN DI SINI ***
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,8 +172,12 @@ class SubjectListTile extends StatelessWidget {
         horizontal: horizontalMargin,
         vertical: verticalMargin,
       ),
+      // ==> PERUBAHAN: Menambahkan border jika item dipilih <==
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+        side: isSelected
+            ? BorderSide(color: theme.primaryColor, width: 2.0)
+            : BorderSide.none,
       ),
       child: isLinux
           ? GestureDetector(
