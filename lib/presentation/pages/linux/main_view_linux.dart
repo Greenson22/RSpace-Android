@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:my_aplication/presentation/pages/1_topics_page/utils/scaffold_messenger_utils.dart'; // Impor untuk snackbar
-import 'package:my_aplication/presentation/pages/3_discussions_page/dialogs/discussion_dialogs.dart'; // Impor untuk dialog diskusi
+import 'package:my_aplication/presentation/pages/1_topics_page/utils/scaffold_messenger_utils.dart';
+import 'package:my_aplication/presentation/pages/3_discussions_page/dialogs/discussion_dialogs.dart';
 import 'package:my_aplication/presentation/pages/2_subjects_page/dialogs/subject_dialogs.dart'
-    as subject_dialogs; // Impor untuk dialog subjek
+    as subject_dialogs;
 
 import '../../../data/models/topic_model.dart';
 import '../../../data/models/subject_model.dart';
@@ -33,6 +33,11 @@ class _MainViewLinuxState extends State<MainViewLinux> {
 
   SubjectProvider? _subjectProvider;
   DiscussionProvider? _discussionProvider;
+
+  // State untuk mengelola proporsi lebar panel
+  double _topicFlex = 3;
+  double _subjectFlex = 4;
+  double _discussionFlex = 6;
 
   /// Dipanggil ketika pengguna memilih sebuah topik dari daftar.
   void _onTopicSelected(Topic topic) async {
@@ -99,21 +104,66 @@ class _MainViewLinuxState extends State<MainViewLinux> {
       body: Row(
         children: [
           Expanded(
-            flex: 3,
+            flex: _topicFlex.round(),
             child: TopicsPanel(onTopicSelected: _onTopicSelected),
           ),
-          const VerticalDivider(width: 1),
+          // Pembatas yang dapat digeser (resizable)
+          GestureDetector(
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                // Faktor skala untuk mengontrol kecepatan perubahan ukuran
+                const scaleFactor = 0.05;
+                final delta = details.delta.dx * scaleFactor;
+
+                // Batas minimal lebar panel agar tidak hilang
+                if (_topicFlex + delta > 1 && _subjectFlex - delta > 1) {
+                  _topicFlex += delta;
+                  _subjectFlex -= delta;
+                }
+              });
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.resizeLeftRight,
+              child: VerticalDivider(
+                width: 8,
+                thickness: 1,
+                color: Theme.of(context).dividerColor,
+              ),
+            ),
+          ),
           Expanded(
-            flex: 4,
+            flex: _subjectFlex.round(),
             child: SubjectsPanel(
               subjectProvider: _subjectProvider,
               onSubjectSelected: _onSubjectSelected,
               onAddSubject: _onAddSubject,
             ),
           ),
-          const VerticalDivider(width: 1),
+          // Pembatas kedua yang dapat digeser
+          GestureDetector(
+            onHorizontalDragUpdate: (details) {
+              setState(() {
+                const scaleFactor = 0.05;
+                final delta = details.delta.dx * scaleFactor;
+
+                // Batas minimal lebar panel
+                if (_subjectFlex + delta > 1 && _discussionFlex - delta > 1) {
+                  _subjectFlex += delta;
+                  _discussionFlex -= delta;
+                }
+              });
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.resizeLeftRight,
+              child: VerticalDivider(
+                width: 8,
+                thickness: 1,
+                color: Theme.of(context).dividerColor,
+              ),
+            ),
+          ),
           Expanded(
-            flex: 6,
+            flex: _discussionFlex.round(),
             child: DiscussionsPanel(
               discussionProvider: _discussionProvider,
               selectedSubjectName: _selectedSubject?.name,
