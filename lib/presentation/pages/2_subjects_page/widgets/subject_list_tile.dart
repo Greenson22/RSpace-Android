@@ -10,7 +10,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  final bool isLinux; // ==> PARAMETER BARU <==
+  final bool isLinux;
 
   const SubjectListTile({
     super.key,
@@ -20,8 +20,42 @@ class SubjectListTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    this.isLinux = false, // ==> NILAI DEFAULT <==
+    this.isLinux = false,
   });
+
+  // FUNGSI BARU UNTUK MENU KONTEKS SUBJECT
+  void _showContextMenu(BuildContext context, Offset position) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final bool isHidden = subject.isHidden;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
+        const PopupMenuItem(value: 'change_icon', child: Text('Ubah Ikon')),
+        PopupMenuItem<String>(
+          value: 'toggle_visibility',
+          child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Text('Hapus', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ).then((value) {
+      if (value == null) return;
+      if (value == 'rename') onRename();
+      if (value == 'change_icon') onIconChange();
+      if (value == 'toggle_visibility') onToggleVisibility();
+      if (value == 'delete') onDelete();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +69,6 @@ class SubjectListTile extends StatelessWidget {
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
-    // ==> PENYESUAIAN UKURAN UNTUK LINUX <==
     final double verticalMargin = isLinux ? 4 : 8;
     final double horizontalMargin = isLinux ? 8 : 16;
     final EdgeInsets padding = isLinux
@@ -45,16 +78,9 @@ class SubjectListTile extends StatelessWidget {
     final double titleFontSize = isLinux ? 15 : 18;
     final double subtitleFontSize = isLinux ? 11 : 12;
 
-    return Card(
-      elevation: elevation,
-      color: cardColor,
-      margin: EdgeInsets.symmetric(
-        horizontal: horizontalMargin,
-        vertical: verticalMargin,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
-      ),
+    final tileContent = Material(
+      borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
@@ -97,37 +123,58 @@ class SubjectListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'rename') onRename();
-                  if (value == 'delete') onDelete();
-                  if (value == 'change_icon') onIconChange();
-                  if (value == 'toggle_visibility') onToggleVisibility();
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Text('Ubah Nama'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'change_icon',
-                    child: Text('Ubah Ikon'),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'toggle_visibility',
-                    child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Hapus', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
+              if (!isLinux)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'rename') onRename();
+                    if (value == 'delete') onDelete();
+                    if (value == 'change_icon') onIconChange();
+                    if (value == 'toggle_visibility') onToggleVisibility();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: Text('Ubah Nama'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'change_icon',
+                      child: Text('Ubah Ikon'),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'toggle_visibility',
+                      child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
       ),
+    );
+
+    return Card(
+      elevation: elevation,
+      color: cardColor,
+      margin: EdgeInsets.symmetric(
+        horizontal: horizontalMargin,
+        vertical: verticalMargin,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+      ),
+      child: isLinux
+          ? GestureDetector(
+              onSecondaryTapUp: (details) {
+                _showContextMenu(context, details.globalPosition);
+              },
+              child: tileContent,
+            )
+          : tileContent,
     );
   }
 
