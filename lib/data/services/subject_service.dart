@@ -58,6 +58,7 @@ class SubjectService {
           position: metadata['position'] as int? ?? -1,
           date: relevantDiscussionInfo['date'], // DITAMBAHKAN
           repetitionCode: relevantDiscussionInfo['code'], // DITAMBAHKAN
+          isHidden: metadata['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
         ),
       );
     }
@@ -199,10 +200,13 @@ class SubjectService {
 
   Future<Map<String, dynamic>> _getSubjectMetadata(File subjectFile) async {
     try {
-      if (!await subjectFile.exists())
-        return {'icon': _defaultIcon, 'position': -1};
+      if (!await subjectFile.exists()) {
+        return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
+      }
       final jsonString = await subjectFile.readAsString();
-      if (jsonString.isEmpty) return {'icon': _defaultIcon, 'position': -1};
+      if (jsonString.isEmpty) {
+        return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
+      }
 
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
       final metadata = jsonData['metadata'] as Map<String, dynamic>? ?? {};
@@ -210,9 +214,10 @@ class SubjectService {
       return {
         'icon': metadata['icon'] as String? ?? _defaultIcon,
         'position': metadata['position'] as int?,
+        'isHidden': metadata['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
       };
     } catch (e) {
-      return {'icon': _defaultIcon, 'position': -1};
+      return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
     }
   }
 
@@ -233,7 +238,12 @@ class SubjectService {
       jsonData = {};
     }
 
-    jsonData['metadata'] = {'icon': subject.icon, 'position': subject.position};
+    // ==> isHidden DITAMBAHKAN ke metadata <==
+    jsonData['metadata'] = {
+      'icon': subject.icon,
+      'position': subject.position,
+      'isHidden': subject.isHidden,
+    };
     jsonData['content'] ??= [];
 
     const encoder = JsonEncoder.withIndent('  ');
@@ -241,17 +251,23 @@ class SubjectService {
   }
 
   Future<void> addSubject(String topicPath, String subjectName) async {
-    if (subjectName.isEmpty)
+    if (subjectName.isEmpty) {
       throw Exception('Nama subject tidak boleh kosong.');
+    }
     final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
-    if (await file.exists())
+    if (await file.exists()) {
       throw Exception('Subject dengan nama "$subjectName" sudah ada.');
+    }
 
     try {
       // Tidak perlu menetapkan posisi secara manual lagi karena akan dihitung ulang
       final initialContent = {
-        'metadata': {'icon': _defaultIcon, 'position': -1}, // Posisi awal -1
+        'metadata': {
+          'icon': _defaultIcon,
+          'position': -1,
+          'isHidden': false,
+        }, // Posisi awal -1
         'content': [],
       };
       await file.writeAsString(jsonEncode(initialContent));
@@ -274,6 +290,27 @@ class SubjectService {
       name: subjectName,
       icon: newIcon,
       position: metadata['position'] as int? ?? -1,
+      isHidden: metadata['isHidden'] as bool? ?? false,
+    );
+    await _saveSubjectMetadata(topicPath, subject);
+  }
+
+  // ==> FUNGSI BARU <==
+  Future<void> updateSubjectVisibility(
+    String topicPath,
+    String subjectName,
+    bool isHidden,
+  ) async {
+    final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
+    final file = File(filePath);
+    if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
+
+    final metadata = await _getSubjectMetadata(file);
+    final subject = Subject(
+      name: subjectName,
+      icon: metadata['icon'] as String? ?? _defaultIcon,
+      position: metadata['position'] as int? ?? -1,
+      isHidden: isHidden,
     );
     await _saveSubjectMetadata(topicPath, subject);
   }
@@ -287,10 +324,12 @@ class SubjectService {
     final oldPath = await _pathService.getSubjectPath(topicPath, oldName);
     final newPath = await _pathService.getSubjectPath(topicPath, newName);
     final oldFile = File(oldPath);
-    if (!await oldFile.exists())
+    if (!await oldFile.exists()) {
       throw Exception('Subject yang ingin diubah tidak ditemukan.');
-    if (await File(newPath).exists())
+    }
+    if (await File(newPath).exists()) {
       throw Exception('Subject dengan nama "$newName" sudah ada.');
+    }
 
     try {
       await oldFile.rename(newPath);
@@ -302,8 +341,9 @@ class SubjectService {
   Future<void> deleteSubject(String topicPath, String subjectName) async {
     final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
-    if (!await file.exists())
+    if (!await file.exists()) {
       throw Exception('Subject yang ingin dihapus tidak ditemukan.');
+    }
 
     try {
       await file.delete();

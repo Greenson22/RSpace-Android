@@ -113,6 +113,19 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
+  // ==> FUNGSI BARU <==
+  Future<void> _toggleVisibility(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final newVisibility = !subject.isHidden;
+    try {
+      await provider.toggleSubjectVisibility(subject.name, newVisibility);
+      final message = newVisibility ? 'disembunyikan' : 'ditampilkan kembali';
+      _showSnackBar('Subject "${subject.name}" berhasil $message.');
+    } catch (e) {
+      _showSnackBar(e.toString(), isError: true);
+    }
+  }
+
   void _navigateToDiscussionsPage(BuildContext context, Subject subject) {
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
@@ -141,6 +154,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<SubjectProvider>(context); // ==> DIUBAH
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -160,6 +174,18 @@ class _SubjectsPageState extends State<SubjectsPage> {
               });
             },
           ),
+          // ==> TOMBOL BARU UNTUK VISIBILITAS <==
+          IconButton(
+            icon: Icon(
+              provider.showHiddenSubjects
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+            ),
+            onPressed: () => provider.toggleShowHidden(),
+            tooltip: provider.showHiddenSubjects
+                ? 'Sembunyikan Subjects Tersembunyi'
+                : 'Tampilkan Subjects Tersembunyi',
+          ),
         ],
         elevation: 0,
       ),
@@ -175,8 +201,16 @@ class _SubjectsPageState extends State<SubjectsPage> {
           final subjectsToShow = provider.filteredSubjects;
           final isSearching = provider.searchQuery.isNotEmpty;
 
-          if (subjectsToShow.isEmpty && isSearching) {
-            return const Center(child: Text('Subject tidak ditemukan.'));
+          if (subjectsToShow.isEmpty) {
+            if (isSearching) {
+              return const Center(child: Text('Subject tidak ditemukan.'));
+            } else if (!provider.showHiddenSubjects) {
+              return const Center(
+                child: Text(
+                  'Tidak ada subject yang terlihat. Coba tampilkan subject tersembunyi.',
+                ),
+              );
+            }
           }
 
           return ListView.builder(
@@ -191,6 +225,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
                 onRename: () => _renameSubject(context, subject),
                 onDelete: () => _deleteSubject(context, subject),
                 onIconChange: () => _changeIcon(context, subject),
+                onToggleVisibility: () =>
+                    _toggleVisibility(context, subject), // ==> DITAMBAHKAN
               );
             },
           );

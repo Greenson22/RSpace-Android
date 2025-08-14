@@ -5,6 +5,7 @@ class Subject {
   int position;
   String? date; // DITAMBAHKAN
   String? repetitionCode; // DITAMBAHKAN
+  bool isHidden; // ==> DITAMBAHKAN
 
   Subject({
     required this.name,
@@ -12,5 +13,6 @@ class Subject {
     required this.position,
     this.date, // DIUBAH
     this.repetitionCode, // DIUBAH
+    this.isHidden = false, // ==> DITAMBAHKAN
   });
 }

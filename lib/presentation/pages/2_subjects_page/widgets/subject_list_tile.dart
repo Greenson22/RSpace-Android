@@ -8,6 +8,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
+  final VoidCallback onToggleVisibility; // ==> DITAMBAHKAN
 
   const SubjectListTile({
     super.key,
@@ -16,6 +17,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onRename,
     required this.onDelete,
     required this.onIconChange,
+    required this.onToggleVisibility, // ==> DITAMBAHKAN
   });
 
   @override
@@ -24,8 +26,17 @@ class SubjectListTile extends StatelessWidget {
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
 
+    // ==> PERUBAHAN Tampilan untuk item yang tersembunyi <==
+    final bool isHidden = subject.isHidden;
+    final Color cardColor = isHidden
+        ? theme.disabledColor.withOpacity(0.1)
+        : theme.cardColor;
+    final Color? textColor = isHidden ? theme.disabledColor : null;
+    final double elevation = isHidden ? 1 : 3;
+
     return Card(
-      elevation: 3,
+      elevation: elevation, // DIUBAH
+      color: cardColor, // DIUBAH
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: InkWell(
@@ -44,7 +55,10 @@ class SubjectListTile extends StatelessWidget {
                   color: theme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(subject.icon, style: const TextStyle(fontSize: 28)),
+                child: Text(
+                  subject.icon,
+                  style: TextStyle(fontSize: 28, color: textColor), // DIUBAH
+                ),
               ),
               const SizedBox(width: 16),
               // Name and Subtitle
@@ -54,15 +68,16 @@ class SubjectListTile extends StatelessWidget {
                   children: [
                     Text(
                       subject.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
+                        color: textColor, // DIUBAH
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (hasSubtitle) ...[
                       const SizedBox(height: 4),
-                      _buildSubtitle(context),
+                      _buildSubtitle(context, textColor), // DIUBAH
                     ],
                   ],
                 ),
@@ -73,6 +88,9 @@ class SubjectListTile extends StatelessWidget {
                   if (value == 'rename') onRename();
                   if (value == 'delete') onDelete();
                   if (value == 'change_icon') onIconChange();
+                  if (value == 'toggle_visibility') {
+                    onToggleVisibility(); // ==> DIPANGGIL
+                  }
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -82,6 +100,11 @@ class SubjectListTile extends StatelessWidget {
                   const PopupMenuItem(
                     value: 'change_icon',
                     child: Text('Ubah Ikon'),
+                  ),
+                  // ==> OPSI MENU BARU <==
+                  PopupMenuItem<String>(
+                    value: 'toggle_visibility',
+                    child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
                   ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
@@ -97,10 +120,14 @@ class SubjectListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context) {
+  Widget _buildSubtitle(BuildContext context, Color? textColor) {
+    // DIUBAH
     return RichText(
       text: TextSpan(
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontSize: 12,
+          color: textColor,
+        ), // DIUBAH
         children: [
           if (subject.date != null)
             WidgetSpan(
@@ -109,7 +136,9 @@ class SubjectListTile extends StatelessWidget {
                 child: Icon(
                   Icons.calendar_today_outlined,
                   size: 12,
-                  color: Colors.amber[800],
+                  color: subject.isHidden
+                      ? textColor
+                      : Colors.amber[800], // DIUBAH
                 ),
               ),
               alignment: PlaceholderAlignment.middle,
@@ -118,7 +147,9 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.date,
               style: TextStyle(
-                color: Colors.amber[800],
+                color: subject.isHidden
+                    ? textColor
+                    : Colors.amber[800], // DIUBAH
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -131,7 +162,11 @@ class SubjectListTile extends StatelessWidget {
                 child: Icon(
                   Icons.repeat,
                   size: 12,
-                  color: getColorForRepetitionCode(subject.repetitionCode!),
+                  color: subject.isHidden
+                      ? textColor
+                      : getColorForRepetitionCode(
+                          subject.repetitionCode!,
+                        ), // DIUBAH
                 ),
               ),
               alignment: PlaceholderAlignment.middle,
@@ -140,7 +175,11 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.repetitionCode,
               style: TextStyle(
-                color: getColorForRepetitionCode(subject.repetitionCode!),
+                color: subject.isHidden
+                    ? textColor
+                    : getColorForRepetitionCode(
+                        subject.repetitionCode!,
+                      ), // DIUBAH
                 fontWeight: FontWeight.bold,
               ),
             ),
