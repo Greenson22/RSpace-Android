@@ -28,10 +28,11 @@ class AppTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: Colors.grey[100], // Latar belakang lebih lembut
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent, // AppBar transparan
-      elevation: 0,
-      foregroundColor: Colors.black87, // Ikon dan teks appbar gelap
+    appBarTheme: AppBarTheme(
+      // DIUBAH
+      backgroundColor: Colors.teal, // Warna solid untuk halaman lain
+      foregroundColor: Colors.white,
+      elevation: 2,
     ),
     cardTheme: CardThemeData(
       elevation: 2,
@@ -43,6 +44,11 @@ class AppTheme {
     listTileTheme: const ListTileThemeData(
       contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
     ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      // DITAMBAHKAN
+      backgroundColor: Colors.teal[600],
+      foregroundColor: Colors.white,
+    ),
   );
 
   static final ThemeData darkTheme = ThemeData(
@@ -52,10 +58,11 @@ class AppTheme {
       0xFF121212,
     ), // Latar belakang gelap standar
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent, // AppBar transparan
-      elevation: 0,
+    appBarTheme: AppBarTheme(
+      // DIUBAH
+      backgroundColor: Colors.grey[900], // Warna solid untuk tema gelap
       foregroundColor: Colors.white,
+      elevation: 2,
     ),
     cardTheme: CardThemeData(
       elevation: 4, // Shadow lebih terlihat di tema gelap
@@ -65,6 +72,11 @@ class AppTheme {
     ),
     listTileTheme: const ListTileThemeData(
       contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      // DITAMBAHKAN
+      backgroundColor: Colors.teal[300],
+      foregroundColor: Colors.black,
     ),
   );
 }
