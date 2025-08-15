@@ -8,12 +8,11 @@ import 'package:provider/provider.dart';
 import '../providers/backup_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import '../providers/topic_provider.dart'; // Import untuk refresh data
-import 'dart:math'; // Ditambahkan untuk formatting ukuran file
+import 'dart:math';
 
 class BackupManagementPage extends StatelessWidget {
   const BackupManagementPage({super.key});
 
-  // ==> FUNGSI BARU UNTUK FORMAT UKURAN FILE <==
   String _formatBytes(int bytes, int decimals) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
@@ -444,6 +443,13 @@ class BackupManagementPage extends StatelessWidget {
         provider.isBackingUp || provider.isImporting;
     final theme = Theme.of(context);
 
+    // ==> PERUBAHAN LOGIKA ADA DI SINI <==
+    final isPerpuskuBackup = title.contains('PerpusKu');
+    final isPerpuskuPathSet =
+        provider.perpuskuDataPath != null &&
+        provider.perpuskuDataPath!.isNotEmpty;
+    final isPerpuskuBackupDisabled = isPerpuskuBackup && !isPerpuskuPathSet;
+
     Widget loadingIndicator() {
       return const SizedBox(
         width: 20,
@@ -487,13 +493,16 @@ class BackupManagementPage extends StatelessWidget {
               runSpacing: 8,
               children: [
                 ElevatedButton.icon(
-                  icon: provider.isBackingUp
+                  icon: provider.isBackingUp && !isPerpuskuBackup
                       ? const SizedBox.shrink()
                       : const Icon(Icons.backup_outlined),
-                  label: provider.isBackingUp
+                  label: provider.isBackingUp && !isPerpuskuBackup
                       ? loadingIndicator()
                       : const Text('Backup'),
-                  onPressed: isActionInProgress ? null : onBackup,
+                  // Terapkan kondisi penonaktifan di sini
+                  onPressed: isActionInProgress || isPerpuskuBackupDisabled
+                      ? null
+                      : onBackup,
                   style: ElevatedButton.styleFrom(
                     padding: buttonPadding,
                     shape: RoundedRectangleBorder(
@@ -519,6 +528,17 @@ class BackupManagementPage extends StatelessWidget {
                 ),
               ],
             ),
+            // Tambahkan pesan jika backup PerpusKu dinonaktifkan
+            if (isPerpuskuBackupDisabled)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Tentukan folder sumber data PerpusKu untuk mengaktifkan backup.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
             Text(
               'File Tersimpan',
