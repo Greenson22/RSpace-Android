@@ -83,9 +83,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               decoration: const InputDecoration(
                 hintText: 'Cari diskusi...',
                 border: InputBorder.none,
+                hintStyle: TextStyle(color: Colors.white70),
               ),
+              style: const TextStyle(color: Colors.white),
             )
-          : Text(widget.subjectName),
+          : Text(widget.subjectName, overflow: TextOverflow.ellipsis),
       actions: [
         IconButton(
           icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -117,6 +119,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
+  // --- PERUBAHAN UTAMA ADA DI FUNGSI INI ---
   Widget _buildBody(DiscussionProvider provider) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -137,11 +140,81 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       );
     }
 
+    // Gunakan LayoutBuilder untuk memilih tata letak
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Atur breakpoint, misalnya 800.
+        // Jika layar lebih lebar dari 800, gunakan dua kolom.
+        const double breakpoint = 800.0;
+        if (constraints.maxWidth > breakpoint) {
+          return _buildTwoColumnLayout(provider, discussionsToShow);
+        } else {
+          // Jika tidak, gunakan satu kolom seperti biasa.
+          return _buildSingleColumnLayout(provider, discussionsToShow);
+        }
+      },
+    );
+  }
+
+  // Widget untuk tata letak satu kolom (Mobile)
+  Widget _buildSingleColumnLayout(
+    DiscussionProvider provider,
+    List<dynamic> discussions,
+  ) {
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
-      itemCount: discussionsToShow.length,
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 80), // Padding untuk FAB
+      itemCount: discussions.length,
       itemBuilder: (context, index) {
-        final discussion = discussionsToShow[index];
+        final discussion = discussions[index];
+        final originalIndex = provider.allDiscussions.indexOf(discussion);
+        return DiscussionCard(
+          key: ValueKey(discussion.hashCode),
+          discussion: discussion,
+          index: originalIndex,
+          arePointsVisible: _arePointsVisible,
+          onToggleVisibility: (idx) => setState(
+            () => _arePointsVisible[idx] = !(_arePointsVisible[idx] ?? false),
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget untuk tata letak dua kolom (Desktop)
+  Widget _buildTwoColumnLayout(
+    DiscussionProvider provider,
+    List<dynamic> discussions,
+  ) {
+    // Bagi daftar menjadi dua
+    final int middle = (discussions.length / 2).ceil();
+    final List<dynamic> firstHalf = discussions.sublist(0, middle);
+    final List<dynamic> secondHalf = discussions.sublist(middle);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Kolom Pertama
+          Expanded(child: _buildColumnListView(provider, firstHalf)),
+          const SizedBox(width: 16),
+          // Kolom Kedua
+          Expanded(child: _buildColumnListView(provider, secondHalf)),
+        ],
+      ),
+    );
+  }
+
+  // Helper untuk membuat ListView di dalam kolom
+  Widget _buildColumnListView(
+    DiscussionProvider provider,
+    List<dynamic> discussionList,
+  ) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 80),
+      itemCount: discussionList.length,
+      itemBuilder: (context, index) {
+        final discussion = discussionList[index];
         final originalIndex = provider.allDiscussions.indexOf(discussion);
         return DiscussionCard(
           key: ValueKey(discussion.hashCode),
@@ -176,7 +249,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       ),
       onShowDateFilter: () => showDateFilterDialog(
         context: context,
-        initialDateRange: null,
+        initialDateRange: null, // Anda dapat mengisinya jika perlu
         onSelectRange: (range) {
           provider.applyDateFilter(range);
           widget.onFilterOrSortChanged?.call();
