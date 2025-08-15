@@ -281,18 +281,25 @@ class DiscussionCard extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(30.0, 8.0, 16.0, 8.0),
                 child: Column(
-                  children: sortedPoints.map((point) {
-                    final bool isPointActive = provider.doesPointMatchFilter(
-                      point,
-                    );
-                    // --- PERBAIKAN DI SINI ---
-                    return PointTile(
-                      discussion: discussion, // ==> ARGUMEN YANG HILANG
-                      point: point,
-                      isActive: isPointActive,
-                      isLinux: isLinux,
-                    );
-                  }).toList(),
+                  children: [
+                    for (var i = 0; i < sortedPoints.length; i++) ...[
+                      PointTile(
+                        discussion: discussion,
+                        point: sortedPoints[i],
+                        isActive: provider.doesPointMatchFilter(
+                          sortedPoints[i],
+                        ),
+                        isLinux: isLinux,
+                      ),
+                      if (i < sortedPoints.length - 1)
+                        Divider(
+                          color:
+                              Theme.of(context).brightness == Brightness.light
+                              ? Theme.of(context).primaryColor.withOpacity(0.3)
+                              : null,
+                        ),
+                    ],
+                  ],
                 ),
               ),
             ),
