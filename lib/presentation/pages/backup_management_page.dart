@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as path;
 import '../providers/backup_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import '../providers/topic_provider.dart';
@@ -175,12 +176,53 @@ class BackupManagementPage extends StatelessWidget {
         XFile(file.path),
       ], text: 'File backup dari aplikasi saya.');
 
-      if (result.status == ShareResultStatus.success && context.mounted) {
+      if (result.status == ShareResultStatus.unavailable) {
+        if (context.mounted) {
+          showAppSnackBar(
+            context,
+            'Fitur berbagi tidak tersedia, alihkan ke mode salin file.',
+          );
+          await _copyBackupFile(context, file);
+        }
+      } else if (result.status == ShareResultStatus.success &&
+          context.mounted) {
         showAppSnackBar(context, 'File berhasil dibagikan.');
       }
     } catch (e) {
       if (context.mounted) {
-        showAppSnackBar(context, 'Gagal membagikan file: $e', isError: true);
+        showAppSnackBar(
+          context,
+          'Gagal memulai fitur berbagi. Beralih ke mode salin file.',
+          isError: true,
+        );
+        await _copyBackupFile(context, file);
+      }
+    }
+  }
+
+  Future<void> _copyBackupFile(BuildContext context, File sourceFile) async {
+    try {
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Pilih Lokasi untuk Menyimpan Salinan',
+      );
+
+      if (selectedDirectory != null) {
+        final fileName = path.basename(sourceFile.path);
+        final destinationPath = path.join(selectedDirectory, fileName);
+
+        await sourceFile.copy(destinationPath);
+
+        if (context.mounted) {
+          showAppSnackBar(context, 'File berhasil disalin ke tujuan.');
+        }
+      } else {
+        if (context.mounted) {
+          showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Gagal menyalin file: $e', isError: true);
       }
     }
   }
