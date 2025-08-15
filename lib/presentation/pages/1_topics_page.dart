@@ -4,12 +4,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../data/models/topic_model.dart';
 import '../providers/subject_provider.dart';
-import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
 import '2_subjects_page.dart';
 import '1_topics_page/dialogs/topic_dialogs.dart';
+import '1_topics_page/widgets/topic_grid_tile.dart';
 import '1_topics_page/widgets/topic_list_tile.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 
@@ -18,8 +19,6 @@ class TopicsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // DIUBAH: ChangeNotifierProvider dihapus dari sini.
-    // Provider sekarang diambil dari level atas (main.dart).
     return const _TopicsPageContent();
   }
 }
@@ -38,10 +37,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   void initState() {
     super.initState();
-    // DIUBAH: Sekarang aman untuk memanggil provider di initState
-    // karena provider sudah ada sebelum widget ini dibuat.
-    // Namun, kita tidak perlu memanggil fetchTopics() di sini karena
-    // constructor TopicProvider sudah melakukannya.
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     _searchController.addListener(() {
       topicProvider.search(_searchController.text);
@@ -120,7 +115,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> _toggleVisibility(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     final newVisibility = !topic.isHidden;
@@ -164,7 +158,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                 });
               },
             ),
-            // ==> TOMBOL BARU UNTUK MENAMPILKAN/SEMBUNYIKAN TOPIK <==
             IconButton(
               icon: Icon(
                 topicProvider.showHiddenTopics
@@ -196,7 +189,15 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 600) {
+            return _buildGridView();
+          } else {
+            return _buildListView();
+          }
+        },
+      ),
       floatingActionButton: topicProvider.isReorderModeEnabled
           ? null
           : FloatingActionButton(
@@ -208,33 +209,39 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildEmptyState(TopicProvider provider) {
+    if (provider.allTopics.isEmpty) {
+      return const Center(
+        child: Text('Tidak ada topik. Tekan + untuk menambah.'),
+      );
+    }
+    if (provider.filteredTopics.isEmpty && provider.searchQuery.isNotEmpty) {
+      return const Center(child: Text('Topik tidak ditemukan.'));
+    }
+    if (provider.filteredTopics.isEmpty && !provider.showHiddenTopics) {
+      return const Center(
+        child: Text(
+          'Tidak ada topik yang terlihat. Coba tampilkan topik tersembunyi.',
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildListView() {
     return Consumer<TopicProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (provider.allTopics.isEmpty) {
-          return const Center(
-            child: Text('Tidak ada topik. Tekan + untuk menambah.'),
-          );
-        }
-
         final topicsToShow = provider.filteredTopics;
-        final isSearching = provider.searchQuery.isNotEmpty;
-        final isReorderActive = provider.isReorderModeEnabled && !isSearching;
+        if (topicsToShow.isEmpty) {
+          return _buildEmptyState(provider);
+        }
 
-        if (topicsToShow.isEmpty && isSearching) {
-          return const Center(child: Text('Topik tidak ditemukan.'));
-        }
-        if (topicsToShow.isEmpty && !provider.showHiddenTopics) {
-          return const Center(
-            child: Text(
-              'Tidak ada topik yang terlihat. Coba tampilkan topik tersembunyi.',
-            ),
-          );
-        }
+        final isReorderActive =
+            provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
 
         return ReorderableListView.builder(
           itemCount: topicsToShow.length,
@@ -262,9 +269,68 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onIconChange: () => _changeIcon(context, topic),
-              onToggleVisibility: () =>
-                  _toggleVisibility(context, topic), // ==> DITAMBAHKAN
+              onToggleVisibility: () => _toggleVisibility(context, topic),
               isReorderActive: isReorderActive,
+            );
+          },
+          onReorder: (oldIndex, newIndex) {
+            if (isReorderActive) {
+              provider.reorderTopics(oldIndex, newIndex);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildGridView() {
+    return Consumer<TopicProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final topicsToShow = provider.filteredTopics;
+        if (topicsToShow.isEmpty) {
+          return _buildEmptyState(provider);
+        }
+
+        final isReorderActive =
+            provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
+
+        return ReorderableGridView.builder(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: topicsToShow.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: (MediaQuery.of(context).size.width / 200).floor(),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1,
+          ),
+          itemBuilder: (context, index) {
+            final topic = topicsToShow[index];
+            return TopicGridTile(
+              key: ValueKey(topic.name),
+              topic: topic,
+              onTap: isReorderActive
+                  ? null
+                  : () async {
+                      final topicsPath = await provider.getTopicsPath();
+                      final folderPath = path.join(topicsPath, topic.name);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider(
+                            create: (_) => SubjectProvider(folderPath),
+                            child: SubjectsPage(topicName: topic.name),
+                          ),
+                        ),
+                      );
+                    },
+              onRename: () => _renameTopic(context, topic),
+              onDelete: () => _deleteTopic(context, topic),
+              onIconChange: () => _changeIcon(context, topic),
+              onToggleVisibility: () => _toggleVisibility(context, topic),
             );
           },
           onReorder: (oldIndex, newIndex) {

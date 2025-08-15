@@ -312,14 +312,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  multi_split_view:
-    dependency: "direct main"
-    description:
-      name: multi_split_view
-      sha256: "99c02f128e7423818d13b8f2e01e3027e953b35508019dcee214791bd0525db5"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.6.0"
   nested:
     dependency: transitive
     description:
@@ -504,6 +496,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  reorderable_grid_view:
+    dependency: "direct main"
+    description:
+      name: reorderable_grid_view
+      sha256: e36c6229a97105a10c79e15ab4b9b14ee9f6c488574ff2be9e858c82af47cda6
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.8"
   shared_preferences:
     dependency: "direct main"
     description:
