@@ -1,7 +1,7 @@
 // lib/presentation/providers/topic_provider.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_archive/flutter_archive.dart';
+import 'package:archive/archive_io.dart'; // DIUBAH: Menggunakan pustaka baru
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../../data/models/topic_model.dart';
@@ -30,8 +30,8 @@ class TopicProvider with ChangeNotifier {
   bool _isReorderModeEnabled = false;
   bool get isReorderModeEnabled => _isReorderModeEnabled;
 
-  bool _showHiddenTopics = false; // ==> DITAMBAHKAN
-  bool get showHiddenTopics => _showHiddenTopics; // ==> DITAMBAHKAN
+  bool _showHiddenTopics = false;
+  bool get showHiddenTopics => _showHiddenTopics;
 
   TopicProvider() {
     fetchTopics();
@@ -45,7 +45,6 @@ class TopicProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU <==
   void toggleShowHidden() {
     _showHiddenTopics = !_showHiddenTopics;
     _filterTopics();
@@ -137,12 +136,12 @@ class TopicProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> toggleTopicVisibility(String topicName, bool isHidden) async {
     await _topicService.updateTopicVisibility(topicName, isHidden);
     await fetchTopics();
   }
 
+  // DIUBAH: Fungsi backup diperbarui untuk menggunakan pustaka 'archive'
   Future<String> backupContents({required String destinationPath}) async {
     _isBackingUp = true;
     notifyListeners();
@@ -158,17 +157,12 @@ class TopicProvider with ChangeNotifier {
         'yyyy-MM-dd_HH-mm-ss',
       ).format(DateTime.now());
       final zipFileName = 'backup-topics-$timestamp.zip';
-      final zipFile = File(path.join(destinationPath, zipFileName));
+      final zipFilePath = path.join(destinationPath, zipFileName);
 
-      if (!await Directory(destinationPath).exists()) {
-        await Directory(destinationPath).create(recursive: true);
-      }
-
-      await ZipFile.createFromDirectory(
-        sourceDir: sourceDir,
-        zipFile: zipFile,
-        recurseSubDirs: true,
-      );
+      final encoder = ZipFileEncoder();
+      encoder.create(zipFilePath);
+      await encoder.addDirectory(sourceDir, includeDirName: false);
+      encoder.close();
 
       return 'Backup berhasil disimpan di: $destinationPath';
     } catch (e) {
@@ -179,6 +173,7 @@ class TopicProvider with ChangeNotifier {
     }
   }
 
+  // DIUBAH: Fungsi import diperbarui untuk menggunakan pustaka 'archive'
   Future<void> importContents(File zipFile) async {
     try {
       final topicsPath = await _pathService.topicsPath;
@@ -196,10 +191,8 @@ class TopicProvider with ChangeNotifier {
         await myTasksFile.delete();
       }
 
-      await ZipFile.extractToDirectory(
-        zipFile: zipFile,
-        destinationDir: Directory(contentsPath),
-      );
+      // Menggunakan fungsi dari pustaka 'archive' untuk ekstraksi
+      await extractFileToDisk(zipFile.path, contentsPath);
     } catch (e) {
       rethrow;
     }
