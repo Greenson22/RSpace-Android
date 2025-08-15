@@ -285,10 +285,12 @@ class DiscussionCard extends StatelessWidget {
                     final bool isPointActive = provider.doesPointMatchFilter(
                       point,
                     );
+                    // --- PERBAIKAN DI SINI ---
                     return PointTile(
+                      discussion: discussion, // ==> ARGUMEN YANG HILANG
                       point: point,
                       isActive: isPointActive,
-                      isLinux: isLinux, // ==> isLinux DITERUSKAN KE POINT
+                      isLinux: isLinux,
                     );
                   }).toList(),
                 ),

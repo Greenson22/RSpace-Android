@@ -87,7 +87,6 @@ class DiscussionProvider with ChangeNotifier {
     await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
-  // ==> FUNGSI BARU UNTUK MENDAPATKAN INFO EFEKTIF UNTUK SORT/FILTER <==
   Map<String, String?> _getEffectiveDiscussionInfoForSorting(
     Discussion discussion,
   ) {
@@ -133,7 +132,6 @@ class DiscussionProvider with ChangeNotifier {
       }
     }
 
-    // Fallback ke logika model jika tidak ada point yang relevan
     return {
       'date': discussion.effectiveDate,
       'code': discussion.effectiveRepetitionCode,
@@ -148,7 +146,6 @@ class DiscussionProvider with ChangeNotifier {
       );
       if (!matchesSearchQuery) return false;
 
-      // === LOGIKA FILTER DIUBAH UNTUK MENGGUNAKAN FUNGSI BARU ===
       bool matchesFilter = true;
       final effectiveInfo = _getEffectiveDiscussionInfoForSorting(discussion);
       final effectiveDate = effectiveInfo['date'];
@@ -177,7 +174,6 @@ class DiscussionProvider with ChangeNotifier {
       return matchesFilter;
     }).toList();
 
-    // === LOGIKA SORT DIUBAH UNTUK MENGGUNAKAN FUNGSI BARU ===
     _filteredDiscussions.sort((a, b) {
       final infoA = _getEffectiveDiscussionInfoForSorting(a);
       final infoB = _getEffectiveDiscussionInfoForSorting(b);
@@ -247,7 +243,6 @@ class DiscussionProvider with ChangeNotifier {
 
   // --- ACTIONS ---
 
-  //==> FUNGSI BARU UNTUK MENGHAPUS DISKUSI <==
   void deleteDiscussion(Discussion discussion) {
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
     _filterAndSortDiscussions();
@@ -273,6 +268,13 @@ class DiscussionProvider with ChangeNotifier {
       repetitionCode: 'R0D',
     );
     discussion.points.add(newPoint);
+    _filterAndSortDiscussions();
+    _saveDiscussions();
+  }
+
+  //==> FUNGSI BARU UNTUK MENGHAPUS POINT <==
+  void deletePoint(Discussion discussion, Point point) {
+    discussion.points.removeWhere((p) => p.hashCode == point.hashCode);
     _filterAndSortDiscussions();
     _saveDiscussions();
   }

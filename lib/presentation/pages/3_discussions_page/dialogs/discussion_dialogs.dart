@@ -81,7 +81,6 @@ void showRepetitionCodeDialog(
   );
 }
 
-//==> FUNGSI BARU UNTUK KONFIRMASI HAPUS DISKUSI <==
 Future<void> showDeleteDiscussionConfirmationDialog({
   required BuildContext context,
   required String discussionName,
@@ -95,6 +94,37 @@ Future<void> showDeleteDiscussionConfirmationDialog({
         content: Text(
           'Anda yakin ingin menghapus diskusi "$discussionName" beserta semua isinya?',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              onDelete();
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+//==> FUNGSI BARU UNTUK KONFIRMASI HAPUS POINT <==
+Future<void> showDeletePointConfirmationDialog({
+  required BuildContext context,
+  required String pointText,
+  required VoidCallback onDelete,
+}) async {
+  return showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Hapus Poin'),
+        content: Text('Anda yakin ingin menghapus poin "$pointText"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -206,7 +236,6 @@ Future<void> showDateFilterDialog({
   required DateTimeRange? initialDateRange,
 }) async {
   final now = DateTime.now();
-  // **PERUBAHAN:** Buat variabel 'today' yang bersih dari komponen waktu
   final today = DateTime(now.year, now.month, now.day);
 
   showDialog(
@@ -220,7 +249,6 @@ Future<void> showDateFilterDialog({
             ListTile(
               title: const Text('Hari Ini'),
               onTap: () {
-                // **PERUBAHAN:** Gunakan 'today' untuk start dan end
                 onSelectRange(DateTimeRange(start: today, end: today));
                 Navigator.pop(context);
               },
@@ -228,7 +256,6 @@ Future<void> showDateFilterDialog({
             ListTile(
               title: const Text('Hari ini dan sebelumnya'),
               onTap: () {
-                // **PERUBAHAN:** Gunakan 'today' untuk end
                 onSelectRange(DateTimeRange(start: DateTime(2000), end: today));
                 Navigator.pop(context);
               },

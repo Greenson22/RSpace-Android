@@ -1,4 +1,3 @@
-// lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -8,15 +7,17 @@ import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 
 class PointTile extends StatelessWidget {
+  final Discussion discussion; // ==> DITAMBAHKAN
   final Point point;
   final bool isActive;
-  final bool isLinux; // ==> DITAMBAHKAN
+  final bool isLinux;
 
   const PointTile({
     super.key,
+    required this.discussion, // ==> DITAMBAHKAN
     required this.point,
     this.isActive = true,
-    this.isLinux = false, // ==> DITAMBAHKAN
+    this.isLinux = false,
   });
 
   void _showSnackBar(BuildContext context, String message) {
@@ -25,7 +26,6 @@ class PointTile extends StatelessWidget {
     );
   }
 
-  //==> FUNGSI BARU UNTUK MENAMPILKAN MENU KONTEKS <==
   void _showContextMenu(
     BuildContext context,
     Offset position,
@@ -50,12 +50,18 @@ class PointTile extends StatelessWidget {
           child: Text('Ubah Kode Repetisi'),
         ),
         const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Text('Hapus', style: TextStyle(color: Colors.red)),
+        ),
       ],
     ).then((value) {
       if (value == null) return;
       if (value == 'edit_date') _changePointDate(context, provider);
       if (value == 'edit_code') _changePointCode(context, provider);
       if (value == 'rename') _renamePoint(context, provider);
+      if (value == 'delete') _deletePoint(context, provider);
     });
   }
 
@@ -68,6 +74,18 @@ class PointTile extends StatelessWidget {
       onSave: (newName) {
         provider.renamePoint(point, newName);
         _showSnackBar(context, 'Poin berhasil diubah.');
+      },
+    );
+  }
+
+  //==> FUNGSI BARU UNTUK MENGHAPUS POINT <==
+  void _deletePoint(BuildContext context, DiscussionProvider provider) {
+    showDeletePointConfirmationDialog(
+      context: context,
+      pointText: point.pointText,
+      onDelete: () {
+        provider.deletePoint(discussion, point);
+        _showSnackBar(context, 'Poin berhasil dihapus.');
       },
     );
   }
@@ -143,20 +161,17 @@ class PointTile extends StatelessWidget {
           ],
         ),
       ),
-      // --- PERUBAHAN DI SINI ---
-      // Tampilkan EditPopupMenu hanya jika bukan di Linux
       trailing: isLinux
           ? null
           : EditPopupMenu(
               onDateChange: () => _changePointDate(context, provider),
               onCodeChange: () => _changePointCode(context, provider),
               onRename: () => _renamePoint(context, provider),
+              onDelete: () => _deletePoint(context, provider),
             ),
       contentPadding: EdgeInsets.zero,
     );
 
-    // --- PERUBAHAN DI SINI ---
-    // Jika di Linux, bungkus dengan GestureDetector untuk klik kanan
     if (isLinux) {
       return GestureDetector(
         onSecondaryTapUp: (details) {
