@@ -13,6 +13,29 @@ class SharedPreferencesService {
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   // ==> KUNCI BARU UNTUK LOKASI BACKUP <==
   static const String _customBackupPathKey = 'custom_backup_path';
+  // ==> KUNCI BARU UNTUK PREFERENSI SORTING BACKUP <==
+  static const String _backupSortTypeKey = 'backup_sort_type';
+  static const String _backupSortAscendingKey = 'backup_sort_ascending';
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PREFERENSI SORTING BACKUP <==
+  Future<void> saveBackupSortPreferences(
+    String sortType,
+    bool sortAscending,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_backupSortTypeKey, sortType);
+    await prefs.setBool(_backupSortAscendingKey, sortAscending);
+  }
+
+  Future<Map<String, dynamic>> loadBackupSortPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sortType =
+        prefs.getString(_backupSortTypeKey) ?? 'date'; // Default by date
+    final sortAscending =
+        prefs.getBool(_backupSortAscendingKey) ?? false; // Default descending
+    return {'sortType': sortType, 'sortAscending': sortAscending};
+  }
+  // --- AKHIR PERUBAHAN ---
 
   // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PATH BACKUP <==
   Future<void> saveCustomBackupPath(String path) async {

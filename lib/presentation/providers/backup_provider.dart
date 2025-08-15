@@ -39,6 +39,13 @@ class BackupProvider with ChangeNotifier {
 
   bool get isSelectionMode => _selectedFiles.isNotEmpty;
 
+  // ==> STATE BARU UNTUK SORTING <==
+  String _sortType = 'date';
+  String get sortType => _sortType;
+
+  bool _sortAscending = false;
+  bool get sortAscending => _sortAscending;
+
   BackupProvider() {
     loadBackupData();
   }
@@ -79,9 +86,45 @@ class BackupProvider with ChangeNotifier {
   }
   // --- AKHIR FUNGSI BARU ---
 
+  // ==> FUNGSI BARU UNTUK SORTING <==
+  void applySort(String sortType, bool sortAscending) {
+    _sortType = sortType;
+    _sortAscending = sortAscending;
+    _prefsService.saveBackupSortPreferences(sortType, sortAscending);
+    _sortBackupFiles();
+    notifyListeners();
+  }
+
+  void _sortBackupFiles() {
+    Comparator<File> comparator;
+    switch (_sortType) {
+      case 'name':
+        comparator = (a, b) =>
+            path.basename(a.path).compareTo(path.basename(b.path));
+        break;
+      default: // date
+        comparator = (a, b) =>
+            a.lastModifiedSync().compareTo(b.lastModifiedSync());
+        break;
+    }
+
+    _rspaceBackupFiles.sort(comparator);
+    _perpuskuBackupFiles.sort(comparator);
+
+    if (!_sortAscending) {
+      _rspaceBackupFiles = _rspaceBackupFiles.reversed.toList();
+      _perpuskuBackupFiles = _perpuskuBackupFiles.reversed.toList();
+    }
+  }
+  // --- AKHIR FUNGSI SORTING ---
+
   Future<void> loadBackupData() async {
     _isLoading = true;
     notifyListeners();
+
+    final sortPrefs = await _prefsService.loadBackupSortPreferences();
+    _sortType = sortPrefs['sortType'];
+    _sortAscending = sortPrefs['sortAscending'];
 
     // ==> DIUBAH: Memuat path backup yang terpisah <==
     _backupPath = await _prefsService.loadCustomBackupPath();
@@ -153,7 +196,7 @@ class BackupProvider with ChangeNotifier {
     try {
       final rspaceDir = Directory(await _pathService.rspaceBackupPath);
       if (await rspaceDir.exists()) {
-        final files = rspaceDir
+        _rspaceBackupFiles = rspaceDir
             .listSync()
             .whereType<File>()
             .where(
@@ -162,10 +205,6 @@ class BackupProvider with ChangeNotifier {
                   item.path.toLowerCase().endsWith('.zip'),
             )
             .toList();
-        files.sort(
-          (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-        );
-        _rspaceBackupFiles = files;
       }
     } catch (e) {
       // Abaikan
@@ -174,7 +213,7 @@ class BackupProvider with ChangeNotifier {
     try {
       final perpuskuDir = Directory(await _pathService.perpuskuBackupPath);
       if (await perpuskuDir.exists()) {
-        final files = perpuskuDir
+        _perpuskuBackupFiles = perpuskuDir
             .listSync()
             .whereType<File>()
             .where(
@@ -183,15 +222,12 @@ class BackupProvider with ChangeNotifier {
                   item.path.toLowerCase().endsWith('.zip'),
             )
             .toList();
-        files.sort(
-          (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-        );
-        _perpuskuBackupFiles = files;
       }
     } catch (e) {
       // Abaikan
     }
 
+    _sortBackupFiles(); // ==> PANGGIL FUNGSI SORTING DI SINI <==
     notifyListeners();
   }
 

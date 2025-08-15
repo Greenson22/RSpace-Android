@@ -274,6 +274,82 @@ class BackupManagementPage extends StatelessWidget {
         false;
   }
 
+  // ==> DIALOG BARU UNTUK SORTING <==
+  Future<void> _showSortDialog(BuildContext context) async {
+    final provider = Provider.of<BackupProvider>(context, listen: false);
+    String sortType = provider.sortType;
+    bool sortAscending = provider.sortAscending;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Urutkan File Backup'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Urutkan berdasarkan:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Tanggal Modifikasi'),
+                    value: 'date',
+                    groupValue: sortType,
+                    onChanged: (value) =>
+                        setDialogState(() => sortType = value!),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Nama File'),
+                    value: 'name',
+                    groupValue: sortType,
+                    onChanged: (value) =>
+                        setDialogState(() => sortType = value!),
+                  ),
+                  const Divider(),
+                  const Text(
+                    'Urutan:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  RadioListTile<bool>(
+                    title: const Text('Menurun (Descending)'),
+                    value: false,
+                    groupValue: sortAscending,
+                    onChanged: (value) =>
+                        setDialogState(() => sortAscending = value!),
+                  ),
+                  RadioListTile<bool>(
+                    title: const Text('Menaik (Ascending)'),
+                    value: true,
+                    groupValue: sortAscending,
+                    onChanged: (value) =>
+                        setDialogState(() => sortAscending = value!),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    provider.applySort(sortType, sortAscending);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Terapkan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -283,7 +359,16 @@ class BackupManagementPage extends StatelessWidget {
           return Scaffold(
             appBar: provider.isSelectionMode
                 ? _buildSelectionAppBar(context, provider)
-                : AppBar(title: const Text('Manajemen Backup')),
+                : AppBar(
+                    title: const Text('Manajemen Backup'),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.sort),
+                        onPressed: () => _showSortDialog(context),
+                        tooltip: 'Urutkan File',
+                      ),
+                    ],
+                  ),
             body: WillPopScope(
               onWillPop: () async {
                 if (provider.isSelectionMode) {
@@ -348,10 +433,12 @@ class BackupManagementPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(8.0),
       children: [
-        _buildPathInfoCard(context, provider, isCard: true),
-        const SizedBox(height: 8),
-        _buildPerpuskuPathCard(context, provider, isCard: true),
-        const SizedBox(height: 8),
+        if (!provider.isSelectionMode) ...[
+          _buildPathInfoCard(context, provider, isCard: true),
+          const SizedBox(height: 8),
+          _buildPerpuskuPathCard(context, provider, isCard: true),
+          const SizedBox(height: 8),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -388,23 +475,24 @@ class BackupManagementPage extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          flex: 2,
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              Text(
-                "Pengaturan Folder",
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 16),
-              _buildPathInfoCard(context, provider, isCard: true),
-              const SizedBox(height: 16),
-              _buildPerpuskuPathCard(context, provider, isCard: true),
-            ],
+        if (!provider.isSelectionMode)
+          Expanded(
+            flex: 2,
+            child: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                Text(
+                  "Pengaturan Folder",
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 16),
+                _buildPathInfoCard(context, provider, isCard: true),
+                const SizedBox(height: 16),
+                _buildPerpuskuPathCard(context, provider, isCard: true),
+              ],
+            ),
           ),
-        ),
-        const VerticalDivider(width: 1),
+        if (!provider.isSelectionMode) const VerticalDivider(width: 1),
         Expanded(
           flex: 3,
           child: ListView(
