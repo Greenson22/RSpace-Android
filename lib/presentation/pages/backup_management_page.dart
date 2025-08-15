@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/backup_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import '../providers/topic_provider.dart';
@@ -170,9 +171,17 @@ class BackupManagementPage extends StatelessWidget {
 
   Future<void> _shareFile(BuildContext context, File file) async {
     try {
-      showAppSnackBar(context, 'Fungsi berbagi belum diimplementasikan.');
+      final result = await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'File backup dari aplikasi saya.');
+
+      if (result.status == ShareResultStatus.success && context.mounted) {
+        showAppSnackBar(context, 'File berhasil dibagikan.');
+      }
     } catch (e) {
-      showAppSnackBar(context, 'Gagal membagikan file: $e', isError: true);
+      if (context.mounted) {
+        showAppSnackBar(context, 'Gagal membagikan file: $e', isError: true);
+      }
     }
   }
 
