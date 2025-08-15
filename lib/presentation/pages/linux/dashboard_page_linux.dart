@@ -10,10 +10,10 @@ import '../../../data/services/shared_preferences_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/topic_provider.dart';
 import '../../theme/app_theme.dart';
-// DIUBAH: Import MainViewLinux yang baru
 import 'main_view_linux.dart';
 import '../1_topics_page/utils/scaffold_messenger_utils.dart';
-import '../my_tasks_page.dart';
+// import '../my_tasks_page.dart'; // Hapus atau komentari ini
+import 'my_tasks_page_linux.dart'; // ==> IMPORT HALAMAN BARU
 import '../statistics_page.dart';
 import '../about_page.dart';
 
@@ -31,14 +31,14 @@ class _DashboardPageLinuxState extends State<DashboardPageLinux> {
   bool _isBackingUp = false;
   bool _isImporting = false;
 
-  // DIUBAH: Ganti TopicsPage dengan MainViewLinux
+  // DIUBAH: Ganti MyTasksPage dengan MyTasksPageLinux
   final List<Widget> _pages = [
     const MainViewLinux(),
-    const MyTasksPage(),
+    const MyTasksPageLinux(), // ==> GUNAKAN HALAMAN LINUX
     const StatisticsPage(),
   ];
 
-  // ... (fungsi _backupContents, _importContents, _showImportConfirmationDialog tidak berubah) ...
+  // ... (sisa kode di file ini tidak perlu diubah) ...
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Tujuan Backup',
