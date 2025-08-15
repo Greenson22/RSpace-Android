@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../data/services/path_service.dart'; // DITAMBAHKAN
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
@@ -447,8 +448,59 @@ class _DashboardHeader extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 8), // DITAMBAHKAN
+          const _DashboardPath(), // DITAMBAHKAN
         ],
       ),
+    );
+  }
+}
+
+// WIDGET BARU UNTUK MENAMPILKAN PATH
+class _DashboardPath extends StatefulWidget {
+  const _DashboardPath();
+
+  @override
+  State<_DashboardPath> createState() => _DashboardPathState();
+}
+
+class _DashboardPathState extends State<_DashboardPath> {
+  final PathService _pathService = PathService();
+  Future<String>? _pathFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _pathFuture = _pathService.contentsPath;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _pathFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text('Memuat path...');
+        } else if (snapshot.hasError) {
+          return const Text('Gagal memuat path.');
+        } else if (snapshot.hasData) {
+          return Row(
+            children: [
+              const Icon(Icons.folder_outlined, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  snapshot.data!,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          );
+        } else {
+          return const SizedBox.shrink();
+        }
+      },
     );
   }
 }
