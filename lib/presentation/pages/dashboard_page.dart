@@ -1,6 +1,5 @@
 // lib/presentation/pages/dashboard_page.dart
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -14,7 +13,7 @@ import '../theme/app_theme.dart';
 import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
-import 'backup_management_page.dart'; // <-- IMPORT HALAMAN BARU
+import 'backup_management_page.dart';
 import 'my_tasks_page.dart';
 import 'share_page.dart';
 import 'statistics_page.dart';
@@ -27,104 +26,7 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  bool _isBackingUp = false;
-  bool _isImporting = false;
-
-  Future<void> _backupContents(BuildContext context) async {
-    String? destinationPath = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Pilih Folder Tujuan Backup',
-    );
-
-    if (destinationPath == null) {
-      if (mounted) showAppSnackBar(context, 'Backup dibatalkan.');
-      return;
-    }
-
-    final topicProvider = Provider.of<TopicProvider>(context, listen: false);
-
-    setState(() => _isBackingUp = true);
-    showAppSnackBar(context, 'Memulai proses backup...');
-    try {
-      final message = await topicProvider.backupContents(
-        destinationPath: destinationPath,
-      );
-      if (mounted) showAppSnackBar(context, message);
-    } catch (e) {
-      String errorMessage = 'Terjadi error saat backup: $e';
-      if (e is FileSystemException) {
-        errorMessage = 'Error: Gagal menulis file. Periksa izin aplikasi.';
-      }
-      if (mounted) showAppSnackBar(context, errorMessage, isError: true);
-    } finally {
-      if (mounted) setState(() => _isBackingUp = false);
-    }
-  }
-
-  Future<void> _importContents(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['zip'],
-    );
-
-    if (result == null || result.files.single.path == null) {
-      if (mounted) showAppSnackBar(context, 'Import dibatalkan.');
-      return;
-    }
-
-    final confirmed = await _showImportConfirmationDialog(context);
-    if (!confirmed) {
-      if (mounted) showAppSnackBar(context, 'Import dibatalkan oleh pengguna.');
-      return;
-    }
-
-    setState(() => _isImporting = true);
-    showAppSnackBar(context, 'Memulai proses import...');
-
-    try {
-      final zipFile = File(result.files.single.path!);
-      final topicProvider = Provider.of<TopicProvider>(context, listen: false);
-      await topicProvider.importContents(zipFile);
-      if (mounted) {
-        showAppSnackBar(
-          context,
-          'Import berhasil. Mohon restart aplikasi untuk menerapkan perubahan.',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        showAppSnackBar(
-          context,
-          'Terjadi error saat import: $e',
-          isError: true,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isImporting = false);
-    }
-  }
-
-  Future<bool> _showImportConfirmationDialog(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Konfirmasi Import'),
-            content: const Text(
-              'PERINGATAN: Tindakan ini akan menghapus semua data "topics" dan "my_tasks.json" saat ini, lalu menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Batal'),
-                onPressed: () => Navigator.of(context).pop(false),
-              ),
-              TextButton(
-                child: const Text('Lanjutkan'),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
+  // LOGIKA BACKUP DAN IMPORT DIHAPUS DARI SINI
 
   Future<void> _showStoragePathDialog(BuildContext context) async {
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
@@ -159,7 +61,6 @@ class _DashboardPageState extends State<DashboardPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Color Wheel
                 ColorPicker(
                   pickerColor: pickerColor,
                   onColorChanged: (color) => pickerColor = color,
@@ -168,7 +69,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   enableAlpha: false,
                 ),
                 const Divider(),
-                // 2. Warna Preset
                 Text(
                   'Pilihan Warna',
                   style: Theme.of(context).textTheme.titleMedium,
@@ -191,12 +91,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   },
                 ),
                 const Divider(),
-                // 3. Warna Terakhir Digunakan
                 Consumer<ThemeProvider>(
                   builder: (context, provider, child) {
-                    if (provider.recentColors.isEmpty) {
+                    if (provider.recentColors.isEmpty)
                       return const SizedBox.shrink();
-                    }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -273,12 +171,10 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           IconButton(
             icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AboutPage()),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutPage()),
+            ),
             tooltip: 'Tentang Aplikasi',
           ),
         ],
@@ -315,15 +211,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildResponsiveGridView(BuildContext context, double screenWidth) {
     int crossAxisCount;
-    if (screenWidth > 900) {
+    if (screenWidth > 900)
       crossAxisCount = 4;
-    } else if (screenWidth > 600) {
+    else if (screenWidth > 600)
       crossAxisCount = 3;
-    } else {
+    else
       crossAxisCount = 2;
-    }
 
-    // Definisikan warna gradasi baru
     const List<Color> gradientColors6 = [Color(0xFF7E57C2), Color(0xFF5E35B1)];
 
     final List<Widget> dashboardItems = [
@@ -346,44 +240,22 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
       _DashboardItem(
-        icon: Icons.backup_outlined,
-        label: 'Backup',
-        gradientColors: AppTheme.gradientColors3,
-        onTap: () => _backupContents(context),
-        child: _isBackingUp
-            ? const CircularProgressIndicator(color: Colors.white)
-            : null,
-      ),
-      _DashboardItem(
-        icon: Icons.restore,
-        label: 'Import',
-        gradientColors: AppTheme.gradientColors4,
-        onTap: () => _importContents(context),
-        child: _isImporting
-            ? const CircularProgressIndicator(color: Colors.white)
-            : null,
-      ),
-      _DashboardItem(
         icon: Icons.pie_chart_outline_rounded,
         label: 'Statistik',
         gradientColors: AppTheme.gradientColors5,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const StatisticsPage()),
-          );
-        },
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const StatisticsPage()),
+        ),
       ),
       _DashboardItem(
         icon: Icons.share_outlined,
         label: 'Bagikan',
-        gradientColors: const [Color(0xFF26A69A), Color(0xFF00796B)], // Teal
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SharePage()),
-          );
-        },
+        gradientColors: const [Color(0xFF26A69A), Color(0xFF00796B)],
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SharePage()),
+        ),
       ),
       _DashboardItem(
         icon: Icons.folder_open_rounded,
@@ -391,17 +263,14 @@ class _DashboardPageState extends State<DashboardPage> {
         gradientColors: const [Color(0xFF78909C), Color(0xFF546E7A)],
         onTap: () => _showStoragePathDialog(context),
       ),
-      // ==> ITEM BARU DITAMBAHKAN DI SINI <==
       _DashboardItem(
         icon: Icons.settings_backup_restore_rounded,
         label: 'Manajemen Backup',
         gradientColors: gradientColors6,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const BackupManagementPage()),
-          );
-        },
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BackupManagementPage()),
+        ),
       ),
     ];
     return GridView.builder(
@@ -502,11 +371,10 @@ class _DashboardPathState extends State<_DashboardPath> {
     return FutureBuilder<String>(
       future: _pathFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting)
           return const Text('Memuat path...');
-        } else if (snapshot.hasError) {
-          return const Text('Gagal memuat path.');
-        } else if (snapshot.hasData) {
+        if (snapshot.hasError) return const Text('Gagal memuat path.');
+        if (snapshot.hasData) {
           return Row(
             children: [
               const Icon(Icons.folder_outlined, size: 16),
@@ -520,9 +388,8 @@ class _DashboardPathState extends State<_DashboardPath> {
               ),
             ],
           );
-        } else {
-          return const SizedBox.shrink();
         }
+        return const SizedBox.shrink();
       },
     );
   }
