@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/widgets/discussion_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -76,7 +77,6 @@ class DiscussionCard extends StatelessWidget {
             value: 'reactivate',
             child: Text('Aktifkan Lagi'),
           ),
-        // Tambahkan opsi hapus di sini
         const PopupMenuDivider(),
         const PopupMenuItem<String>(
           value: 'delete',
@@ -91,8 +91,7 @@ class DiscussionCard extends StatelessWidget {
       if (value == 'rename') _renameDiscussion(context, provider);
       if (value == 'finish') _markAsFinished(context, provider);
       if (value == 'reactivate') _reactivateDiscussion(context, provider);
-      if (value == 'delete')
-        _deleteDiscussion(context, provider); // Panggil fungsi hapus
+      if (value == 'delete') _deleteDiscussion(context, provider);
     });
   }
 
@@ -152,7 +151,6 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  //==> FUNGSI BARU UNTUK HAPUS DISKUSI <==
   void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
     showDeleteDiscussionConfirmationDialog(
       context: context,
@@ -263,8 +261,7 @@ class DiscussionCard extends StatelessWidget {
                     onMarkAsFinished: () => _markAsFinished(context, provider),
                     onReactivate: () =>
                         _reactivateDiscussion(context, provider),
-                    onDelete: () =>
-                        _deleteDiscussion(context, provider), // ==> DITAMBAHKAN
+                    onDelete: () => _deleteDiscussion(context, provider),
                   ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
@@ -288,7 +285,11 @@ class DiscussionCard extends StatelessWidget {
                     final bool isPointActive = provider.doesPointMatchFilter(
                       point,
                     );
-                    return PointTile(point: point, isActive: isPointActive);
+                    return PointTile(
+                      point: point,
+                      isActive: isPointActive,
+                      isLinux: isLinux, // ==> isLinux DITERUSKAN KE POINT
+                    );
                   }).toList(),
                 ),
               ),

@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -8,18 +9,54 @@ import '../utils/repetition_code_utils.dart';
 
 class PointTile extends StatelessWidget {
   final Point point;
-  final bool isActive; // PROPERTI BARU
+  final bool isActive;
+  final bool isLinux; // ==> DITAMBAHKAN
 
   const PointTile({
     super.key,
     required this.point,
-    this.isActive = true, // DIBERI NILAI DEFAULT
+    this.isActive = true,
+    this.isLinux = false, // ==> DITAMBAHKAN
   });
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  //==> FUNGSI BARU UNTUK MENAMPILKAN MENU KONTEKS <==
+  void _showContextMenu(
+    BuildContext context,
+    Offset position,
+    DiscussionProvider provider,
+  ) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        const PopupMenuItem<String>(
+          value: 'edit_date',
+          child: Text('Ubah Tanggal'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'edit_code',
+          child: Text('Ubah Kode Repetisi'),
+        ),
+        const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
+      ],
+    ).then((value) {
+      if (value == null) return;
+      if (value == 'edit_date') _changePointDate(context, provider);
+      if (value == 'edit_code') _changePointCode(context, provider);
+      if (value == 'rename') _renamePoint(context, provider);
+    });
   }
 
   void _renamePoint(BuildContext context, DiscussionProvider provider) {
@@ -67,7 +104,6 @@ class PointTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
-    // Menentukan warna berdasarkan status aktif/tidak aktif
     final Color defaultTextColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
     final Color inactiveColor = Colors.grey;
@@ -75,25 +111,22 @@ class PointTile extends StatelessWidget {
         ? defaultTextColor
         : inactiveColor;
 
-    return ListTile(
+    final tileContent = ListTile(
       dense: true,
       leading: const Icon(Icons.arrow_right, color: Colors.grey),
-      title: Text(
-        point.pointText,
-        style: TextStyle(color: effectiveTextColor), // Warna diterapkan di sini
-      ),
+      title: Text(point.pointText, style: TextStyle(color: effectiveTextColor)),
       subtitle: RichText(
         text: TextSpan(
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontSize: 12,
             color: effectiveTextColor,
-          ), // dan di sini
+          ),
           children: [
             const TextSpan(text: 'Date: '),
             TextSpan(
               text: point.date,
               style: TextStyle(
-                color: isActive ? Colors.amber : inactiveColor, // dan di sini
+                color: isActive ? Colors.amber : inactiveColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -103,19 +136,36 @@ class PointTile extends StatelessWidget {
               style: TextStyle(
                 color: isActive
                     ? getColorForRepetitionCode(point.repetitionCode)
-                    : inactiveColor, // dan di sini
+                    : inactiveColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
       ),
-      trailing: EditPopupMenu(
-        onDateChange: () => _changePointDate(context, provider),
-        onCodeChange: () => _changePointCode(context, provider),
-        onRename: () => _renamePoint(context, provider),
-      ),
+      // --- PERUBAHAN DI SINI ---
+      // Tampilkan EditPopupMenu hanya jika bukan di Linux
+      trailing: isLinux
+          ? null
+          : EditPopupMenu(
+              onDateChange: () => _changePointDate(context, provider),
+              onCodeChange: () => _changePointCode(context, provider),
+              onRename: () => _renamePoint(context, provider),
+            ),
       contentPadding: EdgeInsets.zero,
     );
+
+    // --- PERUBAHAN DI SINI ---
+    // Jika di Linux, bungkus dengan GestureDetector untuk klik kanan
+    if (isLinux) {
+      return GestureDetector(
+        onSecondaryTapUp: (details) {
+          _showContextMenu(context, details.globalPosition, provider);
+        },
+        child: tileContent,
+      );
+    }
+
+    return tileContent;
   }
 }
