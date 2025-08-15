@@ -1,3 +1,5 @@
+// lib/presentation/pages/2_subjects_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import '../providers/discussion_provider.dart';
 import '../providers/subject_provider.dart';
 import '3_discussions_page.dart';
 import '2_subjects_page/dialogs/subject_dialogs.dart';
+import '2_subjects_page/widgets/subject_grid_tile.dart'; // Impor widget baru
 import '2_subjects_page/widgets/subject_list_tile.dart';
 
 class SubjectsPage extends StatefulWidget {
@@ -113,7 +116,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> _toggleVisibility(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final newVisibility = !subject.isHidden;
@@ -154,7 +156,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<SubjectProvider>(context); // ==> DIUBAH
+    final provider = Provider.of<SubjectProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -174,7 +176,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
               });
             },
           ),
-          // ==> TOMBOL BARU UNTUK VISIBILITAS <==
           IconButton(
             icon: Icon(
               provider.showHiddenSubjects
@@ -189,47 +190,15 @@ class _SubjectsPageState extends State<SubjectsPage> {
         ],
         elevation: 0,
       ),
-      body: Consumer<SubjectProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Jika lebar layar lebih dari 600, gunakan GridView.
+          // Jika tidak, gunakan ListView.
+          if (constraints.maxWidth > 600) {
+            return _buildGridView(context);
+          } else {
+            return _buildListView(context);
           }
-          if (provider.allSubjects.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          final subjectsToShow = provider.filteredSubjects;
-          final isSearching = provider.searchQuery.isNotEmpty;
-
-          if (subjectsToShow.isEmpty) {
-            if (isSearching) {
-              return const Center(child: Text('Subject tidak ditemukan.'));
-            } else if (!provider.showHiddenSubjects) {
-              return const Center(
-                child: Text(
-                  'Tidak ada subject yang terlihat. Coba tampilkan subject tersembunyi.',
-                ),
-              );
-            }
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 80),
-            itemCount: subjectsToShow.length,
-            itemBuilder: (context, index) {
-              final subject = subjectsToShow[index];
-              return SubjectListTile(
-                key: ValueKey(subject.name),
-                subject: subject,
-                onTap: () => _navigateToDiscussionsPage(context, subject),
-                onRename: () => _renameSubject(context, subject),
-                onDelete: () => _deleteSubject(context, subject),
-                onIconChange: () => _changeIcon(context, subject),
-                onToggleVisibility: () =>
-                    _toggleVisibility(context, subject), // ==> DITAMBAHKAN
-              );
-            },
-          );
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -254,29 +223,113 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.class_outlined, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Belum Ada Subject',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tekan tombol + untuk menambah subject di topik ini.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.grey[500]),
-          ),
-        ],
-      ),
+  // Method baru untuk membangun ListView (Tampilan Mobile)
+  Widget _buildListView(BuildContext context) {
+    return Consumer<SubjectProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (provider.filteredSubjects.isEmpty) {
+          return _buildEmptyState(provider);
+        }
+        final subjectsToShow = provider.filteredSubjects;
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 8, bottom: 80),
+          itemCount: subjectsToShow.length,
+          itemBuilder: (context, index) {
+            final subject = subjectsToShow[index];
+            return SubjectListTile(
+              key: ValueKey(subject.name),
+              subject: subject,
+              onTap: () => _navigateToDiscussionsPage(context, subject),
+              onRename: () => _renameSubject(context, subject),
+              onDelete: () => _deleteSubject(context, subject),
+              onIconChange: () => _changeIcon(context, subject),
+              onToggleVisibility: () => _toggleVisibility(context, subject),
+            );
+          },
+        );
+      },
     );
+  }
+
+  // Method baru untuk membangun GridView (Tampilan Desktop)
+  Widget _buildGridView(BuildContext context) {
+    return Consumer<SubjectProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (provider.filteredSubjects.isEmpty) {
+          return _buildEmptyState(provider);
+        }
+        final subjectsToShow = provider.filteredSubjects;
+        return GridView.builder(
+          padding: const EdgeInsets.all(16.0),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: (MediaQuery.of(context).size.width / 200).floor(),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1,
+          ),
+          itemCount: subjectsToShow.length,
+          itemBuilder: (context, index) {
+            final subject = subjectsToShow[index];
+            return SubjectGridTile(
+              key: ValueKey(subject.name),
+              subject: subject,
+              onTap: () => _navigateToDiscussionsPage(context, subject),
+              onRename: () => _renameSubject(context, subject),
+              onDelete: () => _deleteSubject(context, subject),
+              onIconChange: () => _changeIcon(context, subject),
+              onToggleVisibility: () => _toggleVisibility(context, subject),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(SubjectProvider provider) {
+    if (provider.allSubjects.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.class_outlined, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Belum Ada Subject',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tekan tombol + untuk menambah subject di topik ini.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      );
+    }
+    final isSearching = provider.searchQuery.isNotEmpty;
+    if (provider.filteredSubjects.isEmpty) {
+      if (isSearching) {
+        return const Center(child: Text('Subject tidak ditemukan.'));
+      } else if (!provider.showHiddenSubjects) {
+        return const Center(
+          child: Text(
+            'Tidak ada subject yang terlihat.\nCoba tampilkan subject tersembunyi.',
+            textAlign: TextAlign.center,
+          ),
+        );
+      }
+    }
+    return const SizedBox.shrink(); // Widget kosong jika tidak ada kondisi yang terpenuhi
   }
 }
