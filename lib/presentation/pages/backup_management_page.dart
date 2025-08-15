@@ -8,9 +8,18 @@ import 'package:provider/provider.dart';
 import '../providers/backup_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import '../providers/topic_provider.dart'; // Import untuk refresh data
+import 'dart:math'; // Ditambahkan untuk formatting ukuran file
 
 class BackupManagementPage extends StatelessWidget {
   const BackupManagementPage({super.key});
+
+  // ==> FUNGSI BARU UNTUK FORMAT UKURAN FILE <==
+  String _formatBytes(int bytes, int decimals) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    var i = (log(bytes) / log(1024)).floor();
+    return '${(bytes / pow(1024, i)).toStringAsFixed(decimals)} ${suffixes[i]}';
+  }
 
   Future<void> _selectBackupFolder(BuildContext context) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
@@ -159,25 +168,19 @@ class BackupManagementPage extends StatelessWidget {
         false;
   }
 
-  // ==> FUNGSI BARU UNTUK BERBAGI FILE <==
   Future<void> _shareFile(BuildContext context, File file) async {
     try {
-      // Untuk fungsionalitas ini, Anda perlu menambahkan package seperti 'share_plus'
-      // await Share.shareXFiles([XFile(file.path)], text: 'Ini adalah backup data saya.');
-      // Placeholder karena tidak bisa menambah package:
       showAppSnackBar(context, 'Fungsi berbagi belum diimplementasikan.');
     } catch (e) {
       showAppSnackBar(context, 'Gagal membagikan file: $e', isError: true);
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE <==
   Future<void> _deleteFile(BuildContext context, File file) async {
     final confirmed = await _showDeleteConfirmationDialog(context, file);
     if (confirmed) {
       try {
         await file.delete();
-        // Refresh daftar file setelah menghapus
         await Provider.of<BackupProvider>(
           context,
           listen: false,
@@ -193,7 +196,6 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  // ==> DIALOG BARU UNTUK KONFIRMASI HAPUS <==
   Future<bool> _showDeleteConfirmationDialog(
     BuildContext context,
     File file,
@@ -543,10 +545,13 @@ class BackupManagementPage extends StatelessWidget {
                 final file = files[index];
                 final fileName = file.path.split(Platform.pathSeparator).last;
                 final lastModified = file.lastModifiedSync();
+                final fileSize = file.lengthSync();
                 final formattedDate = DateFormat(
                   'd MMM yyyy, HH:mm',
                   'id_ID',
                 ).format(lastModified);
+                final formattedSize = _formatBytes(fileSize, 2);
+
                 return ListTile(
                   dense: true,
                   leading: const Icon(Icons.archive_outlined),
@@ -558,12 +563,26 @@ class BackupManagementPage extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Text(
-                    formattedDate,
-                    style: const TextStyle(fontSize: 10),
+                  subtitle: RichText(
+                    text: TextSpan(
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                      children: [
+                        TextSpan(
+                          text: formattedDate,
+                          style: TextStyle(color: Colors.blueGrey.shade700),
+                        ),
+                        const TextSpan(text: ' - '),
+                        TextSpan(
+                          text: formattedSize,
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   contentPadding: const EdgeInsets.only(left: 4),
-                  // ==> PERUBAHAN UTAMA DI SINI <==
                   trailing: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert, size: 20),
                     onSelected: (value) {
