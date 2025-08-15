@@ -8,6 +8,7 @@ import '1_topics_page/dialogs/topic_dialogs.dart';
 class MyTasksPage extends StatelessWidget {
   const MyTasksPage({super.key});
 
+  // Fungsi-fungsi dialog dipindahkan ke luar build method agar lebih rapi
   void _showSnackBar(
     BuildContext context,
     String message, {
@@ -21,6 +22,7 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // ... (semua fungsi dialog lainnya tetap di sini, tidak perlu diubah) ...
   // --- Dialog untuk Kategori ---
   void _showAddCategoryDialog(BuildContext context) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
@@ -79,7 +81,6 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> DIALOG PEMILIHAN IKON DIPERBARUI UNTUK MENAMPILKAN SIMBOL <==
   void _showIconPickerDialog(BuildContext context, TaskCategory category) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
     final List<String> icons = ['📝', '💼', '🏠', '🛒', '🎉', '💡', '❤️', '⭐'];
@@ -120,7 +121,6 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI BARU <==
   void _toggleVisibility(BuildContext context, TaskCategory category) {
     final provider = Provider.of<MyTaskProvider>(context, listen: false);
     provider.toggleCategoryVisibility(category);
@@ -332,7 +332,7 @@ class MyTasksPage extends StatelessWidget {
                   ),
               ],
             ),
-            body: _buildBody(context, provider),
+            body: _buildBody(context, provider), // Diubah ke method baru
             floatingActionButton: isAnyReordering
                 ? null
                 : FloatingActionButton(
@@ -348,6 +348,7 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // --- METODE BARU UNTUK MEMBANGUN BODY SECARA RESPONSIF ---
   Widget _buildBody(BuildContext context, MyTaskProvider provider) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -363,9 +364,27 @@ class MyTasksPage extends StatelessWidget {
       );
     }
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Breakpoint untuk dua kolom, bisa disesuaikan
+        const double breakpoint = 700.0;
+        if (constraints.maxWidth > breakpoint) {
+          return _buildTwoColumnLayout(context, provider);
+        } else {
+          return _buildSingleColumnLayout(context, provider);
+        }
+      },
+    );
+  }
+
+  // Widget untuk tata letak satu kolom (Mobile)
+  Widget _buildSingleColumnLayout(
+    BuildContext context,
+    MyTaskProvider provider,
+  ) {
     return ReorderableListView.builder(
       buildDefaultDragHandles: provider.isCategoryReorderEnabled,
-      padding: const EdgeInsets.only(bottom: 80),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
@@ -384,6 +403,65 @@ class MyTasksPage extends StatelessWidget {
     );
   }
 
+  // Widget untuk tata letak dua kolom (Desktop)
+  Widget _buildTwoColumnLayout(BuildContext context, MyTaskProvider provider) {
+    final categories = provider.categories;
+    final int middle = (categories.length / 2).ceil();
+    final List<TaskCategory> firstHalf = categories.sublist(0, middle);
+    final List<TaskCategory> secondHalf = categories.sublist(middle);
+
+    // Reordering dinonaktifkan di tampilan desktop untuk simplisitas
+    if (provider.isCategoryReorderEnabled) {
+      // Keluar dari mode reorder jika beralih ke desktop
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => provider.toggleCategoryReorder(),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Kolom Pertama
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: 80),
+              itemCount: firstHalf.length,
+              itemBuilder: (context, index) {
+                final category = firstHalf[index];
+                return _buildCategoryCard(
+                  context,
+                  provider,
+                  category,
+                  ValueKey(category.name),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Kolom Kedua
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: 80),
+              itemCount: secondHalf.length,
+              itemBuilder: (context, index) {
+                final category = secondHalf[index];
+                return _buildCategoryCard(
+                  context,
+                  provider,
+                  category,
+                  ValueKey(category.name),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // --- Akhir dari metode-metode baru ---
+
   Widget _buildCategoryCard(
     BuildContext context,
     MyTaskProvider provider,
@@ -400,7 +478,6 @@ class MyTasksPage extends StatelessWidget {
         !isThisCategoryReorderingTask;
     final isCardDisabled = isCategoryReorderMode || isAnotherTaskReordering;
 
-    // ==> PERUBAHAN TAMPILAN UNTUK ITEM TERSEMBUNYI <==
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
         : (isAnotherTaskReordering
@@ -411,7 +488,7 @@ class MyTasksPage extends StatelessWidget {
 
     return Card(
       key: key,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       elevation: elevation,
       color: cardColor,
       child: ExpansionTile(
@@ -446,7 +523,7 @@ class MyTasksPage extends StatelessWidget {
                   } else if (value == 'change_icon') {
                     _showIconPickerDialog(context, category);
                   } else if (value == 'toggle_visibility') {
-                    _toggleVisibility(context, category); // ==> DIPANGGIL
+                    _toggleVisibility(context, category);
                   } else if (value == 'delete') {
                     _showDeleteCategoryDialog(context, category);
                   } else if (value == 'add_task') {
