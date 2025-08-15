@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../data/services/path_service.dart'; // DITAMBAHKAN
+import '../../data/services/path_service.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
@@ -14,8 +14,9 @@ import '../theme/app_theme.dart';
 import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
+import 'backup_management_page.dart'; // <-- IMPORT HALAMAN BARU
 import 'my_tasks_page.dart';
-import 'share_page.dart'; // <-- IMPORT HALAMAN BARU
+import 'share_page.dart';
 import 'statistics_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -29,7 +30,6 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
   bool _isImporting = false;
 
-  // ... (sisa kode _backupContents, _importContents, dll. tidak berubah) ...
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Tujuan Backup',
@@ -323,6 +323,9 @@ class _DashboardPageState extends State<DashboardPage> {
       crossAxisCount = 2;
     }
 
+    // Definisikan warna gradasi baru
+    const List<Color> gradientColors6 = [Color(0xFF7E57C2), Color(0xFF5E35B1)];
+
     final List<Widget> dashboardItems = [
       _DashboardItem(
         icon: Icons.topic_outlined,
@@ -371,7 +374,6 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         },
       ),
-      // ==> ITEM BARU DITAMBAHKAN DI SINI <==
       _DashboardItem(
         icon: Icons.share_outlined,
         label: 'Bagikan',
@@ -388,6 +390,18 @@ class _DashboardPageState extends State<DashboardPage> {
         label: 'Penyimpanan',
         gradientColors: const [Color(0xFF78909C), Color(0xFF546E7A)],
         onTap: () => _showStoragePathDialog(context),
+      ),
+      // ==> ITEM BARU DITAMBAHKAN DI SINI <==
+      _DashboardItem(
+        icon: Icons.settings_backup_restore_rounded,
+        label: 'Manajemen Backup',
+        gradientColors: gradientColors6,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const BackupManagementPage()),
+          );
+        },
       ),
     ];
     return GridView.builder(
@@ -458,15 +472,14 @@ class _DashboardHeader extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 8), // DITAMBAHKAN
-          const _DashboardPath(), // DITAMBAHKAN
+          const SizedBox(height: 8),
+          const _DashboardPath(),
         ],
       ),
     );
   }
 }
 
-// WIDGET BARU UNTUK MENAMPILKAN PATH
 class _DashboardPath extends StatefulWidget {
   const _DashboardPath();
 
