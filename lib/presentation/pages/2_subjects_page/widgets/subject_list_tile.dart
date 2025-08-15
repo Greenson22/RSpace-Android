@@ -10,9 +10,6 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  final bool isLinux;
-  final bool isCompact;
-  final bool isSelected;
 
   const SubjectListTile({
     super.key,
@@ -22,43 +19,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    this.isLinux = false,
-    this.isCompact = false,
-    this.isSelected = false,
   });
-
-  void _showContextMenu(BuildContext context, Offset position) {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final bool isHidden = subject.isHidden;
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
-        const PopupMenuItem(value: 'change_icon', child: Text('Ubah Ikon')),
-        PopupMenuItem<String>(
-          value: 'toggle_visibility',
-          child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Text('Hapus', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ).then((value) {
-      if (value == null) return;
-      if (value == 'rename') onRename();
-      if (value == 'change_icon') onIconChange();
-      if (value == 'toggle_visibility') onToggleVisibility();
-      if (value == 'delete') onDelete();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,50 +27,43 @@ class SubjectListTile extends StatelessWidget {
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
     final bool isHidden = subject.isHidden;
-    // ==> PERUBAHAN: Logika warna latar tidak lagi dipengaruhi isSelected <==
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
         : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
-    final double verticalMargin = isLinux ? 4 : 8;
-    final double horizontalMargin = isLinux ? 8 : 16;
-
-    final EdgeInsets padding = isCompact
-        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
-        : (isLinux
-              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
-              : const EdgeInsets.all(16.0));
-    final double iconFontSize = isCompact ? 20 : (isLinux ? 22 : 28);
-    final double titleFontSize = isCompact ? 14 : (isLinux ? 15 : 18);
-    final double subtitleFontSize = isCompact ? 10 : (isLinux ? 11 : 12);
+    final double verticalMargin = 8;
+    final double horizontalMargin = 16;
+    final EdgeInsets padding = const EdgeInsets.all(16.0);
+    final double iconFontSize = 28;
+    final double titleFontSize = 18;
+    final double subtitleFontSize = 12;
 
     final tileContent = Material(
-      borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+      borderRadius: BorderRadius.circular(15),
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+        borderRadius: BorderRadius.circular(15),
         splashColor: theme.primaryColor.withOpacity(0.1),
         highlightColor: theme.primaryColor.withOpacity(0.05),
         child: Padding(
           padding: padding,
           child: Row(
             children: [
-              if (!isCompact)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    subject.icon,
-                    style: TextStyle(fontSize: iconFontSize, color: textColor),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              if (!isCompact) const SizedBox(width: 12),
+                child: Text(
+                  subject.icon,
+                  style: TextStyle(fontSize: iconFontSize, color: textColor),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,34 +85,33 @@ class SubjectListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!isLinux)
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'rename') onRename();
-                    if (value == 'delete') onDelete();
-                    if (value == 'change_icon') onIconChange();
-                    if (value == 'toggle_visibility') onToggleVisibility();
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'rename',
-                      child: Text('Ubah Nama'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'change_icon',
-                      child: Text('Ubah Ikon'),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'toggle_visibility',
-                      child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-                    ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Hapus', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'rename') onRename();
+                  if (value == 'delete') onDelete();
+                  if (value == 'change_icon') onIconChange();
+                  if (value == 'toggle_visibility') onToggleVisibility();
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Text('Ubah Nama'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'change_icon',
+                    child: Text('Ubah Ikon'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'toggle_visibility',
+                    child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -172,21 +125,11 @@ class SubjectListTile extends StatelessWidget {
         horizontal: horizontalMargin,
         vertical: verticalMargin,
       ),
-      // ==> PERUBAHAN: Menambahkan border jika item dipilih <==
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
-        side: isSelected
-            ? BorderSide(color: theme.primaryColor, width: 2.0)
-            : BorderSide.none,
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide.none,
       ),
-      child: isLinux
-          ? GestureDetector(
-              onSecondaryTapUp: (details) {
-                _showContextMenu(context, details.globalPosition);
-              },
-              child: tileContent,
-            )
-          : tileContent,
+      child: tileContent,
     );
   }
 

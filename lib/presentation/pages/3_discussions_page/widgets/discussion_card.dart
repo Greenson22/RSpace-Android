@@ -14,8 +14,6 @@ class DiscussionCard extends StatelessWidget {
   final int index;
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
-  final double? panelWidth;
-  final bool isLinux;
 
   const DiscussionCard({
     super.key,
@@ -23,76 +21,12 @@ class DiscussionCard extends StatelessWidget {
     required this.index,
     required this.arePointsVisible,
     required this.onToggleVisibility,
-    this.panelWidth,
-    this.isLinux = false,
   });
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
-  }
-
-  void _showContextMenu(
-    BuildContext context,
-    Offset position,
-    DiscussionProvider provider,
-  ) {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final bool isFinished = discussion.finished;
-    final bool hasPoints = discussion.points.isNotEmpty;
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        if (!isFinished)
-          const PopupMenuItem<String>(
-            value: 'add_point',
-            child: Text('Tambah Poin'),
-          ),
-        if (!hasPoints) ...[
-          const PopupMenuItem<String>(
-            value: 'edit_date',
-            child: Text('Ubah Tanggal'),
-          ),
-          const PopupMenuItem<String>(
-            value: 'edit_code',
-            child: Text('Ubah Kode Repetisi'),
-          ),
-        ],
-        const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
-        const PopupMenuDivider(),
-        if (!isFinished && !hasPoints)
-          const PopupMenuItem<String>(
-            value: 'finish',
-            child: Text('Tandai Selesai'),
-          ),
-        if (isFinished)
-          const PopupMenuItem<String>(
-            value: 'reactivate',
-            child: Text('Aktifkan Lagi'),
-          ),
-        const PopupMenuDivider(),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Text('Hapus', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ).then((value) {
-      if (value == null) return;
-      if (value == 'add_point') _addPoint(context, provider);
-      if (value == 'edit_date') _changeDiscussionDate(context, provider);
-      if (value == 'edit_code') _changeDiscussionCode(context, provider);
-      if (value == 'rename') _renameDiscussion(context, provider);
-      if (value == 'finish') _markAsFinished(context, provider);
-      if (value == 'reactivate') _reactivateDiscussion(context, provider);
-      if (value == 'delete') _deleteDiscussion(context, provider);
-    });
   }
 
   void _renameDiscussion(BuildContext context, DiscussionProvider provider) {
@@ -180,8 +114,6 @@ class DiscussionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isCompact = panelWidth != null && panelWidth! < 450;
-
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
     final bool isFinished = discussion.finished;
@@ -223,46 +155,35 @@ class DiscussionCard extends StatelessWidget {
       sortedPoints.addAll(reversedPoints);
     }
 
-    final cardContent = Card(
+    return Card(
       child: Column(
         children: [
           ListTile(
-            leading: Icon(
-              iconData,
-              color: iconColor,
-              size: isCompact ? 22 : 24,
-            ),
+            leading: Icon(iconData, color: iconColor, size: 24),
             title: Text(
               discussion.discussion,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: isFinished ? TextDecoration.lineThrough : null,
-                fontSize: isCompact ? 14.5 : 16,
+                fontSize: 16,
               ),
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: DiscussionSubtitle(
-              discussion: discussion,
-              isCompact: isCompact,
-            ),
+            subtitle: DiscussionSubtitle(discussion: discussion),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!isLinux)
-                  EditPopupMenu(
-                    isFinished: isFinished,
-                    hasPoints: discussion.points.isNotEmpty,
-                    onAddPoint: () => _addPoint(context, provider),
-                    onDateChange: () =>
-                        _changeDiscussionDate(context, provider),
-                    onCodeChange: () =>
-                        _changeDiscussionCode(context, provider),
-                    onRename: () => _renameDiscussion(context, provider),
-                    onMarkAsFinished: () => _markAsFinished(context, provider),
-                    onReactivate: () =>
-                        _reactivateDiscussion(context, provider),
-                    onDelete: () => _deleteDiscussion(context, provider),
-                  ),
+                EditPopupMenu(
+                  isFinished: isFinished,
+                  hasPoints: discussion.points.isNotEmpty,
+                  onAddPoint: () => _addPoint(context, provider),
+                  onDateChange: () => _changeDiscussionDate(context, provider),
+                  onCodeChange: () => _changeDiscussionCode(context, provider),
+                  onRename: () => _renameDiscussion(context, provider),
+                  onMarkAsFinished: () => _markAsFinished(context, provider),
+                  onReactivate: () => _reactivateDiscussion(context, provider),
+                  onDelete: () => _deleteDiscussion(context, provider),
+                ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
                     icon: Icon(
@@ -289,7 +210,6 @@ class DiscussionCard extends StatelessWidget {
                         isActive: provider.doesPointMatchFilter(
                           sortedPoints[i],
                         ),
-                        isLinux: isLinux,
                       ),
                       if (i < sortedPoints.length - 1)
                         Divider(
@@ -306,16 +226,5 @@ class DiscussionCard extends StatelessWidget {
         ],
       ),
     );
-
-    if (isLinux) {
-      return GestureDetector(
-        onSecondaryTapUp: (details) {
-          _showContextMenu(context, details.globalPosition, provider);
-        },
-        child: cardContent,
-      );
-    }
-
-    return cardContent;
   }
 }

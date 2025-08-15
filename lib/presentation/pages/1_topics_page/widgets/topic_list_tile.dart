@@ -10,9 +10,6 @@ class TopicListTile extends StatelessWidget {
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final bool isReorderActive;
-  final bool isLinux;
-  final bool isCompact;
-  final bool isSelected;
 
   const TopicListTile({
     super.key,
@@ -23,91 +20,51 @@ class TopicListTile extends StatelessWidget {
     required this.onIconChange,
     required this.onToggleVisibility,
     this.isReorderActive = false,
-    this.isLinux = false,
-    this.isCompact = false,
-    this.isSelected = false,
   });
-
-  void _showContextMenu(BuildContext context, Offset position) {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final bool isHidden = topic.isHidden;
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        const PopupMenuItem(value: 'rename', child: Text('Ubah Nama')),
-        const PopupMenuItem(value: 'change_icon', child: Text('Ubah Ikon')),
-        PopupMenuItem<String>(
-          value: 'toggle_visibility',
-          child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Text('Hapus', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ).then((value) {
-      if (value == null) return;
-      if (value == 'rename') onRename();
-      if (value == 'change_icon') onIconChange();
-      if (value == 'toggle_visibility') onToggleVisibility();
-      if (value == 'delete') onDelete();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isHidden = topic.isHidden;
-    // ==> PERUBAHAN: Logika warna latar tidak lagi dipengaruhi isSelected <==
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
         : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
-    final double verticalMargin = isLinux ? 4 : 8;
-    final double horizontalMargin = isLinux ? 8 : 16;
-
-    final EdgeInsets padding = isCompact
-        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
-        : (isLinux
-              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-              : const EdgeInsets.symmetric(horizontal: 12, vertical: 16));
-    final double iconFontSize = isCompact ? 20 : (isLinux ? 22 : 28);
-    final double titleFontSize = isCompact ? 14 : (isLinux ? 15 : 18);
+    final double verticalMargin = 8;
+    final double horizontalMargin = 16;
+    final EdgeInsets padding = const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 16,
+    );
+    final double iconFontSize = 28;
+    final double titleFontSize = 18;
 
     final tileContent = Material(
-      borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+      borderRadius: BorderRadius.circular(15),
       color: Colors.transparent,
       child: InkWell(
         onTap: isReorderActive ? null : onTap,
-        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
+        borderRadius: BorderRadius.circular(15),
         splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
         highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
         child: Padding(
           padding: padding,
           child: Row(
             children: [
-              if (!isCompact)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    topic.icon,
-                    style: TextStyle(fontSize: iconFontSize, color: textColor),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              if (!isCompact) const SizedBox(width: 12),
+                child: Text(
+                  topic.icon,
+                  style: TextStyle(fontSize: iconFontSize, color: textColor),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   topic.name,
@@ -127,7 +84,7 @@ class TopicListTile extends StatelessWidget {
                     child: Icon(Icons.drag_handle),
                   ),
                 )
-              else if (!isLinux)
+              else
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'rename') onRename();
@@ -168,21 +125,11 @@ class TopicListTile extends StatelessWidget {
         horizontal: horizontalMargin,
         vertical: verticalMargin,
       ),
-      // ==> PERUBAHAN: Menambahkan border jika item dipilih <==
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isLinux ? 10 : 15),
-        side: isSelected
-            ? BorderSide(color: theme.primaryColor, width: 2.0)
-            : BorderSide.none,
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide.none,
       ),
-      child: isLinux
-          ? GestureDetector(
-              onSecondaryTapUp: (details) {
-                _showContextMenu(context, details.globalPosition);
-              },
-              child: tileContent,
-            )
-          : tileContent,
+      child: tileContent,
     );
   }
 }

@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -10,59 +11,18 @@ class PointTile extends StatelessWidget {
   final Discussion discussion; // ==> DITAMBAHKAN
   final Point point;
   final bool isActive;
-  final bool isLinux;
 
   const PointTile({
     super.key,
     required this.discussion, // ==> DITAMBAHKAN
     required this.point,
     this.isActive = true,
-    this.isLinux = false,
   });
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
-  }
-
-  void _showContextMenu(
-    BuildContext context,
-    Offset position,
-    DiscussionProvider provider,
-  ) {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        const PopupMenuItem<String>(
-          value: 'edit_date',
-          child: Text('Ubah Tanggal'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'edit_code',
-          child: Text('Ubah Kode Repetisi'),
-        ),
-        const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
-        const PopupMenuDivider(),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Text('Hapus', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ).then((value) {
-      if (value == null) return;
-      if (value == 'edit_date') _changePointDate(context, provider);
-      if (value == 'edit_code') _changePointCode(context, provider);
-      if (value == 'rename') _renamePoint(context, provider);
-      if (value == 'delete') _deletePoint(context, provider);
-    });
   }
 
   void _renamePoint(BuildContext context, DiscussionProvider provider) {
@@ -129,7 +89,7 @@ class PointTile extends StatelessWidget {
         ? defaultTextColor
         : inactiveColor;
 
-    final tileContent = ListTile(
+    return ListTile(
       dense: true,
       leading: const Icon(Icons.arrow_right, color: Colors.grey),
       title: Text(point.pointText, style: TextStyle(color: effectiveTextColor)),
@@ -161,26 +121,13 @@ class PointTile extends StatelessWidget {
           ],
         ),
       ),
-      trailing: isLinux
-          ? null
-          : EditPopupMenu(
-              onDateChange: () => _changePointDate(context, provider),
-              onCodeChange: () => _changePointCode(context, provider),
-              onRename: () => _renamePoint(context, provider),
-              onDelete: () => _deletePoint(context, provider),
-            ),
+      trailing: EditPopupMenu(
+        onDateChange: () => _changePointDate(context, provider),
+        onCodeChange: () => _changePointCode(context, provider),
+        onRename: () => _renamePoint(context, provider),
+        onDelete: () => _deletePoint(context, provider),
+      ),
       contentPadding: EdgeInsets.zero,
     );
-
-    if (isLinux) {
-      return GestureDetector(
-        onSecondaryTapUp: (details) {
-          _showContextMenu(context, details.globalPosition, provider);
-        },
-        child: tileContent,
-      );
-    }
-
-    return tileContent;
   }
 }

@@ -8,17 +8,11 @@ import '3_discussions_page/widgets/discussion_card.dart';
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
   final VoidCallback? onFilterOrSortChanged;
-  final bool isEmbedded;
-  final double? panelWidth;
-  final bool isLinux; // ==> DITAMBAHKAN
 
   const DiscussionsPage({
     super.key,
     required this.subjectName,
     this.onFilterOrSortChanged,
-    this.isEmbedded = false,
-    this.panelWidth,
-    this.isLinux = false, // ==> DITAMBAHKAN
   });
 
   @override
@@ -68,12 +62,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
 
-    // Jika disematkan, hanya kembalikan body-nya saja.
-    if (widget.isEmbedded) {
-      return _buildBody(provider);
-    }
-
-    // Perilaku default untuk mobile (menggunakan Scaffold lengkap)
     return Scaffold(
       appBar: _buildAppBar(provider),
       body: _buildBody(provider),
@@ -163,8 +151,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onToggleVisibility: (idx) => setState(
             () => _arePointsVisible[idx] = !(_arePointsVisible[idx] ?? false),
           ),
-          panelWidth: widget.panelWidth,
-          isLinux: widget.isLinux, // ==> isLinux DITERUSKAN KE CARD
         );
       },
     );

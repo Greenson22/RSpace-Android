@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/presentation/pages/dashboard_page.dart';
 // Perubahan di baris import ini untuk menyesuaikan dengan lokasi file yang baru
-import 'package:my_aplication/presentation/pages/linux/dashboard_page_linux.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
 import 'package:my_aplication/presentation/providers/topic_provider.dart';
 import 'package:provider/provider.dart';
@@ -54,16 +53,6 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Widget untuk memilih halaman utama berdasarkan platform
-  Widget _getHomePage() {
-    if (Platform.isLinux) {
-      return const DashboardPageLinux();
-    }
-    // Untuk platform lain seperti Android, Windows, macOS, iOS, dll.
-    // akan menggunakan dashboard standar.
-    return const DashboardPage();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
@@ -73,7 +62,7 @@ class MyApp extends StatelessWidget {
           title: 'RSpace',
           theme: themeProvider.currentTheme,
           home:
-              _getHomePage(), // Menggunakan fungsi untuk memilih halaman utama
+              const DashboardPage(), // Menggunakan fungsi untuk memilih halaman utama
         );
       },
     );
