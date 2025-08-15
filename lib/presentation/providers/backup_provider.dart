@@ -12,6 +12,7 @@ class BackupProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final PathService _pathService = PathService();
 
+  // ... (state lain tetap sama)
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -24,9 +25,9 @@ class BackupProvider with ChangeNotifier {
   String? _backupPath;
   String? get backupPath => _backupPath;
 
-  // ==> STATE BARU UNTUK PATH PERPUSKU <==
-  String? _perpuskuBackupPath;
-  String? get perpuskuBackupPath => _perpuskuBackupPath;
+  // ==> STATE BARU UNTUK PATH SUMBER DATA PERPUSKU <==
+  String? _perpuskuDataPath;
+  String? get perpuskuDataPath => _perpuskuDataPath;
 
   List<File> _rspaceBackupFiles = [];
   List<File> get rspaceBackupFiles => _rspaceBackupFiles;
@@ -38,18 +39,15 @@ class BackupProvider with ChangeNotifier {
     loadBackupData();
   }
 
-  // ==> FUNGSI DIPERBARUI <==
   Future<void> loadBackupData() async {
     _isLoading = true;
     notifyListeners();
 
     _backupPath = await _prefsService.loadCustomStoragePath();
-    _perpuskuBackupPath = await _prefsService
-        .loadPerpuskuBackupPath(); // Muat path PerpusKu
+    _perpuskuDataPath = await _prefsService
+        .loadPerpuskuDataPath(); // Muat path data
 
-    // Cek path utama atau path perpusku untuk listing file
-    if ((_backupPath != null && _backupPath!.isNotEmpty) ||
-        (_perpuskuBackupPath != null && _perpuskuBackupPath!.isNotEmpty)) {
+    if (_backupPath != null && _backupPath!.isNotEmpty) {
       await listBackupFiles();
     }
 
@@ -64,21 +62,57 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU <==
-  Future<void> setPerpuskuBackupPath(String newPath) async {
-    await _prefsService.savePerpuskuBackupPath(newPath);
-    _perpuskuBackupPath = newPath;
-    await listBackupFiles();
-    notifyListeners();
+  // ==> FUNGSI BARU UNTUK MENYIMPAN PATH SUMBER DATA PERPUSKU <==
+  Future<void> setPerpuskuDataPath(String newPath) async {
+    await _prefsService.savePerpuskuDataPath(newPath);
+    _perpuskuDataPath = newPath;
+    notifyListeners(); // Tidak perlu list ulang file karena tujuan backup tidak berubah
   }
 
-  // ... (sisa kode tetap sama) ...
+  // ==> FUNGSI BACKUP PERPUSKU DIPERBARUI <==
+  Future<String> backupPerpuskuContents() async {
+    _isBackingUp = true;
+    notifyListeners();
+    try {
+      // Tujuan backup tetap di folder backup utama
+      final destinationPath = await _pathService.perpuskuBackupPath;
+      // Sumber data diambil dari path service yang sudah cerdas
+      final perpuskuDataPath = await _pathService.perpuskuDataPath;
+      final sourceDir = Directory(perpuskuDataPath);
+
+      if (!await sourceDir.exists()) {
+        // Buat folder jika belum ada agar tidak error saat backup pertama kali
+        await sourceDir.create(recursive: true);
+        debugPrint("Folder sumber data PerpusKu dibuat di: $perpuskuDataPath");
+      }
+
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
+      final zipFileName = 'backup-perpusku-$timestamp.zip';
+      final zipFilePath = path.join(destinationPath, zipFileName);
+
+      final encoder = ZipFileEncoder();
+      encoder.create(zipFilePath);
+      // Menambahkan isi dari folder sumber ke file zip
+      await encoder.addDirectory(sourceDir, includeDirName: false);
+      encoder.close();
+
+      await listBackupFiles();
+      return 'Backup PerpusKu berhasil disimpan.';
+    } finally {
+      _isBackingUp = false;
+      notifyListeners();
+    }
+  }
+
+  // ... (sisa kode tetap sama)
   Future<void> listBackupFiles() async {
     _rspaceBackupFiles = [];
     _perpuskuBackupFiles = [];
 
     if (_backupPath == null || _backupPath!.isEmpty) {
-      // return;
+      return;
     }
 
     // Memuat file backup RSpace
@@ -151,37 +185,6 @@ class BackupProvider with ChangeNotifier {
 
       await listBackupFiles();
       return 'Backup RSpace berhasil disimpan.';
-    } finally {
-      _isBackingUp = false;
-      notifyListeners();
-    }
-  }
-
-  Future<String> backupPerpuskuContents() async {
-    _isBackingUp = true;
-    notifyListeners();
-    try {
-      final destinationPath = await _pathService.perpuskuBackupPath;
-      final perpuskuDataPath = await _pathService.perpuskuDataPath;
-      final sourceDir = Directory(perpuskuDataPath);
-
-      if (!await sourceDir.exists()) {
-        await sourceDir.create(recursive: true); // Buat folder jika belum ada
-      }
-
-      final timestamp = DateFormat(
-        'yyyy-MM-dd_HH-mm-ss',
-      ).format(DateTime.now());
-      final zipFileName = 'backup-perpusku-$timestamp.zip';
-      final zipFilePath = path.join(destinationPath, zipFileName);
-
-      final encoder = ZipFileEncoder();
-      encoder.create(zipFilePath);
-      await encoder.addDirectory(sourceDir, includeDirName: false);
-      encoder.close();
-
-      await listBackupFiles();
-      return 'Backup PerpusKu berhasil disimpan.';
     } finally {
       _isBackingUp = false;
       notifyListeners();

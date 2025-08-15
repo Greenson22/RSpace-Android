@@ -8,7 +8,7 @@ import 'shared_preferences_service.dart';
 class PathService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
-  // ... (kode _baseDataPath dan rspaceBackupPath tetap sama) ...
+  // ... (_baseDataPath tetap sama)
   Future<String> get _baseDataPath async {
     // Logika ini sekarang berlaku untuk semua platform yang didukung.
 
@@ -73,7 +73,6 @@ class PathService {
     return defaultAppDir.path;
   }
 
-  // MENAMBAHKAN FUNGSI BARU UNTUK MENGELOLA FOLDER BACKUP
   Future<String?> get _baseBackupPath async {
     return await _prefsService.loadCustomStoragePath();
   }
@@ -90,19 +89,8 @@ class PathService {
     return backupDir.path;
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
+  // ==> LOKASI BACKUP PERPUSKU SELALU DI DALAM FOLDER UTAMA <==
   Future<String> get perpuskuBackupPath async {
-    // Prioritaskan path khusus PerpusKu
-    String? perpuskuPath = await _prefsService.loadPerpuskuBackupPath();
-    if (perpuskuPath != null && perpuskuPath.isNotEmpty) {
-      final backupDir = Directory(path.join(perpuskuPath, 'PerpusKu_backup'));
-      if (!await backupDir.exists()) {
-        await backupDir.create(recursive: true);
-      }
-      return backupDir.path;
-    }
-
-    // Fallback ke path utama jika path khusus tidak ada
     final basePath = await _baseBackupPath;
     if (basePath == null || basePath.isEmpty) {
       throw Exception('Folder backup utama belum diatur.');
@@ -113,8 +101,8 @@ class PathService {
     }
     return backupDir.path;
   }
-  // --- Akhir dari fungsi baru ---
 
+  // ... (path lain tetap sama)
   Future<String> get contentsPath async =>
       path.join(await _baseDataPath, 'contents');
   Future<String> get topicsPath async =>
@@ -122,10 +110,17 @@ class PathService {
   Future<String> get myTasksPath async =>
       path.join(await contentsPath, 'my_tasks.json');
 
-  // MENAMBAHKAN PATH UNTUK DATA PERPUSKU
-  Future<String> get perpuskuDataPath async =>
-      path.join(await _baseDataPath, 'perpusku_data');
+  // ==> PATH SUMBER DATA PERPUSKU SEKARANG MEMERIKSA PREFERENSI <==
+  Future<String> get perpuskuDataPath async {
+    String? customPath = await _prefsService.loadPerpuskuDataPath();
+    if (customPath != null && customPath.isNotEmpty) {
+      return customPath; // Gunakan path kustom jika ada
+    }
+    // Jika tidak ada, gunakan path default di dalam folder data utama
+    return path.join(await _baseDataPath, 'perpusku_data');
+  }
 
+  // ... (sisa kode tetap sama)
   Future<String> getTopicPath(String topicName) async {
     return path.join(await topicsPath, topicName);
   }

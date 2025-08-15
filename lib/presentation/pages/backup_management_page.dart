@@ -29,17 +29,20 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMILIH FOLDER PERPUSKU <==
-  Future<void> _selectPerpuskuBackupFolder(BuildContext context) async {
+  // ==> FUNGSI DIUBAH UNTUK MEMILIH FOLDER SUMBER DATA PERPUSKU <==
+  Future<void> _selectPerpuskuDataFolder(BuildContext context) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Pilih Folder Backup PerpusKu',
+      dialogTitle: 'Pilih Folder Sumber Data PerpusKu',
     );
 
     if (selectedDirectory != null) {
-      await provider.setPerpuskuBackupPath(selectedDirectory);
+      await provider.setPerpuskuDataPath(selectedDirectory);
       if (context.mounted) {
-        showAppSnackBar(context, 'Folder backup PerpusKu berhasil diatur.');
+        showAppSnackBar(
+          context,
+          'Folder sumber data PerpusKu berhasil diatur.',
+        );
       }
     } else {
       if (context.mounted) {
@@ -48,7 +51,7 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  // ... (kode _backupContents, _importContents, dan _showImportConfirmationDialog tetap sama) ...
+  // ... (sisa kode tetap sama)
   Future<void> _backupContents(BuildContext context, String type) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     if (provider.backupPath == null || provider.backupPath!.isEmpty) {
@@ -148,7 +151,6 @@ class BackupManagementPage extends StatelessWidget {
         false;
   }
 
-  // ==> FUNGSI build DIPERBARUI <==
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -162,12 +164,10 @@ class BackupManagementPage extends StatelessWidget {
             }
 
             return ListView(
-              // Diubah dari Column ke ListView
               children: [
                 _buildPathInfoCard(context, provider),
                 const Divider(height: 1),
-                // ==> BAGIAN BARU UNTUK FOLDER PERPUSKU <==
-                _buildPerpuskuPathCard(context, provider),
+                _buildPerpuskuPathCard(context, provider), // Diubah
                 const Divider(height: 1),
                 _buildBackupSection(
                   context: context,
@@ -194,7 +194,6 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
-  // ... (kode _buildPathInfoCard dan _buildBackupSection tetap sama) ...
   Widget _buildPathInfoCard(BuildContext context, BackupProvider provider) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -202,7 +201,7 @@ class BackupManagementPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Folder Backup Utama (RSpace)',
+            'Folder Tujuan Backup',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -217,7 +216,7 @@ class BackupManagementPage extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.folder_open),
-              label: const Text('Ubah Folder Utama'),
+              label: const Text('Ubah Folder Tujuan'),
               onPressed: () => _selectBackupFolder(context),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -229,7 +228,7 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET BARU UNTUK INFO PATH PERPUSKU <==
+  // ==> WIDGET DIUBAH UNTUK SUMBER DATA PERPUSKU <==
   Widget _buildPerpuskuPathCard(BuildContext context, BackupProvider provider) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -237,19 +236,19 @@ class BackupManagementPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Folder Backup PerpusKu (Opsional)',
+            'Folder Sumber Data PerpusKu',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            'Jika tidak diisi, akan mengikuti Folder Backup Utama.',
+            'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Jika tidak diisi, akan digunakan folder default aplikasi.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
           Text(
-            provider.perpuskuBackupPath ?? 'Folder belum ditentukan.',
+            provider.perpuskuDataPath ?? 'Menggunakan folder default.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -257,8 +256,8 @@ class BackupManagementPage extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.folder_open),
-              label: const Text('Ubah Folder PerpusKu'),
-              onPressed: () => _selectPerpuskuBackupFolder(context),
+              label: const Text('Ubah Folder Sumber Data'),
+              onPressed: () => _selectPerpuskuDataFolder(context),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -269,6 +268,7 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
+  // ... (sisa kode tetap sama)
   Widget _buildBackupSection({
     required BuildContext context,
     required String title,
