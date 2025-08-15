@@ -81,6 +81,39 @@ void showRepetitionCodeDialog(
   );
 }
 
+//==> FUNGSI BARU UNTUK KONFIRMASI HAPUS DISKUSI <==
+Future<void> showDeleteDiscussionConfirmationDialog({
+  required BuildContext context,
+  required String discussionName,
+  required VoidCallback onDelete,
+}) async {
+  return showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Hapus Diskusi'),
+        content: Text(
+          'Anda yakin ingin menghapus diskusi "$discussionName" beserta semua isinya?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              onDelete();
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 // --- DIALOGS FOR FILTER & SORT ---
 
 Future<void> showFilterDialog({

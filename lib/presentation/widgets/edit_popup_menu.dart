@@ -1,4 +1,3 @@
-// lib/presentation/widgets/edit_popup_menu.dart
 import 'package:flutter/material.dart';
 
 class EditPopupMenu extends StatelessWidget {
@@ -8,6 +7,7 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback? onMarkAsFinished;
   final VoidCallback? onAddPoint;
   final VoidCallback? onReactivate;
+  final VoidCallback? onDelete; // ==> DITAMBAHKAN
   final bool isFinished;
   final bool hasPoints;
 
@@ -19,6 +19,7 @@ class EditPopupMenu extends StatelessWidget {
     this.onMarkAsFinished,
     this.onAddPoint,
     this.onReactivate,
+    this.onDelete, // ==> DITAMBAHKAN
     this.isFinished = false,
     this.hasPoints = false,
   });
@@ -33,6 +34,8 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'finish' && onMarkAsFinished != null) onMarkAsFinished!();
         if (value == 'add_point' && onAddPoint != null) onAddPoint!();
         if (value == 'reactivate' && onReactivate != null) onReactivate!();
+        if (value == 'delete' && onDelete != null)
+          onDelete!(); // ==> DITAMBAHKAN
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
@@ -109,6 +112,17 @@ class EditPopupMenu extends StatelessWidget {
               ),
             );
           }
+        }
+
+        // Opsi Hapus ditambahkan di akhir, terpisah dari logika finish/reactivate
+        if (onDelete != null) {
+          menuItems.add(const PopupMenuDivider());
+          menuItems.add(
+            const PopupMenuItem<String>(
+              value: 'delete',
+              child: Text('Hapus', style: TextStyle(color: Colors.red)),
+            ),
+          );
         }
 
         return menuItems;

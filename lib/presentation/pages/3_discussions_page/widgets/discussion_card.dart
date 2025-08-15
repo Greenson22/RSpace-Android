@@ -1,4 +1,3 @@
-// lib/presentation/pages/3_discussions_page/widgets/discussion_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -67,7 +66,6 @@ class DiscussionCard extends StatelessWidget {
         ],
         const PopupMenuItem<String>(value: 'rename', child: Text('Ubah Nama')),
         const PopupMenuDivider(),
-        // --- PERUBAHAN DI SINI ---
         if (!isFinished && !hasPoints)
           const PopupMenuItem<String>(
             value: 'finish',
@@ -78,6 +76,12 @@ class DiscussionCard extends StatelessWidget {
             value: 'reactivate',
             child: Text('Aktifkan Lagi'),
           ),
+        // Tambahkan opsi hapus di sini
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Text('Hapus', style: TextStyle(color: Colors.red)),
+        ),
       ],
     ).then((value) {
       if (value == null) return;
@@ -87,6 +91,8 @@ class DiscussionCard extends StatelessWidget {
       if (value == 'rename') _renameDiscussion(context, provider);
       if (value == 'finish') _markAsFinished(context, provider);
       if (value == 'reactivate') _reactivateDiscussion(context, provider);
+      if (value == 'delete')
+        _deleteDiscussion(context, provider); // Panggil fungsi hapus
     });
   }
 
@@ -142,6 +148,21 @@ class DiscussionCard extends StatelessWidget {
       onSave: (text) {
         provider.addPoint(discussion, text);
         _showSnackBar(context, 'Poin berhasil ditambahkan.');
+      },
+    );
+  }
+
+  //==> FUNGSI BARU UNTUK HAPUS DISKUSI <==
+  void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
+    showDeleteDiscussionConfirmationDialog(
+      context: context,
+      discussionName: discussion.discussion,
+      onDelete: () {
+        provider.deleteDiscussion(discussion);
+        _showSnackBar(
+          context,
+          'Diskusi "${discussion.discussion}" berhasil dihapus.',
+        );
       },
     );
   }
@@ -242,6 +263,8 @@ class DiscussionCard extends StatelessWidget {
                     onMarkAsFinished: () => _markAsFinished(context, provider),
                     onReactivate: () =>
                         _reactivateDiscussion(context, provider),
+                    onDelete: () =>
+                        _deleteDiscussion(context, provider), // ==> DITAMBAHKAN
                   ),
                 if (discussion.points.isNotEmpty)
                   IconButton(

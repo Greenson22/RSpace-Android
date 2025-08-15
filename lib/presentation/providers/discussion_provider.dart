@@ -220,9 +220,6 @@ class DiscussionProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // FUNGSI LAMA _sortDiscussions dan _sortList sudah tidak diperlukan
-  // karena logikanya sudah terintegrasi di dalam _filterAndSortDiscussions.
-
   bool doesPointMatchFilter(Point point) {
     if (_activeFilterType == null) {
       return true;
@@ -248,7 +245,14 @@ class DiscussionProvider with ChangeNotifier {
     return true;
   }
 
-  // --- ACTIONS (Tidak ada perubahan di bawah ini) ---
+  // --- ACTIONS ---
+
+  //==> FUNGSI BARU UNTUK MENGHAPUS DISKUSI <==
+  void deleteDiscussion(Discussion discussion) {
+    _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
+    _filterAndSortDiscussions();
+    _saveDiscussions();
+  }
 
   void addDiscussion(String name) {
     final newDiscussion = Discussion(
