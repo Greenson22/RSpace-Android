@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // DITAMBAHKAN
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
@@ -283,93 +283,113 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await Provider.of<TopicProvider>(
-              context,
-              listen: false,
-            ).fetchTopics();
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await Provider.of<TopicProvider>(
+                      context,
+                      listen: false,
+                    ).fetchTopics();
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      const _DashboardHeader(),
+                      const SizedBox(height: 20),
+                      _buildResponsiveGridView(context, constraints.maxWidth),
+                    ],
+                  ),
+                ),
+              ),
+            );
           },
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              const _DashboardHeader(),
-              const SizedBox(height: 20),
-              _buildGridView(context),
-            ],
-          ),
         ),
       ),
     );
   }
 
-  // ... (Sisa dari build dan widget lainnya tidak berubah) ...
+  Widget _buildResponsiveGridView(BuildContext context, double screenWidth) {
+    int crossAxisCount;
+    if (screenWidth > 900) {
+      crossAxisCount = 4;
+    } else if (screenWidth > 600) {
+      crossAxisCount = 3;
+    } else {
+      crossAxisCount = 2;
+    }
 
-  Widget _buildGridView(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+    final List<Widget> dashboardItems = [
+      _DashboardItem(
+        icon: Icons.topic_outlined,
+        label: 'Topics',
+        gradientColors: AppTheme.gradientColors1,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TopicsPage()),
+        ),
+      ),
+      _DashboardItem(
+        icon: Icons.task_alt,
+        label: 'My Tasks',
+        gradientColors: AppTheme.gradientColors2,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MyTasksPage()),
+        ),
+      ),
+      _DashboardItem(
+        icon: Icons.backup_outlined,
+        label: 'Backup',
+        gradientColors: AppTheme.gradientColors3,
+        onTap: () => _backupContents(context),
+        child: _isBackingUp
+            ? const CircularProgressIndicator(color: Colors.white)
+            : null,
+      ),
+      _DashboardItem(
+        icon: Icons.restore,
+        label: 'Import',
+        gradientColors: AppTheme.gradientColors4,
+        onTap: () => _importContents(context),
+        child: _isImporting
+            ? const CircularProgressIndicator(color: Colors.white)
+            : null,
+      ),
+      _DashboardItem(
+        icon: Icons.pie_chart_outline_rounded,
+        label: 'Statistik',
+        gradientColors: AppTheme.gradientColors5,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const StatisticsPage()),
+          );
+        },
+      ),
+      // ==> PERUBAHAN DI SINI <==
+      // Kondisi if (Platform.isAndroid) dihapus agar tombol selalu muncul
+      _DashboardItem(
+        icon: Icons.folder_open_rounded,
+        label: 'Penyimpanan',
+        gradientColors: const [Color(0xFF78909C), Color(0xFF546E7A)],
+        onTap: () => _showStoragePathDialog(context),
+      ),
+    ];
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.0,
+      ),
+      itemCount: dashboardItems.length,
+      itemBuilder: (context, index) => dashboardItems[index],
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      children: <Widget>[
-        _DashboardItem(
-          icon: Icons.topic_outlined,
-          label: 'Topics',
-          gradientColors: AppTheme.gradientColors1,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const TopicsPage()),
-          ),
-        ),
-        _DashboardItem(
-          icon: Icons.task_alt,
-          label: 'My Tasks',
-          gradientColors: AppTheme.gradientColors2,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MyTasksPage()),
-          ),
-        ),
-        _DashboardItem(
-          icon: Icons.backup_outlined,
-          label: 'Backup',
-          gradientColors: AppTheme.gradientColors3,
-          onTap: () => _backupContents(context),
-          child: _isBackingUp
-              ? const CircularProgressIndicator(color: Colors.white)
-              : null,
-        ),
-        _DashboardItem(
-          icon: Icons.restore,
-          label: 'Import',
-          gradientColors: AppTheme.gradientColors4,
-          onTap: () => _importContents(context),
-          child: _isImporting
-              ? const CircularProgressIndicator(color: Colors.white)
-              : null,
-        ),
-        // ==> ITEM STATISTIK DITAMBAHKAN <==
-        _DashboardItem(
-          icon: Icons.pie_chart_outline_rounded,
-          label: 'Statistik',
-          gradientColors: AppTheme.gradientColors5,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const StatisticsPage()),
-            );
-          },
-        ),
-        if (Platform.isAndroid)
-          _DashboardItem(
-            icon: Icons.folder_open_rounded,
-            label: 'Penyimpanan',
-            // Menggunakan warna gradien baru agar tidak sama dengan Statistik
-            gradientColors: const [Color(0xFF78909C), Color(0xFF546E7A)],
-            onTap: () => _showStoragePathDialog(context),
-          ),
-      ],
     );
   }
 }
