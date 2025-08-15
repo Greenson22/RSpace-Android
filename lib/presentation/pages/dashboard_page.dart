@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/path_service.dart';
 import '../../data/services/shared_preferences_service.dart';
+import '../providers/statistics_provider.dart'; // DIIMPOR
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
 import '../theme/app_theme.dart';
@@ -26,7 +27,8 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  // LOGIKA BACKUP DAN IMPORT DIHAPUS DARI SINI
+  // KUNCI BARU UNTUK MEREFRESH WIDGET PATH
+  Key _dashboardPathKey = UniqueKey();
 
   Future<void> _showStoragePathDialog(BuildContext context) async {
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
@@ -36,11 +38,44 @@ class _DashboardPageState extends State<DashboardPage> {
     if (selectedDirectory != null) {
       final prefsService = SharedPreferencesService();
       await prefsService.saveCustomStoragePath(selectedDirectory);
+
       if (mounted) {
-        showAppSnackBar(
-          context,
-          'Lokasi disimpan. Mohon restart aplikasi untuk menerapkan.',
+        // Tampilkan notifikasi loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mengubah lokasi dan memuat ulang data...'),
+          ),
         );
+
+        // Panggil provider untuk memuat ulang data dari path baru
+        final topicProvider = Provider.of<TopicProvider>(
+          context,
+          listen: false,
+        );
+        final statisticsProvider = Provider.of<StatisticsProvider>(
+          context,
+          listen: false,
+        );
+
+        // Tunggu kedua proses selesai
+        await Future.wait([
+          topicProvider.fetchTopics(),
+          statisticsProvider.generateStatistics(),
+        ]);
+
+        // Perbarui UI
+        setState(() {
+          _dashboardPathKey = UniqueKey();
+        });
+
+        if (mounted) {
+          // Hapus notifikasi loading dan tampilkan pesan sukses
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          showAppSnackBar(
+            context,
+            'Lokasi penyimpanan diubah dan data berhasil dimuat ulang.',
+          );
+        }
       }
     } else {
       if (mounted) showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
@@ -195,7 +230,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: ListView(
                     padding: const EdgeInsets.all(16.0),
                     children: [
-                      const _DashboardHeader(),
+                      // GUNAKAN KEY DI SINI
+                      _DashboardHeader(key: _dashboardPathKey),
                       const SizedBox(height: 20),
                       _buildResponsiveGridView(context, constraints.maxWidth),
                     ],
@@ -289,7 +325,8 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader();
+  // TERIMA KEY DI KONSTRUKTOR
+  const _DashboardHeader({super.key});
 
   @override
   Widget build(BuildContext context) {

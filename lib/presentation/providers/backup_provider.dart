@@ -56,6 +56,7 @@ class BackupProvider with ChangeNotifier {
     await _prefsService.saveCustomStoragePath(newPath);
     _backupPath = newPath;
     await listBackupFiles();
+    notifyListeners(); // DITAMBAHKAN UNTUK REFRESH UI
   }
 
   Future<void> setPerpuskuDataPath(String newPath) async {
@@ -96,13 +97,12 @@ class BackupProvider with ChangeNotifier {
     }
   }
 
-  // ==> PERUBAHAN UTAMA ADA DI FUNGSI INI <==
   Future<void> listBackupFiles() async {
     _rspaceBackupFiles = [];
     _perpuskuBackupFiles = [];
 
     if (_backupPath == null || _backupPath!.isEmpty) {
-      notifyListeners(); // Pastikan UI update jika path kosong
+      notifyListeners();
       return;
     }
 
@@ -148,7 +148,6 @@ class BackupProvider with ChangeNotifier {
       // Abaikan
     }
 
-    // ==> BARIS INI DITAMBAHKAN UNTUK MEMICU REFRESH UI <==
     notifyListeners();
   }
 
