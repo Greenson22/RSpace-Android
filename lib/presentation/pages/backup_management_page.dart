@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-// import 'package:share_plus/share_plus.dart'; // Placeholder untuk fungsionalitas share
 import '../providers/backup_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
-import '../providers/topic_provider.dart'; // Import untuk refresh data
+import '../providers/topic_provider.dart';
 import 'dart:math';
 
 class BackupManagementPage extends StatelessWidget {
@@ -20,16 +19,18 @@ class BackupManagementPage extends StatelessWidget {
     return '${(bytes / pow(1024, i)).toStringAsFixed(decimals)} ${suffixes[i]}';
   }
 
+  // ==> FUNGSI INI SEKARANG MENGATUR PATH BACKUP SECARA SPESIFIK <==
   Future<void> _selectBackupFolder(BuildContext context) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Pilih Folder Backup Utama',
+      dialogTitle: 'Pilih Folder Tujuan Backup', // Diubah agar lebih jelas
     );
 
     if (selectedDirectory != null) {
+      // Memanggil fungsi yang benar di provider
       await provider.setBackupPath(selectedDirectory);
       if (context.mounted) {
-        showAppSnackBar(context, 'Folder backup utama berhasil diatur.');
+        showAppSnackBar(context, 'Folder tujuan backup berhasil diatur.');
       }
     } else {
       if (context.mounted) {
@@ -64,7 +65,7 @@ class BackupManagementPage extends StatelessWidget {
     if (provider.backupPath == null || provider.backupPath!.isEmpty) {
       showAppSnackBar(
         context,
-        'Folder backup utama belum ditentukan.',
+        'Folder tujuan backup belum ditentukan.', // Pesan disesuaikan
         isError: true,
       );
       return;
@@ -443,7 +444,6 @@ class BackupManagementPage extends StatelessWidget {
         provider.isBackingUp || provider.isImporting;
     final theme = Theme.of(context);
 
-    // ==> PERUBAHAN LOGIKA ADA DI SINI <==
     final isPerpuskuBackup = title.contains('PerpusKu');
     final isPerpuskuPathSet =
         provider.perpuskuDataPath != null &&
@@ -499,7 +499,6 @@ class BackupManagementPage extends StatelessWidget {
                   label: provider.isBackingUp && !isPerpuskuBackup
                       ? loadingIndicator()
                       : const Text('Backup'),
-                  // Terapkan kondisi penonaktifan di sini
                   onPressed: isActionInProgress || isPerpuskuBackupDisabled
                       ? null
                       : onBackup,
@@ -528,7 +527,6 @@ class BackupManagementPage extends StatelessWidget {
                 ),
               ],
             ),
-            // Tambahkan pesan jika backup PerpusKu dinonaktifkan
             if (isPerpuskuBackupDisabled)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
