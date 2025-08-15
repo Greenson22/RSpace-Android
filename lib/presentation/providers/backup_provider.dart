@@ -161,8 +161,9 @@ class BackupProvider with ChangeNotifier {
       final sourceDir = Directory(perpuskuDataPath);
 
       if (!await sourceDir.exists()) {
-        await sourceDir.create(recursive: true);
-        debugPrint("Folder sumber data PerpusKu dibuat di: $perpuskuDataPath");
+        throw Exception(
+          'Folder sumber data PerpusKu yang dipilih tidak ditemukan. Pastikan path sudah benar: $perpuskuDataPath',
+        );
       }
 
       final timestamp = DateFormat(
