@@ -15,6 +15,7 @@ import '1_topics_page.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'my_tasks_page.dart';
+import 'share_page.dart'; // <-- IMPORT HALAMAN BARU
 import 'statistics_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -28,7 +29,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isBackingUp = false;
   bool _isImporting = false;
 
-  // ... (fungsi backup, import, dll. tidak berubah) ...
+  // ... (sisa kode _backupContents, _importContents, dll. tidak berubah) ...
   Future<void> _backupContents(BuildContext context) async {
     String? destinationPath = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Tujuan Backup',
@@ -144,7 +145,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // ==> DIALOG PEMILIH WARNA DIUBAH TOTAL <==
   void _showColorPickerDialog(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     Color pickerColor = themeProvider.primaryColor;
@@ -371,8 +371,18 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         },
       ),
-      // ==> PERUBAHAN DI SINI <==
-      // Kondisi if (Platform.isAndroid) dihapus agar tombol selalu muncul
+      // ==> ITEM BARU DITAMBAHKAN DI SINI <==
+      _DashboardItem(
+        icon: Icons.share_outlined,
+        label: 'Bagikan',
+        gradientColors: const [Color(0xFF26A69A), Color(0xFF00796B)], // Teal
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SharePage()),
+          );
+        },
+      ),
       _DashboardItem(
         icon: Icons.folder_open_rounded,
         label: 'Penyimpanan',
