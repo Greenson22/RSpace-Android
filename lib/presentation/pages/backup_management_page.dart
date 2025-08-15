@@ -227,17 +227,19 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  Future<void> _deleteFile(BuildContext context, File file) async {
-    final confirmed = await _showDeleteConfirmationDialog(context, file);
+  Future<void> _deleteSelectedFiles(BuildContext context) async {
+    final provider = Provider.of<BackupProvider>(context, listen: false);
+    final count = provider.selectedFiles.length;
+    final confirmed = await _showDeleteConfirmationDialog(
+      context,
+      'Anda yakin ingin menghapus $count file yang dipilih?',
+    );
+
     if (confirmed) {
       try {
-        await file.delete();
-        await Provider.of<BackupProvider>(
-          context,
-          listen: false,
-        ).listBackupFiles();
+        await provider.deleteSelectedFiles();
         if (context.mounted) {
-          showAppSnackBar(context, 'File backup berhasil dihapus.');
+          showAppSnackBar(context, '$count file backup berhasil dihapus.');
         }
       } catch (e) {
         if (context.mounted) {
@@ -249,14 +251,13 @@ class BackupManagementPage extends StatelessWidget {
 
   Future<bool> _showDeleteConfirmationDialog(
     BuildContext context,
-    File file,
+    String message,
   ) async {
-    final fileName = file.path.split(Platform.pathSeparator).last;
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Konfirmasi Hapus'),
-            content: Text('Anda yakin ingin menghapus file "$fileName"?'),
+            content: Text(message),
             actions: [
               TextButton(
                 child: const Text('Batal'),
@@ -277,27 +278,69 @@ class BackupManagementPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => BackupProvider(),
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Manajemen Backup')),
-        body: Consumer<BackupProvider>(
-          builder: (context, provider, child) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                const double breakpoint = 1000.0;
-                if (constraints.maxWidth > breakpoint) {
-                  return _buildDesktopLayout(context, provider);
-                } else {
-                  return _buildMobileLayout(context, provider);
+      child: Consumer<BackupProvider>(
+        builder: (context, provider, child) {
+          return Scaffold(
+            appBar: provider.isSelectionMode
+                ? _buildSelectionAppBar(context, provider)
+                : AppBar(title: const Text('Manajemen Backup')),
+            body: WillPopScope(
+              onWillPop: () async {
+                if (provider.isSelectionMode) {
+                  provider.clearSelection();
+                  return false;
                 }
+                return true;
               },
-            );
-          },
-        ),
+              child: Builder(
+                builder: (context) {
+                  if (provider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      const double breakpoint = 1000.0;
+                      if (constraints.maxWidth > breakpoint) {
+                        return _buildDesktopLayout(context, provider);
+                      } else {
+                        return _buildMobileLayout(context, provider);
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+          );
+        },
       ),
+    );
+  }
+
+  AppBar _buildSelectionAppBar(BuildContext context, BackupProvider provider) {
+    return AppBar(
+      title: Text('${provider.selectedFiles.length} dipilih'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => provider.clearSelection(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          onPressed: () {
+            provider.selectAllFiles([
+              ...provider.rspaceBackupFiles,
+              ...provider.perpuskuBackupFiles,
+            ]);
+          },
+          tooltip: 'Pilih Semua',
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () => _deleteSelectedFiles(context),
+          tooltip: 'Hapus Pilihan',
+        ),
+      ],
     );
   }
 
@@ -539,45 +582,46 @@ class BackupManagementPage extends StatelessWidget {
                       ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ElevatedButton.icon(
-                  icon: provider.isBackingUp && !isPerpuskuBackup
-                      ? const SizedBox.shrink()
-                      : const Icon(Icons.backup_outlined),
-                  label: provider.isBackingUp && !isPerpuskuBackup
-                      ? loadingIndicator()
-                      : const Text('Backup'),
-                  onPressed: isActionInProgress || isPerpuskuBackupDisabled
-                      ? null
-                      : onBackup,
-                  style: ElevatedButton.styleFrom(
-                    padding: buttonPadding,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            if (!provider.isSelectionMode)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton.icon(
+                    icon: provider.isBackingUp && !isPerpuskuBackup
+                        ? const SizedBox.shrink()
+                        : const Icon(Icons.backup_outlined),
+                    label: provider.isBackingUp && !isPerpuskuBackup
+                        ? loadingIndicator()
+                        : const Text('Backup'),
+                    onPressed: isActionInProgress || isPerpuskuBackupDisabled
+                        ? null
+                        : onBackup,
+                    style: ElevatedButton.styleFrom(
+                      padding: buttonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
-                ),
-                OutlinedButton.icon(
-                  icon: provider.isImporting
-                      ? const SizedBox.shrink()
-                      : const Icon(Icons.restore),
-                  label: provider.isImporting
-                      ? loadingIndicatorOutline()
-                      : const Text('Import'),
-                  onPressed: isActionInProgress ? null : onImport,
-                  style: OutlinedButton.styleFrom(
-                    padding: buttonPadding,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  OutlinedButton.icon(
+                    icon: provider.isImporting
+                        ? const SizedBox.shrink()
+                        : const Icon(Icons.restore),
+                    label: provider.isImporting
+                        ? loadingIndicatorOutline()
+                        : const Text('Import'),
+                    onPressed: isActionInProgress ? null : onImport,
+                    style: OutlinedButton.styleFrom(
+                      padding: buttonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: theme.primaryColor),
                     ),
-                    side: BorderSide(color: theme.primaryColor),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             if (isPerpuskuBackupDisabled)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
@@ -612,6 +656,8 @@ class BackupManagementPage extends StatelessWidget {
               itemCount: files.length,
               itemBuilder: (context, index) {
                 final file = files[index];
+                final isSelected = provider.selectedFiles.contains(file.path);
+
                 final fileName = file.path.split(Platform.pathSeparator).last;
                 final lastModified = file.lastModifiedSync();
                 final fileSize = file.lengthSync();
@@ -622,8 +668,23 @@ class BackupManagementPage extends StatelessWidget {
                 final formattedSize = _formatBytes(fileSize, 2);
 
                 return ListTile(
+                  tileColor: isSelected
+                      ? theme.primaryColor.withOpacity(0.2)
+                      : null,
+                  onTap: () {
+                    if (provider.isSelectionMode) {
+                      provider.toggleFileSelection(file);
+                    }
+                  },
+                  onLongPress: () {
+                    if (!provider.isSelectionMode) {
+                      provider.toggleFileSelection(file);
+                    }
+                  },
                   dense: true,
-                  leading: const Icon(Icons.archive_outlined),
+                  leading: isSelected
+                      ? Icon(Icons.check_circle, color: theme.primaryColor)
+                      : const Icon(Icons.archive_outlined),
                   title: Text(
                     fileName,
                     style: const TextStyle(
@@ -652,52 +713,54 @@ class BackupManagementPage extends StatelessWidget {
                     ),
                   ),
                   contentPadding: const EdgeInsets.only(left: 4),
-                  trailing: PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, size: 20),
-                    onSelected: (value) {
-                      final backupType = title.contains('RSpace')
-                          ? 'RSpace'
-                          : 'PerpusKu';
-                      if (value == 'import') {
-                        _importSpecificFile(context, file, backupType);
-                      } else if (value == 'share') {
-                        _shareFile(context, file);
-                      } else if (value == 'delete') {
-                        _deleteFile(context, file);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'import',
-                            child: ListTile(
-                              leading: Icon(Icons.restore),
-                              title: Text('Import'),
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'share',
-                            child: ListTile(
-                              leading: Icon(Icons.share_outlined),
-                              title: Text('Bagikan'),
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            child: ListTile(
-                              leading: Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
-                              title: Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ),
-                        ],
-                  ),
+                  trailing: provider.isSelectionMode
+                      ? null
+                      : PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 20),
+                          onSelected: (value) {
+                            final backupType = title.contains('RSpace')
+                                ? 'RSpace'
+                                : 'PerpusKu';
+                            if (value == 'import') {
+                              _importSpecificFile(context, file, backupType);
+                            } else if (value == 'share') {
+                              _shareFile(context, file);
+                            } else if (value == 'delete') {
+                              _deleteSelectedFiles(context);
+                            }
+                          },
+                          itemBuilder: (BuildContext context) =>
+                              <PopupMenuEntry<String>>[
+                                const PopupMenuItem<String>(
+                                  value: 'import',
+                                  child: ListTile(
+                                    leading: Icon(Icons.restore),
+                                    title: Text('Import'),
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'share',
+                                  child: ListTile(
+                                    leading: Icon(Icons.share_outlined),
+                                    title: Text('Bagikan'),
+                                  ),
+                                ),
+                                const PopupMenuDivider(),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    title: Text(
+                                      'Hapus',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                        ),
                 );
               },
             ),

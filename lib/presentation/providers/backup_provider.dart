@@ -33,9 +33,51 @@ class BackupProvider with ChangeNotifier {
   List<File> _perpuskuBackupFiles = [];
   List<File> get perpuskuBackupFiles => _perpuskuBackupFiles;
 
+  // ==> STATE BARU UNTUK SELEKSI FILE <==
+  final Set<String> _selectedFiles = {};
+  Set<String> get selectedFiles => _selectedFiles;
+
+  bool get isSelectionMode => _selectedFiles.isNotEmpty;
+
   BackupProvider() {
     loadBackupData();
   }
+
+  // ==> FUNGSI BARU UNTUK MENGELOLA SELEKSI <==
+  void toggleFileSelection(File file) {
+    if (_selectedFiles.contains(file.path)) {
+      _selectedFiles.remove(file.path);
+    } else {
+      _selectedFiles.add(file.path);
+    }
+    notifyListeners();
+  }
+
+  void selectAllFiles(List<File> files) {
+    _selectedFiles.addAll(files.map((f) => f.path));
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedFiles.clear();
+    notifyListeners();
+  }
+
+  Future<void> deleteSelectedFiles() async {
+    for (String path in _selectedFiles) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (e) {
+        // Abaikan error jika file tidak dapat dihapus
+      }
+    }
+    _selectedFiles.clear();
+    await listBackupFiles(); // Muat ulang daftar file setelah penghapusan
+  }
+  // --- AKHIR FUNGSI BARU ---
 
   Future<void> loadBackupData() async {
     _isLoading = true;
