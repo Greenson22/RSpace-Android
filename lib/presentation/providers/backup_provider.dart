@@ -12,7 +12,6 @@ class BackupProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final PathService _pathService = PathService();
 
-  // ... (state lain tetap sama)
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -25,7 +24,6 @@ class BackupProvider with ChangeNotifier {
   String? _backupPath;
   String? get backupPath => _backupPath;
 
-  // ==> STATE BARU UNTUK PATH SUMBER DATA PERPUSKU <==
   String? _perpuskuDataPath;
   String? get perpuskuDataPath => _perpuskuDataPath;
 
@@ -44,8 +42,7 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
 
     _backupPath = await _prefsService.loadCustomStoragePath();
-    _perpuskuDataPath = await _prefsService
-        .loadPerpuskuDataPath(); // Muat path data
+    _perpuskuDataPath = await _prefsService.loadPerpuskuDataPath();
 
     if (_backupPath != null && _backupPath!.isNotEmpty) {
       await listBackupFiles();
@@ -59,29 +56,23 @@ class BackupProvider with ChangeNotifier {
     await _prefsService.saveCustomStoragePath(newPath);
     _backupPath = newPath;
     await listBackupFiles();
-    notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN PATH SUMBER DATA PERPUSKU <==
   Future<void> setPerpuskuDataPath(String newPath) async {
     await _prefsService.savePerpuskuDataPath(newPath);
     _perpuskuDataPath = newPath;
-    notifyListeners(); // Tidak perlu list ulang file karena tujuan backup tidak berubah
+    notifyListeners();
   }
 
-  // ==> FUNGSI BACKUP PERPUSKU DIPERBARUI <==
   Future<String> backupPerpuskuContents() async {
     _isBackingUp = true;
     notifyListeners();
     try {
-      // Tujuan backup tetap di folder backup utama
       final destinationPath = await _pathService.perpuskuBackupPath;
-      // Sumber data diambil dari path service yang sudah cerdas
       final perpuskuDataPath = await _pathService.perpuskuDataPath;
       final sourceDir = Directory(perpuskuDataPath);
 
       if (!await sourceDir.exists()) {
-        // Buat folder jika belum ada agar tidak error saat backup pertama kali
         await sourceDir.create(recursive: true);
         debugPrint("Folder sumber data PerpusKu dibuat di: $perpuskuDataPath");
       }
@@ -94,7 +85,6 @@ class BackupProvider with ChangeNotifier {
 
       final encoder = ZipFileEncoder();
       encoder.create(zipFilePath);
-      // Menambahkan isi dari folder sumber ke file zip
       await encoder.addDirectory(sourceDir, includeDirName: false);
       encoder.close();
 
@@ -106,16 +96,16 @@ class BackupProvider with ChangeNotifier {
     }
   }
 
-  // ... (sisa kode tetap sama)
+  // ==> PERUBAHAN UTAMA ADA DI FUNGSI INI <==
   Future<void> listBackupFiles() async {
     _rspaceBackupFiles = [];
     _perpuskuBackupFiles = [];
 
     if (_backupPath == null || _backupPath!.isEmpty) {
+      notifyListeners(); // Pastikan UI update jika path kosong
       return;
     }
 
-    // Memuat file backup RSpace
     try {
       final rspaceDir = Directory(await _pathService.rspaceBackupPath);
       if (await rspaceDir.exists()) {
@@ -134,10 +124,9 @@ class BackupProvider with ChangeNotifier {
         _rspaceBackupFiles = files;
       }
     } catch (e) {
-      // Abaikan jika path belum ada
+      // Abaikan
     }
 
-    // Memuat file backup PerpusKu
     try {
       final perpuskuDir = Directory(await _pathService.perpuskuBackupPath);
       if (await perpuskuDir.exists()) {
@@ -156,8 +145,11 @@ class BackupProvider with ChangeNotifier {
         _perpuskuBackupFiles = files;
       }
     } catch (e) {
-      // Abaikan jika path belum ada
+      // Abaikan
     }
+
+    // ==> BARIS INI DITAMBAHKAN UNTUK MEMICU REFRESH UI <==
+    notifyListeners();
   }
 
   Future<String> backupRspaceContents() async {

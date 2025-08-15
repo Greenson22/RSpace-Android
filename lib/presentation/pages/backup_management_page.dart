@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+// import 'package:share_plus/share_plus.dart'; // Placeholder untuk fungsionalitas share
 import '../providers/backup_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import '../providers/topic_provider.dart'; // Import untuk refresh data
@@ -91,6 +92,15 @@ class BackupManagementPage extends StatelessWidget {
       return;
     }
 
+    final zipFile = File(result.files.single.path!);
+    await _importSpecificFile(context, zipFile, type);
+  }
+
+  Future<void> _importSpecificFile(
+    BuildContext context,
+    File zipFile,
+    String type,
+  ) async {
     final confirmed = await _showImportConfirmationDialog(context, type);
     if (!confirmed) {
       if (context.mounted) {
@@ -102,7 +112,6 @@ class BackupManagementPage extends StatelessWidget {
     showAppSnackBar(context, 'Memulai proses import...');
     final provider = Provider.of<BackupProvider>(context, listen: false);
     try {
-      final zipFile = File(result.files.single.path!);
       await provider.importContents(zipFile, type);
       if (context.mounted) {
         if (type == 'RSpace') {
@@ -132,8 +141,8 @@ class BackupManagementPage extends StatelessWidget {
           context: context,
           builder: (context) => AlertDialog(
             title: Text('Konfirmasi Import $type'),
-            content: Text(
-              'PERINGATAN: Tindakan ini akan menghapus semua data $type saat ini dan menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
+            content: const Text(
+              'PERINGATAN: Tindakan ini akan menghapus semua data saat ini dan menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
             ),
             actions: [
               TextButton(
@@ -142,6 +151,67 @@ class BackupManagementPage extends StatelessWidget {
               ),
               TextButton(
                 child: const Text('Lanjutkan'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  // ==> FUNGSI BARU UNTUK BERBAGI FILE <==
+  Future<void> _shareFile(BuildContext context, File file) async {
+    try {
+      // Untuk fungsionalitas ini, Anda perlu menambahkan package seperti 'share_plus'
+      // await Share.shareXFiles([XFile(file.path)], text: 'Ini adalah backup data saya.');
+      // Placeholder karena tidak bisa menambah package:
+      showAppSnackBar(context, 'Fungsi berbagi belum diimplementasikan.');
+    } catch (e) {
+      showAppSnackBar(context, 'Gagal membagikan file: $e', isError: true);
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE <==
+  Future<void> _deleteFile(BuildContext context, File file) async {
+    final confirmed = await _showDeleteConfirmationDialog(context, file);
+    if (confirmed) {
+      try {
+        await file.delete();
+        // Refresh daftar file setelah menghapus
+        await Provider.of<BackupProvider>(
+          context,
+          listen: false,
+        ).listBackupFiles();
+        if (context.mounted) {
+          showAppSnackBar(context, 'File backup berhasil dihapus.');
+        }
+      } catch (e) {
+        if (context.mounted) {
+          showAppSnackBar(context, 'Gagal menghapus file: $e', isError: true);
+        }
+      }
+    }
+  }
+
+  // ==> DIALOG BARU UNTUK KONFIRMASI HAPUS <==
+  Future<bool> _showDeleteConfirmationDialog(
+    BuildContext context,
+    File file,
+  ) async {
+    final fileName = file.path.split(Platform.pathSeparator).last;
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Konfirmasi Hapus'),
+            content: Text('Anda yakin ingin menghapus file "$fileName"?'),
+            actions: [
+              TextButton(
+                child: const Text('Batal'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Hapus'),
                 onPressed: () => Navigator.of(context).pop(true),
               ),
             ],
@@ -178,7 +248,6 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET UNTUK TAMPILAN MOBILE DIUBAH DI SINI <==
   Widget _buildMobileLayout(BuildContext context, BackupProvider provider) {
     return ListView(
       padding: const EdgeInsets.all(8.0),
@@ -193,24 +262,24 @@ class BackupManagementPage extends StatelessWidget {
             Expanded(
               child: _buildBackupSection(
                 context: context,
-                title: 'RSpace', // Judul dipersingkat
+                title: 'RSpace',
                 files: provider.rspaceBackupFiles,
                 onBackup: () => _backupContents(context, 'RSpace'),
                 onImport: () => _importContents(context, 'RSpace'),
                 provider: provider,
-                isCompact: true, // Flag baru untuk mode compact
+                isCompact: true,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _buildBackupSection(
                 context: context,
-                title: 'PerpusKu', // Judul dipersingkat
+                title: 'PerpusKu',
                 files: provider.perpuskuBackupFiles,
                 onBackup: () => _backupContents(context, 'PerpusKu'),
                 onImport: () => _importContents(context, 'PerpusKu'),
                 provider: provider,
-                isCompact: true, // Flag baru untuk mode compact
+                isCompact: true,
               ),
             ),
           ],
@@ -360,7 +429,6 @@ class BackupManagementPage extends StatelessWidget {
     return isCard ? Card(child: content) : content;
   }
 
-  // ==> PERUBAHAN DI SINI, MENAMBAHKAN isCompact <==
   Widget _buildBackupSection({
     required BuildContext context,
     required String title,
@@ -368,7 +436,7 @@ class BackupManagementPage extends StatelessWidget {
     required VoidCallback onBackup,
     required VoidCallback onImport,
     required BackupProvider provider,
-    bool isCompact = false, // Parameter baru
+    bool isCompact = false,
   }) {
     final bool isActionInProgress =
         provider.isBackingUp || provider.isImporting;
@@ -393,7 +461,6 @@ class BackupManagementPage extends StatelessWidget {
       );
     }
 
-    // Mengatur padding tombol untuk mode compact
     final buttonPadding = isCompact
         ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
         : const EdgeInsets.symmetric(horizontal: 24, vertical: 12);
@@ -480,7 +547,6 @@ class BackupManagementPage extends StatelessWidget {
                   'd MMM yyyy, HH:mm',
                   'id_ID',
                 ).format(lastModified);
-                // Menggunakan ListTile yang lebih compact
                 return ListTile(
                   dense: true,
                   leading: const Icon(Icons.archive_outlined),
@@ -496,7 +562,54 @@ class BackupManagementPage extends StatelessWidget {
                     formattedDate,
                     style: const TextStyle(fontSize: 10),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  contentPadding: const EdgeInsets.only(left: 4),
+                  // ==> PERUBAHAN UTAMA DI SINI <==
+                  trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 20),
+                    onSelected: (value) {
+                      final backupType = title.contains('RSpace')
+                          ? 'RSpace'
+                          : 'PerpusKu';
+                      if (value == 'import') {
+                        _importSpecificFile(context, file, backupType);
+                      } else if (value == 'share') {
+                        _shareFile(context, file);
+                      } else if (value == 'delete') {
+                        _deleteFile(context, file);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'import',
+                            child: ListTile(
+                              leading: Icon(Icons.restore),
+                              title: Text('Import'),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'share',
+                            child: ListTile(
+                              leading: Icon(Icons.share_outlined),
+                              title: Text('Bagikan'),
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: ListTile(
+                              leading: Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              title: Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ),
+                        ],
+                  ),
                 );
               },
             ),
