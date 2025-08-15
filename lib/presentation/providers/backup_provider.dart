@@ -24,6 +24,10 @@ class BackupProvider with ChangeNotifier {
   String? _backupPath;
   String? get backupPath => _backupPath;
 
+  // ==> STATE BARU UNTUK PATH PERPUSKU <==
+  String? _perpuskuBackupPath;
+  String? get perpuskuBackupPath => _perpuskuBackupPath;
+
   List<File> _rspaceBackupFiles = [];
   List<File> get rspaceBackupFiles => _rspaceBackupFiles;
 
@@ -34,12 +38,18 @@ class BackupProvider with ChangeNotifier {
     loadBackupData();
   }
 
+  // ==> FUNGSI DIPERBARUI <==
   Future<void> loadBackupData() async {
     _isLoading = true;
     notifyListeners();
 
     _backupPath = await _prefsService.loadCustomStoragePath();
-    if (_backupPath != null && _backupPath!.isNotEmpty) {
+    _perpuskuBackupPath = await _prefsService
+        .loadPerpuskuBackupPath(); // Muat path PerpusKu
+
+    // Cek path utama atau path perpusku untuk listing file
+    if ((_backupPath != null && _backupPath!.isNotEmpty) ||
+        (_perpuskuBackupPath != null && _perpuskuBackupPath!.isNotEmpty)) {
       await listBackupFiles();
     }
 
@@ -54,12 +64,21 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU <==
+  Future<void> setPerpuskuBackupPath(String newPath) async {
+    await _prefsService.savePerpuskuBackupPath(newPath);
+    _perpuskuBackupPath = newPath;
+    await listBackupFiles();
+    notifyListeners();
+  }
+
+  // ... (sisa kode tetap sama) ...
   Future<void> listBackupFiles() async {
     _rspaceBackupFiles = [];
     _perpuskuBackupFiles = [];
 
     if (_backupPath == null || _backupPath!.isEmpty) {
-      return;
+      // return;
     }
 
     // Memuat file backup RSpace

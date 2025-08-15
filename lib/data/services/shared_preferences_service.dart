@@ -9,8 +9,23 @@ class SharedPreferencesService {
   static const String _themeKey = 'theme_preference';
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _primaryColorKey = 'primary_color';
-  static const String _recentColorsKey = 'recent_colors'; // DITAMBAHKAN
+  static const String _recentColorsKey = 'recent_colors';
+  static const String _perpuskuBackupPathKey =
+      'perpusku_backup_path'; // DITAMBAHKAN
 
+  // ==> FUNGSI BARU UNTUK PATH BACKUP PERPUSKU <==
+  Future<void> savePerpuskuBackupPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_perpuskuBackupPathKey, path);
+  }
+
+  Future<String?> loadPerpuskuBackupPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_perpuskuBackupPathKey);
+  }
+  // --- AKHIR FUNGSI BARU ---
+
+  // ... (kode lainnya tetap sama) ...
   // ==> FUNGSI BARU UNTUK MENYIMPAN RIWAYAT WARNA <==
   Future<void> saveRecentColors(List<int> colorValues) async {
     final prefs = await SharedPreferences.getInstance();

@@ -29,6 +29,26 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MEMILIH FOLDER PERPUSKU <==
+  Future<void> _selectPerpuskuBackupFolder(BuildContext context) async {
+    final provider = Provider.of<BackupProvider>(context, listen: false);
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Backup PerpusKu',
+    );
+
+    if (selectedDirectory != null) {
+      await provider.setPerpuskuBackupPath(selectedDirectory);
+      if (context.mounted) {
+        showAppSnackBar(context, 'Folder backup PerpusKu berhasil diatur.');
+      }
+    } else {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+      }
+    }
+  }
+
+  // ... (kode _backupContents, _importContents, dan _showImportConfirmationDialog tetap sama) ...
   Future<void> _backupContents(BuildContext context, String type) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     if (provider.backupPath == null || provider.backupPath!.isEmpty) {
@@ -128,6 +148,7 @@ class BackupManagementPage extends StatelessWidget {
         false;
   }
 
+  // ==> FUNGSI build DIPERBARUI <==
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -140,32 +161,30 @@ class BackupManagementPage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            return Column(
+            return ListView(
+              // Diubah dari Column ke ListView
               children: [
                 _buildPathInfoCard(context, provider),
                 const Divider(height: 1),
-                Expanded(
-                  child: ListView(
-                    children: [
-                      _buildBackupSection(
-                        context: context,
-                        title: 'Backup RSpace',
-                        files: provider.rspaceBackupFiles,
-                        onBackup: () => _backupContents(context, 'RSpace'),
-                        onImport: () => _importContents(context, 'RSpace'),
-                        provider: provider,
-                      ),
-                      const Divider(),
-                      _buildBackupSection(
-                        context: context,
-                        title: 'Backup PerpusKu',
-                        files: provider.perpuskuBackupFiles,
-                        onBackup: () => _backupContents(context, 'PerpusKu'),
-                        onImport: () => _importContents(context, 'PerpusKu'),
-                        provider: provider,
-                      ),
-                    ],
-                  ),
+                // ==> BAGIAN BARU UNTUK FOLDER PERPUSKU <==
+                _buildPerpuskuPathCard(context, provider),
+                const Divider(height: 1),
+                _buildBackupSection(
+                  context: context,
+                  title: 'Backup RSpace',
+                  files: provider.rspaceBackupFiles,
+                  onBackup: () => _backupContents(context, 'RSpace'),
+                  onImport: () => _importContents(context, 'RSpace'),
+                  provider: provider,
+                ),
+                const Divider(),
+                _buildBackupSection(
+                  context: context,
+                  title: 'Backup PerpusKu',
+                  files: provider.perpuskuBackupFiles,
+                  onBackup: () => _backupContents(context, 'PerpusKu'),
+                  onImport: () => _importContents(context, 'PerpusKu'),
+                  provider: provider,
                 ),
               ],
             );
@@ -175,6 +194,7 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
+  // ... (kode _buildPathInfoCard dan _buildBackupSection tetap sama) ...
   Widget _buildPathInfoCard(BuildContext context, BackupProvider provider) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -182,7 +202,7 @@ class BackupManagementPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Folder Backup Utama',
+            'Folder Backup Utama (RSpace)',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -199,6 +219,46 @@ class BackupManagementPage extends StatelessWidget {
               icon: const Icon(Icons.folder_open),
               label: const Text('Ubah Folder Utama'),
               onPressed: () => _selectBackupFolder(context),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> WIDGET BARU UNTUK INFO PATH PERPUSKU <==
+  Widget _buildPerpuskuPathCard(BuildContext context, BackupProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Folder Backup PerpusKu (Opsional)',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Jika tidak diisi, akan mengikuti Folder Backup Utama.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            provider.perpuskuBackupPath ?? 'Folder belum ditentukan.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Ubah Folder PerpusKu'),
+              onPressed: () => _selectPerpuskuBackupFolder(context),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),

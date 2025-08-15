@@ -8,6 +8,7 @@ import 'shared_preferences_service.dart';
 class PathService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
+  // ... (kode _baseDataPath dan rspaceBackupPath tetap sama) ...
   Future<String> get _baseDataPath async {
     // Logika ini sekarang berlaku untuk semua platform yang didukung.
 
@@ -89,7 +90,19 @@ class PathService {
     return backupDir.path;
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<String> get perpuskuBackupPath async {
+    // Prioritaskan path khusus PerpusKu
+    String? perpuskuPath = await _prefsService.loadPerpuskuBackupPath();
+    if (perpuskuPath != null && perpuskuPath.isNotEmpty) {
+      final backupDir = Directory(path.join(perpuskuPath, 'PerpusKu_backup'));
+      if (!await backupDir.exists()) {
+        await backupDir.create(recursive: true);
+      }
+      return backupDir.path;
+    }
+
+    // Fallback ke path utama jika path khusus tidak ada
     final basePath = await _baseBackupPath;
     if (basePath == null || basePath.isEmpty) {
       throw Exception('Folder backup utama belum diatur.');
