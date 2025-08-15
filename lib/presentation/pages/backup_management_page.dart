@@ -162,10 +162,9 @@ class BackupManagementPage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // ==> LOGIKA RESPONSIVE MENGGUNAKAN LAYOUTBUILDER <==
             return LayoutBuilder(
               builder: (context, constraints) {
-                const double breakpoint = 1000.0; // Breakpoint diubah
+                const double breakpoint = 1000.0;
                 if (constraints.maxWidth > breakpoint) {
                   return _buildDesktopLayout(context, provider);
                 } else {
@@ -179,42 +178,51 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET BARU UNTUK TAMPILAN MOBILE (SATU KOLOM) <==
+  // ==> WIDGET UNTUK TAMPILAN MOBILE DIUBAH DI SINI <==
   Widget _buildMobileLayout(BuildContext context, BackupProvider provider) {
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(8.0),
       children: [
-        _buildPathInfoCard(context, provider),
-        const Divider(height: 1),
-        _buildPerpuskuPathCard(context, provider),
-        const Divider(height: 1),
-        _buildBackupSection(
-          context: context,
-          title: 'Backup RSpace',
-          files: provider.rspaceBackupFiles,
-          onBackup: () => _backupContents(context, 'RSpace'),
-          onImport: () => _importContents(context, 'RSpace'),
-          provider: provider,
-        ),
-        const Divider(),
-        _buildBackupSection(
-          context: context,
-          title: 'Backup PerpusKu',
-          files: provider.perpuskuBackupFiles,
-          onBackup: () => _backupContents(context, 'PerpusKu'),
-          onImport: () => _importContents(context, 'PerpusKu'),
-          provider: provider,
+        _buildPathInfoCard(context, provider, isCard: true),
+        const SizedBox(height: 8),
+        _buildPerpuskuPathCard(context, provider, isCard: true),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildBackupSection(
+                context: context,
+                title: 'RSpace', // Judul dipersingkat
+                files: provider.rspaceBackupFiles,
+                onBackup: () => _backupContents(context, 'RSpace'),
+                onImport: () => _importContents(context, 'RSpace'),
+                provider: provider,
+                isCompact: true, // Flag baru untuk mode compact
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildBackupSection(
+                context: context,
+                title: 'PerpusKu', // Judul dipersingkat
+                files: provider.perpuskuBackupFiles,
+                onBackup: () => _backupContents(context, 'PerpusKu'),
+                onImport: () => _importContents(context, 'PerpusKu'),
+                provider: provider,
+                isCompact: true, // Flag baru untuk mode compact
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  // ==> WIDGET BARU UNTUK TAMPILAN DESKTOP (TIGA KOLOM) <==
   Widget _buildDesktopLayout(BuildContext context, BackupProvider provider) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // KOLOM KIRI (PENGATURAN FOLDER)
         Expanded(
           flex: 2,
           child: ListView(
@@ -232,7 +240,6 @@ class BackupManagementPage extends StatelessWidget {
           ),
         ),
         const VerticalDivider(width: 1),
-        // KOLOM TENGAH (BACKUP RSPACE)
         Expanded(
           flex: 3,
           child: ListView(
@@ -250,7 +257,6 @@ class BackupManagementPage extends StatelessWidget {
           ),
         ),
         const VerticalDivider(width: 1),
-        // KOLOM KANAN (BACKUP PERPUSKU)
         Expanded(
           flex: 3,
           child: ListView(
@@ -354,7 +360,7 @@ class BackupManagementPage extends StatelessWidget {
     return isCard ? Card(child: content) : content;
   }
 
-  // ==> PERUBAHAN DI SINI <==
+  // ==> PERUBAHAN DI SINI, MENAMBAHKAN isCompact <==
   Widget _buildBackupSection({
     required BuildContext context,
     required String title,
@@ -362,12 +368,12 @@ class BackupManagementPage extends StatelessWidget {
     required VoidCallback onBackup,
     required VoidCallback onImport,
     required BackupProvider provider,
+    bool isCompact = false, // Parameter baru
   }) {
     final bool isActionInProgress =
         provider.isBackingUp || provider.isImporting;
     final theme = Theme.of(context);
 
-    // Widget untuk menampilkan CircularProgressIndicator
     Widget loadingIndicator() {
       return const SizedBox(
         width: 20,
@@ -376,7 +382,6 @@ class BackupManagementPage extends StatelessWidget {
       );
     }
 
-    // Widget untuk menampilkan CircularProgressIndicator pada OutlinedButton
     Widget loadingIndicatorOutline() {
       return SizedBox(
         width: 20,
@@ -388,101 +393,115 @@ class BackupManagementPage extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+    // Mengatur padding tombol untuk mode compact
+    final buttonPadding = isCompact
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+        : const EdgeInsets.symmetric(horizontal: 24, vertical: 12);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style:
+                  (isCompact
+                          ? theme.textTheme.titleLarge
+                          : theme.textTheme.headlineSmall)
+                      ?.copyWith(fontWeight: FontWeight.bold),
             ),
-          ),
-          const SizedBox(height: 16),
-          // Menggunakan Wrap agar bisa responsif di layar kecil
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: [
-              // Tombol Backup (Aksi Primer)
-              ElevatedButton.icon(
-                icon: provider.isBackingUp
-                    ? const SizedBox.shrink()
-                    : const Icon(Icons.backup_outlined),
-                label: provider.isBackingUp
-                    ? loadingIndicator()
-                    : const Text('Backup Data'),
-                onPressed: isActionInProgress ? null : onBackup,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ElevatedButton.icon(
+                  icon: provider.isBackingUp
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.backup_outlined),
+                  label: provider.isBackingUp
+                      ? loadingIndicator()
+                      : const Text('Backup'),
+                  onPressed: isActionInProgress ? null : onBackup,
+                  style: ElevatedButton.styleFrom(
+                    padding: buttonPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                ),
+                OutlinedButton.icon(
+                  icon: provider.isImporting
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.restore),
+                  label: provider.isImporting
+                      ? loadingIndicatorOutline()
+                      : const Text('Import'),
+                  onPressed: isActionInProgress ? null : onImport,
+                  style: OutlinedButton.styleFrom(
+                    padding: buttonPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    side: BorderSide(color: theme.primaryColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'File Tersimpan',
+              style: isCompact
+                  ? theme.textTheme.titleSmall
+                  : theme.textTheme.titleMedium,
+            ),
+            const Divider(),
+            if (files.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24.0),
+                child: Center(
+                  child: Text(
+                    'Tidak ada file .zip ditemukan.',
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
-              // Tombol Import (Aksi Sekunder)
-              OutlinedButton.icon(
-                icon: provider.isImporting
-                    ? const SizedBox.shrink()
-                    : const Icon(Icons.restore),
-                label: provider.isImporting
-                    ? loadingIndicatorOutline()
-                    : const Text('Import Data'),
-                onPressed: isActionInProgress ? null : onImport,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: BorderSide(color: theme.primaryColor),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text('File Tersimpan', style: theme.textTheme.titleMedium),
-          const Divider(),
-          if (files.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.0),
-              child: Center(
-                child: Text('Tidak ada file backup (.zip) ditemukan.'),
-              ),
-            ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: files.length,
-            itemBuilder: (context, index) {
-              final file = files[index];
-              final fileName = file.path.split(Platform.pathSeparator).last;
-              final lastModified = file.lastModifiedSync();
-              final formattedDate = DateFormat(
-                'd MMMM yyyy, HH:mm',
-                'id_ID',
-              ).format(lastModified);
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  leading: const Icon(Icons.archive_outlined, size: 32),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: files.length,
+              itemBuilder: (context, index) {
+                final file = files[index];
+                final fileName = file.path.split(Platform.pathSeparator).last;
+                final lastModified = file.lastModifiedSync();
+                final formattedDate = DateFormat(
+                  'd MMM yyyy, HH:mm',
+                  'id_ID',
+                ).format(lastModified);
+                // Menggunakan ListTile yang lebih compact
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.archive_outlined),
                   title: Text(
                     fileName,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Text('Tanggal: $formattedDate'),
-                ),
-              );
-            },
-          ),
-        ],
+                  subtitle: Text(
+                    formattedDate,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
