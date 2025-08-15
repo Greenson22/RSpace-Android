@@ -165,7 +165,7 @@ class BackupManagementPage extends StatelessWidget {
             // ==> LOGIKA RESPONSIVE MENGGUNAKAN LAYOUTBUILDER <==
             return LayoutBuilder(
               builder: (context, constraints) {
-                const double breakpoint = 700.0;
+                const double breakpoint = 1000.0; // Breakpoint diubah
                 if (constraints.maxWidth > breakpoint) {
                   return _buildDesktopLayout(context, provider);
                 } else {
@@ -209,7 +209,7 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET BARU UNTUK TAMPILAN DESKTOP (DUA KOLOM) <==
+  // ==> WIDGET BARU UNTUK TAMPILAN DESKTOP (TIGA KOLOM) <==
   Widget _buildDesktopLayout(BuildContext context, BackupProvider provider) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +232,7 @@ class BackupManagementPage extends StatelessWidget {
           ),
         ),
         const VerticalDivider(width: 1),
-        // KOLOM KANAN (BACKUP & IMPORT)
+        // KOLOM TENGAH (BACKUP RSPACE)
         Expanded(
           flex: 3,
           child: ListView(
@@ -246,7 +246,16 @@ class BackupManagementPage extends StatelessWidget {
                 onImport: () => _importContents(context, 'RSpace'),
                 provider: provider,
               ),
-              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+        const VerticalDivider(width: 1),
+        // KOLOM KANAN (BACKUP PERPUSKU)
+        Expanded(
+          flex: 3,
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
               _buildBackupSection(
                 context: context,
                 title: 'Backup PerpusKu',
