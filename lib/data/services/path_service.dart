@@ -9,7 +9,6 @@ class PathService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
   Future<String> get _baseDataPath async {
-    // ==> PERUBAHAN LOGIKA DI SINI <==
     // Logika ini sekarang berlaku untuk semua platform yang didukung.
 
     // Minta izin hanya jika di Android.
@@ -73,12 +72,46 @@ class PathService {
     return defaultAppDir.path;
   }
 
+  // MENAMBAHKAN FUNGSI BARU UNTUK MENGELOLA FOLDER BACKUP
+  Future<String?> get _baseBackupPath async {
+    return await _prefsService.loadCustomStoragePath();
+  }
+
+  Future<String> get rspaceBackupPath async {
+    final basePath = await _baseBackupPath;
+    if (basePath == null || basePath.isEmpty) {
+      throw Exception('Folder backup utama belum diatur.');
+    }
+    final backupDir = Directory(path.join(basePath, 'RSpace_backup'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir.path;
+  }
+
+  Future<String> get perpuskuBackupPath async {
+    final basePath = await _baseBackupPath;
+    if (basePath == null || basePath.isEmpty) {
+      throw Exception('Folder backup utama belum diatur.');
+    }
+    final backupDir = Directory(path.join(basePath, 'PerpusKu_backup'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir.path;
+  }
+  // --- Akhir dari fungsi baru ---
+
   Future<String> get contentsPath async =>
       path.join(await _baseDataPath, 'contents');
   Future<String> get topicsPath async =>
       path.join(await contentsPath, 'topics');
   Future<String> get myTasksPath async =>
       path.join(await contentsPath, 'my_tasks.json');
+
+  // MENAMBAHKAN PATH UNTUK DATA PERPUSKU
+  Future<String> get perpuskuDataPath async =>
+      path.join(await _baseDataPath, 'perpusku_data');
 
   Future<String> getTopicPath(String topicName) async {
     return path.join(await topicsPath, topicName);

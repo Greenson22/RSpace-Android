@@ -1,3 +1,5 @@
+// lib/presentation/providers/backup_provider.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -13,7 +15,6 @@ class BackupProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  // State untuk proses backup dan import
   bool _isBackingUp = false;
   bool get isBackingUp => _isBackingUp;
 
@@ -23,8 +24,11 @@ class BackupProvider with ChangeNotifier {
   String? _backupPath;
   String? get backupPath => _backupPath;
 
-  List<File> _backupFiles = [];
-  List<File> get backupFiles => _backupFiles;
+  List<File> _rspaceBackupFiles = [];
+  List<File> get rspaceBackupFiles => _rspaceBackupFiles;
+
+  List<File> _perpuskuBackupFiles = [];
+  List<File> get perpuskuBackupFiles => _perpuskuBackupFiles;
 
   BackupProvider() {
     loadBackupData();
@@ -35,12 +39,9 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
 
     _backupPath = await _prefsService.loadCustomStoragePath();
-    if (_backupPath == null || _backupPath!.isEmpty) {
-      _backupPath = await _pathService.contentsPath.then(
-        (p) => path.dirname(p),
-      );
+    if (_backupPath != null && _backupPath!.isNotEmpty) {
+      await listBackupFiles();
     }
-    await listBackupFiles();
 
     _isLoading = false;
     notifyListeners();
@@ -54,40 +55,68 @@ class BackupProvider with ChangeNotifier {
   }
 
   Future<void> listBackupFiles() async {
-    _backupFiles = [];
+    _rspaceBackupFiles = [];
+    _perpuskuBackupFiles = [];
+
     if (_backupPath == null || _backupPath!.isEmpty) {
       return;
     }
 
-    final directory = Directory(_backupPath!);
-    if (await directory.exists()) {
-      final files = directory
-          .listSync()
-          .whereType<File>()
-          .where(
-            (item) =>
-                path.basename(item.path).startsWith('backup-topics-') &&
-                item.path.toLowerCase().endsWith('.zip'),
-          )
-          .toList();
+    // Memuat file backup RSpace
+    try {
+      final rspaceDir = Directory(await _pathService.rspaceBackupPath);
+      if (await rspaceDir.exists()) {
+        final files = rspaceDir
+            .listSync()
+            .whereType<File>()
+            .where(
+              (item) =>
+                  path.basename(item.path).startsWith('backup-topics-') &&
+                  item.path.toLowerCase().endsWith('.zip'),
+            )
+            .toList();
+        files.sort(
+          (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+        );
+        _rspaceBackupFiles = files;
+      }
+    } catch (e) {
+      // Abaikan jika path belum ada
+    }
 
-      files.sort(
-        (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-      );
-      _backupFiles = files;
+    // Memuat file backup PerpusKu
+    try {
+      final perpuskuDir = Directory(await _pathService.perpuskuBackupPath);
+      if (await perpuskuDir.exists()) {
+        final files = perpuskuDir
+            .listSync()
+            .whereType<File>()
+            .where(
+              (item) =>
+                  path.basename(item.path).startsWith('backup-perpusku-') &&
+                  item.path.toLowerCase().endsWith('.zip'),
+            )
+            .toList();
+        files.sort(
+          (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+        );
+        _perpuskuBackupFiles = files;
+      }
+    } catch (e) {
+      // Abaikan jika path belum ada
     }
   }
 
-  // --- FUNGSI BARU: Logika Backup & Import ---
-  Future<String> backupContents({required String destinationPath}) async {
+  Future<String> backupRspaceContents() async {
     _isBackingUp = true;
     notifyListeners();
     try {
+      final destinationPath = await _pathService.rspaceBackupPath;
       final contentsPath = await _pathService.contentsPath;
       final sourceDir = Directory(contentsPath);
 
       if (!await sourceDir.exists()) {
-        throw Exception('Direktori "contents" tidak ditemukan.');
+        throw Exception('Direktori "contents" RSpace tidak ditemukan.');
       }
 
       final timestamp = DateFormat(
@@ -101,37 +130,69 @@ class BackupProvider with ChangeNotifier {
       await encoder.addDirectory(sourceDir, includeDirName: false);
       encoder.close();
 
-      await listBackupFiles(); // Refresh daftar file setelah backup
-      return 'Backup berhasil disimpan di: $destinationPath';
-    } catch (e) {
-      rethrow;
+      await listBackupFiles();
+      return 'Backup RSpace berhasil disimpan.';
     } finally {
       _isBackingUp = false;
       notifyListeners();
     }
   }
 
-  Future<void> importContents(File zipFile) async {
+  Future<String> backupPerpuskuContents() async {
+    _isBackingUp = true;
+    notifyListeners();
+    try {
+      final destinationPath = await _pathService.perpuskuBackupPath;
+      final perpuskuDataPath = await _pathService.perpuskuDataPath;
+      final sourceDir = Directory(perpuskuDataPath);
+
+      if (!await sourceDir.exists()) {
+        await sourceDir.create(recursive: true); // Buat folder jika belum ada
+      }
+
+      final timestamp = DateFormat(
+        'yyyy-MM-dd_HH-mm-ss',
+      ).format(DateTime.now());
+      final zipFileName = 'backup-perpusku-$timestamp.zip';
+      final zipFilePath = path.join(destinationPath, zipFileName);
+
+      final encoder = ZipFileEncoder();
+      encoder.create(zipFilePath);
+      await encoder.addDirectory(sourceDir, includeDirName: false);
+      encoder.close();
+
+      await listBackupFiles();
+      return 'Backup PerpusKu berhasil disimpan.';
+    } finally {
+      _isBackingUp = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> importContents(File zipFile, String type) async {
     _isImporting = true;
     notifyListeners();
     try {
-      final topicsPath = await _pathService.topicsPath;
-      final myTasksPath = await _pathService.myTasksPath;
-      final contentsPath = await _pathService.contentsPath;
+      if (type == 'RSpace') {
+        final topicsPath = await _pathService.topicsPath;
+        final myTasksPath = await _pathService.myTasksPath;
+        final contentsPath = await _pathService.contentsPath;
 
-      final topicsDir = Directory(topicsPath);
-      final myTasksFile = File(myTasksPath);
+        final topicsDir = Directory(topicsPath);
+        final myTasksFile = File(myTasksPath);
 
-      if (await topicsDir.exists()) {
-        await topicsDir.delete(recursive: true);
+        if (await topicsDir.exists()) await topicsDir.delete(recursive: true);
+        if (await myTasksFile.exists()) await myTasksFile.delete();
+
+        await extractFileToDisk(zipFile.path, contentsPath);
+      } else if (type == 'PerpusKu') {
+        final perpuskuDataPath = await _pathService.perpuskuDataPath;
+        final dataDir = Directory(perpuskuDataPath);
+
+        if (await dataDir.exists()) await dataDir.delete(recursive: true);
+
+        await extractFileToDisk(zipFile.path, perpuskuDataPath);
       }
-      if (await myTasksFile.exists()) {
-        await myTasksFile.delete();
-      }
-
-      await extractFileToDisk(zipFile.path, contentsPath);
-    } catch (e) {
-      rethrow;
     } finally {
       _isImporting = false;
       notifyListeners();

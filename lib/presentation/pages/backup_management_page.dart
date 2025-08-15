@@ -1,3 +1,4 @@
+// lib/presentation/pages/backup_management_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -13,49 +14,53 @@ class BackupManagementPage extends StatelessWidget {
   Future<void> _selectBackupFolder(BuildContext context) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Pilih Folder Penyimpanan Backup',
+      dialogTitle: 'Pilih Folder Backup Utama',
     );
 
     if (selectedDirectory != null) {
       await provider.setBackupPath(selectedDirectory);
       if (context.mounted) {
-        showAppSnackBar(context, 'Folder backup berhasil diubah.');
+        showAppSnackBar(context, 'Folder backup utama berhasil diatur.');
       }
     } else {
-      if (context.mounted)
+      if (context.mounted) {
         showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+      }
     }
   }
 
-  // --- FUNGSI BARU UNTUK PROSES BACKUP & IMPORT ---
-  Future<void> _backupContents(BuildContext context) async {
+  Future<void> _backupContents(BuildContext context, String type) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
-    if (provider.backupPath == null) {
+    if (provider.backupPath == null || provider.backupPath!.isEmpty) {
       showAppSnackBar(
         context,
-        'Folder backup belum ditentukan.',
+        'Folder backup utama belum ditentukan.',
         isError: true,
       );
       return;
     }
 
-    showAppSnackBar(context, 'Memulai proses backup...');
+    showAppSnackBar(context, 'Memulai proses backup $type...');
     try {
-      final message = await provider.backupContents(
-        destinationPath: provider.backupPath!,
-      );
+      String message;
+      if (type == 'RSpace') {
+        message = await provider.backupRspaceContents();
+      } else {
+        message = await provider.backupPerpuskuContents();
+      }
       if (context.mounted) showAppSnackBar(context, message);
     } catch (e) {
-      String errorMessage = 'Terjadi error saat backup: $e';
-      if (e is FileSystemException) {
-        errorMessage = 'Error: Gagal menulis file. Periksa izin aplikasi.';
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          'Terjadi error saat backup: $e',
+          isError: true,
+        );
       }
-      if (context.mounted)
-        showAppSnackBar(context, errorMessage, isError: true);
     }
   }
 
-  Future<void> _importContents(BuildContext context) async {
+  Future<void> _importContents(BuildContext context, String type) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['zip'],
@@ -65,7 +70,7 @@ class BackupManagementPage extends StatelessWidget {
       return;
     }
 
-    final confirmed = await _showImportConfirmationDialog(context);
+    final confirmed = await _showImportConfirmationDialog(context, type);
     if (!confirmed) {
       if (context.mounted)
         showAppSnackBar(context, 'Import dibatalkan oleh pengguna.');
@@ -76,14 +81,15 @@ class BackupManagementPage extends StatelessWidget {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     try {
       final zipFile = File(result.files.single.path!);
-      await provider.importContents(zipFile);
+      await provider.importContents(zipFile, type);
       if (context.mounted) {
-        // Refresh data di TopicProvider setelah import
-        await Provider.of<TopicProvider>(context, listen: false).fetchTopics();
-        showAppSnackBar(
-          context,
-          'Import berhasil. Aplikasi akan terasa segar!',
-        );
+        if (type == 'RSpace') {
+          await Provider.of<TopicProvider>(
+            context,
+            listen: false,
+          ).fetchTopics();
+        }
+        showAppSnackBar(context, 'Import $type berhasil!');
       }
     } catch (e) {
       if (context.mounted) {
@@ -96,13 +102,16 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  Future<bool> _showImportConfirmationDialog(BuildContext context) async {
+  Future<bool> _showImportConfirmationDialog(
+    BuildContext context,
+    String type,
+  ) async {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Konfirmasi Import'),
-            content: const Text(
-              'PERINGATAN: Tindakan ini akan menghapus semua data saat ini dan menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
+            title: Text('Konfirmasi Import $type'),
+            content: Text(
+              'PERINGATAN: Tindakan ini akan menghapus semua data $type saat ini dan menggantinya dengan data dari file backup. Anda yakin ingin melanjutkan?',
             ),
             actions: [
               TextButton(
@@ -118,7 +127,6 @@ class BackupManagementPage extends StatelessWidget {
         ) ??
         false;
   }
-  // --- Akhir dari fungsi baru ---
 
   @override
   Widget build(BuildContext context) {
@@ -136,14 +144,29 @@ class BackupManagementPage extends StatelessWidget {
               children: [
                 _buildPathInfoCard(context, provider),
                 const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Daftar File Backup',
-                    style: Theme.of(context).textTheme.titleMedium,
+                Expanded(
+                  child: ListView(
+                    children: [
+                      _buildBackupSection(
+                        context: context,
+                        title: 'Backup RSpace',
+                        files: provider.rspaceBackupFiles,
+                        onBackup: () => _backupContents(context, 'RSpace'),
+                        onImport: () => _importContents(context, 'RSpace'),
+                        provider: provider,
+                      ),
+                      const Divider(),
+                      _buildBackupSection(
+                        context: context,
+                        title: 'Backup PerpusKu',
+                        files: provider.perpuskuBackupFiles,
+                        onBackup: () => _backupContents(context, 'PerpusKu'),
+                        onImport: () => _importContents(context, 'PerpusKu'),
+                        provider: provider,
+                      ),
+                    ],
                   ),
                 ),
-                Expanded(child: _buildBackupList(provider)),
               ],
             );
           },
@@ -159,27 +182,53 @@ class BackupManagementPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Folder Backup Aktif',
-            style: Theme.of(context).textTheme.titleLarge,
+            'Folder Backup Utama',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             provider.backupPath ?? 'Folder belum ditentukan.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Ubah Folder Utama'),
+              onPressed: () => _selectBackupFolder(context),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackupSection({
+    required BuildContext context,
+    required String title,
+    required List<File> files,
+    required VoidCallback onBackup,
+    required VoidCallback onImport,
+    required BackupProvider provider,
+  }) {
+    final bool isActionInProgress =
+        provider.isBackingUp || provider.isImporting;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('Ubah Folder'),
-                  onPressed: () => _selectBackupFolder(context),
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
                   icon: provider.isBackingUp
@@ -195,9 +244,10 @@ class BackupManagementPage extends StatelessWidget {
                           ),
                         )
                       : const Text('Backup'),
-                  onPressed: provider.isBackingUp
-                      ? null
-                      : () => _backupContents(context),
+                  onPressed: isActionInProgress ? null : onBackup,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -216,57 +266,55 @@ class BackupManagementPage extends StatelessWidget {
                           ),
                         )
                       : const Text('Import'),
-                  onPressed: provider.isImporting
-                      ? null
-                      : () => _importContents(context),
+                  onPressed: isActionInProgress ? null : onImport,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.secondary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          Text(
+            'File Tersimpan',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const Divider(),
+          if (files.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
+              child: Center(
+                child: Text('Tidak ada file backup (.zip) ditemukan.'),
+              ),
+            ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: files.length,
+            itemBuilder: (context, index) {
+              final file = files[index];
+              final fileName = file.path.split(Platform.pathSeparator).last;
+              final lastModified = file.lastModifiedSync();
+              final formattedDate = DateFormat(
+                'd MMMM yyyy, HH:mm',
+                'id_ID',
+              ).format(lastModified);
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ListTile(
+                  leading: const Icon(Icons.archive_outlined, size: 32),
+                  title: Text(
+                    fileName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('Tanggal: $formattedDate'),
+                ),
+              );
+            },
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildBackupList(BackupProvider provider) {
-    if (provider.backupPath == null || provider.backupPath!.isEmpty) {
-      return const Center(
-        child: Text('Tentukan folder backup untuk melihat file.'),
-      );
-    }
-
-    if (provider.backupFiles.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada file backup (.zip) ditemukan di folder ini.'),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      itemCount: provider.backupFiles.length,
-      itemBuilder: (context, index) {
-        final file = provider.backupFiles[index];
-        final fileName = file.path.split(Platform.pathSeparator).last;
-        final lastModified = file.lastModifiedSync();
-        final formattedDate = DateFormat(
-          'd MMMM yyyy, HH:mm',
-          'id_ID',
-        ).format(lastModified);
-
-        return Card(
-          child: ListTile(
-            leading: const Icon(Icons.archive_outlined, size: 40),
-            title: Text(
-              fileName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('Tanggal: $formattedDate'),
-          ),
-        );
-      },
     );
   }
 }
