@@ -29,7 +29,6 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI DIUBAH UNTUK MEMILIH FOLDER SUMBER DATA PERPUSKU <==
   Future<void> _selectPerpuskuDataFolder(BuildContext context) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
@@ -51,7 +50,6 @@ class BackupManagementPage extends StatelessWidget {
     }
   }
 
-  // ... (sisa kode tetap sama)
   Future<void> _backupContents(BuildContext context, String type) async {
     final provider = Provider.of<BackupProvider>(context, listen: false);
     if (provider.backupPath == null || provider.backupPath!.isEmpty) {
@@ -95,8 +93,9 @@ class BackupManagementPage extends StatelessWidget {
 
     final confirmed = await _showImportConfirmationDialog(context, type);
     if (!confirmed) {
-      if (context.mounted)
+      if (context.mounted) {
         showAppSnackBar(context, 'Import dibatalkan oleh pengguna.');
+      }
       return;
     }
 
@@ -163,30 +162,16 @@ class BackupManagementPage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            return ListView(
-              children: [
-                _buildPathInfoCard(context, provider),
-                const Divider(height: 1),
-                _buildPerpuskuPathCard(context, provider), // Diubah
-                const Divider(height: 1),
-                _buildBackupSection(
-                  context: context,
-                  title: 'Backup RSpace',
-                  files: provider.rspaceBackupFiles,
-                  onBackup: () => _backupContents(context, 'RSpace'),
-                  onImport: () => _importContents(context, 'RSpace'),
-                  provider: provider,
-                ),
-                const Divider(),
-                _buildBackupSection(
-                  context: context,
-                  title: 'Backup PerpusKu',
-                  files: provider.perpuskuBackupFiles,
-                  onBackup: () => _backupContents(context, 'PerpusKu'),
-                  onImport: () => _importContents(context, 'PerpusKu'),
-                  provider: provider,
-                ),
-              ],
+            // ==> LOGIKA RESPONSIVE MENGGUNAKAN LAYOUTBUILDER <==
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                const double breakpoint = 700.0;
+                if (constraints.maxWidth > breakpoint) {
+                  return _buildDesktopLayout(context, provider);
+                } else {
+                  return _buildMobileLayout(context, provider);
+                }
+              },
             );
           },
         ),
@@ -194,8 +179,95 @@ class BackupManagementPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPathInfoCard(BuildContext context, BackupProvider provider) {
-    return Padding(
+  // ==> WIDGET BARU UNTUK TAMPILAN MOBILE (SATU KOLOM) <==
+  Widget _buildMobileLayout(BuildContext context, BackupProvider provider) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      children: [
+        _buildPathInfoCard(context, provider),
+        const Divider(height: 1),
+        _buildPerpuskuPathCard(context, provider),
+        const Divider(height: 1),
+        _buildBackupSection(
+          context: context,
+          title: 'Backup RSpace',
+          files: provider.rspaceBackupFiles,
+          onBackup: () => _backupContents(context, 'RSpace'),
+          onImport: () => _importContents(context, 'RSpace'),
+          provider: provider,
+        ),
+        const Divider(),
+        _buildBackupSection(
+          context: context,
+          title: 'Backup PerpusKu',
+          files: provider.perpuskuBackupFiles,
+          onBackup: () => _backupContents(context, 'PerpusKu'),
+          onImport: () => _importContents(context, 'PerpusKu'),
+          provider: provider,
+        ),
+      ],
+    );
+  }
+
+  // ==> WIDGET BARU UNTUK TAMPILAN DESKTOP (DUA KOLOM) <==
+  Widget _buildDesktopLayout(BuildContext context, BackupProvider provider) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // KOLOM KIRI (PENGATURAN FOLDER)
+        Expanded(
+          flex: 2,
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              Text(
+                "Pengaturan Folder",
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
+              _buildPathInfoCard(context, provider, isCard: true),
+              const SizedBox(height: 16),
+              _buildPerpuskuPathCard(context, provider, isCard: true),
+            ],
+          ),
+        ),
+        const VerticalDivider(width: 1),
+        // KOLOM KANAN (BACKUP & IMPORT)
+        Expanded(
+          flex: 3,
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              _buildBackupSection(
+                context: context,
+                title: 'Backup RSpace',
+                files: provider.rspaceBackupFiles,
+                onBackup: () => _backupContents(context, 'RSpace'),
+                onImport: () => _importContents(context, 'RSpace'),
+                provider: provider,
+              ),
+              const SizedBox(height: 24),
+              _buildBackupSection(
+                context: context,
+                title: 'Backup PerpusKu',
+                files: provider.perpuskuBackupFiles,
+                onBackup: () => _backupContents(context, 'PerpusKu'),
+                onImport: () => _importContents(context, 'PerpusKu'),
+                provider: provider,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPathInfoCard(
+    BuildContext context,
+    BackupProvider provider, {
+    bool isCard = false,
+  }) {
+    final content = Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,11 +298,15 @@ class BackupManagementPage extends StatelessWidget {
         ],
       ),
     );
+    return isCard ? Card(child: content) : content;
   }
 
-  // ==> WIDGET DIUBAH UNTUK SUMBER DATA PERPUSKU <==
-  Widget _buildPerpuskuPathCard(BuildContext context, BackupProvider provider) {
-    return Padding(
+  Widget _buildPerpuskuPathCard(
+    BuildContext context,
+    BackupProvider provider, {
+    bool isCard = false,
+  }) {
+    final content = Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,9 +342,10 @@ class BackupManagementPage extends StatelessWidget {
         ],
       ),
     );
+    return isCard ? Card(child: content) : content;
   }
 
-  // ... (sisa kode tetap sama)
+  // ==> PERUBAHAN DI SINI <==
   Widget _buildBackupSection({
     required BuildContext context,
     required String title,
@@ -279,67 +356,90 @@ class BackupManagementPage extends StatelessWidget {
   }) {
     final bool isActionInProgress =
         provider.isBackingUp || provider.isImporting;
+    final theme = Theme.of(context);
+
+    // Widget untuk menampilkan CircularProgressIndicator
+    Widget loadingIndicator() {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+      );
+    }
+
+    // Widget untuk menampilkan CircularProgressIndicator pada OutlinedButton
+    Widget loadingIndicatorOutline() {
+      return SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: theme.primaryColor,
+        ),
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 12),
-          Row(
+          Text(
+            title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Menggunakan Wrap agar bisa responsif di layar kecil
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: provider.isBackingUp
-                      ? const SizedBox.shrink()
-                      : const Icon(Icons.backup_outlined),
-                  label: provider.isBackingUp
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Backup'),
-                  onPressed: isActionInProgress ? null : onBackup,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+              // Tombol Backup (Aksi Primer)
+              ElevatedButton.icon(
+                icon: provider.isBackingUp
+                    ? const SizedBox.shrink()
+                    : const Icon(Icons.backup_outlined),
+                label: provider.isBackingUp
+                    ? loadingIndicator()
+                    : const Text('Backup Data'),
+                onPressed: isActionInProgress ? null : onBackup,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: provider.isImporting
-                      ? const SizedBox.shrink()
-                      : const Icon(Icons.restore),
-                  label: provider.isImporting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Import'),
-                  onPressed: isActionInProgress ? null : onImport,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+              // Tombol Import (Aksi Sekunder)
+              OutlinedButton.icon(
+                icon: provider.isImporting
+                    ? const SizedBox.shrink()
+                    : const Icon(Icons.restore),
+                label: provider.isImporting
+                    ? loadingIndicatorOutline()
+                    : const Text('Import Data'),
+                onPressed: isActionInProgress ? null : onImport,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(color: theme.primaryColor),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            'File Tersimpan',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          const SizedBox(height: 24),
+          Text('File Tersimpan', style: theme.textTheme.titleMedium),
           const Divider(),
           if (files.isEmpty)
             const Padding(
