@@ -41,7 +41,8 @@ class BackupProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _backupPath = await _prefsService.loadCustomStoragePath();
+    // ==> DIUBAH: Memuat path backup yang terpisah <==
+    _backupPath = await _prefsService.loadCustomBackupPath();
     _perpuskuDataPath = await _prefsService.loadPerpuskuDataPath();
 
     if (_backupPath != null && _backupPath!.isNotEmpty) {
@@ -53,10 +54,11 @@ class BackupProvider with ChangeNotifier {
   }
 
   Future<void> setBackupPath(String newPath) async {
-    await _prefsService.saveCustomStoragePath(newPath);
+    // ==> DIUBAH: Menyimpan ke preferensi backup yang terpisah <==
+    await _prefsService.saveCustomBackupPath(newPath);
     _backupPath = newPath;
     await listBackupFiles();
-    notifyListeners(); // DITAMBAHKAN UNTUK REFRESH UI
+    notifyListeners();
   }
 
   Future<void> setPerpuskuDataPath(String newPath) async {

@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/path_service.dart';
 import '../../data/services/shared_preferences_service.dart';
-import '../providers/statistics_provider.dart'; // DIIMPOR
+import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
 import '../theme/app_theme.dart';
@@ -27,7 +27,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  // KUNCI BARU UNTUK MEREFRESH WIDGET PATH
   Key _dashboardPathKey = UniqueKey();
 
   Future<void> _showStoragePathDialog(BuildContext context) async {
@@ -40,14 +39,12 @@ class _DashboardPageState extends State<DashboardPage> {
       await prefsService.saveCustomStoragePath(selectedDirectory);
 
       if (mounted) {
-        // Tampilkan notifikasi loading
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Mengubah lokasi dan memuat ulang data...'),
           ),
         );
 
-        // Panggil provider untuk memuat ulang data dari path baru
         final topicProvider = Provider.of<TopicProvider>(
           context,
           listen: false,
@@ -57,19 +54,16 @@ class _DashboardPageState extends State<DashboardPage> {
           listen: false,
         );
 
-        // Tunggu kedua proses selesai
         await Future.wait([
           topicProvider.fetchTopics(),
           statisticsProvider.generateStatistics(),
         ]);
 
-        // Perbarui UI
         setState(() {
           _dashboardPathKey = UniqueKey();
         });
 
         if (mounted) {
-          // Hapus notifikasi loading dan tampilkan pesan sukses
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           showAppSnackBar(
             context,
@@ -230,7 +224,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: ListView(
                     padding: const EdgeInsets.all(16.0),
                     children: [
-                      // GUNAKAN KEY DI SINI
                       _DashboardHeader(key: _dashboardPathKey),
                       const SizedBox(height: 20),
                       _buildResponsiveGridView(context, constraints.maxWidth),
@@ -256,6 +249,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     const List<Color> gradientColors6 = [Color(0xFF7E57C2), Color(0xFF5E35B1)];
 
+    // ==> DIHAPUS: Tombol "Penyimpanan" <==
     final List<Widget> dashboardItems = [
       _DashboardItem(
         icon: Icons.topic_outlined,
@@ -295,7 +289,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       _DashboardItem(
         icon: Icons.folder_open_rounded,
-        label: 'Penyimpanan',
+        label: 'Penyimpanan Utama', // Diubah labelnya agar lebih jelas
         gradientColors: const [Color(0xFF78909C), Color(0xFF546E7A)],
         onTap: () => _showStoragePathDialog(context),
       ),
@@ -325,7 +319,6 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 class _DashboardHeader extends StatelessWidget {
-  // TERIMA KEY DI KONSTRUKTOR
   const _DashboardHeader({super.key});
 
   @override

@@ -10,9 +10,22 @@ class SharedPreferencesService {
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _primaryColorKey = 'primary_color';
   static const String _recentColorsKey = 'recent_colors';
-  static const String _perpuskuDataPathKey = 'perpusku_data_path'; // DIUBAH
+  static const String _perpuskuDataPathKey = 'perpusku_data_path';
+  // ==> KUNCI BARU UNTUK LOKASI BACKUP <==
+  static const String _customBackupPathKey = 'custom_backup_path';
 
-  // ==> FUNGSI DIUBAH UNTUK MENYIMPAN PATH SUMBER DATA PERPUSKU <==
+  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PATH BACKUP <==
+  Future<void> saveCustomBackupPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_customBackupPathKey, path);
+  }
+
+  Future<String?> loadCustomBackupPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_customBackupPathKey);
+  }
+  // --- AKHIR PERUBAHAN ---
+
   Future<void> savePerpuskuDataPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_perpuskuDataPathKey, path);
@@ -22,16 +35,13 @@ class SharedPreferencesService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_perpuskuDataPathKey);
   }
-  // --- AKHIR PERUBAHAN ---
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN RIWAYAT WARNA <==
   Future<void> saveRecentColors(List<int> colorValues) async {
     final prefs = await SharedPreferences.getInstance();
     final stringList = colorValues.map((v) => v.toString()).toList();
     await prefs.setStringList(_recentColorsKey, stringList);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMUAT RIWAYAT WARNA <==
   Future<List<int>> loadRecentColors() async {
     final prefs = await SharedPreferences.getInstance();
     final stringList = prefs.getStringList(_recentColorsKey) ?? [];
