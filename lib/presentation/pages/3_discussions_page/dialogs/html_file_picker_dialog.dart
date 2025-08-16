@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -22,10 +23,11 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   List<Directory> _topics = [];
   List<Directory> _subjects = [];
   List<File> _files = [];
-  // ==> TAMBAHKAN CONTROLLER DAN STATE UNTUK PENCARIAN <==
   final TextEditingController _searchController = TextEditingController();
   List<File> _filteredFiles = [];
   String _searchQuery = '';
+  // ==> TAMBAHKAN STATE UNTUK MENYIMPAN MAPPING JUDUL <==
+  Map<String, String> _fileTitles = {};
 
   bool _isLoading = true;
   String? _error;
@@ -34,7 +36,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   void initState() {
     super.initState();
     _loadTopics();
-    // ==> TAMBAHKAN LISTENER UNTUK PENCARIAN <==
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -43,7 +44,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     });
   }
 
-  // ==> TAMBAHKAN FUNGSI DISPOSE UNTUK MEMBERSIHKAN CONTROLLER <==
   @override
   void dispose() {
     _searchController.dispose();
@@ -89,6 +89,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _fileTitles = {}; // Reset judul setiap kali memuat
     });
     try {
       final filesDir = Directory(subjectPath);
@@ -97,25 +98,36 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
           .whereType<File>()
           .where((file) => file.path.toLowerCase().endsWith('.html'))
           .toList();
-      // ==> INISIALISASI FILE YANG DIFILTER <==
       _filteredFiles = _files;
+
+      // ==> LOGIKA BARU: BACA METADATA.JSON DAN BUAT MAPPING <==
+      final metadataFile = File(path.join(subjectPath, 'metadata.json'));
+      if (await metadataFile.exists()) {
+        final jsonString = await metadataFile.readAsString();
+        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        final content = jsonData['content'] as List<dynamic>? ?? [];
+        _fileTitles = {
+          for (var item in content)
+            item['nama_file'] as String: item['judul'] as String,
+        };
+      }
     } catch (e) {
       _error = e.toString();
     }
     setState(() => _isLoading = false);
   }
 
-  // ==> FUNGSI BARU UNTUK MELAKUKAN FILTER <==
   void _filterFiles() {
     if (_searchQuery.isEmpty) {
       _filteredFiles = _files;
     } else {
-      _filteredFiles = _files
-          .where(
-            (file) =>
-                path.basename(file.path).toLowerCase().contains(_searchQuery),
-          )
-          .toList();
+      _filteredFiles = _files.where((file) {
+        final fileName = path.basename(file.path).toLowerCase();
+        final fileTitle =
+            _fileTitles[path.basename(file.path)]?.toLowerCase() ?? '';
+        return fileName.contains(_searchQuery) ||
+            fileTitle.contains(_searchQuery);
+      }).toList();
     }
   }
 
@@ -146,7 +158,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
           setState(() => _currentView = _PickerViewState.files);
         });
       case _PickerViewState.files:
-        // ==> MODIFIKASI TAMPILAN FILE UNTUK MENAMBAHKAN PENCARIAN <==
         return Column(
           children: [
             Padding(
@@ -155,7 +166,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   labelText: 'Cari file...',
-                  hintText: 'Masukkan nama file',
+                  hintText: 'Masukkan nama atau judul file',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.0),
@@ -200,9 +211,16 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
+        final fileName = path.basename(item.path);
+        // ==> AMBIL JUDUL DARI MAP, GUNAKAN NAMA FILE JIKA TIDAK ADA <==
+        final title = _fileTitles[fileName] ?? fileName;
+
         return ListTile(
           leading: Icon(item is Directory ? Icons.folder : Icons.description),
-          title: Text(path.basename(item.path)),
+          // ==> TAMPILKAN JUDUL DI SINI <==
+          title: Text(title),
+          // ==> TAMPILKAN NAMA FILE SEBAGAI SUBTITLE JIKA BERBEDA <==
+          subtitle: title != fileName ? Text(fileName) : null,
           onTap: () => onTap(item),
         );
       },
@@ -224,7 +242,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     if (_currentView == _PickerViewState.files) {
       setState(() {
         _currentView = _PickerViewState.subjects;
-        _searchController.clear(); // Bersihkan pencarian saat kembali
+        _searchController.clear();
       });
     } else if (_currentView == _PickerViewState.subjects) {
       setState(() => _currentView = _PickerViewState.topics);
@@ -237,7 +255,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_title),
-      // ==> PERBESAR SEDIKIT TINGGI DIALOG UNTUK SEARCH BAR <==
       content: SizedBox(
         width: double.maxFinite,
         height: 350,
