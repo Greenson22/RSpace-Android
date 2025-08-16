@@ -12,6 +12,7 @@ import 'point_tile.dart';
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;
   final int index;
+  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
 
@@ -19,10 +20,12 @@ class DiscussionCard extends StatelessWidget {
     super.key,
     required this.discussion,
     required this.index,
+    this.isFocused = false, // ==> SET NILAI DEFAULT
     required this.arePointsVisible,
     required this.onToggleVisibility,
   });
 
+  // ... (sisa kode method tidak berubah)
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
@@ -115,6 +118,7 @@ class DiscussionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
+    final theme = Theme.of(context); // Ambil theme
     bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
     final bool isFinished = discussion.finished;
     final iconColor = isFinished ? Colors.green : Colors.blue;
@@ -122,6 +126,7 @@ class DiscussionCard extends StatelessWidget {
         ? Icons.check_circle
         : Icons.chat_bubble_outline;
 
+    // ... (sisa kode build logic tidak berubah)
     final sortedPoints = List<Point>.from(discussion.points);
     final sortType = provider.sortType;
     final sortAscending = provider.sortAscending;
@@ -156,6 +161,13 @@ class DiscussionCard extends StatelessWidget {
     }
 
     return Card(
+      // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
+      ),
       child: Column(
         children: [
           ListTile(

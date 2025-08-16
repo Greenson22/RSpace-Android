@@ -1,5 +1,6 @@
 // lib/presentation/pages/3_discussions_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import untuk keyboard services
 import 'package:provider/provider.dart';
 import '../providers/discussion_provider.dart';
 import '3_discussions_page/dialogs/discussion_dialogs.dart';
@@ -20,19 +21,89 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   final Map<int, bool> _arePointsVisible = {};
   bool _isSearching = false;
 
+  // ==> TAMBAHAN: State untuk navigasi keyboard <==
+  final FocusNode _focusNode = FocusNode();
+  int _focusedIndex = 0;
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(() {
       Provider.of<DiscussionProvider>(context, listen: false).searchQuery =
           _searchController.text;
+      setState(() => _focusedIndex = 0); // Reset fokus saat mencari
+    });
+
+    // Request fokus saat halaman dimuat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
     });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _focusNode.dispose(); // Jangan lupa dispose focus node
     super.dispose();
+  }
+
+  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      final provider = Provider.of<DiscussionProvider>(context, listen: false);
+      final discussions = provider.filteredDiscussions;
+      final totalItems = discussions.length;
+      if (totalItems == 0) return;
+
+      final isTwoColumn = MediaQuery.of(context).size.width > 800.0;
+      final int middle = (totalItems / 2).ceil();
+
+      setState(() {
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          if (isTwoColumn) {
+            // Jika di kolom kiri dan ada item di bawahnya di kolom yg sama
+            if (_focusedIndex < middle - 1) {
+              _focusedIndex++;
+            }
+            // Jika di kolom kanan dan ada item di bawahnya
+            else if (_focusedIndex >= middle &&
+                _focusedIndex < totalItems - 1) {
+              _focusedIndex++;
+            }
+          } else {
+            if (_focusedIndex < totalItems - 1) _focusedIndex++;
+          }
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          if (_focusedIndex > 0) {
+            _focusedIndex--;
+          }
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          if (isTwoColumn && _focusedIndex < middle) {
+            int targetIndex = _focusedIndex + middle;
+            _focusedIndex = targetIndex < totalItems
+                ? targetIndex
+                : totalItems - 1;
+          }
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          if (isTwoColumn && _focusedIndex >= middle) {
+            _focusedIndex -= middle;
+          }
+        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+          // Toggle visibilitas poin
+          final discussion = discussions[_focusedIndex];
+          final originalIndex = provider.allDiscussions.indexOf(discussion);
+          _togglePointsVisibility(originalIndex);
+        } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
+          Navigator.of(context).pop();
+        }
+      });
+    }
+  }
+
+  void _togglePointsVisibility(int index) {
+    setState(() {
+      _arePointsVisible[index] = !(_arePointsVisible[index] ?? false);
+    });
   }
 
   void _showSnackBar(String message) {
@@ -58,20 +129,25 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
 
-    return Scaffold(
-      appBar: _buildAppBar(provider),
-      body: _buildBody(provider),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addDiscussion(provider),
-        tooltip: 'Tambah Diskusi',
-        child: const Icon(Icons.add),
+    return RawKeyboardListener(
+      // ==> DI WRAP DENGAN KEYBOARD LISTENER <==
+      focusNode: _focusNode,
+      onKey: _handleKeyEvent,
+      child: Scaffold(
+        appBar: _buildAppBar(provider),
+        body: _buildBody(provider),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _addDiscussion(provider),
+          tooltip: 'Tambah Diskusi',
+          child: const Icon(Icons.add),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  // ==> APPBAR DI MODIFIKASI <==
   AppBar _buildAppBar(DiscussionProvider provider) {
+    // ... (kode tidak berubah)
     return AppBar(
       title: _isSearching
           ? TextField(
@@ -93,7 +169,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             if (!_isSearching) _searchController.clear();
           }),
         ),
-        // Tombol untuk menampilkan/menyembunyikan diskusi yang selesai
         if (provider.activeFilterType != 'code')
           IconButton(
             icon: Icon(
@@ -129,6 +204,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   }
 
   Widget _buildBody(DiscussionProvider provider) {
+    // ... (kode tidak berubah)
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -176,11 +252,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
                   index: originalIndex,
+                  isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
                   arePointsVisible: _arePointsVisible,
-                  onToggleVisibility: (idx) => setState(
-                    () => _arePointsVisible[idx] =
-                        !(_arePointsVisible[idx] ?? false),
-                  ),
+                  onToggleVisibility: _togglePointsVisibility,
                 );
               },
             ),
@@ -209,9 +283,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _buildColumnListView(provider, firstHalf)),
+                  Expanded(child: _buildColumnListView(provider, firstHalf, 0)),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildColumnListView(provider, secondHalf)),
+                  Expanded(
+                    child: _buildColumnListView(provider, secondHalf, middle),
+                  ),
                 ],
               ),
             ),
@@ -223,6 +299,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Widget _buildColumnListView(
     DiscussionProvider provider,
     List<dynamic> discussionList,
+    int indexOffset,
   ) {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 8, bottom: 80),
@@ -230,20 +307,21 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       itemBuilder: (context, index) {
         final discussion = discussionList[index];
         final originalIndex = provider.allDiscussions.indexOf(discussion);
+        final overallIndex = index + indexOffset;
         return DiscussionCard(
           key: ValueKey(discussion.hashCode),
           discussion: discussion,
           index: originalIndex,
+          isFocused: overallIndex == _focusedIndex, // ==> PASS isFocused STATE
           arePointsVisible: _arePointsVisible,
-          onToggleVisibility: (idx) => setState(
-            () => _arePointsVisible[idx] = !(_arePointsVisible[idx] ?? false),
-          ),
+          onToggleVisibility: _togglePointsVisibility,
         );
       },
     );
   }
 
   void _showFilterDialog(DiscussionProvider provider) {
+    // ... (kode tidak berubah)
     showFilterDialog(
       context: context,
       isFilterActive: provider.activeFilterType != null,
