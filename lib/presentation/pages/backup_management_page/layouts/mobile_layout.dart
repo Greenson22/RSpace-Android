@@ -8,7 +8,8 @@ import '../widgets/perpusku_path_card.dart';
 import '../utils/backup_actions.dart';
 
 class MobileLayout extends StatelessWidget {
-  const MobileLayout({super.key});
+  final Map<String, dynamic> focusProps;
+  const MobileLayout({super.key, required this.focusProps});
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +34,10 @@ class MobileLayout extends StatelessWidget {
                 onBackup: () => backupContents(context, 'RSpace'),
                 onImport: () => importContents(context, 'RSpace'),
                 isCompact: true,
+                isFocused:
+                    focusProps['isKeyboardActive'] &&
+                    focusProps['focusedColumn'] == 0,
+                focusedIndex: focusProps['focusedIndex'],
               ),
             ),
             const SizedBox(width: 8),
@@ -43,6 +48,10 @@ class MobileLayout extends StatelessWidget {
                 onBackup: () => backupContents(context, 'PerpusKu'),
                 onImport: () => importContents(context, 'PerpusKu'),
                 isCompact: true,
+                isFocused:
+                    focusProps['isKeyboardActive'] &&
+                    focusProps['focusedColumn'] == 1,
+                focusedIndex: focusProps['focusedIndex'],
               ),
             ),
           ],

@@ -8,7 +8,8 @@ import '../widgets/perpusku_path_card.dart';
 import '../utils/backup_actions.dart';
 
 class DesktopLayout extends StatelessWidget {
-  const DesktopLayout({super.key});
+  final Map<String, dynamic> focusProps;
+  const DesktopLayout({super.key, required this.focusProps});
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +46,10 @@ class DesktopLayout extends StatelessWidget {
                 files: provider.rspaceBackupFiles,
                 onBackup: () => backupContents(context, 'RSpace'),
                 onImport: () => importContents(context, 'RSpace'),
+                isFocused:
+                    focusProps['isKeyboardActive'] &&
+                    focusProps['focusedColumn'] == 0,
+                focusedIndex: focusProps['focusedIndex'],
               ),
             ],
           ),
@@ -60,6 +65,10 @@ class DesktopLayout extends StatelessWidget {
                 files: provider.perpuskuBackupFiles,
                 onBackup: () => backupContents(context, 'PerpusKu'),
                 onImport: () => importContents(context, 'PerpusKu'),
+                isFocused:
+                    focusProps['isKeyboardActive'] &&
+                    focusProps['focusedColumn'] == 1,
+                focusedIndex: focusProps['focusedIndex'],
               ),
             ],
           ),

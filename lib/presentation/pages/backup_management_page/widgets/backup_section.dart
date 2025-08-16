@@ -14,6 +14,8 @@ class BackupSection extends StatelessWidget {
   final VoidCallback onBackup;
   final VoidCallback onImport;
   final bool isCompact;
+  final bool isFocused;
+  final int focusedIndex;
 
   const BackupSection({
     super.key,
@@ -22,6 +24,8 @@ class BackupSection extends StatelessWidget {
     required this.onBackup,
     required this.onImport,
     this.isCompact = false,
+    this.isFocused = false,
+    this.focusedIndex = -1,
   });
 
   @override
@@ -129,7 +133,14 @@ class BackupSection extends StatelessWidget {
               itemCount: files.length,
               itemBuilder: (context, index) {
                 final file = files[index];
-                return _buildFileListItem(context, file, provider);
+                final bool isCurrentlyFocused =
+                    isFocused && index == focusedIndex;
+                return _buildFileListItem(
+                  context,
+                  file,
+                  provider,
+                  isCurrentlyFocused,
+                );
               },
             ),
           ],
@@ -142,6 +153,7 @@ class BackupSection extends StatelessWidget {
     BuildContext context,
     File file,
     BackupProvider provider,
+    bool isCurrentlyFocused,
   ) {
     final isSelected = provider.selectedFiles.contains(file.path);
     final theme = Theme.of(context);
@@ -154,50 +166,57 @@ class BackupSection extends StatelessWidget {
     ).format(lastModified);
     final formattedSize = formatBytes(fileSize, 2);
 
-    return ListTile(
-      tileColor: isSelected ? theme.primaryColor.withOpacity(0.2) : null,
-      onTap: () {
-        if (provider.isSelectionMode) {
-          provider.toggleFileSelection(file);
-        }
-      },
-      onLongPress: () {
-        if (!provider.isSelectionMode) {
-          provider.toggleFileSelection(file);
-        }
-      },
-      dense: true,
-      leading: isSelected
-          ? Icon(Icons.check_circle, color: theme.primaryColor)
-          : const Icon(Icons.archive_outlined),
-      title: Text(
-        fileName,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-        overflow: TextOverflow.ellipsis,
+    return Container(
+      decoration: BoxDecoration(
+        color: isSelected
+            ? theme.primaryColor.withOpacity(0.2)
+            : (isCurrentlyFocused ? theme.primaryColor.withOpacity(0.1) : null),
+        border: isCurrentlyFocused
+            ? Border.all(color: theme.primaryColor, width: 1.5)
+            : null,
+        borderRadius: BorderRadius.circular(8),
       ),
-      subtitle: RichText(
-        text: TextSpan(
-          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-          children: [
-            TextSpan(
-              text: formattedDate,
-              style: TextStyle(color: Colors.blueGrey.shade700),
-            ),
-            const TextSpan(text: ' - '),
-            TextSpan(
-              text: formattedSize,
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      child: ListTile(
+        onTap: () {
+          provider.toggleFileSelection(file);
+        },
+        onLongPress: () {
+          provider.toggleFileSelection(file);
+        },
+        dense: true,
+        leading: isSelected
+            ? Icon(Icons.check_circle, color: theme.primaryColor)
+            : const Icon(Icons.archive_outlined),
+        title: Text(
+          fileName,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          overflow: TextOverflow.ellipsis,
         ),
+        subtitle: RichText(
+          text: TextSpan(
+            style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+            children: [
+              TextSpan(
+                text: formattedDate,
+                style: TextStyle(color: Colors.blueGrey.shade700),
+              ),
+              const TextSpan(text: ' - '),
+              TextSpan(
+                text: formattedSize,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        contentPadding: const EdgeInsets.only(left: 8, right: 4),
+        trailing: provider.isSelectionMode
+            ? null
+            : _buildFileActionMenu(context, file),
       ),
-      contentPadding: const EdgeInsets.only(left: 4),
-      trailing: provider.isSelectionMode
-          ? null
-          : _buildFileActionMenu(context, file),
     );
   }
 
