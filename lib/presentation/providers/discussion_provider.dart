@@ -1,7 +1,11 @@
 // lib/presentation/providers/discussion_provider.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:html/parser.dart' show parse;
+import 'package:html/dom.dart' as dom;
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
@@ -292,7 +296,6 @@ class DiscussionProvider with ChangeNotifier {
   // --- ACTIONS ---
   Future<String> getPerpuskuHtmlBasePath() async {
     final perpuskuPath = await _pathService.perpuskuDataPath;
-    // PERBAIKAN: Menghapus 'data' dari dalam path
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
@@ -305,6 +308,7 @@ class DiscussionProvider with ChangeNotifier {
     await _saveDiscussions();
   }
 
+  // ==> FUNGSI INI DIUBAH SECARA SIGNIFIKAN <==
   Future<void> openDiscussionFile(Discussion discussion) async {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Tidak ada path file yang ditentukan.');
@@ -312,19 +316,52 @@ class DiscussionProvider with ChangeNotifier {
 
     try {
       final perpuskuPath = await _pathService.perpuskuDataPath;
-      // PERBAIKAN: Menghapus 'data' dari dalam path
-      final fullPath = path.join(
-        perpuskuPath,
-        'file_contents',
-        'topics',
-        discussion.filePath!,
-      );
-      final uri = Uri.file(fullPath);
+      final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
+      final contentFilePath = path.join(basePath, discussion.filePath!);
+
+      // Path ke direktori subject (misal: .../topics/Topik A/Subject B/)
+      final subjectDirPath = path.dirname(contentFilePath);
+      final indexFilePath = path.join(subjectDirPath, 'index.html');
+
+      final contentFile = File(contentFilePath);
+      final indexFile = File(indexFilePath);
+
+      if (!await contentFile.exists()) {
+        throw Exception('File konten tidak ditemukan: $contentFilePath');
+      }
+      if (!await indexFile.exists()) {
+        throw Exception('File index.html tidak ditemukan di: $subjectDirPath');
+      }
+
+      // Baca konten dari kedua file
+      final contentHtml = await contentFile.readAsString();
+      final indexHtml = await indexFile.readAsString();
+
+      // Gabungkan konten menggunakan DOM parser
+      final indexDocument = parse(indexHtml);
+      final mainContainer = indexDocument.querySelector('#main-container');
+
+      if (mainContainer == null) {
+        throw Exception(
+          'Elemen dengan id="main-container" tidak ditemukan di index.html',
+        );
+      }
+
+      // Sisipkan konten dari file yang dipilih
+      mainContainer.innerHtml = contentHtml;
+
+      // Buat file sementara untuk menampilkan hasilnya
+      final tempDir = await getTemporaryDirectory();
+      final tempFileName = '${DateTime.now().millisecondsSinceEpoch}.html';
+      final tempFile = File(path.join(tempDir.path, tempFileName));
+      await tempFile.writeAsString(indexDocument.outerHtml);
+
+      final uri = Uri.file(tempFile.path);
 
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        throw Exception('Tidak bisa membuka file: $fullPath');
+        throw Exception('Tidak bisa membuka file gabungan: ${tempFile.path}');
       }
     } catch (e) {
       rethrow;
