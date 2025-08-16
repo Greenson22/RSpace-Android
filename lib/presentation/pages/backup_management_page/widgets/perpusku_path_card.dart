@@ -1,4 +1,5 @@
 // lib/presentation/pages/backup_management_page/widgets/perpusku_path_card.dart
+import 'package:flutter/foundation.dart'; // <-- DITAMBAHKAN
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/backup_provider.dart';
@@ -9,8 +10,6 @@ class PerpuskuPathCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<BackupProvider>(context, listen: false);
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -30,10 +29,25 @@ class PerpuskuPathCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Consumer<BackupProvider>(
-              builder: (context, provider, child) => Text(
-                provider.perpuskuDataPath ?? 'Menggunakan folder default.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              builder: (context, provider, child) {
+                // ==> LOGIKA BARU UNTUK TAMPILAN DEBUG <==
+                final String displayText;
+                final TextStyle? textStyle;
+
+                if (kDebugMode) {
+                  displayText = '/home/lemon-manis-22/TESTING/PerpusKu';
+                  textStyle = Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.amber);
+                } else {
+                  displayText =
+                      provider.perpuskuDataPath ??
+                      'Menggunakan folder default.';
+                  textStyle = Theme.of(context).textTheme.bodyMedium;
+                }
+
+                return Text(displayText, style: textStyle);
+              },
             ),
             const SizedBox(height: 16),
             SizedBox(

@@ -1,4 +1,5 @@
 // lib/presentation/pages/dashboard_page/widgets/dashboard_header.dart
+import 'package:flutter/foundation.dart'; // <-- DITAMBAHKAN
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/services/path_service.dart';
@@ -78,7 +79,15 @@ class _DashboardPathState extends State<_DashboardPath> {
   @override
   void initState() {
     super.initState();
-    _pathFuture = _pathService.contentsPath;
+    _pathFuture = _getPath(); // DIUBAH
+  }
+
+  // ==> FUNGSI BARU UNTUK MENDAPATKAN PATH BERDASARKAN MODE <==
+  Future<String> _getPath() async {
+    if (kDebugMode) {
+      return '/home/lemon-manis-22/TESTING/RSpace_data/data/contents';
+    }
+    return _pathService.contentsPath;
   }
 
   @override
@@ -91,6 +100,14 @@ class _DashboardPathState extends State<_DashboardPath> {
         }
         if (snapshot.hasError) return const Text('Gagal memuat path.');
         if (snapshot.hasData) {
+          // ==> LOGIKA BARU UNTUK GAYA TEKS <==
+          final textStyle = kDebugMode
+              ? Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.amber,
+                  fontWeight: FontWeight.bold,
+                )
+              : Theme.of(context).textTheme.bodySmall;
+
           return Row(
             children: [
               const Icon(Icons.folder_outlined, size: 16),
@@ -98,7 +115,7 @@ class _DashboardPathState extends State<_DashboardPath> {
               Expanded(
                 child: Text(
                   snapshot.data!,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: textStyle, // DIUBAH
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
