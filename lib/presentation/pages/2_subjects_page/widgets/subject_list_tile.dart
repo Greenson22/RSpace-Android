@@ -82,6 +82,9 @@ class SubjectListTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       _buildSubtitle(context, textColor, subtitleFontSize),
                     ],
+                    // Widget baru untuk menampilkan statistik
+                    const SizedBox(height: 6),
+                    _buildStatsRow(context, textColor),
                   ],
                 ),
               ),
@@ -130,6 +133,65 @@ class SubjectListTile extends StatelessWidget {
         side: BorderSide.none,
       ),
       child: tileContent,
+    );
+  }
+
+  // Fungsi baru untuk membuat baris statistik
+  Widget _buildStatsRow(BuildContext context, Color? textColor) {
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(fontSize: 11, color: textColor);
+
+    final codeEntries = subject.repetitionCodeCounts.entries.toList()
+      ..sort(
+        (a, b) => getRepetitionCodeIndex(
+          a.key,
+        ).compareTo(getRepetitionCodeIndex(b.key)),
+      );
+
+    return Row(
+      children: [
+        Icon(Icons.chat_bubble_outline, size: 12, color: textColor),
+        const SizedBox(width: 4),
+        Text(
+          '${subject.discussionCount} (${subject.finishedDiscussionCount} ✔)',
+          style: textStyle,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: codeEntries.map((entry) {
+                if (entry.value == 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${entry.key}:',
+                          style: textStyle?.copyWith(
+                            color: subject.isHidden
+                                ? textColor
+                                : getColorForRepetitionCode(entry.key),
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' ${entry.value}',
+                          style: textStyle?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

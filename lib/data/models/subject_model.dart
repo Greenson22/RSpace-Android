@@ -3,16 +3,24 @@ class Subject {
   String name;
   String icon;
   int position;
-  String? date; // DITAMBAHKAN
-  String? repetitionCode; // DITAMBAHKAN
-  bool isHidden; // ==> DITAMBAHKAN
+  String? date;
+  String? repetitionCode;
+  bool isHidden;
+  // ==> FIELD BARU UNTUK STATISTIK
+  int discussionCount;
+  int finishedDiscussionCount;
+  Map<String, int> repetitionCodeCounts;
 
   Subject({
     required this.name,
     required this.icon,
     required this.position,
-    this.date, // DIUBAH
-    this.repetitionCode, // DIUBAH
-    this.isHidden = false, // ==> DITAMBAHKAN
+    this.date,
+    this.repetitionCode,
+    this.isHidden = false,
+    // ==> TAMBAHAN DI KONSTRUKTOR
+    this.discussionCount = 0,
+    this.finishedDiscussionCount = 0,
+    this.repetitionCodeCounts = const {},
   });
 }

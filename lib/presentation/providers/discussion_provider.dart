@@ -1,3 +1,4 @@
+// lib/presentation/providers/discussion_provider.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/discussion_model.dart';
@@ -43,6 +44,21 @@ class DiscussionProvider with ChangeNotifier {
   bool get sortAscending => _sortAscending;
 
   final List<String> repetitionCodes = kRepetitionCodes;
+
+  // ==> GETTERS BARU UNTUK STATISTIK <==
+  int get totalDiscussionCount => _allDiscussions.length;
+
+  int get finishedDiscussionCount =>
+      _allDiscussions.where((d) => d.finished).length;
+
+  Map<String, int> get repetitionCodeCounts {
+    final Map<String, int> counts = {};
+    for (final discussion in _allDiscussions) {
+      final code = discussion.effectiveRepetitionCode;
+      counts[code] = (counts[code] ?? 0) + 1;
+    }
+    return counts;
+  }
 
   // --- DATA LOGIC ---
 
@@ -94,7 +110,6 @@ class DiscussionProvider with ChangeNotifier {
       return {'date': discussion.finish_date, 'code': 'Finish'};
     }
 
-    // ==> Diubah: Filter poin yang belum selesai dan sesuai filter UI <==
     final visiblePoints = discussion.points
         .where((point) => !point.finished && doesPointMatchFilter(point))
         .toList();
@@ -218,7 +233,7 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   bool doesPointMatchFilter(Point point) {
-    if (point.finished) return false; // Jangan tampilkan poin selesai
+    if (point.finished) return false;
     if (_activeFilterType == null) {
       return true;
     }
@@ -352,13 +367,12 @@ class DiscussionProvider with ChangeNotifier {
         point.finish_date = null;
       }
     } else {
-      markPointAsFinished(point); // Panggil fungsi baru
+      markPointAsFinished(point);
     }
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
 
-  // ==> FUNGSI BARU UNTUK POINT <==
   void markPointAsFinished(Point point) {
     point.finished = true;
     point.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -366,7 +380,6 @@ class DiscussionProvider with ChangeNotifier {
     _saveDiscussions();
   }
 
-  // ==> FUNGSI BARU UNTUK POINT <==
   void reactivatePoint(Point point) {
     point.finished = false;
     point.finish_date = null;

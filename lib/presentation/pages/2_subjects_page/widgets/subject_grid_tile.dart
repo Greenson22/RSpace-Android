@@ -1,7 +1,7 @@
 // lib/presentation/pages/2_subjects_page/widgets/subject_grid_tile.dart
 import 'package:flutter/material.dart';
 import '../../../../data/models/subject_model.dart';
-import '../../3_discussions_page/utils/repetition_code_utils.dart'; // ==> DITAMBAHKAN
+import '../../3_discussions_page/utils/repetition_code_utils.dart';
 
 class SubjectGridTile extends StatelessWidget {
   final Subject subject;
@@ -30,7 +30,6 @@ class SubjectGridTile extends StatelessWidget {
         : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
-    // ==> BARIS BARU <==
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
 
@@ -43,11 +42,10 @@ class SubjectGridTile extends StatelessWidget {
         splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
         highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.all(12.0), // Diubah dari 16.0
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Baris atas untuk ikon dan menu popup
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,10 +54,7 @@ class SubjectGridTile extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 4.0),
                     child: Text(
                       subject.icon,
-                      style: TextStyle(
-                        fontSize: 32,
-                        color: textColor,
-                      ), // Ukuran ikon disesuaikan
+                      style: TextStyle(fontSize: 32, color: textColor),
                     ),
                   ),
                   PopupMenuButton<String>(
@@ -95,11 +90,10 @@ class SubjectGridTile extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              // Nama subject
               Text(
                 subject.name,
                 style: TextStyle(
-                  fontSize: 15, // Ukuran font disesuaikan
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: textColor,
                 ),
@@ -107,11 +101,13 @@ class SubjectGridTile extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              // ==> BAGIAN BARU UNTUK SUBTITLE <==
               if (hasSubtitle) ...[
                 const SizedBox(height: 6),
                 _buildSubtitle(context, textColor, 11),
               ],
+              // Bagian baru untuk statistik
+              const SizedBox(height: 6),
+              _buildStatsInfo(context, textColor),
               const Spacer(),
             ],
           ),
@@ -130,7 +126,63 @@ class SubjectGridTile extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET BARU DIAMBIL DARI SUBJECT_LIST_TILE <==
+  // Widget baru untuk menampilkan info statistik
+  Widget _buildStatsInfo(BuildContext context, Color? textColor) {
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor);
+
+    final codeEntries = subject.repetitionCodeCounts.entries.toList()
+      ..sort(
+        (a, b) => getRepetitionCodeIndex(
+          a.key,
+        ).compareTo(getRepetitionCodeIndex(b.key)),
+      );
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_bubble_outline, size: 12, color: textColor),
+            const SizedBox(width: 4),
+            Text(
+              '${subject.discussionCount} Discussions (${subject.finishedDiscussionCount} ✔)',
+              style: textStyle,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6.0,
+          runSpacing: 2.0,
+          alignment: WrapAlignment.center,
+          children: codeEntries.map((entry) {
+            if (entry.value == 0) return const SizedBox.shrink();
+            return Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${entry.key}:',
+                    style: textStyle?.copyWith(
+                      color: subject.isHidden
+                          ? textColor
+                          : getColorForRepetitionCode(entry.key),
+                    ),
+                  ),
+                  TextSpan(
+                    text: ' ${entry.value}',
+                    style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSubtitle(
     BuildContext context,
     Color? textColor,

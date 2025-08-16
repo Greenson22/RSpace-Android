@@ -2,29 +2,25 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
+import '../models/discussion_model.dart';
 import '../models/subject_model.dart';
-import '../models/discussion_model.dart'; // DIIMPOR
+import 'discussion_service.dart';
 import 'path_service.dart';
-import 'discussion_service.dart'; // DIIMPOR
-import 'shared_preferences_service.dart'; // DIIMPOR
-import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart'; // DIIMPOR
+import 'shared_preferences_service.dart';
+import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart';
 
 class SubjectService {
   final PathService _pathService = PathService();
-  final DiscussionService _discussionService =
-      DiscussionService(); // DITAMBAHKAN
-  final SharedPreferencesService _prefsService =
-      SharedPreferencesService(); // DITAMBAHKAN
+  final DiscussionService _discussionService = DiscussionService();
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   static const String _defaultIcon = '📄';
 
-  // FUNGSI INI DIUBAH SECARA SIGNIFIKAN
   Future<List<Subject>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
       throw Exception('Folder tidak ditemukan: $topicPath');
     }
 
-    // Mengambil file-file subject
     final files = directory
         .listSync()
         .whereType<File>()
@@ -35,7 +31,6 @@ class SubjectService {
         )
         .toList();
 
-    // Memuat preferensi filter dan sort
     final sortPrefs = await _prefsService.loadSortPreferences();
     final filterPrefs = await _prefsService.loadFilterPreference();
 
@@ -44,7 +39,18 @@ class SubjectService {
       final name = path.basenameWithoutExtension(file.path);
       final metadata = await _getSubjectMetadata(file);
 
-      // Memuat dan memproses diskusi untuk mendapatkan date & code yang relevan
+      // Logika baru untuk menghitung statistik diskusi
+      final discussions = await _discussionService.loadDiscussions(file.path);
+      final int discussionCount = discussions.length;
+      final int finishedDiscussionCount = discussions
+          .where((d) => d.finished)
+          .length;
+      final Map<String, int> repetitionCodeCounts = {};
+      for (final discussion in discussions) {
+        final code = discussion.effectiveRepetitionCode;
+        repetitionCodeCounts[code] = (repetitionCodeCounts[code] ?? 0) + 1;
+      }
+
       final relevantDiscussionInfo = await _getRelevantDiscussionInfo(
         file.path,
         sortPrefs,
@@ -56,30 +62,30 @@ class SubjectService {
           name: name,
           icon: metadata['icon'] as String? ?? _defaultIcon,
           position: metadata['position'] as int? ?? -1,
-          date: relevantDiscussionInfo['date'], // DITAMBAHKAN
-          repetitionCode: relevantDiscussionInfo['code'], // DITAMBAHKAN
-          isHidden: metadata['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
+          date: relevantDiscussionInfo['date'],
+          repetitionCode: relevantDiscussionInfo['code'],
+          isHidden: metadata['isHidden'] as bool? ?? false,
+          // Mengisi data statistik ke model
+          discussionCount: discussionCount,
+          finishedDiscussionCount: finishedDiscussionCount,
+          repetitionCodeCounts: repetitionCodeCounts,
         ),
       );
     }
 
-    // ==> PERUBAHAN: LOGIKA PENGURUTAN BARU BERDASARKAN REPETITION CODE <==
-    // Urutkan daftar subjek berdasarkan indeks dari repetitionCode mereka.
     subjects.sort((a, b) {
-      // Anggap subjek tanpa kode repetisi memiliki prioritas terendah.
       final codeA = a.repetitionCode;
       final codeB = b.repetitionCode;
 
       if (codeA == null && codeB == null) return 0;
-      if (codeA == null) return 1; // Pindahkan 'a' ke akhir.
-      if (codeB == null) return -1; // Pindahkan 'b' ke akhir.
+      if (codeA == null) return 1;
+      if (codeB == null) return -1;
 
       final indexA = getRepetitionCodeIndex(codeA);
       final indexB = getRepetitionCodeIndex(codeB);
       return indexA.compareTo(indexB);
     });
 
-    // Setelah diurutkan, perbarui posisi setiap subjek sesuai urutan baru.
     bool needsResave = false;
     for (int i = 0; i < subjects.length; i++) {
       if (subjects[i].position != i) {
@@ -88,7 +94,6 @@ class SubjectService {
       }
     }
 
-    // Jika ada perubahan posisi, simpan urutan baru ke file.
     if (needsResave) {
       await saveSubjectsOrder(topicPath, subjects);
     }
@@ -96,7 +101,6 @@ class SubjectService {
     return subjects;
   }
 
-  // ==> FUNGSI BARU UNTUK MEMPROSES DISKUSI <==
   Future<Map<String, String?>> _getRelevantDiscussionInfo(
     String subjectJsonPath,
     Map<String, dynamic> sortPrefs,
@@ -107,7 +111,6 @@ class SubjectService {
         subjectJsonPath,
       );
 
-      // 1. Terapkan Filter
       List<Discussion> filteredDiscussions = discussions.where((discussion) {
         final filterType = filterPrefs['filterType'];
         if (filterType == null) return true;
@@ -142,7 +145,6 @@ class SubjectService {
         return {'date': null, 'code': null};
       }
 
-      // 2. Terapkan Sort
       final sortType = sortPrefs['sortType'] as String;
       final sortAscending = sortPrefs['sortAscending'] as bool;
 
@@ -174,7 +176,6 @@ class SubjectService {
         filteredDiscussions = filteredDiscussions.reversed.toList();
       }
 
-      // 3. Ambil info dari diskusi pertama
       final relevantDiscussion = filteredDiscussions.first;
       return {
         'date': relevantDiscussion.effectiveDate,
@@ -185,8 +186,6 @@ class SubjectService {
     }
   }
 
-  // Sisanya dari file ini tetap sama...
-  // ... (saveSubjectsOrder, _getSubjectMetadata, _saveSubjectMetadata, etc.)
   Future<void> saveSubjectsOrder(
     String topicPath,
     List<Subject> subjects,
@@ -214,7 +213,7 @@ class SubjectService {
       return {
         'icon': metadata['icon'] as String? ?? _defaultIcon,
         'position': metadata['position'] as int?,
-        'isHidden': metadata['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
+        'isHidden': metadata['isHidden'] as bool? ?? false,
       };
     } catch (e) {
       return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
@@ -234,11 +233,9 @@ class SubjectService {
         }
       }
     } catch (e) {
-      // Jika file corrupt, buat ulang dengan data baru
       jsonData = {};
     }
 
-    // ==> isHidden DITAMBAHKAN ke metadata <==
     jsonData['metadata'] = {
       'icon': subject.icon,
       'position': subject.position,
@@ -261,13 +258,8 @@ class SubjectService {
     }
 
     try {
-      // Tidak perlu menetapkan posisi secara manual lagi karena akan dihitung ulang
       final initialContent = {
-        'metadata': {
-          'icon': _defaultIcon,
-          'position': -1,
-          'isHidden': false,
-        }, // Posisi awal -1
+        'metadata': {'icon': _defaultIcon, 'position': -1, 'isHidden': false},
         'content': [],
       };
       await file.writeAsString(jsonEncode(initialContent));
@@ -295,7 +287,6 @@ class SubjectService {
     await _saveSubjectMetadata(topicPath, subject);
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> updateSubjectVisibility(
     String topicPath,
     String subjectName,
@@ -347,7 +338,6 @@ class SubjectService {
 
     try {
       await file.delete();
-      // Panggil getSubjects untuk memicu pengurutan ulang dan penyimpanan posisi baru
       await getSubjects(topicPath);
     } catch (e) {
       throw Exception('Gagal menghapus subject: $e');
