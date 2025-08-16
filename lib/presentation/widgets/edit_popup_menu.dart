@@ -39,8 +39,11 @@ class EditPopupMenu extends StatelessWidget {
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
 
-        // Jika ini adalah menu untuk sebuah Point (ditandai dengan onDateChange != null)
-        if (onDateChange != null && onCodeChange != null) {
+        // Perubahan di sini: Ditambahkan onAddPoint == null
+        // Blok ini sekarang hanya untuk menu Point, bukan Discussion
+        if (onAddPoint == null &&
+            onDateChange != null &&
+            onCodeChange != null) {
           menuItems.addAll([
             const PopupMenuItem<String>(
               value: 'edit_date',
@@ -63,21 +66,25 @@ class EditPopupMenu extends StatelessWidget {
               ),
             );
           }
+          // Logika ini sekarang menjadi satu-satunya yang menambahkan
+          // 'Ubah Tanggal' dan 'Ubah Kode' untuk Diskusi (jika tidak punya poin)
           if (!hasPoints) {
-            if (onDateChange != null)
+            if (onDateChange != null) {
               menuItems.add(
                 const PopupMenuItem<String>(
                   value: 'edit_date',
                   child: Text('Ubah Tanggal'),
                 ),
               );
-            if (onCodeChange != null)
+            }
+            if (onCodeChange != null) {
               menuItems.add(
                 const PopupMenuItem<String>(
                   value: 'edit_code',
                   child: Text('Ubah Kode Repetisi'),
                 ),
               );
+            }
           }
         }
 
