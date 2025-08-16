@@ -1,7 +1,13 @@
+// lib/presentation/pages/3_discussions_page/dialogs/html_file_picker_dialog.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
+import 'package:provider/provider.dart';
+import '../../../../data/services/shared_preferences_service.dart';
+import '../../../providers/discussion_provider.dart';
+import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
 
 // Enum untuk mengelola state tampilan dialog saat ini
 enum _PickerViewState { topics, subjects, files }
@@ -58,8 +64,9 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     try {
       final topicsDir = Directory(widget.basePath);
       if (!await topicsDir.exists()) {
+        // ==> PESAN ERROR DIUBAH <==
         throw Exception(
-          "Direktori base PerpusKu tidak ditemukan:\n${widget.basePath}",
+          "Direktori base PerpusKu tidak ditemukan.\nPastikan Anda telah memilih folder 'PerpusKu/data' yang benar di pengaturan backup atau pilih ulang melalui tombol di bawah.",
         );
       }
       final items = topicsDir.listSync();
@@ -131,15 +138,39 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MEMILIH FOLDER PERPUSKU <==
+  Future<void> _selectPerpuskuDataFolder() async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Sumber Data PerpusKu (PerpusKu/data)',
+    );
+
+    if (selectedDirectory != null) {
+      final prefs = SharedPreferencesService();
+      await prefs.savePerpuskuDataPath(selectedDirectory);
+
+      // Reload provider and dialog state
+      if (mounted) {
+        // Tutup dialog saat ini dan buka kembali dengan path yang baru
+        Navigator.of(
+          context,
+        ).pop('RELOAD_WITH_NEW_PATH'); // Kirim sinyal untuk memuat ulang
+      }
+    }
+  }
+
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
       return Center(
-        child: Text(
-          "Error: $_error",
-          style: const TextStyle(color: Colors.red),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            "Error: $_error",
+            style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -261,6 +292,13 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         child: _buildContent(),
       ),
       actions: [
+        // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
+        ElevatedButton.icon(
+          icon: const Icon(Icons.folder_open),
+          label: const Text('Pilih Folder PerpusKu'),
+          onPressed: _selectPerpuskuDataFolder,
+        ),
+        const Spacer(),
         if (_currentView != _PickerViewState.topics)
           TextButton(onPressed: _onBackPressed, child: const Text('Kembali')),
         TextButton(

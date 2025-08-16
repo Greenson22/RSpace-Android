@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// ... (kode showPathInputDialog dan showIconPickerDialog tidak berubah) ...
 Future<void> showPathInputDialog({
   required BuildContext context,
   required String title,
@@ -174,6 +175,7 @@ Future<void> showTopicTextInputDialog({
   required String label,
   String initialValue = '',
   required Function(String) onSave,
+  // ==> PARAMETER DITAMBAHKAN <==
   TextInputType keyboardType = TextInputType.text,
 }) async {
   final controller = TextEditingController(text: initialValue);
@@ -186,6 +188,7 @@ Future<void> showTopicTextInputDialog({
           controller: controller,
           autofocus: true,
           decoration: InputDecoration(labelText: label),
+          // ==> DIGUNAKAN DI SINI <==
           keyboardType: keyboardType,
         ),
         actions: [

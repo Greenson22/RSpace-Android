@@ -23,19 +23,16 @@ class PerpuskuPathCard extends StatelessWidget {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
+            // ==> TEKS DIUBAH <==
             Text(
-              'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Jika tidak diisi, akan digunakan folder default aplikasi. Pilih folder PerpusKu/data',
+              'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Folder yang harus dipilih adalah "PerpusKu/data".',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
             Consumer<BackupProvider>(
               builder: (context, provider, child) {
-                // DIUBAH: Hapus logika if (kDebugMode) yang menyebabkan path tidak update.
-                // Sekarang selalu ambil path dari provider.
                 final String displayText =
                     provider.perpuskuDataPath ?? 'Menggunakan folder default.';
-
-                // Gaya teks amber tetap dipertahankan untuk mode debug agar mudah dikenali.
                 final TextStyle? textStyle =
                     kDebugMode && provider.perpuskuDataPath != null
                     ? Theme.of(
