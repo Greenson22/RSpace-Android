@@ -2,23 +2,19 @@
 import 'package:flutter/material.dart';
 import '../../../../data/models/statistics_model.dart';
 
-class PerTopicSection extends StatefulWidget {
+class PerTopicSection extends StatelessWidget {
   final List<TopicStatistics> perTopicStats;
+  final int focusedIndex;
+  final List<bool> isPanelExpanded;
+  final Function(int, bool) onExpansionChanged;
 
-  const PerTopicSection({super.key, required this.perTopicStats});
-
-  @override
-  State<PerTopicSection> createState() => _PerTopicSectionState();
-}
-
-class _PerTopicSectionState extends State<PerTopicSection> {
-  late List<bool> _isPanelExpanded;
-
-  @override
-  void initState() {
-    super.initState();
-    _isPanelExpanded = List<bool>.filled(widget.perTopicStats.length, false);
-  }
+  const PerTopicSection({
+    super.key,
+    required this.perTopicStats,
+    this.focusedIndex = -1,
+    required this.isPanelExpanded,
+    required this.onExpansionChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,13 +48,16 @@ class _PerTopicSectionState extends State<PerTopicSection> {
           ExpansionPanelList(
             elevation: 0,
             expansionCallback: (int index, bool isExpanded) {
-              setState(() {
-                _isPanelExpanded[index] = !isExpanded;
-              });
+              onExpansionChanged(index, !isExpanded);
             },
-            children: widget.perTopicStats.map<ExpansionPanel>((topicStat) {
-              final index = widget.perTopicStats.indexOf(topicStat);
+            children: perTopicStats.map<ExpansionPanel>((topicStat) {
+              final index = perTopicStats.indexOf(topicStat);
+              final bool isFocused = index == focusedIndex;
+
               return ExpansionPanel(
+                backgroundColor: isFocused
+                    ? Theme.of(context).primaryColor.withOpacity(0.2)
+                    : null,
                 canTapOnHeader: true,
                 headerBuilder: (BuildContext context, bool isExpanded) {
                   return ListTile(
@@ -104,7 +103,10 @@ class _PerTopicSectionState extends State<PerTopicSection> {
                     ],
                   ),
                 ),
-                isExpanded: _isPanelExpanded[index],
+                isExpanded:
+                    isPanelExpanded.isNotEmpty && index < isPanelExpanded.length
+                    ? isPanelExpanded[index]
+                    : false,
               );
             }).toList(),
           ),
