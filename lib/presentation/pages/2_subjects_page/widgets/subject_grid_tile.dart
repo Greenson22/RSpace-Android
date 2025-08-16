@@ -10,6 +10,7 @@ class SubjectGridTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
+  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
 
   const SubjectGridTile({
     super.key,
@@ -19,6 +20,7 @@ class SubjectGridTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
+    this.isFocused = false, // ==> SET NILAI DEFAULT
   });
 
   @override
@@ -105,7 +107,6 @@ class SubjectGridTile extends StatelessWidget {
                 const SizedBox(height: 6),
                 _buildSubtitle(context, textColor, 11),
               ],
-              // Bagian baru untuk statistik
               const SizedBox(height: 6),
               _buildStatsInfo(context, textColor),
               const Spacer(),
@@ -120,14 +121,17 @@ class SubjectGridTile extends StatelessWidget {
       color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide.none,
+        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
       ),
       child: tileContent,
     );
   }
 
-  // Widget baru untuk menampilkan info statistik
   Widget _buildStatsInfo(BuildContext context, Color? textColor) {
+    // ... (kode tidak berubah)
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor);
@@ -188,6 +192,7 @@ class SubjectGridTile extends StatelessWidget {
     Color? textColor,
     double fontSize,
   ) {
+    // ... (kode tidak berubah)
     return RichText(
       text: TextSpan(
         style: Theme.of(

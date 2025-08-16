@@ -10,6 +10,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
+  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
 
   const SubjectListTile({
     super.key,
@@ -19,6 +20,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
+    this.isFocused = false, // ==> SET NILAI DEFAULT
   });
 
   @override
@@ -82,7 +84,6 @@ class SubjectListTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       _buildSubtitle(context, textColor, subtitleFontSize),
                     ],
-                    // Widget baru untuk menampilkan statistik
                     const SizedBox(height: 6),
                     _buildStatsRow(context, textColor),
                   ],
@@ -130,14 +131,17 @@ class SubjectListTile extends StatelessWidget {
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide.none,
+        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
       ),
       child: tileContent,
     );
   }
 
-  // Fungsi baru untuk membuat baris statistik
   Widget _buildStatsRow(BuildContext context, Color? textColor) {
+    // ... (kode tidak berubah)
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 11, color: textColor);
@@ -200,6 +204,7 @@ class SubjectListTile extends StatelessWidget {
     Color? textColor,
     double fontSize,
   ) {
+    // ... (kode tidak berubah)
     return RichText(
       text: TextSpan(
         style: Theme.of(

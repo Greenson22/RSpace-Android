@@ -1,6 +1,7 @@
 // lib/presentation/pages/2_subjects_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import untuk keyboard services
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import '../../data/models/subject_model.dart';
@@ -8,7 +9,7 @@ import '../providers/discussion_provider.dart';
 import '../providers/subject_provider.dart';
 import '3_discussions_page.dart';
 import '2_subjects_page/dialogs/subject_dialogs.dart';
-import '2_subjects_page/widgets/subject_grid_tile.dart'; // Impor widget baru
+import '2_subjects_page/widgets/subject_grid_tile.dart';
 import '2_subjects_page/widgets/subject_list_tile.dart';
 
 class SubjectsPage extends StatefulWidget {
@@ -24,6 +25,10 @@ class _SubjectsPageState extends State<SubjectsPage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
+  // ==> TAMBAHAN: State untuk navigasi keyboard <==
+  final FocusNode _focusNode = FocusNode();
+  int _focusedIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -31,13 +36,55 @@ class _SubjectsPageState extends State<SubjectsPage> {
     provider.fetchSubjects();
     _searchController.addListener(() {
       provider.search(_searchController.text);
+      setState(() => _focusedIndex = 0); // Reset fokus saat mencari
+    });
+    // Request fokus saat halaman dimuat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
     });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _focusNode.dispose(); // Jangan lupa dispose focus node
     super.dispose();
+  }
+
+  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      final provider = Provider.of<SubjectProvider>(context, listen: false);
+      final totalItems = provider.filteredSubjects.length;
+      if (totalItems == 0) return;
+
+      int crossAxisCount = (MediaQuery.of(context).size.width > 600)
+          ? (MediaQuery.of(context).size.width / 200).floor()
+          : 1;
+
+      setState(() {
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          _focusedIndex = (_focusedIndex + crossAxisCount);
+          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _focusedIndex = (_focusedIndex - crossAxisCount);
+          if (_focusedIndex < 0) _focusedIndex = 0;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _focusedIndex = (_focusedIndex + 1);
+          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _focusedIndex = (_focusedIndex - 1);
+          if (_focusedIndex < 0) _focusedIndex = 0;
+        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+          _navigateToDiscussionsPage(
+            context,
+            provider.filteredSubjects[_focusedIndex],
+          );
+        } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
+          Navigator.of(context).pop();
+        }
+      });
+    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -147,63 +194,69 @@ class _SubjectsPageState extends State<SubjectsPage> {
         ),
       ),
     ).then((_) {
-      // PERUBAHAN UTAMA: Panggil fetchSubjects() saat kembali dari DiscussionsPage
       subjectProvider.fetchSubjects();
+      // ==> Minta fokus kembali saat kembali ke halaman ini
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: _isSearching
-            ? _buildSearchField()
-            : Text(
-                'Subjects: ${widget.topicName}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-        actions: [
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) _searchController.clear();
-              });
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              provider.showHiddenSubjects
-                  ? Icons.visibility_off
-                  : Icons.visibility,
+    return RawKeyboardListener(
+      // ==> DI WRAP DENGAN KEYBOARD LISTENER <==
+      focusNode: _focusNode,
+      onKey: _handleKeyEvent,
+      child: Scaffold(
+        appBar: AppBar(
+          title: _isSearching
+              ? _buildSearchField()
+              : Text(
+                  'Subjects: ${widget.topicName}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+          actions: [
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) _searchController.clear();
+                });
+              },
             ),
-            onPressed: () => provider.toggleShowHidden(),
-            tooltip: provider.showHiddenSubjects
-                ? 'Sembunyikan Subjects Tersembunyi'
-                : 'Tampilkan Subjects Tersembunyi',
-          ),
-        ],
-        elevation: 0,
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Jika lebar layar lebih dari 600, gunakan GridView.
-          // Jika tidak, gunakan ListView.
-          if (constraints.maxWidth > 600) {
-            return _buildGridView(context);
-          } else {
-            return _buildListView(context);
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _addSubject(context),
-        tooltip: 'Tambah Subject',
-        icon: const Icon(Icons.add),
-        label: const Text('Tambah Subject'),
+            IconButton(
+              icon: Icon(
+                provider.showHiddenSubjects
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+              ),
+              onPressed: () => provider.toggleShowHidden(),
+              tooltip: provider.showHiddenSubjects
+                  ? 'Sembunyikan Subjects Tersembunyi'
+                  : 'Tampilkan Subjects Tersembunyi',
+            ),
+          ],
+          elevation: 0,
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth > 600) {
+              return _buildGridView(context);
+            } else {
+              return _buildListView(context);
+            }
+          },
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _addSubject(context),
+          tooltip: 'Tambah Subject',
+          icon: const Icon(Icons.add),
+          label: const Text('Tambah Subject'),
+        ),
       ),
     );
   }
@@ -221,7 +274,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // Method baru untuk membangun ListView (Tampilan Mobile)
   Widget _buildListView(BuildContext context) {
     return Consumer<SubjectProvider>(
       builder: (context, provider, child) {
@@ -240,6 +292,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             return SubjectListTile(
               key: ValueKey(subject.name),
               subject: subject,
+              isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
               onTap: () => _navigateToDiscussionsPage(context, subject),
               onRename: () => _renameSubject(context, subject),
               onDelete: () => _deleteSubject(context, subject),
@@ -252,7 +305,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // Method baru untuk membangun GridView (Tampilan Desktop)
   Widget _buildGridView(BuildContext context) {
     return Consumer<SubjectProvider>(
       builder: (context, provider, child) {
@@ -277,6 +329,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             return SubjectGridTile(
               key: ValueKey(subject.name),
               subject: subject,
+              isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
               onTap: () => _navigateToDiscussionsPage(context, subject),
               onRename: () => _renameSubject(context, subject),
               onDelete: () => _deleteSubject(context, subject),
@@ -328,6 +381,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
         );
       }
     }
-    return const SizedBox.shrink(); // Widget kosong jika tidak ada kondisi yang terpenuhi
+    return const SizedBox.shrink();
   }
 }
