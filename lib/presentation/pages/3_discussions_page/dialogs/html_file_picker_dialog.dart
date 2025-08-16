@@ -28,12 +28,18 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
 
   List<Directory> _topics = [];
   List<Directory> _subjects = [];
-  List<File> _files = [];
+  // File di folder saat ini (untuk pencarian lokal)
+  List<File> _currentSubjectFiles = [];
   final TextEditingController _searchController = TextEditingController();
-  List<File> _filteredFiles = [];
   String _searchQuery = '';
-  // ==> TAMBAHKAN STATE UNTUK MENYIMPAN MAPPING JUDUL <==
   Map<String, String> _fileTitles = {};
+
+  // State untuk pencarian global
+  List<Map<String, String>> _allFilesData = [];
+  List<Map<String, String>> _filteredGlobalFiles = [];
+
+  // State untuk pencarian lokal
+  List<File> _filteredLocalFiles = [];
 
   bool _isLoading = true;
   String? _error;
@@ -41,19 +47,76 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   @override
   void initState() {
     super.initState();
-    _loadTopics();
+    _initializeDialog();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
-        _filterFiles();
+        _filterContent(); // Panggil fungsi filter utama
       });
     });
+  }
+
+  Future<void> _initializeDialog() async {
+    await _loadTopics();
+    // Memuat semua file di latar belakang untuk pencarian global
+    _loadAllFilesForSearch();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAllFilesForSearch() async {
+    try {
+      final topicsDir = Directory(widget.basePath);
+      if (!await topicsDir.exists()) return;
+
+      final allData = <Map<String, String>>[];
+      final topicDirs = topicsDir.listSync().whereType<Directory>();
+
+      for (final topicDir in topicDirs) {
+        final subjectDirs = topicDir.listSync().whereType<Directory>();
+        for (final subjectDir in subjectDirs) {
+          final metadataFile = File(
+            path.join(subjectDir.path, 'metadata.json'),
+          );
+          Map<String, String> currentTitles = {};
+          if (await metadataFile.exists()) {
+            final jsonString = await metadataFile.readAsString();
+            final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+            final content = jsonData['content'] as List<dynamic>? ?? [];
+            currentTitles = {
+              for (var item in content)
+                item['nama_file'] as String: item['judul'] as String,
+            };
+          }
+
+          final htmlFiles = subjectDir.listSync().whereType<File>().where(
+            (f) => f.path.toLowerCase().endsWith('.html'),
+          );
+
+          for (final file in htmlFiles) {
+            final fileName = path.basename(file.path);
+            allData.add({
+              'title': currentTitles[fileName] ?? fileName,
+              'fileName': fileName,
+              'relativePath': path.join(
+                path.basename(topicDir.path),
+                path.basename(subjectDir.path),
+                fileName,
+              ),
+            });
+          }
+        }
+      }
+      setState(() {
+        _allFilesData = allData;
+      });
+    } catch (e) {
+      debugPrint("Error loading all files for search: $e");
+    }
   }
 
   Future<void> _loadTopics() async {
@@ -64,7 +127,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     try {
       final topicsDir = Directory(widget.basePath);
       if (!await topicsDir.exists()) {
-        // ==> PESAN ERROR DIUBAH <==
         throw Exception(
           "Direktori base PerpusKu tidak ditemukan.\nPastikan Anda telah memilih folder 'PerpusKu/data' yang benar di pengaturan backup atau pilih ulang melalui tombol di bawah.",
         );
@@ -96,18 +158,16 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     setState(() {
       _isLoading = true;
       _error = null;
-      _fileTitles = {}; // Reset judul setiap kali memuat
+      _fileTitles = {};
     });
     try {
       final filesDir = Directory(subjectPath);
       final items = filesDir.listSync();
-      _files = items
+      _currentSubjectFiles = items
           .whereType<File>()
           .where((file) => file.path.toLowerCase().endsWith('.html'))
           .toList();
-      _filteredFiles = _files;
 
-      // ==> LOGIKA BARU: BACA METADATA.JSON DAN BUAT MAPPING <==
       final metadataFile = File(path.join(subjectPath, 'metadata.json'));
       if (await metadataFile.exists()) {
         final jsonString = await metadataFile.readAsString();
@@ -124,11 +184,17 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     setState(() => _isLoading = false);
   }
 
-  void _filterFiles() {
+  // ==> FUNGSI FILTER UTAMA YANG DIPANGGIL LISTENER <==
+  void _filterContent() {
     if (_searchQuery.isEmpty) {
-      _filteredFiles = _files;
-    } else {
-      _filteredFiles = _files.where((file) {
+      _filteredGlobalFiles = [];
+      _filteredLocalFiles = [];
+      return;
+    }
+
+    // Jika di view file, lakukan pencarian LOKAL
+    if (_currentView == _PickerViewState.files) {
+      _filteredLocalFiles = _currentSubjectFiles.where((file) {
         final fileName = path.basename(file.path).toLowerCase();
         final fileTitle =
             _fileTitles[path.basename(file.path)]?.toLowerCase() ?? '';
@@ -136,9 +202,19 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
             fileTitle.contains(_searchQuery);
       }).toList();
     }
+    // Jika di view topik atau subjek, lakukan pencarian GLOBAL
+    else {
+      _filteredGlobalFiles = _allFilesData.where((fileData) {
+        final title = fileData['title']!.toLowerCase();
+        final fileName = fileData['fileName']!.toLowerCase();
+        final relativePath = fileData['relativePath']!.toLowerCase();
+        return title.contains(_searchQuery) ||
+            fileName.contains(_searchQuery) ||
+            relativePath.contains(_searchQuery);
+      }).toList();
+    }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMILIH FOLDER PERPUSKU <==
   Future<void> _selectPerpuskuDataFolder() async {
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih Folder Sumber Data PerpusKu (PerpusKu/data)',
@@ -148,17 +224,51 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
       final prefs = SharedPreferencesService();
       await prefs.savePerpuskuDataPath(selectedDirectory);
 
-      // Reload provider and dialog state
       if (mounted) {
-        // Tutup dialog saat ini dan buka kembali dengan path yang baru
-        Navigator.of(
-          context,
-        ).pop('RELOAD_WITH_NEW_PATH'); // Kirim sinyal untuk memuat ulang
+        Navigator.of(context).pop('RELOAD_WITH_NEW_PATH');
       }
     }
   }
 
-  Widget _buildContent() {
+  // Widget untuk menampilkan hasil pencarian GLOBAL
+  Widget _buildGlobalSearchView() {
+    if (_filteredGlobalFiles.isEmpty) {
+      return const Center(
+        child: Text("File tidak ditemukan di semua direktori."),
+      );
+    }
+    return ListView.builder(
+      itemCount: _filteredGlobalFiles.length,
+      itemBuilder: (context, index) {
+        final fileData = _filteredGlobalFiles[index];
+        return ListTile(
+          leading: const Icon(Icons.description),
+          title: Text(fileData['title']!),
+          subtitle: Text(fileData['relativePath']!),
+          onTap: () => Navigator.of(context).pop(fileData['relativePath']),
+        );
+      },
+    );
+  }
+
+  // Widget untuk menampilkan hasil pencarian LOKAL
+  Widget _buildLocalSearchView() {
+    if (_filteredLocalFiles.isEmpty) {
+      return const Center(child: Text("File tidak ditemukan di folder ini."));
+    }
+    return _buildListView(_filteredLocalFiles, (item) {
+      final selectedFile = path.basename(item.path);
+      final resultPath = path.join(
+        _selectedTopic,
+        _selectedSubject,
+        selectedFile,
+      );
+      Navigator.of(context).pop(resultPath);
+    });
+  }
+
+  // Widget untuk navigasi folder
+  Widget _buildNavigationView() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -189,39 +299,15 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
           setState(() => _currentView = _PickerViewState.files);
         });
       case _PickerViewState.files:
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Cari file...',
-                  hintText: 'Masukkan nama atau judul file',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: _buildListView(_filteredFiles, (item) {
-                final selectedFile = path.basename(item.path);
-                final resultPath = path.join(
-                  _selectedTopic,
-                  _selectedSubject,
-                  selectedFile,
-                );
-                Navigator.of(context).pop(resultPath);
-              }),
-            ),
-          ],
-        );
+        return _buildListView(_currentSubjectFiles, (item) {
+          final selectedFile = path.basename(item.path);
+          final resultPath = path.join(
+            _selectedTopic,
+            _selectedSubject,
+            selectedFile,
+          );
+          Navigator.of(context).pop(resultPath);
+        });
     }
   }
 
@@ -230,27 +316,18 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     ValueChanged<FileSystemEntity> onTap,
   ) {
     if (items.isEmpty) {
-      return Center(
-        child: Text(
-          _currentView == _PickerViewState.files && _searchQuery.isNotEmpty
-              ? "File tidak ditemukan."
-              : "Tidak ada item ditemukan.",
-        ),
-      );
+      return const Center(child: Text("Tidak ada item ditemukan."));
     }
     return ListView.builder(
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
         final fileName = path.basename(item.path);
-        // ==> AMBIL JUDUL DARI MAP, GUNAKAN NAMA FILE JIKA TIDAK ADA <==
         final title = _fileTitles[fileName] ?? fileName;
 
         return ListTile(
           leading: Icon(item is Directory ? Icons.folder : Icons.description),
-          // ==> TAMPILKAN JUDUL DI SINI <==
           title: Text(title),
-          // ==> TAMPILKAN NAMA FILE SEBAGAI SUBTITLE JIKA BERBEDA <==
           subtitle: title != fileName ? Text(fileName) : null,
           onTap: () => onTap(item),
         );
@@ -259,6 +336,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   }
 
   String get _title {
+    if (_searchQuery.isNotEmpty) return 'Hasil Pencarian';
     switch (_currentView) {
       case _PickerViewState.topics:
         return 'Pilih Topik';
@@ -270,11 +348,13 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   }
 
   void _onBackPressed() {
+    if (_searchQuery.isNotEmpty) {
+      _searchController.clear();
+      return;
+    }
+
     if (_currentView == _PickerViewState.files) {
-      setState(() {
-        _currentView = _PickerViewState.subjects;
-        _searchController.clear();
-      });
+      setState(() => _currentView = _PickerViewState.subjects);
     } else if (_currentView == _PickerViewState.subjects) {
       setState(() => _currentView = _PickerViewState.topics);
     } else {
@@ -286,20 +366,62 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_title),
+      contentPadding: const EdgeInsets.all(0),
       content: SizedBox(
         width: double.maxFinite,
-        height: 350,
-        child: _buildContent(),
+        height: 400,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: _currentView == _PickerViewState.files
+                      ? 'Cari di folder ini...'
+                      : 'Cari di semua file...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  if (_searchQuery.isEmpty) {
+                    return _buildNavigationView();
+                  } else if (_currentView == _PickerViewState.files) {
+                    return _buildLocalSearchView();
+                  } else {
+                    return _buildGlobalSearchView();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
-        // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
         ElevatedButton.icon(
           icon: const Icon(Icons.folder_open),
           label: const Text('Pilih Folder PerpusKu'),
           onPressed: _selectPerpuskuDataFolder,
         ),
-        const Spacer(),
-        if (_currentView != _PickerViewState.topics)
+        // PERBAIKAN: Spacer dihapus dari sini untuk mencegah crash
+        if (_currentView != _PickerViewState.topics || _searchQuery.isNotEmpty)
           TextButton(onPressed: _onBackPressed, child: const Text('Kembali')),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
