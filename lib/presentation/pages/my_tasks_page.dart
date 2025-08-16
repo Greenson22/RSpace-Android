@@ -116,6 +116,11 @@ class MyTasksPage extends StatelessWidget {
           provider.reorderCategories(oldIndex, newIndex);
         }
       },
+      // ==> TAMBAHKAN KODE INI <==
+      proxyDecorator: (Widget child, int index, Animation<double> animation) {
+        // Bungkus kembali widget yang diseret dengan provider yang sama
+        return ChangeNotifierProvider.value(value: provider, child: child);
+      },
     );
   }
 
