@@ -1,5 +1,6 @@
 // lib/data/services/path_service.dart
 import 'dart:io';
+import 'package:flutter/foundation.dart'; // Impor foundation
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,6 +11,17 @@ class PathService {
 
   // Path ini untuk DATA APLIKASI UTAMA
   Future<String> get _baseDataPath async {
+    // ==> LOGIKA DEBUG MODE <==
+    if (kDebugMode) {
+      final debugDir = Directory(
+        '/home/lemon-manis-22/TESTING/RSpace_data/data',
+      );
+      if (!await debugDir.exists()) {
+        await debugDir.create(recursive: true);
+      }
+      return debugDir.path;
+    }
+
     if (Platform.isAndroid) {
       if (!await Permission.manageExternalStorage.request().isGranted) {
         throw Exception(
@@ -55,6 +67,14 @@ class PathService {
 
   // ==> DIUBAH: Path ini KHUSUS untuk FOLDER BACKUP <==
   Future<String?> get _baseBackupPath async {
+    // ==> LOGIKA DEBUG MODE <==
+    if (kDebugMode) {
+      final debugDir = Directory('/home/lemon-manis-22/TESTING/testing_backup');
+      if (!await debugDir.exists()) {
+        await debugDir.create(recursive: true);
+      }
+      return debugDir.path;
+    }
     // Memuat path yang spesifik untuk backup
     return await _prefsService.loadCustomBackupPath();
   }
@@ -91,6 +111,11 @@ class PathService {
       path.join(await contentsPath, 'my_tasks.json');
 
   Future<String> get perpuskuDataPath async {
+    // ==> LOGIKA DEBUG MODE <==
+    if (kDebugMode) {
+      return '/home/lemon-manis-22/TESTING/PerpusKu/data';
+    }
+
     String? customPath = await _prefsService.loadPerpuskuDataPath();
     if (customPath != null && customPath.isNotEmpty) {
       return customPath;
