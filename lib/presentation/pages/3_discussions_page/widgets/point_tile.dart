@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -76,13 +77,11 @@ class PointTile extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI BARU <==
   void _markAsFinished(BuildContext context, DiscussionProvider provider) {
     provider.markPointAsFinished(point);
     _showSnackBar(context, 'Poin ditandai selesai.');
   }
 
-  // ==> FUNGSI BARU <==
   void _reactivatePoint(BuildContext context, DiscussionProvider provider) {
     provider.reactivatePoint(point);
     _showSnackBar(context, 'Poin diaktifkan kembali.');
@@ -110,6 +109,7 @@ class PointTile extends StatelessWidget {
         point.pointText,
         style: TextStyle(
           color: effectiveTextColor,
+          // ==> BARIS INI MENAMBAHKAN GARIS CORET <==
           decoration: isFinished ? TextDecoration.lineThrough : null,
         ),
       ),
@@ -144,7 +144,6 @@ class PointTile extends StatelessWidget {
               ),
             ),
       trailing: EditPopupMenu(
-        // ==> PROPERTI BARU DITAMBAHKAN <==
         isFinished: isFinished,
         onDateChange: () => _changePointDate(context, provider),
         onCodeChange: () => _changePointCode(context, provider),
