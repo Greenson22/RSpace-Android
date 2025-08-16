@@ -1,4 +1,5 @@
 // lib/presentation/providers/discussion_provider.dart
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse;
@@ -7,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:mime/mime.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/path_service.dart';
@@ -308,7 +310,7 @@ class DiscussionProvider with ChangeNotifier {
     await _saveDiscussions();
   }
 
-  // ==> FUNGSI INI DIUBAH SECARA SIGNIFIKAN <==
+  // ==> FUNGSI INI KEMBALI DIUBAH UNTUK MENYEMATKAN GAMBAR <==
   Future<void> openDiscussionFile(Discussion discussion) async {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Tidak ada path file yang ditentukan.');
@@ -319,7 +321,6 @@ class DiscussionProvider with ChangeNotifier {
       final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
       final contentFilePath = path.join(basePath, discussion.filePath!);
 
-      // Path ke direktori subject (misal: .../topics/Topik A/Subject B/)
       final subjectDirPath = path.dirname(contentFilePath);
       final indexFilePath = path.join(subjectDirPath, 'index.html');
 
@@ -333,11 +334,9 @@ class DiscussionProvider with ChangeNotifier {
         throw Exception('File index.html tidak ditemukan di: $subjectDirPath');
       }
 
-      // Baca konten dari kedua file
       final contentHtml = await contentFile.readAsString();
       final indexHtml = await indexFile.readAsString();
 
-      // Gabungkan konten menggunakan DOM parser
       final indexDocument = parse(indexHtml);
       final mainContainer = indexDocument.querySelector('#main-container');
 
@@ -347,10 +346,29 @@ class DiscussionProvider with ChangeNotifier {
         );
       }
 
-      // Sisipkan konten dari file yang dipilih
-      mainContainer.innerHtml = contentHtml;
+      // ==> LOGIKA BARU: SEMATKAN GAMBAR SEBELUM MENGGABUNGKAN KONTEN <==
+      final contentDocument = parse(contentHtml);
+      final images = contentDocument.querySelectorAll('img');
 
-      // Buat file sementara untuk menampilkan hasilnya
+      for (var img in images) {
+        final src = img.attributes['src'];
+        if (src != null &&
+            !src.startsWith('http') &&
+            !src.startsWith('data:')) {
+          final imagePath = path.join(subjectDirPath, src);
+          final imageFile = File(imagePath);
+          if (await imageFile.exists()) {
+            final imageBytes = await imageFile.readAsBytes();
+            final base64Image = base64Encode(imageBytes);
+            final mimeType = lookupMimeType(imagePath) ?? 'image/png';
+            img.attributes['src'] = 'data:$mimeType;base64,$base64Image';
+          }
+        }
+      }
+      // ==> AKHIR LOGIKA BARU <==
+
+      mainContainer.innerHtml = contentDocument.body?.innerHtml ?? '';
+
       final tempDir = await getTemporaryDirectory();
       final tempFileName = '${DateTime.now().millisecondsSinceEpoch}.html';
       final tempFile = File(path.join(tempDir.path, tempFileName));
