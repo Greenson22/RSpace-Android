@@ -5,11 +5,16 @@ class Point {
   String pointText;
   String repetitionCode;
   String date;
+  // ==> FIELD BARU DITAMBAHKAN <==
+  bool finished;
+  String? finish_date;
 
   Point({
     required this.pointText,
     required this.repetitionCode,
     required this.date,
+    this.finished = false,
+    this.finish_date,
   });
 
   factory Point.fromJson(Map<String, dynamic> json) {
@@ -17,6 +22,9 @@ class Point {
       pointText: json['point_text'] ?? 'Tidak ada teks poin',
       repetitionCode: json['repetition_code'] ?? '',
       date: json['date'] ?? 'No Date',
+      // ==> DITAMBAHKAN <==
+      finished: json['finished'] ?? false,
+      finish_date: json['finish_date'],
     );
   }
 
@@ -25,6 +33,9 @@ class Point {
       'point_text': pointText,
       'repetition_code': repetitionCode,
       'date': date,
+      // ==> DITAMBAHKAN <==
+      'finished': finished,
+      'finish_date': finish_date,
     };
   }
 }
@@ -48,11 +59,13 @@ class Discussion {
 
   // ==> GETTER BARU UNTUK MENDAPATKAN POINT DENGAN KODE REPETISI TERKECIL <==
   Point? get _pointWithMinRepetitionCode {
-    if (points.isEmpty) {
+    // ==> Diubah: Filter poin yang belum selesai <==
+    final activePoints = points.where((p) => !p.finished).toList();
+    if (activePoints.isEmpty) {
       return null;
     }
     // Mengurutkan poin berdasarkan indeks kode repetisinya
-    final sortedPoints = List<Point>.from(points)
+    final sortedPoints = List<Point>.from(activePoints)
       ..sort(
         (a, b) => getRepetitionCodeIndex(
           a.repetitionCode,

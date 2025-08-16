@@ -94,8 +94,9 @@ class DiscussionProvider with ChangeNotifier {
       return {'date': discussion.finish_date, 'code': 'Finish'};
     }
 
+    // ==> Diubah: Filter poin yang belum selesai dan sesuai filter UI <==
     final visiblePoints = discussion.points
-        .where((point) => doesPointMatchFilter(point))
+        .where((point) => !point.finished && doesPointMatchFilter(point))
         .toList();
 
     if (visiblePoints.isNotEmpty) {
@@ -217,6 +218,7 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   bool doesPointMatchFilter(Point point) {
+    if (point.finished) return false; // Jangan tampilkan poin selesai
     if (_activeFilterType == null) {
       return true;
     }
@@ -272,7 +274,6 @@ class DiscussionProvider with ChangeNotifier {
     _saveDiscussions();
   }
 
-  //==> FUNGSI BARU UNTUK MENGHAPUS POINT <==
   void deletePoint(Discussion discussion, Point point) {
     discussion.points.removeWhere((p) => p.hashCode == point.hashCode);
     _filterAndSortDiscussions();
@@ -331,13 +332,46 @@ class DiscussionProvider with ChangeNotifier {
 
   void updatePointDate(Point point, DateTime newDate) {
     point.date = DateFormat('yyyy-MM-dd').format(newDate);
+    if (point.finished) {
+      point.finished = false;
+      point.finish_date = null;
+      if (point.repetitionCode == 'Finish') {
+        point.repetitionCode = 'R0D';
+      }
+    }
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
 
   void updatePointCode(Point point, String newCode) {
     point.repetitionCode = newCode;
-    point.date = getNewDateForRepetitionCode(newCode);
+    if (newCode != 'Finish') {
+      point.date = getNewDateForRepetitionCode(newCode);
+      if (point.finished) {
+        point.finished = false;
+        point.finish_date = null;
+      }
+    } else {
+      markPointAsFinished(point); // Panggil fungsi baru
+    }
+    _filterAndSortDiscussions();
+    _saveDiscussions();
+  }
+
+  // ==> FUNGSI BARU UNTUK POINT <==
+  void markPointAsFinished(Point point) {
+    point.finished = true;
+    point.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    _filterAndSortDiscussions();
+    _saveDiscussions();
+  }
+
+  // ==> FUNGSI BARU UNTUK POINT <==
+  void reactivatePoint(Point point) {
+    point.finished = false;
+    point.finish_date = null;
+    point.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    point.repetitionCode = 'R0D';
     _filterAndSortDiscussions();
     _saveDiscussions();
   }

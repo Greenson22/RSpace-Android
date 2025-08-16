@@ -1,4 +1,3 @@
-// lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -8,13 +7,13 @@ import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 
 class PointTile extends StatelessWidget {
-  final Discussion discussion; // ==> DITAMBAHKAN
+  final Discussion discussion;
   final Point point;
   final bool isActive;
 
   const PointTile({
     super.key,
-    required this.discussion, // ==> DITAMBAHKAN
+    required this.discussion,
     required this.point,
     this.isActive = true,
   });
@@ -38,7 +37,6 @@ class PointTile extends StatelessWidget {
     );
   }
 
-  //==> FUNGSI BARU UNTUK MENGHAPUS POINT <==
   void _deletePoint(BuildContext context, DiscussionProvider provider) {
     showDeletePointConfirmationDialog(
       context: context,
@@ -78,54 +76,82 @@ class PointTile extends StatelessWidget {
     );
   }
 
+  // ==> FUNGSI BARU <==
+  void _markAsFinished(BuildContext context, DiscussionProvider provider) {
+    provider.markPointAsFinished(point);
+    _showSnackBar(context, 'Poin ditandai selesai.');
+  }
+
+  // ==> FUNGSI BARU <==
+  void _reactivatePoint(BuildContext context, DiscussionProvider provider) {
+    provider.reactivatePoint(point);
+    _showSnackBar(context, 'Poin diaktifkan kembali.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
+    final bool isFinished = point.finished;
 
     final Color defaultTextColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
     final Color inactiveColor = Colors.grey;
-    final Color effectiveTextColor = isActive
+    final Color effectiveTextColor = isActive && !isFinished
         ? defaultTextColor
         : inactiveColor;
 
     return ListTile(
       dense: true,
-      leading: const Icon(Icons.arrow_right, color: Colors.grey),
-      title: Text(point.pointText, style: TextStyle(color: effectiveTextColor)),
-      subtitle: RichText(
-        text: TextSpan(
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 12,
-            color: effectiveTextColor,
-          ),
-          children: [
-            const TextSpan(text: 'Date: '),
-            TextSpan(
-              text: point.date,
-              style: TextStyle(
-                color: isActive ? Colors.amber : inactiveColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const TextSpan(text: ' | Code: '),
-            TextSpan(
-              text: point.repetitionCode,
-              style: TextStyle(
-                color: isActive
-                    ? getColorForRepetitionCode(point.repetitionCode)
-                    : inactiveColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+      leading: Icon(
+        isFinished ? Icons.check_circle_outline : Icons.arrow_right,
+        color: isFinished ? Colors.green : Colors.grey,
+      ),
+      title: Text(
+        point.pointText,
+        style: TextStyle(
+          color: effectiveTextColor,
+          decoration: isFinished ? TextDecoration.lineThrough : null,
         ),
       ),
+      subtitle: isFinished
+          ? Text('Selesai pada: ${point.finish_date ?? ''}')
+          : RichText(
+              text: TextSpan(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 12,
+                  color: effectiveTextColor,
+                ),
+                children: [
+                  const TextSpan(text: 'Date: '),
+                  TextSpan(
+                    text: point.date,
+                    style: TextStyle(
+                      color: isActive ? Colors.amber : inactiveColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const TextSpan(text: ' | Code: '),
+                  TextSpan(
+                    text: point.repetitionCode,
+                    style: TextStyle(
+                      color: isActive
+                          ? getColorForRepetitionCode(point.repetitionCode)
+                          : inactiveColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
       trailing: EditPopupMenu(
+        // ==> PROPERTI BARU DITAMBAHKAN <==
+        isFinished: isFinished,
         onDateChange: () => _changePointDate(context, provider),
         onCodeChange: () => _changePointCode(context, provider),
         onRename: () => _renamePoint(context, provider),
         onDelete: () => _deletePoint(context, provider),
+        onMarkAsFinished: () => _markAsFinished(context, provider),
+        onReactivate: () => _reactivatePoint(context, provider),
       ),
       contentPadding: EdgeInsets.zero,
     );
