@@ -1,7 +1,7 @@
 // lib/presentation/pages/dashboard_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import untuk keyboard services
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
@@ -25,15 +25,17 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   Key _dashboardPathKey = UniqueKey();
 
-  // ==> TAMBAHAN: State untuk navigasi keyboard <==
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = 0;
   List<VoidCallback> _dashboardActions = [];
 
+  // Timer dan flag untuk mengontrol visibilitas border
+  Timer? _focusTimer;
+  bool _isKeyboardActive = false;
+
   @override
   void initState() {
     super.initState();
-    // Request fokus saat halaman dimuat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -42,44 +44,58 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void dispose() {
     _focusNode.dispose();
+    _focusTimer?.cancel(); // Batalkan timer saat dispose
     super.dispose();
   }
 
-  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
-      final totalItems = _dashboardActions.length;
-      if (totalItems == 0) return;
-
-      final screenWidth = MediaQuery.of(context).size.width;
-      int crossAxisCount;
-      if (screenWidth > 900) {
-        crossAxisCount = 4;
-      } else if (screenWidth > 600) {
-        crossAxisCount = 3;
-      } else {
-        crossAxisCount = 2;
-      }
-
-      setState(() {
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          _focusedIndex = (_focusedIndex + crossAxisCount);
-          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          _focusedIndex = (_focusedIndex - crossAxisCount);
-          if (_focusedIndex < 0) _focusedIndex = 0;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          _focusedIndex = (_focusedIndex + 1);
-          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          _focusedIndex = (_focusedIndex - 1);
-          if (_focusedIndex < 0) _focusedIndex = 0;
-        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-          if (_focusedIndex < _dashboardActions.length) {
-            _dashboardActions[_focusedIndex]();
+      // Hanya aktifkan timer saat tombol panah ditekan
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+          event.logicalKey == LogicalKeyboardKey.arrowUp ||
+          event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+          event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        setState(() => _isKeyboardActive = true);
+        _focusTimer?.cancel();
+        _focusTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            setState(() => _isKeyboardActive = false);
           }
+        });
+
+        final totalItems = _dashboardActions.length;
+        if (totalItems == 0) return;
+
+        final screenWidth = MediaQuery.of(context).size.width;
+        int crossAxisCount;
+        if (screenWidth > 900) {
+          crossAxisCount = 4;
+        } else if (screenWidth > 600) {
+          crossAxisCount = 3;
+        } else {
+          crossAxisCount = 2;
         }
-      });
+
+        setState(() {
+          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            _focusedIndex = (_focusedIndex + crossAxisCount);
+            if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            _focusedIndex = (_focusedIndex - crossAxisCount);
+            if (_focusedIndex < 0) _focusedIndex = 0;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            _focusedIndex = (_focusedIndex + 1);
+            if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            _focusedIndex = (_focusedIndex - 1);
+            if (_focusedIndex < 0) _focusedIndex = 0;
+          }
+        });
+      } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+        if (_focusedIndex < _dashboardActions.length) {
+          _dashboardActions[_focusedIndex]();
+        }
+      }
     }
   }
 
@@ -234,7 +250,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    // ==> TAMBAHAN: Inisialisasi daftar aksi untuk navigasi keyboard <==
     _dashboardActions = buildDashboardActions(
       context,
       onShowStorageDialog: () => _showStoragePathDialog(context),
@@ -292,8 +307,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     DashboardHeader(key: _dashboardPathKey),
                     const SizedBox(height: 20),
                     DashboardGrid(
-                      focusedIndex: _focusedIndex, // Kirim focused index
-                      dashboardActions: _dashboardActions, // Kirim daftar aksi
+                      isKeyboardActive: _isKeyboardActive,
+                      focusedIndex: _focusedIndex,
+                      dashboardActions: _dashboardActions,
                     ),
                   ],
                 ),

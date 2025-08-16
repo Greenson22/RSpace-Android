@@ -8,7 +8,6 @@ import '../../share_page.dart';
 import '../../backup_management_page.dart';
 import 'dashboard_item.dart';
 
-// ==> TAMBAHAN: Fungsi untuk membangun daftar aksi di luar build method <==
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
   required VoidCallback onShowStorageDialog,
@@ -39,14 +38,15 @@ List<VoidCallback> buildDashboardActions(
 }
 
 class DashboardGrid extends StatelessWidget {
-  // ==> TAMBAHAN: Properti baru <==
   final int focusedIndex;
   final List<VoidCallback> dashboardActions;
+  final bool isKeyboardActive;
 
   const DashboardGrid({
     super.key,
     required this.focusedIndex,
     required this.dashboardActions,
+    required this.isKeyboardActive,
   });
 
   @override
@@ -111,8 +111,7 @@ class DashboardGrid extends StatelessWidget {
           label: item['label'],
           gradientColors: item['colors'],
           onTap: dashboardActions[index],
-          isFocused:
-              focusedIndex == index, // ==> Tentukan apakah item ini fokus
+          isFocused: isKeyboardActive && focusedIndex == index,
         );
       },
       shrinkWrap: true,

@@ -1,6 +1,7 @@
 // lib/presentation/pages/3_discussions_page.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import untuk keyboard services
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/discussion_provider.dart';
 import '3_discussions_page/dialogs/discussion_dialogs.dart';
@@ -21,9 +22,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   final Map<int, bool> _arePointsVisible = {};
   bool _isSearching = false;
 
-  // ==> TAMBAHAN: State untuk navigasi keyboard <==
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = 0;
+
+  Timer? _focusTimer;
+  bool _isKeyboardActive = false;
 
   @override
   void initState() {
@@ -31,10 +34,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     _searchController.addListener(() {
       Provider.of<DiscussionProvider>(context, listen: false).searchQuery =
           _searchController.text;
-      setState(() => _focusedIndex = 0); // Reset fokus saat mencari
+      setState(() => _focusedIndex = 0);
     });
 
-    // Request fokus saat halaman dimuat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -43,60 +45,86 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   @override
   void dispose() {
     _searchController.dispose();
-    _focusNode.dispose(); // Jangan lupa dispose focus node
+    _focusNode.dispose();
+    _focusTimer?.cancel();
     super.dispose();
   }
 
-  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
-      final provider = Provider.of<DiscussionProvider>(context, listen: false);
-      final discussions = provider.filteredDiscussions;
-      final totalItems = discussions.length;
-      if (totalItems == 0) return;
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+          event.logicalKey == LogicalKeyboardKey.arrowUp ||
+          event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+          event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        setState(() => _isKeyboardActive = true);
+        _focusTimer?.cancel();
+        _focusTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) setState(() => _isKeyboardActive = false);
+        });
 
-      final isTwoColumn = MediaQuery.of(context).size.width > 800.0;
-      final int middle = (totalItems / 2).ceil();
+        final provider = Provider.of<DiscussionProvider>(
+          context,
+          listen: false,
+        );
+        final discussions = provider.filteredDiscussions;
+        final totalItems = discussions.length;
+        if (totalItems == 0) return;
 
-      setState(() {
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          if (isTwoColumn) {
-            // Jika di kolom kiri dan ada item di bawahnya di kolom yg sama
-            if (_focusedIndex < middle - 1) {
-              _focusedIndex++;
+        final isTwoColumn = MediaQuery.of(context).size.width > 800.0;
+        final int middle = (totalItems / 2).ceil();
+
+        setState(() {
+          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            if (isTwoColumn) {
+              if (_focusedIndex < middle - 1) {
+                _focusedIndex++;
+              } else if (_focusedIndex >= middle &&
+                  _focusedIndex < totalItems - 1) {
+                _focusedIndex++;
+              }
+            } else {
+              if (_focusedIndex < totalItems - 1) _focusedIndex++;
             }
-            // Jika di kolom kanan dan ada item di bawahnya
-            else if (_focusedIndex >= middle &&
-                _focusedIndex < totalItems - 1) {
-              _focusedIndex++;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            if (_focusedIndex > 0) {
+              // Di kolom kanan, lompat ke atas
+              if (isTwoColumn && _focusedIndex >= middle) {
+                // jika ada item di atasnya di kolom yang sama
+                if (_focusedIndex > middle) {
+                  _focusedIndex--;
+                }
+              }
+              // Di kolom kiri
+              else {
+                _focusedIndex--;
+              }
             }
-          } else {
-            if (_focusedIndex < totalItems - 1) _focusedIndex++;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            if (isTwoColumn && _focusedIndex < middle) {
+              int targetIndex = _focusedIndex + middle;
+              _focusedIndex = targetIndex < totalItems
+                  ? targetIndex
+                  : totalItems - 1;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            if (isTwoColumn && _focusedIndex >= middle) {
+              _focusedIndex -= middle;
+            }
           }
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          if (_focusedIndex > 0) {
-            _focusedIndex--;
-          }
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          if (isTwoColumn && _focusedIndex < middle) {
-            int targetIndex = _focusedIndex + middle;
-            _focusedIndex = targetIndex < totalItems
-                ? targetIndex
-                : totalItems - 1;
-          }
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          if (isTwoColumn && _focusedIndex >= middle) {
-            _focusedIndex -= middle;
-          }
-        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-          // Toggle visibilitas poin
-          final discussion = discussions[_focusedIndex];
+        });
+      } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+        final provider = Provider.of<DiscussionProvider>(
+          context,
+          listen: false,
+        );
+        if (_focusedIndex < provider.filteredDiscussions.length) {
+          final discussion = provider.filteredDiscussions[_focusedIndex];
           final originalIndex = provider.allDiscussions.indexOf(discussion);
           _togglePointsVisibility(originalIndex);
-        } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-          Navigator.of(context).pop();
         }
-      });
+      } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -130,7 +158,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     final provider = Provider.of<DiscussionProvider>(context);
 
     return RawKeyboardListener(
-      // ==> DI WRAP DENGAN KEYBOARD LISTENER <==
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
@@ -252,7 +279,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
                   index: originalIndex,
-                  isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
+                  isFocused: _isKeyboardActive && index == _focusedIndex,
                   arePointsVisible: _arePointsVisible,
                   onToggleVisibility: _togglePointsVisibility,
                 );
@@ -312,7 +339,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           key: ValueKey(discussion.hashCode),
           discussion: discussion,
           index: originalIndex,
-          isFocused: overallIndex == _focusedIndex, // ==> PASS isFocused STATE
+          isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
           arePointsVisible: _arePointsVisible,
           onToggleVisibility: _togglePointsVisibility,
         );

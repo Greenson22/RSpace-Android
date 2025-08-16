@@ -1,8 +1,9 @@
 // lib/presentation/pages/1_topics_page.dart
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import untuk keyboard services
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
@@ -35,9 +36,11 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
-  // ==> TAMBAHAN: State untuk navigasi keyboard <==
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = 0;
+
+  Timer? _focusTimer;
+  bool _isKeyboardActive = false;
 
   @override
   void initState() {
@@ -45,10 +48,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     _searchController.addListener(() {
       topicProvider.search(_searchController.text);
-      // Reset fokus saat query pencarian berubah
       setState(() => _focusedIndex = 0);
     });
-    // Request fokus saat halaman dimuat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -57,43 +58,63 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   void dispose() {
     _searchController.dispose();
-    _focusNode.dispose(); // Jangan lupa dispose focus node
+    _focusNode.dispose();
+    _focusTimer?.cancel();
     super.dispose();
   }
 
-  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
-      final topicProvider = Provider.of<TopicProvider>(context, listen: false);
-      final totalItems = topicProvider.filteredTopics.length;
-      if (totalItems == 0) return;
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+          event.logicalKey == LogicalKeyboardKey.arrowUp ||
+          event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+          event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        setState(() => _isKeyboardActive = true);
+        _focusTimer?.cancel();
+        _focusTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) setState(() => _isKeyboardActive = false);
+        });
 
-      int crossAxisCount = (MediaQuery.of(context).size.width > 600)
-          ? (MediaQuery.of(context).size.width / 200).floor()
-          : 1;
+        final topicProvider = Provider.of<TopicProvider>(
+          context,
+          listen: false,
+        );
+        final totalItems = topicProvider.filteredTopics.length;
+        if (totalItems == 0) return;
 
-      setState(() {
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          _focusedIndex = (_focusedIndex + crossAxisCount);
-          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          _focusedIndex = (_focusedIndex - crossAxisCount);
-          if (_focusedIndex < 0) _focusedIndex = 0;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          _focusedIndex = (_focusedIndex + 1);
-          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          _focusedIndex = (_focusedIndex - 1);
-          if (_focusedIndex < 0) _focusedIndex = 0;
-        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+        int crossAxisCount = (MediaQuery.of(context).size.width > 600)
+            ? (MediaQuery.of(context).size.width / 200).floor()
+            : 1;
+
+        setState(() {
+          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            _focusedIndex = (_focusedIndex + crossAxisCount);
+            if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            _focusedIndex = (_focusedIndex - crossAxisCount);
+            if (_focusedIndex < 0) _focusedIndex = 0;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            _focusedIndex = (_focusedIndex + 1);
+            if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            _focusedIndex = (_focusedIndex - 1);
+            if (_focusedIndex < 0) _focusedIndex = 0;
+          }
+        });
+      } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+        final topicProvider = Provider.of<TopicProvider>(
+          context,
+          listen: false,
+        );
+        if (_focusedIndex < topicProvider.filteredTopics.length) {
           _navigateToSubjectsPage(
             context,
             topicProvider.filteredTopics[_focusedIndex],
           );
-        } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-          Navigator.of(context).pop();
         }
-      });
+      } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -112,9 +133,14 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
           child: SubjectsPage(topicName: topic.name),
         ),
       ),
-    );
+    ).then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      });
+    });
   }
 
+  // ... (sisa method _addTopic, _renameTopic, dll. tidak berubah)
   Future<void> _addTopic(BuildContext context) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showTopicTextInputDialog(
@@ -198,7 +224,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final topicProvider = Provider.of<TopicProvider>(context);
 
     return RawKeyboardListener(
-      // ==> DI WRAP DENGAN KEYBOARD LISTENER <==
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
@@ -322,7 +347,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             return TopicListTile(
               key: ValueKey(topic.name),
               topic: topic,
-              isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
+              isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: isReorderActive
                   ? null
                   : () => _navigateToSubjectsPage(context, topic),
@@ -372,7 +397,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             return TopicGridTile(
               key: ValueKey(topic.name),
               topic: topic,
-              isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
+              isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: isReorderActive
                   ? null
                   : () => _navigateToSubjectsPage(context, topic),
