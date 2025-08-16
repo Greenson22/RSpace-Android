@@ -54,92 +54,141 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
           return RefreshIndicator(
             onRefresh: () => provider.generateStatistics(),
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                SummaryCard(
-                  title: 'Ringkasan Konten',
-                  icon: Icons.pie_chart,
-                  color: Colors.blue.shade700,
-                  children: [
-                    _buildStatTile(
-                      context,
-                      'Total Topik',
-                      stats.topicCount.toString(),
-                      Icons.topic_outlined,
-                    ),
-                    _buildStatTile(
-                      context,
-                      'Total Subjek',
-                      stats.subjectCount.toString(),
-                      Icons.class_outlined,
-                    ),
-                    _buildStatTile(
-                      context,
-                      'Total Diskusi',
-                      stats.discussionCount.toString(),
-                      Icons.chat_bubble_outline,
-                    ),
-                    _buildStatTile(
-                      context,
-                      'Diskusi Selesai',
-                      stats.finishedDiscussionCount.toString(),
-                      Icons.check_circle_outline,
-                      valueColor:
-                          Theme.of(context).brightness == Brightness.light
-                          ? Colors.green.shade800
-                          : Colors.green.shade300,
-                    ),
-                    _buildStatTile(
-                      context,
-                      'Total Poin Catatan',
-                      stats.pointCount.toString(),
-                      Icons.notes_outlined,
-                    ),
-                    if (stats.repetitionCodeCounts.isNotEmpty) ...[
-                      const Divider(height: 24),
-                      RepetitionCodeSection(counts: stats.repetitionCodeCounts),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SummaryCard(
-                  title: 'Ringkasan Tugas',
-                  icon: Icons.task_alt_outlined,
-                  color: Colors.orange.shade700,
-                  children: [
-                    _buildStatTile(
-                      context,
-                      'Total Kategori Tugas',
-                      stats.taskCategoryCount.toString(),
-                      Icons.category_outlined,
-                    ),
-                    _buildStatTile(
-                      context,
-                      'Total Tugas',
-                      stats.taskCount.toString(),
-                      Icons.list_alt_outlined,
-                    ),
-                    _buildStatTile(
-                      context,
-                      'Tugas Selesai',
-                      stats.completedTaskCount.toString(),
-                      Icons.task_alt,
-                      valueColor:
-                          Theme.of(context).brightness == Brightness.light
-                          ? Colors.green.shade800
-                          : Colors.green.shade300,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (stats.perTopicStats.isNotEmpty)
-                  PerTopicSection(perTopicStats: stats.perTopicStats),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Atur breakpoint, misalnya 800.
+                const double breakpoint = 800.0;
+                if (constraints.maxWidth > breakpoint) {
+                  return _buildDesktopLayout(stats);
+                } else {
+                  return _buildMobileLayout(stats);
+                }
+              },
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildMobileLayout(dynamic stats) {
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        _buildContentSummary(stats),
+        const SizedBox(height: 16),
+        _buildTaskSummary(stats),
+        const SizedBox(height: 16),
+        if (stats.perTopicStats.isNotEmpty)
+          PerTopicSection(perTopicStats: stats.perTopicStats),
+      ],
+    );
+  }
+
+  Widget _buildDesktopLayout(dynamic stats) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ListView(
+              children: [
+                _buildContentSummary(stats),
+                const SizedBox(height: 16),
+                _buildTaskSummary(stats),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ListView(
+              children: [
+                if (stats.perTopicStats.isNotEmpty)
+                  PerTopicSection(perTopicStats: stats.perTopicStats),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  SummaryCard _buildContentSummary(dynamic stats) {
+    return SummaryCard(
+      title: 'Ringkasan Konten',
+      icon: Icons.pie_chart,
+      color: Colors.blue.shade700,
+      children: [
+        _buildStatTile(
+          context,
+          'Total Topik',
+          stats.topicCount.toString(),
+          Icons.topic_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Total Subjek',
+          stats.subjectCount.toString(),
+          Icons.class_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Total Diskusi',
+          stats.discussionCount.toString(),
+          Icons.chat_bubble_outline,
+        ),
+        _buildStatTile(
+          context,
+          'Diskusi Selesai',
+          stats.finishedDiscussionCount.toString(),
+          Icons.check_circle_outline,
+          valueColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.green.shade800
+              : Colors.green.shade300,
+        ),
+        _buildStatTile(
+          context,
+          'Total Poin Catatan',
+          stats.pointCount.toString(),
+          Icons.notes_outlined,
+        ),
+        if (stats.repetitionCodeCounts.isNotEmpty) ...[
+          const Divider(height: 24),
+          RepetitionCodeSection(counts: stats.repetitionCodeCounts),
+        ],
+      ],
+    );
+  }
+
+  SummaryCard _buildTaskSummary(dynamic stats) {
+    return SummaryCard(
+      title: 'Ringkasan Tugas',
+      icon: Icons.task_alt_outlined,
+      color: Colors.orange.shade700,
+      children: [
+        _buildStatTile(
+          context,
+          'Total Kategori Tugas',
+          stats.taskCategoryCount.toString(),
+          Icons.category_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Total Tugas',
+          stats.taskCount.toString(),
+          Icons.list_alt_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Tugas Selesai',
+          stats.completedTaskCount.toString(),
+          Icons.task_alt,
+          valueColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.green.shade800
+              : Colors.green.shade300,
+        ),
+      ],
     );
   }
 
