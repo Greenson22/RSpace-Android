@@ -1,13 +1,13 @@
 // lib/presentation/providers/discussion_provider.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as path; // Pastikan import ini ada
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:mime/mime.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/path_service.dart';
@@ -381,6 +381,33 @@ class DiscussionProvider with ChangeNotifier {
 
       if (result.type != ResultType.done) {
         throw Exception('Tidak dapat membuka file: ${result.message}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK EDIT FILE <==
+  Future<void> editDiscussionFile(Discussion discussion) async {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+      throw Exception('Tidak ada path file yang ditentukan untuk diedit.');
+    }
+
+    try {
+      final perpuskuPath = await _pathService.perpuskuDataPath;
+      final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
+      final contentFilePath = path.join(basePath, discussion.filePath!);
+
+      final contentFile = File(contentFilePath);
+      if (!await contentFile.exists()) {
+        throw Exception('File konten tidak ditemukan: $contentFilePath');
+      }
+
+      // Langsung buka file konten
+      final result = await OpenFile.open(contentFile.path);
+
+      if (result.type != ResultType.done) {
+        throw Exception('Gagal membuka file untuk diedit: ${result.message}');
       }
     } catch (e) {
       rethrow;

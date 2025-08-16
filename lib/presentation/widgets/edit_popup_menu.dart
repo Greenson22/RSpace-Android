@@ -11,6 +11,7 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onSetFilePath;
   final VoidCallback? onRemoveFilePath;
+  final VoidCallback? onEditFilePath; // ==> TAMBAHKAN CALLBACK BARU
   final bool isFinished;
   final bool hasPoints;
   final bool hasFilePath;
@@ -26,6 +27,7 @@ class EditPopupMenu extends StatelessWidget {
     this.onDelete,
     this.onSetFilePath,
     this.onRemoveFilePath,
+    this.onEditFilePath, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.isFinished = false,
     this.hasPoints = false,
     this.hasFilePath = false,
@@ -45,6 +47,10 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'set_file_path' && onSetFilePath != null) onSetFilePath!();
         if (value == 'remove_file_path' && onRemoveFilePath != null) {
           onRemoveFilePath!();
+        }
+        // ==> TAMBAHKAN PENANGANAN EVENT BARU
+        if (value == 'edit_file_path' && onEditFilePath != null) {
+          onEditFilePath!();
         }
       },
       itemBuilder: (BuildContext context) {
@@ -86,6 +92,15 @@ class EditPopupMenu extends StatelessWidget {
                 PopupMenuItem<String>(
                   value: 'set_file_path',
                   child: Text(hasFilePath ? 'Ubah Path File' : 'Set Path File'),
+                ),
+              );
+            }
+            // ==> TAMBAHKAN MENU EDIT FILE DI SINI <==
+            if (hasFilePath && onEditFilePath != null) {
+              menuItems.add(
+                const PopupMenuItem<String>(
+                  value: 'edit_file_path',
+                  child: Text('Edit File Konten'),
                 ),
               );
             }

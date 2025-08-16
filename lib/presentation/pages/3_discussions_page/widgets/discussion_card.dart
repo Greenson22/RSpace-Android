@@ -147,6 +147,15 @@ class DiscussionCard extends StatelessWidget {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MEMANGGIL AKSI EDIT <==
+  void _editFile(BuildContext context, DiscussionProvider provider) async {
+    try {
+      await provider.editDiscussionFile(discussion);
+    } catch (e) {
+      _showSnackBar(context, e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -229,6 +238,8 @@ class DiscussionCard extends StatelessWidget {
                   onAddPoint: () => _addPoint(context, provider),
                   onSetFilePath: () => _setFilePath(context, provider),
                   onRemoveFilePath: () => _removeFilePath(context, provider),
+                  onEditFilePath: () =>
+                      _editFile(context, provider), // ==> SAMBUNGKAN FUNGSI
                   onDateChange: () => _changeDiscussionDate(context, provider),
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),
