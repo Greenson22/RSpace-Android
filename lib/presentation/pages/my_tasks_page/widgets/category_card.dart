@@ -9,8 +9,17 @@ import 'task_list.dart';
 
 class CategoryCard extends StatelessWidget {
   final TaskCategory category;
+  final bool isFocused; // Tambahkan properti isFocused
+  final bool isExpanded; // Tambahkan properti isExpanded
+  final ValueChanged<bool> onExpansionChanged; // Tambahkan callback
 
-  const CategoryCard({super.key, required this.category});
+  const CategoryCard({
+    super.key,
+    required this.category,
+    this.isFocused = false, // Beri nilai default
+    required this.isExpanded,
+    required this.onExpansionChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +47,18 @@ class CategoryCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       elevation: elevation,
       color: cardColor,
+      // Tambahkan shape untuk menampilkan border saat fokus
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
+      ),
       child: ExpansionTile(
+        key: PageStorageKey(category.name), // Tambahkan key untuk menjaga state
+        initiallyExpanded: isExpanded,
+        onExpansionChanged: onExpansionChanged,
         enabled: !isCategoryReorderMode,
-        initiallyExpanded: isThisCategoryReorderingTask,
         leading: Text(
           category.icon,
           style: TextStyle(
