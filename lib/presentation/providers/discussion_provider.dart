@@ -3,11 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:html/dom.dart' as dom;
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:mime/mime.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
@@ -310,7 +309,7 @@ class DiscussionProvider with ChangeNotifier {
     await _saveDiscussions();
   }
 
-  // ==> FUNGSI INI KEMBALI DIUBAH UNTUK MENYEMATKAN GAMBAR <==
+  // ==> FUNGSI INI DIUBAH UNTUK MENGGUNAKAN open_file <==
   Future<void> openDiscussionFile(Discussion discussion) async {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Tidak ada path file yang ditentukan.');
@@ -346,7 +345,6 @@ class DiscussionProvider with ChangeNotifier {
         );
       }
 
-      // ==> LOGIKA BARU: SEMATKAN GAMBAR SEBELUM MENGGABUNGKAN KONTEN <==
       final contentDocument = parse(contentHtml);
       final images = contentDocument.querySelectorAll('img');
 
@@ -365,7 +363,6 @@ class DiscussionProvider with ChangeNotifier {
           }
         }
       }
-      // ==> AKHIR LOGIKA BARU <==
 
       mainContainer.innerHtml = contentDocument.body?.innerHtml ?? '';
 
@@ -374,12 +371,11 @@ class DiscussionProvider with ChangeNotifier {
       final tempFile = File(path.join(tempDir.path, tempFileName));
       await tempFile.writeAsString(indexDocument.outerHtml);
 
-      final uri = Uri.file(tempFile.path);
+      // Menggunakan OpenFile untuk membuka file
+      final result = await OpenFile.open(tempFile.path);
 
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        throw Exception('Tidak bisa membuka file gabungan: ${tempFile.path}');
+      if (result.type != ResultType.done) {
+        throw Exception('Tidak dapat membuka file: ${result.message}');
       }
     } catch (e) {
       rethrow;
