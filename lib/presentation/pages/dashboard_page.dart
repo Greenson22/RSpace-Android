@@ -1,11 +1,13 @@
 // lib/presentation/pages/dashboard_page.dart
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/shared_preferences_service.dart';
+import '../providers/debug_provider.dart';
 import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
@@ -249,10 +251,21 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final debugProvider = Provider.of<DebugProvider>(context);
 
     _dashboardActions = buildDashboardActions(
       context,
-      onShowStorageDialog: () => _showStoragePathDialog(context),
+      onShowStorageDialog: () {
+        if (!kDebugMode || debugProvider.allowPathChanges) {
+          _showStoragePathDialog(context);
+        } else {
+          showAppSnackBar(
+            context,
+            'Ubah path dinonaktifkan. Aktifkan melalui ikon developer di AppBar.',
+            isError: true,
+          );
+        }
+      },
     );
 
     return RawKeyboardListener(
@@ -265,6 +278,23 @@ class _DashboardPageState extends State<DashboardPage> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           actions: [
+            if (kDebugMode)
+              IconButton(
+                icon: Icon(
+                  debugProvider.allowPathChanges
+                      ? Icons.developer_mode
+                      : Icons.developer_mode_outlined,
+                  color: debugProvider.allowPathChanges ? Colors.amber : null,
+                ),
+                onPressed: () {
+                  debugProvider.togglePathChanges();
+                  final message = debugProvider.allowPathChanges
+                      ? 'Perubahan path diaktifkan.'
+                      : 'Perubahan path dinonaktifkan.';
+                  showAppSnackBar(context, message);
+                },
+                tooltip: 'Aktifkan/Nonaktifkan Ubah Path (Debug)',
+              ),
             IconButton(
               icon: const Icon(Icons.color_lens_outlined),
               onPressed: () => _showColorPickerDialog(context),
