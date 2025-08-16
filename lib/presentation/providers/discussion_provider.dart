@@ -1,12 +1,13 @@
 // lib/presentation/providers/discussion_provider.dart
+
 import 'dart:convert';
 import 'dart:io';
-import 'package:path/path.dart' as path; // Pastikan import ini ada
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
@@ -387,7 +388,7 @@ class DiscussionProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK EDIT FILE <==
+  // ==> FUNGSI EDIT FILE DIPERBARUI SECARA SIGNIFIKAN <==
   Future<void> editDiscussionFile(Discussion discussion) async {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Tidak ada path file yang ditentukan untuk diedit.');
@@ -403,11 +404,45 @@ class DiscussionProvider with ChangeNotifier {
         throw Exception('File konten tidak ditemukan: $contentFilePath');
       }
 
-      // Langsung buka file konten
-      final result = await OpenFile.open(contentFile.path);
+      if (Platform.isLinux) {
+        // Coba buka dengan editor dari environment variable
+        final editor =
+            Platform.environment['EDITOR'] ?? Platform.environment['VISUAL'];
+        ProcessResult result;
 
-      if (result.type != ResultType.done) {
-        throw Exception('Gagal membuka file untuk diedit: ${result.message}');
+        if (editor != null && editor.isNotEmpty) {
+          result = await Process.run(editor, [
+            contentFile.path,
+          ], runInShell: true);
+          if (result.exitCode == 0) return; // Berhasil
+        }
+
+        // Jika gagal atau tidak diset, coba editor umum
+        const commonEditors = ['gedit', 'kate', 'mousepad', 'code'];
+        for (final ed in commonEditors) {
+          result = await Process.run('which', [ed]);
+          if (result.exitCode == 0) {
+            // Jika editor ditemukan
+            result = await Process.run(ed, [
+              contentFile.path,
+            ], runInShell: true);
+            if (result.exitCode == 0) return; // Berhasil
+          }
+        }
+
+        // Fallback terakhir ke xdg-open
+        result = await Process.run('xdg-open', [contentFile.path]);
+        if (result.exitCode != 0) {
+          throw Exception(
+            'Gagal membuka file dengan semua metode: ${result.stderr}',
+          );
+        }
+      } else {
+        // Logika fallback untuk platform lain (Android, Windows, dll)
+        final result = await OpenFile.open(contentFile.path);
+        if (result.type != ResultType.done) {
+          throw Exception('Gagal membuka file untuk diedit: ${result.message}');
+        }
       }
     } catch (e) {
       rethrow;
