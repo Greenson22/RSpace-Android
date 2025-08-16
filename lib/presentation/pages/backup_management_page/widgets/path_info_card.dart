@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/backup_provider.dart';
-import '../../../providers/debug_provider.dart';
 import '../utils/backup_actions.dart';
 
 class PathInfoCard extends StatelessWidget {
@@ -11,9 +10,6 @@ class PathInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final debugProvider = Provider.of<DebugProvider>(context);
-    final isChangeDisabled = kDebugMode && !debugProvider.allowPathChanges;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -53,24 +49,12 @@ class PathInfoCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.folder_open),
                 label: const Text('Ubah Folder Tujuan'),
-                onPressed: isChangeDisabled
-                    ? null
-                    : () => selectBackupFolder(context),
+                onPressed: () => selectBackupFolder(context),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-            if (isChangeDisabled)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  'Ubah path dinonaktifkan dalam mode debug.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.orange.shade800,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
