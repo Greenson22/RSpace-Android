@@ -1,14 +1,18 @@
 // lib/presentation/providers/discussion_provider.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as path;
+import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
+import '../../data/services/path_service.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../pages/3_discussions_page/utils/repetition_code_utils.dart';
 
 class DiscussionProvider with ChangeNotifier {
   final DiscussionService _discussionService = DiscussionService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
+  final PathService _pathService = PathService();
 
   final String _jsonFilePath;
 
@@ -43,7 +47,6 @@ class DiscussionProvider with ChangeNotifier {
   bool _sortAscending = true;
   bool get sortAscending => _sortAscending;
 
-  // ==> STATE BARU UNTUK MENAMPILKAN DISKUSI SELESAI
   bool _showFinishedDiscussions = false;
   bool get showFinishedDiscussions => _showFinishedDiscussions;
 
@@ -157,11 +160,9 @@ class DiscussionProvider with ChangeNotifier {
     };
   }
 
-  // ==> FUNGSI INI DIUBAH TOTAL <==
   void _filterAndSortDiscussions() {
     final query = _searchQuery.toLowerCase();
 
-    // 1. Pisahkan diskusi yang aktif dan yang sudah selesai
     final activeDiscussions = _allDiscussions
         .where((d) => !d.finished)
         .toList();
@@ -169,7 +170,6 @@ class DiscussionProvider with ChangeNotifier {
         .where((d) => d.finished)
         .toList();
 
-    // 2. Filter diskusi yang aktif
     List<Discussion> filteredActiveDiscussions = activeDiscussions.where((
       discussion,
     ) {
@@ -178,7 +178,6 @@ class DiscussionProvider with ChangeNotifier {
       );
       if (!matchesSearchQuery) return false;
 
-      // Logika filter utama
       bool matchesFilter = true;
       final effectiveInfo = _getEffectiveDiscussionInfoForSorting(discussion);
       final effectiveDate = effectiveInfo['date'];
@@ -207,7 +206,6 @@ class DiscussionProvider with ChangeNotifier {
       return matchesFilter;
     }).toList();
 
-    // 3. Urutkan diskusi yang aktif
     filteredActiveDiscussions.sort((a, b) {
       final infoA = _getEffectiveDiscussionInfoForSorting(a);
       final infoB = _getEffectiveDiscussionInfoForSorting(b);
@@ -228,14 +226,15 @@ class DiscussionProvider with ChangeNotifier {
         default: // date
           final dateA = infoA['date'];
           final dateB = infoB['date'];
-          if (dateA == null && dateB == null)
+          if (dateA == null && dateB == null) {
             result = 0;
-          else if (dateA == null)
+          } else if (dateA == null) {
             result = 1;
-          else if (dateB == null)
+          } else if (dateB == null) {
             result = -1;
-          else
+          } else {
             result = DateTime.parse(dateA).compareTo(DateTime.parse(dateB));
+          }
           break;
       }
       return result;
@@ -247,8 +246,6 @@ class DiscussionProvider with ChangeNotifier {
 
     _filteredDiscussions = filteredActiveDiscussions;
 
-    // 4. Tambahkan diskusi selesai jika kondisi terpenuhi
-    // Jika tidak ada filter, atau jika tombol "tampilkan selesai" aktif (dan bukan filter kode)
     if (_activeFilterType == null ||
         (_showFinishedDiscussions && _activeFilterType != 'code')) {
       final filteredFinished = finishedDiscussions
@@ -257,7 +254,6 @@ class DiscussionProvider with ChangeNotifier {
       _filteredDiscussions.addAll(filteredFinished);
     }
 
-    // Kondisi khusus jika filter kode adalah "Finish"
     if (_activeFilterType == 'code' && _selectedRepetitionCode == 'Finish') {
       _filteredDiscussions = finishedDiscussions
           .where((d) => d.discussion.toLowerCase().contains(query))
@@ -294,8 +290,48 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   // --- ACTIONS ---
+  Future<String> getPerpuskuHtmlBasePath() async {
+    final perpuskuPath = await _pathService.perpuskuDataPath;
+    // ==> PERBAIKAN: Menambahkan 'data' ke dalam path
+    return path.join(perpuskuPath, 'data', 'file_contents', 'topics');
+  }
 
-  // ==> FUNGSI BARU UNTUK INCREMENT KODE REPETISI <==
+  Future<void> updateDiscussionFilePath(
+    Discussion discussion,
+    String filePath,
+  ) async {
+    discussion.filePath = filePath;
+    _filterAndSortDiscussions();
+    await _saveDiscussions();
+  }
+
+  Future<void> openDiscussionFile(Discussion discussion) async {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+      throw Exception('Tidak ada path file yang ditentukan.');
+    }
+
+    try {
+      final perpuskuPath = await _pathService.perpuskuDataPath;
+      // ==> PERBAIKAN: Menambahkan 'data' ke dalam path
+      final fullPath = path.join(
+        perpuskuPath,
+        'data',
+        'file_contents',
+        'topics',
+        discussion.filePath!,
+      );
+      final uri = Uri.file(fullPath);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        throw Exception('Tidak bisa membuka file: $fullPath');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   void incrementRepetitionCode(dynamic item) {
     if (item is Discussion) {
       final currentCode = item.repetitionCode;
@@ -436,7 +472,6 @@ class DiscussionProvider with ChangeNotifier {
     point.finished = true;
     point.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    // PERUBAHAN: Cari discussion induk dan cek apakah semua point sudah selesai
     Discussion? parentDiscussion;
     for (final discussion in _allDiscussions) {
       if (discussion.points.contains(point)) {
@@ -464,7 +499,6 @@ class DiscussionProvider with ChangeNotifier {
     point.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
     point.repetitionCode = 'R0D';
 
-    // PERUBAHAN UTAMA: Cari discussion induk dan aktifkan kembali jika perlu
     Discussion? parentDiscussion;
     for (final discussion in _allDiscussions) {
       if (discussion.points.contains(point)) {
@@ -516,7 +550,6 @@ class DiscussionProvider with ChangeNotifier {
     _activeFilterType = null;
     _selectedRepetitionCode = null;
     _selectedDateRange = null;
-    // Set show finished to false when clearing filters
     _showFinishedDiscussions = false;
     _prefsService.saveFilterPreference(null, null);
     _filterAndSortDiscussions();

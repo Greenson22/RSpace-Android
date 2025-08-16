@@ -1,4 +1,6 @@
+// lib/presentation/pages/3_discussions_page/dialogs/discussion_dialogs.dart
 import 'package:flutter/material.dart';
+import 'html_file_picker_dialog.dart';
 
 // Fungsi untuk menampilkan dialog input teks generik
 Future<void> showTextInputDialog({
@@ -36,6 +38,20 @@ Future<void> showTextInputDialog({
         ],
       );
     },
+  );
+}
+
+// FUNGSI LAMA DIGANTI DENGAN YANG DI BAWAH
+// Future<void> showFilePathDialog(...) {...}
+
+//==> FUNGSI BARU UNTUK MENAMPILKAN FILE PICKER DIALOG <==
+Future<String?> showHtmlFilePicker(
+  BuildContext context,
+  String basePath,
+) async {
+  return await showDialog<String>(
+    context: context,
+    builder: (context) => HtmlFilePickerDialog(basePath: basePath),
   );
 }
 

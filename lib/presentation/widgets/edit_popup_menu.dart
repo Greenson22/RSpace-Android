@@ -9,8 +9,10 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback? onAddPoint;
   final VoidCallback? onReactivate;
   final VoidCallback? onDelete;
+  final VoidCallback? onSetFilePath;
   final bool isFinished;
   final bool hasPoints;
+  final bool hasFilePath;
 
   const EditPopupMenu({
     super.key,
@@ -21,8 +23,10 @@ class EditPopupMenu extends StatelessWidget {
     this.onAddPoint,
     this.onReactivate,
     this.onDelete,
+    this.onSetFilePath,
     this.isFinished = false,
     this.hasPoints = false,
+    this.hasFilePath = false,
   });
 
   @override
@@ -36,6 +40,7 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'add_point' && onAddPoint != null) onAddPoint!();
         if (value == 'reactivate' && onReactivate != null) onReactivate!();
         if (value == 'delete' && onDelete != null) onDelete!();
+        if (value == 'set_file_path' && onSetFilePath != null) onSetFilePath!();
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
@@ -71,6 +76,14 @@ class EditPopupMenu extends StatelessWidget {
                 child: Text('Tambah Poin'),
               ),
             );
+            if (onSetFilePath != null) {
+              menuItems.add(
+                PopupMenuItem<String>(
+                  value: 'set_file_path',
+                  child: Text(hasFilePath ? 'Ubah Path File' : 'Set Path File'),
+                ),
+              );
+            }
           }
           if (!hasPoints) {
             if (onDateChange != null) {

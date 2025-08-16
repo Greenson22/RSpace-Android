@@ -1,3 +1,4 @@
+// lib/data/models/discussion_model.dart
 import 'dart:math';
 import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart';
 
@@ -47,6 +48,7 @@ class Discussion {
   List<Point> points;
   bool finished; // ==> FIELD BARU <==
   String? finish_date; // ==> FIELD BARU <==
+  String? filePath; // ==> FIELD BARU
 
   Discussion({
     required this.discussion,
@@ -55,6 +57,7 @@ class Discussion {
     required this.points,
     this.finished = false, // Default value
     this.finish_date,
+    this.filePath, // ==> TAMBAHAN DI KONSTRUKTOR
   });
 
   // ==> GETTER BARU UNTUK MENDAPATKAN POINT DENGAN KODE REPETISI TERKECIL <==
@@ -99,6 +102,7 @@ class Discussion {
       points: pointsList,
       finished: json['finished'] ?? false, // ==> DITAMBAHKAN <==
       finish_date: json['finish_date'], // ==> DITAMBAHKAN <==
+      filePath: json['filePath'], // ==> DITAMBAHKAN
     );
   }
 
@@ -110,6 +114,7 @@ class Discussion {
       'points': points.map((p) => p.toJson()).toList(),
       'finished': finished, // ==> DITAMBAHKAN <==
       'finish_date': finish_date, // ==> DITAMBAHKAN <==
+      'filePath': filePath, // ==> DITAMBAHKAN
     };
   }
 }

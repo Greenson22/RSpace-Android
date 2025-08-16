@@ -115,6 +115,28 @@ class DiscussionCard extends StatelessWidget {
     _showSnackBar(context, 'Diskusi diaktifkan kembali.');
   }
 
+  void _setFilePath(BuildContext context, DiscussionProvider provider) async {
+    try {
+      final basePath = await provider.getPerpuskuHtmlBasePath();
+      final newPath = await showHtmlFilePicker(context, basePath);
+
+      if (newPath != null) {
+        provider.updateDiscussionFilePath(discussion, newPath);
+        _showSnackBar(context, 'Path file berhasil disimpan.');
+      }
+    } catch (e) {
+      _showSnackBar(context, 'Gagal membuka pemilih file: ${e.toString()}');
+    }
+  }
+
+  void _openFile(BuildContext context, DiscussionProvider provider) async {
+    try {
+      await provider.openDiscussionFile(discussion);
+    } catch (e) {
+      _showSnackBar(context, e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -122,9 +144,11 @@ class DiscussionCard extends StatelessWidget {
     bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
     final bool isFinished = discussion.finished;
     final iconColor = isFinished ? Colors.green : Colors.blue;
-    final iconData = isFinished
+    final bool hasFile =
+        discussion.filePath != null && discussion.filePath!.isNotEmpty;
+    final IconData iconData = isFinished
         ? Icons.check_circle
-        : Icons.chat_bubble_outline;
+        : (hasFile ? Icons.link : Icons.chat_bubble_outline);
 
     // ... (sisa kode build logic tidak berubah)
     final sortedPoints = List<Point>.from(discussion.points);
@@ -171,7 +195,11 @@ class DiscussionCard extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            leading: Icon(iconData, color: iconColor, size: 24),
+            leading: IconButton(
+              icon: Icon(iconData, color: iconColor, size: 24),
+              onPressed: hasFile ? () => _openFile(context, provider) : null,
+              tooltip: hasFile ? 'Buka File' : null,
+            ),
             title: Text(
               discussion.discussion,
               style: TextStyle(
@@ -188,7 +216,9 @@ class DiscussionCard extends StatelessWidget {
                 EditPopupMenu(
                   isFinished: isFinished,
                   hasPoints: discussion.points.isNotEmpty,
+                  hasFilePath: hasFile,
                   onAddPoint: () => _addPoint(context, provider),
+                  onSetFilePath: () => _setFilePath(context, provider),
                   onDateChange: () => _changeDiscussionDate(context, provider),
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),
