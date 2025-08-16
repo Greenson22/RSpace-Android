@@ -48,7 +48,9 @@ class PerTopicSection extends StatelessWidget {
           ExpansionPanelList(
             elevation: 0,
             expansionCallback: (int index, bool isExpanded) {
-              onExpansionChanged(index, !isExpanded);
+              // PERBAIKAN: Nilai 'isExpanded' dari callback harus langsung digunakan.
+              // Sebelumnya: onExpansionChanged(index, !isExpanded);
+              onExpansionChanged(index, isExpanded);
             },
             children: perTopicStats.map<ExpansionPanel>((topicStat) {
               final index = perTopicStats.indexOf(topicStat);
