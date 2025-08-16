@@ -1,3 +1,4 @@
+// lib/presentation/widgets/edit_popup_menu.dart
 import 'package:flutter/material.dart';
 
 class EditPopupMenu extends StatelessWidget {
@@ -112,7 +113,17 @@ class EditPopupMenu extends StatelessWidget {
             );
           }
         } else {
-          if (onReactivate != null) {
+          // PERUBAHAN UTAMA: Hanya tampilkan "Aktifkan Lagi" jika tidak memiliki point
+          if (onReactivate != null && !hasPoints) {
+            menuItems.add(const PopupMenuDivider());
+            menuItems.add(
+              const PopupMenuItem<String>(
+                value: 'reactivate',
+                child: Text('Aktifkan Lagi'),
+              ),
+            );
+          } else if (onReactivate != null && onAddPoint == null) {
+            // Ini untuk point, selalu tampilkan
             menuItems.add(const PopupMenuDivider());
             menuItems.add(
               const PopupMenuItem<String>(

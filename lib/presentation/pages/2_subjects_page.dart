@@ -143,15 +143,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(jsonFilePath),
-          child: DiscussionsPage(
-            subjectName: subject.name,
-            onFilterOrSortChanged: () {
-              subjectProvider.fetchSubjects();
-            },
-          ),
+          child: DiscussionsPage(subjectName: subject.name),
         ),
       ),
-    );
+    ).then((_) {
+      // PERUBAHAN UTAMA: Panggil fetchSubjects() saat kembali dari DiscussionsPage
+      subjectProvider.fetchSubjects();
+    });
   }
 
   @override

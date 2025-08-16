@@ -8,13 +8,8 @@ import '3_discussions_page/widgets/discussion_stats_header.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
-  final VoidCallback? onFilterOrSortChanged;
 
-  const DiscussionsPage({
-    super.key,
-    required this.subjectName,
-    this.onFilterOrSortChanged,
-  });
+  const DiscussionsPage({super.key, required this.subjectName});
 
   @override
   State<DiscussionsPage> createState() => _DiscussionsPageState();
@@ -125,7 +120,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             initialSortAscending: provider.sortAscending,
             onApplySort: (sortType, sortAscending) {
               provider.applySort(sortType, sortAscending);
-              widget.onFilterOrSortChanged?.call();
               _showSnackBar('Diskusi telah diurutkan.');
             },
           ),
@@ -255,7 +249,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       isFilterActive: provider.activeFilterType != null,
       onClearFilters: () {
         provider.clearFilters();
-        widget.onFilterOrSortChanged?.call();
         _showSnackBar('Semua filter telah dihapus.');
       },
       onShowRepetitionCodeFilter: () => showRepetitionCodeFilterDialog(
@@ -263,7 +256,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         repetitionCodes: provider.repetitionCodes,
         onSelectCode: (code) {
           provider.applyCodeFilter(code);
-          widget.onFilterOrSortChanged?.call();
           _showSnackBar('Filter diterapkan: Kode = $code');
         },
       ),
@@ -272,7 +264,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         initialDateRange: null,
         onSelectRange: (range) {
           provider.applyDateFilter(range);
-          widget.onFilterOrSortChanged?.call();
           _showSnackBar('Filter tanggal diterapkan.');
         },
       ),

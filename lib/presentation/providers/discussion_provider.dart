@@ -416,6 +416,25 @@ class DiscussionProvider with ChangeNotifier {
   void markPointAsFinished(Point point) {
     point.finished = true;
     point.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    // PERUBAHAN: Cari discussion induk dan cek apakah semua point sudah selesai
+    Discussion? parentDiscussion;
+    for (final discussion in _allDiscussions) {
+      if (discussion.points.contains(point)) {
+        parentDiscussion = discussion;
+        break;
+      }
+    }
+
+    if (parentDiscussion != null) {
+      final allPointsFinished = parentDiscussion.points.every(
+        (p) => p.finished,
+      );
+      if (parentDiscussion.points.isNotEmpty && allPointsFinished) {
+        markAsFinished(parentDiscussion);
+      }
+    }
+
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
@@ -425,6 +444,20 @@ class DiscussionProvider with ChangeNotifier {
     point.finish_date = null;
     point.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
     point.repetitionCode = 'R0D';
+
+    // PERUBAHAN UTAMA: Cari discussion induk dan aktifkan kembali jika perlu
+    Discussion? parentDiscussion;
+    for (final discussion in _allDiscussions) {
+      if (discussion.points.contains(point)) {
+        parentDiscussion = discussion;
+        break;
+      }
+    }
+
+    if (parentDiscussion != null && parentDiscussion.finished) {
+      reactivateDiscussion(parentDiscussion);
+    }
+
     _filterAndSortDiscussions();
     _saveDiscussions();
   }
