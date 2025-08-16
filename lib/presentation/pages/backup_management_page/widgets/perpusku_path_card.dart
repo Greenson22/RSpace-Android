@@ -23,7 +23,6 @@ class PerpuskuPathCard extends StatelessWidget {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            // ==> TEKS DIUBAH <==
             Text(
               'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Folder yang harus dipilih adalah "PerpusKu/data".',
               style: Theme.of(context).textTheme.bodySmall,
@@ -31,14 +30,18 @@ class PerpuskuPathCard extends StatelessWidget {
             const SizedBox(height: 8),
             Consumer<BackupProvider>(
               builder: (context, provider, child) {
+                // ==> PERUBAHAN DI SINI <==
+                final theme = Theme.of(context);
                 final String displayText =
                     provider.perpuskuDataPath ?? 'Menggunakan folder default.';
-                final TextStyle? textStyle =
-                    kDebugMode && provider.perpuskuDataPath != null
-                    ? Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.amber)
-                    : Theme.of(context).textTheme.bodyMedium;
+                final TextStyle? textStyle = theme.textTheme.bodyMedium
+                    ?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight:
+                          kDebugMode && provider.perpuskuDataPath != null
+                          ? FontWeight.bold
+                          : null,
+                    );
 
                 return Text(displayText, style: textStyle);
               },

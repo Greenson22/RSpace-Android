@@ -25,18 +25,17 @@ class PathInfoCard extends StatelessWidget {
             const SizedBox(height: 8),
             Consumer<BackupProvider>(
               builder: (context, provider, child) {
-                // DIUBAH: Hapus logika if (kDebugMode) yang menyebabkan path tidak update.
-                // Sekarang selalu ambil path dari provider.
+                // ==> PERUBAHAN DI SINI <==
+                final theme = Theme.of(context);
                 final String displayText =
                     provider.backupPath ?? 'Folder belum ditentukan.';
-
-                // Gaya teks amber tetap dipertahankan untuk mode debug agar mudah dikenali.
-                final TextStyle? textStyle =
-                    kDebugMode && provider.backupPath != null
-                    ? Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.amber)
-                    : Theme.of(context).textTheme.bodyMedium;
+                final TextStyle? textStyle = theme.textTheme.bodyMedium
+                    ?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: kDebugMode && provider.backupPath != null
+                          ? FontWeight.bold
+                          : null,
+                    );
 
                 return Text(displayText, style: textStyle);
               },

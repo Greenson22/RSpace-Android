@@ -1,9 +1,10 @@
 // lib/presentation/pages/dashboard_page/widgets/dashboard_header.dart
-import 'package:flutter/foundation.dart'; // <-- DITAMBAHKAN
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/services/path_service.dart';
 
+// ... (kode DashboardHeader tidak berubah)
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
@@ -82,9 +83,7 @@ class _DashboardPathState extends State<_DashboardPath> {
     _pathFuture = _getPath();
   }
 
-  // ==> FUNGSI DIPERBAIKI UNTUK SELALU MENGAMBIL DARI PATH SERVICE <==
   Future<String> _getPath() async {
-    // PathService sudah menangani logika debug mode secara internal.
     return _pathService.contentsPath;
   }
 
@@ -98,13 +97,12 @@ class _DashboardPathState extends State<_DashboardPath> {
         }
         if (snapshot.hasError) return const Text('Gagal memuat path.');
         if (snapshot.hasData) {
-          // ==> LOGIKA BARU UNTUK GAYA TEKS <==
-          final textStyle = kDebugMode
-              ? Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.amber,
-                  fontWeight: FontWeight.bold,
-                )
-              : Theme.of(context).textTheme.bodySmall;
+          // ==> PERUBAHAN DI SINI <==
+          final theme = Theme.of(context);
+          final textStyle = theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: kDebugMode ? FontWeight.bold : null,
+          );
 
           return Row(
             children: [
