@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import untuk keyboard services
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
@@ -34,19 +35,84 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
+  // ==> TAMBAHAN: State untuk navigasi keyboard <==
+  final FocusNode _focusNode = FocusNode();
+  int _focusedIndex = 0;
+
   @override
   void initState() {
     super.initState();
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     _searchController.addListener(() {
       topicProvider.search(_searchController.text);
+      // Reset fokus saat query pencarian berubah
+      setState(() => _focusedIndex = 0);
+    });
+    // Request fokus saat halaman dimuat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
     });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _focusNode.dispose(); // Jangan lupa dispose focus node
     super.dispose();
+  }
+
+  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      final topicProvider = Provider.of<TopicProvider>(context, listen: false);
+      final totalItems = topicProvider.filteredTopics.length;
+      if (totalItems == 0) return;
+
+      int crossAxisCount = (MediaQuery.of(context).size.width > 600)
+          ? (MediaQuery.of(context).size.width / 200).floor()
+          : 1;
+
+      setState(() {
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          _focusedIndex = (_focusedIndex + crossAxisCount);
+          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _focusedIndex = (_focusedIndex - crossAxisCount);
+          if (_focusedIndex < 0) _focusedIndex = 0;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _focusedIndex = (_focusedIndex + 1);
+          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _focusedIndex = (_focusedIndex - 1);
+          if (_focusedIndex < 0) _focusedIndex = 0;
+        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+          _navigateToSubjectsPage(
+            context,
+            topicProvider.filteredTopics[_focusedIndex],
+          );
+        } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
+          Navigator.of(context).pop();
+        }
+      });
+    }
+  }
+
+  Future<void> _navigateToSubjectsPage(
+    BuildContext context,
+    Topic topic,
+  ) async {
+    final provider = Provider.of<TopicProvider>(context, listen: false);
+    final topicsPath = await provider.getTopicsPath();
+    final folderPath = path.join(topicsPath, topic.name);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider(
+          create: (_) => SubjectProvider(folderPath),
+          child: SubjectsPage(topicName: topic.name),
+        ),
+      ),
+    );
   }
 
   Future<void> _addTopic(BuildContext context) async {
@@ -131,81 +197,86 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: topicProvider.isReorderModeEnabled
-            ? const Text('Urutkan Topik')
-            : (_isSearching
-                  ? TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Cari topik...',
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(color: Colors.white70),
-                      ),
-                      style: const TextStyle(color: Colors.white),
-                    )
-                  : const Text('Topics')),
-        actions: [
-          if (!topicProvider.isReorderModeEnabled) ...[
-            IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  if (!_isSearching) _searchController.clear();
-                });
-              },
-            ),
+    return RawKeyboardListener(
+      // ==> DI WRAP DENGAN KEYBOARD LISTENER <==
+      focusNode: _focusNode,
+      onKey: _handleKeyEvent,
+      child: Scaffold(
+        appBar: AppBar(
+          title: topicProvider.isReorderModeEnabled
+              ? const Text('Urutkan Topik')
+              : (_isSearching
+                    ? TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Cari topik...',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.white70),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      )
+                    : const Text('Topics')),
+          actions: [
+            if (!topicProvider.isReorderModeEnabled) ...[
+              IconButton(
+                icon: Icon(_isSearching ? Icons.close : Icons.search),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) _searchController.clear();
+                  });
+                },
+              ),
+              IconButton(
+                icon: Icon(
+                  topicProvider.showHiddenTopics
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
+                onPressed: () => topicProvider.toggleShowHidden(),
+                tooltip: topicProvider.showHiddenTopics
+                    ? 'Sembunyikan Topik Tersembunyi'
+                    : 'Tampilkan Topik Tersembunyi',
+              ),
+            ],
             IconButton(
               icon: Icon(
-                topicProvider.showHiddenTopics
-                    ? Icons.visibility_off
-                    : Icons.visibility,
+                topicProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
               ),
-              onPressed: () => topicProvider.toggleShowHidden(),
-              tooltip: topicProvider.showHiddenTopics
-                  ? 'Sembunyikan Topik Tersembunyi'
-                  : 'Tampilkan Topik Tersembunyi',
+              onPressed: () {
+                if (!topicProvider.isReorderModeEnabled && _isSearching) {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                  });
+                }
+                topicProvider.toggleReorderMode();
+              },
+              tooltip: topicProvider.isReorderModeEnabled
+                  ? 'Selesai Mengurutkan'
+                  : 'Urutkan Topik',
             ),
           ],
-          IconButton(
-            icon: Icon(
-              topicProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
-            ),
-            onPressed: () {
-              if (!topicProvider.isReorderModeEnabled && _isSearching) {
-                setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                });
-              }
-              topicProvider.toggleReorderMode();
-            },
-            tooltip: topicProvider.isReorderModeEnabled
-                ? 'Selesai Mengurutkan'
-                : 'Urutkan Topik',
-          ),
-        ],
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth > 600) {
+              return _buildGridView();
+            } else {
+              return _buildListView();
+            }
+          },
+        ),
+        floatingActionButton: topicProvider.isReorderModeEnabled
+            ? null
+            : FloatingActionButton(
+                onPressed: () => _addTopic(context),
+                tooltip: 'Tambah Topik',
+                child: const Icon(Icons.add),
+              ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth > 600) {
-            return _buildGridView();
-          } else {
-            return _buildListView();
-          }
-        },
-      ),
-      floatingActionButton: topicProvider.isReorderModeEnabled
-          ? null
-          : FloatingActionButton(
-              onPressed: () => _addTopic(context),
-              tooltip: 'Tambah Topik',
-              child: const Icon(Icons.add),
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -251,21 +322,10 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             return TopicListTile(
               key: ValueKey(topic.name),
               topic: topic,
+              isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
               onTap: isReorderActive
                   ? null
-                  : () async {
-                      final topicsPath = await provider.getTopicsPath();
-                      final folderPath = path.join(topicsPath, topic.name);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChangeNotifierProvider(
-                            create: (_) => SubjectProvider(folderPath),
-                            child: SubjectsPage(topicName: topic.name),
-                          ),
-                        ),
-                      );
-                    },
+                  : () => _navigateToSubjectsPage(context, topic),
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onIconChange: () => _changeIcon(context, topic),
@@ -312,21 +372,10 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             return TopicGridTile(
               key: ValueKey(topic.name),
               topic: topic,
+              isFocused: index == _focusedIndex, // ==> PASS isFocused STATE
               onTap: isReorderActive
                   ? null
-                  : () async {
-                      final topicsPath = await provider.getTopicsPath();
-                      final folderPath = path.join(topicsPath, topic.name);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChangeNotifierProvider(
-                            create: (_) => SubjectProvider(folderPath),
-                            child: SubjectsPage(topicName: topic.name),
-                          ),
-                        ),
-                      );
-                    },
+                  : () => _navigateToSubjectsPage(context, topic),
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onIconChange: () => _changeIcon(context, topic),

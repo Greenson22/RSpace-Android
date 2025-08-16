@@ -10,6 +10,7 @@ class TopicListTile extends StatelessWidget {
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final bool isReorderActive;
+  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
 
   const TopicListTile({
     super.key,
@@ -20,6 +21,7 @@ class TopicListTile extends StatelessWidget {
     required this.onIconChange,
     required this.onToggleVisibility,
     this.isReorderActive = false,
+    this.isFocused = false, // ==> SET NILAI DEFAULT
   });
 
   @override
@@ -127,7 +129,10 @@ class TopicListTile extends StatelessWidget {
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide.none,
+        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
       ),
       child: tileContent,
     );

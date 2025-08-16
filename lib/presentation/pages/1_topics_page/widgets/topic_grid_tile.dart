@@ -9,7 +9,7 @@ class TopicGridTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  // final int index; // DIHAPUS
+  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
 
   const TopicGridTile({
     super.key,
@@ -19,7 +19,7 @@ class TopicGridTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    // required this.index, // DIHAPUS
+    this.isFocused = false, // ==> SET NILAI DEFAULT
   });
 
   @override
@@ -99,13 +99,15 @@ class TopicGridTile extends StatelessWidget {
       ),
     );
 
-    // DIHAPUS: ReorderableDragStartListener tidak lagi dibutuhkan
     return Card(
       elevation: elevation,
       color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide.none,
+        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
       ),
       child: tileContent,
     );
