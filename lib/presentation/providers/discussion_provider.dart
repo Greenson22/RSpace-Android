@@ -292,8 +292,8 @@ class DiscussionProvider with ChangeNotifier {
   // --- ACTIONS ---
   Future<String> getPerpuskuHtmlBasePath() async {
     final perpuskuPath = await _pathService.perpuskuDataPath;
-    // ==> PERBAIKAN: Menambahkan 'data' ke dalam path
-    return path.join(perpuskuPath, 'data', 'file_contents', 'topics');
+    // PERBAIKAN: Menghapus 'data' dari dalam path
+    return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
   Future<void> updateDiscussionFilePath(
@@ -312,10 +312,9 @@ class DiscussionProvider with ChangeNotifier {
 
     try {
       final perpuskuPath = await _pathService.perpuskuDataPath;
-      // ==> PERBAIKAN: Menambahkan 'data' ke dalam path
+      // PERBAIKAN: Menghapus 'data' dari dalam path
       final fullPath = path.join(
         perpuskuPath,
-        'data',
         'file_contents',
         'topics',
         discussion.filePath!,
