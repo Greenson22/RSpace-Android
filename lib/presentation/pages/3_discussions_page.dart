@@ -75,6 +75,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
+  // ==> APPBAR DI MODIFIKASI <==
   AppBar _buildAppBar(DiscussionProvider provider) {
     return AppBar(
       title: _isSearching
@@ -97,6 +98,19 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             if (!_isSearching) _searchController.clear();
           }),
         ),
+        // Tombol untuk menampilkan/menyembunyikan diskusi yang selesai
+        if (provider.activeFilterType != 'code')
+          IconButton(
+            icon: Icon(
+              provider.showFinishedDiscussions
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+            ),
+            tooltip: provider.showFinishedDiscussions
+                ? 'Sembunyikan Selesai'
+                : 'Tampilkan Selesai',
+            onPressed: () => provider.toggleShowFinished(),
+          ),
         IconButton(
           icon: const Icon(Icons.filter_list),
           tooltip: 'Filter Diskusi',

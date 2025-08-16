@@ -43,9 +43,12 @@ class DiscussionProvider with ChangeNotifier {
   bool _sortAscending = true;
   bool get sortAscending => _sortAscending;
 
+  // ==> STATE BARU UNTUK MENAMPILKAN DISKUSI SELESAI
+  bool _showFinishedDiscussions = false;
+  bool get showFinishedDiscussions => _showFinishedDiscussions;
+
   final List<String> repetitionCodes = kRepetitionCodes;
 
-  // ==> GETTERS BARU UNTUK STATISTIK <==
   int get totalDiscussionCount => _allDiscussions.length;
 
   int get finishedDiscussionCount =>
@@ -154,14 +157,28 @@ class DiscussionProvider with ChangeNotifier {
     };
   }
 
+  // ==> FUNGSI INI DIUBAH TOTAL <==
   void _filterAndSortDiscussions() {
     final query = _searchQuery.toLowerCase();
-    _filteredDiscussions = _allDiscussions.where((discussion) {
+
+    // 1. Pisahkan diskusi yang aktif dan yang sudah selesai
+    final activeDiscussions = _allDiscussions
+        .where((d) => !d.finished)
+        .toList();
+    final finishedDiscussions = _allDiscussions
+        .where((d) => d.finished)
+        .toList();
+
+    // 2. Filter diskusi yang aktif
+    List<Discussion> filteredActiveDiscussions = activeDiscussions.where((
+      discussion,
+    ) {
       final matchesSearchQuery = discussion.discussion.toLowerCase().contains(
         query,
       );
       if (!matchesSearchQuery) return false;
 
+      // Logika filter utama
       bool matchesFilter = true;
       final effectiveInfo = _getEffectiveDiscussionInfoForSorting(discussion);
       final effectiveDate = effectiveInfo['date'];
@@ -190,10 +207,10 @@ class DiscussionProvider with ChangeNotifier {
       return matchesFilter;
     }).toList();
 
-    _filteredDiscussions.sort((a, b) {
+    // 3. Urutkan diskusi yang aktif
+    filteredActiveDiscussions.sort((a, b) {
       final infoA = _getEffectiveDiscussionInfoForSorting(a);
       final infoB = _getEffectiveDiscussionInfoForSorting(b);
-
       int result;
       switch (_sortType) {
         case 'name':
@@ -211,22 +228,40 @@ class DiscussionProvider with ChangeNotifier {
         default: // date
           final dateA = infoA['date'];
           final dateB = infoB['date'];
-          if (dateA == null && dateB == null) {
+          if (dateA == null && dateB == null)
             result = 0;
-          } else if (dateA == null) {
+          else if (dateA == null)
             result = 1;
-          } else if (dateB == null) {
+          else if (dateB == null)
             result = -1;
-          } else {
+          else
             result = DateTime.parse(dateA).compareTo(DateTime.parse(dateB));
-          }
           break;
       }
       return result;
     });
 
     if (!_sortAscending) {
-      _filteredDiscussions = _filteredDiscussions.reversed.toList();
+      filteredActiveDiscussions = filteredActiveDiscussions.reversed.toList();
+    }
+
+    _filteredDiscussions = filteredActiveDiscussions;
+
+    // 4. Tambahkan diskusi selesai jika kondisi terpenuhi
+    // Jika tidak ada filter, atau jika tombol "tampilkan selesai" aktif (dan bukan filter kode)
+    if (_activeFilterType == null ||
+        (_showFinishedDiscussions && _activeFilterType != 'code')) {
+      final filteredFinished = finishedDiscussions
+          .where((d) => d.discussion.toLowerCase().contains(query))
+          .toList();
+      _filteredDiscussions.addAll(filteredFinished);
+    }
+
+    // Kondisi khusus jika filter kode adalah "Finish"
+    if (_activeFilterType == 'code' && _selectedRepetitionCode == 'Finish') {
+      _filteredDiscussions = finishedDiscussions
+          .where((d) => d.discussion.toLowerCase().contains(query))
+          .toList();
     }
 
     notifyListeners();
@@ -259,6 +294,11 @@ class DiscussionProvider with ChangeNotifier {
   }
 
   // --- ACTIONS ---
+
+  void toggleShowFinished() {
+    _showFinishedDiscussions = !_showFinishedDiscussions;
+    _filterAndSortDiscussions();
+  }
 
   void deleteDiscussion(Discussion discussion) {
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
@@ -424,6 +464,8 @@ class DiscussionProvider with ChangeNotifier {
     _activeFilterType = null;
     _selectedRepetitionCode = null;
     _selectedDateRange = null;
+    // Set show finished to false when clearing filters
+    _showFinishedDiscussions = false;
     _prefsService.saveFilterPreference(null, null);
     _filterAndSortDiscussions();
   }
