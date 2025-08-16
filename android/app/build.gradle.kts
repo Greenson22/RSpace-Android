@@ -57,6 +57,10 @@ android {
             // signingConfig = signingConfigs.getByName("debug")
             signingConfig = signingConfigs.getByName("release")
         }
+        debug {
+            // Tambahkan baris ini
+            applicationIdSuffix = ".debug"
+        }
     }
 }
 
