@@ -22,6 +22,10 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   List<Directory> _topics = [];
   List<Directory> _subjects = [];
   List<File> _files = [];
+  // ==> TAMBAHKAN CONTROLLER DAN STATE UNTUK PENCARIAN <==
+  final TextEditingController _searchController = TextEditingController();
+  List<File> _filteredFiles = [];
+  String _searchQuery = '';
 
   bool _isLoading = true;
   String? _error;
@@ -30,6 +34,20 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   void initState() {
     super.initState();
     _loadTopics();
+    // ==> TAMBAHKAN LISTENER UNTUK PENCARIAN <==
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+        _filterFiles();
+      });
+    });
+  }
+
+  // ==> TAMBAHKAN FUNGSI DISPOSE UNTUK MEMBERSIHKAN CONTROLLER <==
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTopics() async {
@@ -79,10 +97,26 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
           .whereType<File>()
           .where((file) => file.path.toLowerCase().endsWith('.html'))
           .toList();
+      // ==> INISIALISASI FILE YANG DIFILTER <==
+      _filteredFiles = _files;
     } catch (e) {
       _error = e.toString();
     }
     setState(() => _isLoading = false);
+  }
+
+  // ==> FUNGSI BARU UNTUK MELAKUKAN FILTER <==
+  void _filterFiles() {
+    if (_searchQuery.isEmpty) {
+      _filteredFiles = _files;
+    } else {
+      _filteredFiles = _files
+          .where(
+            (file) =>
+                path.basename(file.path).toLowerCase().contains(_searchQuery),
+          )
+          .toList();
+    }
   }
 
   Widget _buildContent() {
@@ -112,15 +146,40 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
           setState(() => _currentView = _PickerViewState.files);
         });
       case _PickerViewState.files:
-        return _buildListView(_files, (item) {
-          final selectedFile = path.basename(item.path);
-          final resultPath = path.join(
-            _selectedTopic,
-            _selectedSubject,
-            selectedFile,
-          );
-          Navigator.of(context).pop(resultPath);
-        });
+        // ==> MODIFIKASI TAMPILAN FILE UNTUK MENAMBAHKAN PENCARIAN <==
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  labelText: 'Cari file...',
+                  hintText: 'Masukkan nama file',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: _buildListView(_filteredFiles, (item) {
+                final selectedFile = path.basename(item.path);
+                final resultPath = path.join(
+                  _selectedTopic,
+                  _selectedSubject,
+                  selectedFile,
+                );
+                Navigator.of(context).pop(resultPath);
+              }),
+            ),
+          ],
+        );
     }
   }
 
@@ -129,7 +188,13 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     ValueChanged<FileSystemEntity> onTap,
   ) {
     if (items.isEmpty) {
-      return const Center(child: Text("Tidak ada item ditemukan."));
+      return Center(
+        child: Text(
+          _currentView == _PickerViewState.files && _searchQuery.isNotEmpty
+              ? "File tidak ditemukan."
+              : "Tidak ada item ditemukan.",
+        ),
+      );
     }
     return ListView.builder(
       itemCount: items.length,
@@ -157,7 +222,10 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
 
   void _onBackPressed() {
     if (_currentView == _PickerViewState.files) {
-      setState(() => _currentView = _PickerViewState.subjects);
+      setState(() {
+        _currentView = _PickerViewState.subjects;
+        _searchController.clear(); // Bersihkan pencarian saat kembali
+      });
     } else if (_currentView == _PickerViewState.subjects) {
       setState(() => _currentView = _PickerViewState.topics);
     } else {
@@ -169,9 +237,10 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_title),
+      // ==> PERBESAR SEDIKIT TINGGI DIALOG UNTUK SEARCH BAR <==
       content: SizedBox(
         width: double.maxFinite,
-        height: 300,
+        height: 350,
         child: _buildContent(),
       ),
       actions: [
