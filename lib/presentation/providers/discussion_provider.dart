@@ -295,6 +295,25 @@ class DiscussionProvider with ChangeNotifier {
 
   // --- ACTIONS ---
 
+  // ==> FUNGSI BARU UNTUK INCREMENT KODE REPETISI <==
+  void incrementRepetitionCode(dynamic item) {
+    if (item is Discussion) {
+      final currentCode = item.repetitionCode;
+      final currentIndex = getRepetitionCodeIndex(currentCode);
+      if (currentIndex < repetitionCodes.length - 1) {
+        final newCode = repetitionCodes[currentIndex + 1];
+        updateDiscussionCode(item, newCode);
+      }
+    } else if (item is Point) {
+      final currentCode = item.repetitionCode;
+      final currentIndex = getRepetitionCodeIndex(currentCode);
+      if (currentIndex < repetitionCodes.length - 1) {
+        final newCode = repetitionCodes[currentIndex + 1];
+        updatePointCode(item, newCode);
+      }
+    }
+  }
+
   void toggleShowFinished() {
     _showFinishedDiscussions = !_showFinishedDiscussions;
     _filterAndSortDiscussions();

@@ -52,15 +52,14 @@ String getNewDateForRepetitionCode(String code) {
     case 'R3D':
       daysToAdd = 3;
       break;
+    // ==> PERUBAHAN DI SINI <==
+    // R7D, R7D2, dan R7D3 sekarang semua menambahkan 7 hari.
     case 'R7D':
+    case 'R7D2':
+    case 'R7D3':
       daysToAdd = 7;
       break;
-    case 'R7D2':
-      daysToAdd = 14;
-      break;
-    case 'R7D3':
-      daysToAdd = 21;
-      break;
+    // ==> AKHIR PERUBAHAN <==
     case 'R30D':
       daysToAdd = 30;
       break;

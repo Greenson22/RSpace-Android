@@ -1,4 +1,5 @@
 // lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -138,7 +139,34 @@ class PointTile extends StatelessWidget {
                           ? getColorForRepetitionCode(point.repetitionCode)
                           : inactiveColor,
                       fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
                     ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () async {
+                        if (isFinished) return;
+                        final currentCode = point.repetitionCode;
+                        final currentIndex = getRepetitionCodeIndex(
+                          currentCode,
+                        );
+                        if (currentIndex <
+                            provider.repetitionCodes.length - 1) {
+                          final nextCode =
+                              provider.repetitionCodes[currentIndex + 1];
+                          final confirmed =
+                              await showRepetitionCodeUpdateConfirmationDialog(
+                                context: context,
+                                currentCode: currentCode,
+                                nextCode: nextCode,
+                              );
+                          if (confirmed) {
+                            provider.incrementRepetitionCode(point);
+                            _showSnackBar(
+                              context,
+                              'Kode repetisi poin diubah ke $nextCode.',
+                            );
+                          }
+                        }
+                      },
                   ),
                 ],
               ),

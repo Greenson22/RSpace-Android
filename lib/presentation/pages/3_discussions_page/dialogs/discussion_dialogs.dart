@@ -144,6 +144,38 @@ Future<void> showDeletePointConfirmationDialog({
   );
 }
 
+//==> FUNGSI BARU UNTUK KONFIRMASI UPDATE KODE REPETISI <==
+Future<bool> showRepetitionCodeUpdateConfirmationDialog({
+  required BuildContext context,
+  required String currentCode,
+  required String nextCode,
+}) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Konfirmasi Perubahan Kode'),
+            content: Text(
+              'Anda yakin ingin mengubah kode repetisi dari "$currentCode" menjadi "$nextCode"? Tanggal juga akan diperbarui.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: const Text('Ubah'),
+              ),
+            ],
+          );
+        },
+      ) ??
+      false;
+}
+
 // --- DIALOGS FOR FILTER & SORT ---
 
 Future<void> showFilterDialog({

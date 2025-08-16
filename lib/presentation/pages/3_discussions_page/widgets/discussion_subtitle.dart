@@ -1,8 +1,10 @@
 // lib/presentation/pages/3_discussions_page/widgets/discussion_subtitle.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../providers/discussion_provider.dart';
+import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
@@ -112,7 +114,38 @@ class DiscussionSubtitle extends StatelessWidget {
             style: TextStyle(
               color: getColorForRepetitionCode(codeText),
               fontWeight: FontWeight.bold,
+              decoration: discussion.points.isEmpty
+                  ? TextDecoration.underline
+                  : null,
             ),
+            recognizer: discussion.points.isEmpty
+                ? (TapGestureRecognizer()
+                    ..onTap = () async {
+                      final currentCode = discussion.repetitionCode;
+                      final currentIndex = getRepetitionCodeIndex(currentCode);
+                      if (currentIndex < provider.repetitionCodes.length - 1) {
+                        final nextCode =
+                            provider.repetitionCodes[currentIndex + 1];
+                        final confirmed =
+                            await showRepetitionCodeUpdateConfirmationDialog(
+                              context: context,
+                              currentCode: currentCode,
+                              nextCode: nextCode,
+                            );
+                        if (confirmed) {
+                          provider.incrementRepetitionCode(discussion);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Kode repetisi diubah ke $nextCode.',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    })
+                : null,
           ),
         ],
       ),
