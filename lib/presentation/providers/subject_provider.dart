@@ -27,11 +27,7 @@ class SubjectProvider with ChangeNotifier {
 
   Future<void> fetchSubjects() async {
     _isLoading = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (hasListeners) {
-        notifyListeners();
-      }
-    });
+    notifyListeners(); // PERBAIKAN: Notifikasi langsung untuk menampilkan loading indicator
 
     try {
       _allSubjects = await _subjectService.getSubjects(topicPath);
@@ -43,9 +39,7 @@ class SubjectProvider with ChangeNotifier {
       _filteredSubjects = [];
     } finally {
       _isLoading = false;
-      if (hasListeners) {
-        notifyListeners();
-      }
+      notifyListeners(); // PERBAIKAN: Notifikasi lagi untuk menampilkan data/state kosong
     }
   }
 

@@ -35,14 +35,20 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<SubjectProvider>(context, listen: false);
-    provider.fetchSubjects();
+    // PERBAIKAN: Memindahkan pemanggilan data ke dalam 'addPostFrameCallback'.
+    // Ini memastikan widget selesai dibangun sebelum state diubah.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<SubjectProvider>(context, listen: false).fetchSubjects();
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
+    });
+
+    // Listener untuk search tetap di sini.
     _searchController.addListener(() {
+      final provider = Provider.of<SubjectProvider>(context, listen: false);
       provider.search(_searchController.text);
       setState(() => _focusedIndex = 0);
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).requestFocus(_focusNode);
     });
   }
 

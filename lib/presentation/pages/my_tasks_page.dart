@@ -236,10 +236,17 @@ class _MyTasksPageState extends State<MyTasksPage> {
     final List<TaskCategory> firstHalf = categories.sublist(0, middle);
     final List<TaskCategory> secondHalf = categories.sublist(middle);
 
+    // PERBAIKAN: Panggil provider di luar build tree untuk mencegah error
     if (provider.isCategoryReorderEnabled) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => provider.toggleCategoryReorder(),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Gunakan listen:false untuk memanggil aksi tanpa me-rebuild widget ini lagi
+          Provider.of<MyTaskProvider>(
+            context,
+            listen: false,
+          ).toggleCategoryReorder();
+        }
+      });
     }
 
     Widget buildColumn(List<TaskCategory> categoryList, int indexOffset) {

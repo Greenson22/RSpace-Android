@@ -28,20 +28,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   void initState() {
     super.initState();
+    // PERBAIKAN: Menghapus logika pemuatan data yang tidak aman.
+    // Provider sudah memuat data secara otomatis di konstruktornya.
+    // Kita hanya perlu meminta fokus setelah frame pertama selesai di-build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<StatisticsProvider>(context, listen: false);
-      // Panggil generateStatistics dan kemudian update state panel
-      provider.generateStatistics().then((_) {
-        if (mounted) {
-          setState(() {
-            _isPanelExpanded = List<bool>.filled(
-              provider.stats.perTopicStats.length,
-              false,
-            );
-          });
-        }
-      });
-      FocusScope.of(context).requestFocus(_focusNode);
+      if (mounted) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
     });
   }
 
