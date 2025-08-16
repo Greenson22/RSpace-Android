@@ -160,6 +160,35 @@ Future<void> showDeletePointConfirmationDialog({
   );
 }
 
+//==> FUNGSI BARU UNTUK KONFIRMASI HAPUS PATH FILE <==
+Future<bool> showRemoveFilePathConfirmationDialog(BuildContext context) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Hapus Path File'),
+            content: const Text(
+              'Anda yakin ingin menghapus tautan path file dari diskusi ini?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Hapus'),
+              ),
+            ],
+          );
+        },
+      ) ??
+      false;
+}
+
 //==> FUNGSI BARU UNTUK KONFIRMASI UPDATE KODE REPETISI <==
 Future<bool> showRepetitionCodeUpdateConfirmationDialog({
   required BuildContext context,

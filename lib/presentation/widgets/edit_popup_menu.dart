@@ -10,6 +10,7 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback? onReactivate;
   final VoidCallback? onDelete;
   final VoidCallback? onSetFilePath;
+  final VoidCallback? onRemoveFilePath;
   final bool isFinished;
   final bool hasPoints;
   final bool hasFilePath;
@@ -24,6 +25,7 @@ class EditPopupMenu extends StatelessWidget {
     this.onReactivate,
     this.onDelete,
     this.onSetFilePath,
+    this.onRemoveFilePath,
     this.isFinished = false,
     this.hasPoints = false,
     this.hasFilePath = false,
@@ -41,6 +43,9 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'reactivate' && onReactivate != null) onReactivate!();
         if (value == 'delete' && onDelete != null) onDelete!();
         if (value == 'set_file_path' && onSetFilePath != null) onSetFilePath!();
+        if (value == 'remove_file_path' && onRemoveFilePath != null) {
+          onRemoveFilePath!();
+        }
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
@@ -81,6 +86,17 @@ class EditPopupMenu extends StatelessWidget {
                 PopupMenuItem<String>(
                   value: 'set_file_path',
                   child: Text(hasFilePath ? 'Ubah Path File' : 'Set Path File'),
+                ),
+              );
+            }
+            if (hasFilePath && onRemoveFilePath != null) {
+              menuItems.add(
+                const PopupMenuItem<String>(
+                  value: 'remove_file_path',
+                  child: Text(
+                    'Hapus Path File',
+                    style: TextStyle(color: Colors.orange),
+                  ),
                 ),
               );
             }

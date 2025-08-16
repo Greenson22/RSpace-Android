@@ -25,7 +25,6 @@ class DiscussionCard extends StatelessWidget {
     required this.onToggleVisibility,
   });
 
-  // ... (sisa kode method tidak berubah)
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
@@ -129,6 +128,17 @@ class DiscussionCard extends StatelessWidget {
     }
   }
 
+  void _removeFilePath(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) async {
+    final confirmed = await showRemoveFilePathConfirmationDialog(context);
+    if (confirmed) {
+      provider.removeDiscussionFilePath(discussion);
+      _showSnackBar(context, 'Path file berhasil dihapus.');
+    }
+  }
+
   void _openFile(BuildContext context, DiscussionProvider provider) async {
     try {
       await provider.openDiscussionFile(discussion);
@@ -150,7 +160,6 @@ class DiscussionCard extends StatelessWidget {
         ? Icons.check_circle
         : (hasFile ? Icons.link : Icons.chat_bubble_outline);
 
-    // ... (sisa kode build logic tidak berubah)
     final sortedPoints = List<Point>.from(discussion.points);
     final sortType = provider.sortType;
     final sortAscending = provider.sortAscending;
@@ -219,6 +228,7 @@ class DiscussionCard extends StatelessWidget {
                   hasFilePath: hasFile,
                   onAddPoint: () => _addPoint(context, provider),
                   onSetFilePath: () => _setFilePath(context, provider),
+                  onRemoveFilePath: () => _removeFilePath(context, provider),
                   onDateChange: () => _changeDiscussionDate(context, provider),
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),

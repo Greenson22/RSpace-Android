@@ -309,7 +309,12 @@ class DiscussionProvider with ChangeNotifier {
     await _saveDiscussions();
   }
 
-  // ==> FUNGSI INI DIUBAH UNTUK MENGGUNAKAN open_file <==
+  Future<void> removeDiscussionFilePath(Discussion discussion) async {
+    discussion.filePath = null;
+    _filterAndSortDiscussions();
+    await _saveDiscussions();
+  }
+
   Future<void> openDiscussionFile(Discussion discussion) async {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Tidak ada path file yang ditentukan.');
