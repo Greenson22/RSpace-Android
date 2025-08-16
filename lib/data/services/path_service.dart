@@ -11,7 +11,8 @@ class PathService {
 
   // Path ini untuk DATA APLIKASI UTAMA
   Future<String> get _baseDataPath async {
-    // ==> LOGIKA DEBUG MODE <==
+    // ==> PERBAIKAN: Blok debug mode dinonaktifkan sementara saat testing di Android <==
+    /*
     if (kDebugMode) {
       final debugDir = Directory(
         '/home/lemon-manis-22/TESTING/RSpace_data/data',
@@ -21,6 +22,7 @@ class PathService {
       }
       return debugDir.path;
     }
+    */
 
     if (Platform.isAndroid) {
       if (!await Permission.manageExternalStorage.request().isGranted) {

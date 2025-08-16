@@ -79,14 +79,12 @@ class _DashboardPathState extends State<_DashboardPath> {
   @override
   void initState() {
     super.initState();
-    _pathFuture = _getPath(); // DIUBAH
+    _pathFuture = _getPath();
   }
 
-  // ==> FUNGSI BARU UNTUK MENDAPATKAN PATH BERDASARKAN MODE <==
+  // ==> FUNGSI DIPERBAIKI UNTUK SELALU MENGAMBIL DARI PATH SERVICE <==
   Future<String> _getPath() async {
-    if (kDebugMode) {
-      return '/home/lemon-manis-22/TESTING/RSpace_data/data/contents';
-    }
+    // PathService sudah menangani logika debug mode secara internal.
     return _pathService.contentsPath;
   }
 
