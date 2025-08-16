@@ -24,7 +24,7 @@ class PerpuskuPathCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Jika tidak diisi, akan digunakan folder default aplikasi.',
+              'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Jika tidak diisi, akan digunakan folder default aplikasi. Pilih folder PerpusKu/data',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
@@ -35,7 +35,7 @@ class PerpuskuPathCard extends StatelessWidget {
                 final TextStyle? textStyle;
 
                 if (kDebugMode) {
-                  displayText = '/home/lemon-manis-22/TESTING/PerpusKu';
+                  displayText = '/home/lemon-manis-22/TESTING/PerpusKu/data';
                   textStyle = Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.amber);
