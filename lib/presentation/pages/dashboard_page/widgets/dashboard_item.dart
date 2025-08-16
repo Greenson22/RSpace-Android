@@ -7,6 +7,7 @@ class DashboardItem extends StatelessWidget {
   final VoidCallback onTap;
   final List<Color> gradientColors;
   final Widget? child;
+  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
 
   const DashboardItem({
     super.key,
@@ -15,10 +16,12 @@ class DashboardItem extends StatelessWidget {
     required this.onTap,
     required this.gradientColors,
     this.child,
+    this.isFocused = false, // ==> SET NILAI DEFAULT
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Material(
       borderRadius: BorderRadius.circular(15),
       color: Colors.transparent,
@@ -35,6 +38,10 @@ class DashboardItem extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
+            // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
+            border: isFocused
+                ? Border.all(color: theme.primaryColorLight, width: 3)
+                : null,
             boxShadow: [
               BoxShadow(
                 color: gradientColors.last.withOpacity(0.4),

@@ -1,6 +1,7 @@
 // lib/presentation/pages/dashboard_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import untuk keyboard services
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,64 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   Key _dashboardPathKey = UniqueKey();
+
+  // ==> TAMBAHAN: State untuk navigasi keyboard <==
+  final FocusNode _focusNode = FocusNode();
+  int _focusedIndex = 0;
+  List<VoidCallback> _dashboardActions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Request fokus saat halaman dimuat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  // ==> TAMBAHAN: Fungsi untuk menangani event keyboard <==
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      final totalItems = _dashboardActions.length;
+      if (totalItems == 0) return;
+
+      final screenWidth = MediaQuery.of(context).size.width;
+      int crossAxisCount;
+      if (screenWidth > 900) {
+        crossAxisCount = 4;
+      } else if (screenWidth > 600) {
+        crossAxisCount = 3;
+      } else {
+        crossAxisCount = 2;
+      }
+
+      setState(() {
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          _focusedIndex = (_focusedIndex + crossAxisCount);
+          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _focusedIndex = (_focusedIndex - crossAxisCount);
+          if (_focusedIndex < 0) _focusedIndex = 0;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _focusedIndex = (_focusedIndex + 1);
+          if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _focusedIndex = (_focusedIndex - 1);
+          if (_focusedIndex < 0) _focusedIndex = 0;
+        } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+          if (_focusedIndex < _dashboardActions.length) {
+            _dashboardActions[_focusedIndex]();
+          }
+        }
+      });
+    }
+  }
 
   Future<void> _showStoragePathDialog(BuildContext context) async {
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
@@ -175,55 +234,69 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(fontWeight: FontWeight.bold),
+    // ==> TAMBAHAN: Inisialisasi daftar aksi untuk navigasi keyboard <==
+    _dashboardActions = buildDashboardActions(
+      context,
+      onShowStorageDialog: () => _showStoragePathDialog(context),
+    );
+
+    return RawKeyboardListener(
+      focusNode: _focusNode,
+      onKey: _handleKeyEvent,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Dashboard',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.color_lens_outlined),
+              onPressed: () => _showColorPickerDialog(context),
+              tooltip: 'Ganti Warna Primer',
+            ),
+            IconButton(
+              icon: Icon(
+                themeProvider.darkTheme
+                    ? Icons.wb_sunny
+                    : Icons.nightlight_round,
+              ),
+              onPressed: () =>
+                  themeProvider.darkTheme = !themeProvider.darkTheme,
+              tooltip: 'Ganti Tema',
+            ),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutPage()),
+              ),
+              tooltip: 'Tentang Aplikasi',
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.color_lens_outlined),
-            onPressed: () => _showColorPickerDialog(context),
-            tooltip: 'Ganti Warna Primer',
-          ),
-          IconButton(
-            icon: Icon(
-              themeProvider.darkTheme ? Icons.wb_sunny : Icons.nightlight_round,
-            ),
-            onPressed: () => themeProvider.darkTheme = !themeProvider.darkTheme,
-            tooltip: 'Ganti Tema',
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AboutPage()),
-            ),
-            tooltip: 'Tentang Aplikasi',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await Provider.of<TopicProvider>(
-                  context,
-                  listen: false,
-                ).fetchTopics();
-              },
-              child: ListView(
-                padding: const EdgeInsets.all(16.0),
-                children: [
-                  DashboardHeader(key: _dashboardPathKey),
-                  const SizedBox(height: 20),
-                  DashboardGrid(
-                    onShowStorageDialog: () => _showStoragePathDialog(context),
-                  ),
-                ],
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await Provider.of<TopicProvider>(
+                    context,
+                    listen: false,
+                  ).fetchTopics();
+                },
+                child: ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    DashboardHeader(key: _dashboardPathKey),
+                    const SizedBox(height: 20),
+                    DashboardGrid(
+                      focusedIndex: _focusedIndex, // Kirim focused index
+                      dashboardActions: _dashboardActions, // Kirim daftar aksi
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
