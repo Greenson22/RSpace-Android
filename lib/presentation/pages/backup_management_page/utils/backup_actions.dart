@@ -99,8 +99,10 @@ Future<void> importSpecificFile(
     return;
   }
 
+  // PERBAIKAN: Buat instance BackupProvider secara langsung untuk menghindari error
+  // karena fungsi ini sekarang dipanggil dari halaman yang tidak memiliki provider ini.
+  final provider = BackupProvider();
   showAppSnackBar(context, 'Memulai proses import...');
-  final provider = Provider.of<BackupProvider>(context, listen: false);
   try {
     await provider.importContents(zipFile, type);
     if (context.mounted) {
