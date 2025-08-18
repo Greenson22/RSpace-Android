@@ -51,6 +51,13 @@ class FileProvider with ChangeNotifier {
       'http://rikal.kecmobar.my.id/api/rspace/upload';
   final String _perpuskuUploadEndpoint =
       'http://rikal.kecmobar.my.id/api/perpusku/upload';
+
+  // ==> ENDPOINT BARU UNTUK DELETE <==
+  final String _rspaceDeleteBaseUrl =
+      'http://rikal.kecmobar.my.id/api/rspace/files/';
+  final String _perpuskuDeleteBaseUrl =
+      'http://rikal.kecmobar.my.id/api/perpusku/files/';
+
   final String _apiKey = 'frendygerung1234567890';
 
   FileProvider() {
@@ -120,6 +127,32 @@ class FileProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE <==
+  Future<String> deleteFile(FileItem file, bool isRspaceFile) async {
+    final url = isRspaceFile
+        ? '$_rspaceDeleteBaseUrl${file.uniqueName}'
+        : '$_perpuskuDeleteBaseUrl${file.uniqueName}';
+
+    try {
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {'x-api-key': _apiKey},
+      );
+
+      if (response.statusCode == 200) {
+        await fetchFiles(); // Muat ulang daftar file setelah berhasil
+        return 'File "${file.originalName}" berhasil dihapus.';
+      } else {
+        final responseBody = json.decode(response.body);
+        throw HttpException(
+          'Gagal menghapus file: ${responseBody['message'] ?? 'Error tidak diketahui'} (Status ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 

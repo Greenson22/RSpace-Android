@@ -29,7 +29,6 @@ class FileListPage extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUNGGAH FILE <==
   Future<void> _uploadFile(BuildContext context, bool isRspaceFile) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
     try {
@@ -54,6 +53,57 @@ class FileListPage extends StatelessWidget {
         showAppSnackBar(
           context,
           'Gagal mengunggah: ${e.toString()}',
+          isError: true,
+        );
+      }
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENANGANI PENGHAPUSAN FILE <==
+  Future<void> _deleteFile(
+    BuildContext context,
+    FileItem file,
+    bool isRspaceFile,
+  ) async {
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    try {
+      final confirmed =
+          await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Konfirmasi Hapus'),
+              content: Text(
+                'Anda yakin ingin menghapus file "${file.originalName}"?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Batal'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('Hapus'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+
+      if (confirmed) {
+        if (context.mounted) {
+          showAppSnackBar(context, 'Menghapus ${file.originalName}...');
+        }
+        final message = await provider.deleteFile(file, isRspaceFile);
+        if (context.mounted) {
+          showAppSnackBar(context, message);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          'Gagal menghapus: ${e.toString()}',
           isError: true,
         );
       }
@@ -107,7 +157,6 @@ class FileListPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // ==> WIDGET BARU DITAMBAHKAN DI SINI <==
                   _buildPathInfoCard(context),
                   const SizedBox(height: 24),
                   _buildFileSection(
@@ -134,7 +183,6 @@ class FileListPage extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET BARU UNTUK MENAMPILKAN INFO PATH <==
   Widget _buildPathInfoCard(BuildContext context) {
     return Card(
       child: Padding(
@@ -254,29 +302,45 @@ class FileListPage extends StatelessWidget {
                       ? CircularProgressIndicator(
                           value: uploadProgress > 0.01 ? uploadProgress : null,
                         )
-                      : IconButton(
-                          icon: const Icon(Icons.download_outlined),
-                          tooltip: 'Download File',
-                          onPressed: () async {
-                            try {
-                              // ==> PANGGIL FUNGSI DENGAN PARAMETER BARU <==
-                              final message = await provider.downloadFile(
-                                file,
-                                isRspaceFile,
-                              );
-                              if (context.mounted) {
-                                showAppSnackBar(context, message);
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                showAppSnackBar(
-                                  context,
-                                  'Gagal mengunduh: ${e.toString()}',
-                                  isError: true,
+                      // ==> PERUBAHAN DI SINI: MENGGUNAKAN POPUPMENU <==
+                      : PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            if (value == 'download') {
+                              try {
+                                final message = await provider.downloadFile(
+                                  file,
+                                  isRspaceFile,
                                 );
+                                if (context.mounted) {
+                                  showAppSnackBar(context, message);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  showAppSnackBar(
+                                    context,
+                                    'Gagal mengunduh: ${e.toString()}',
+                                    isError: true,
+                                  );
+                                }
                               }
+                            } else if (value == 'delete') {
+                              _deleteFile(context, file, isRspaceFile);
                             }
                           },
+                          itemBuilder: (BuildContext context) =>
+                              <PopupMenuEntry<String>>[
+                                const PopupMenuItem<String>(
+                                  value: 'download',
+                                  child: Text('Download'),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Text(
+                                    'Hapus',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
                         ),
                 ),
               );
