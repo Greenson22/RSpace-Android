@@ -363,7 +363,21 @@ class FileListPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.cloud_queue_rounded),
                   title: Text(file.originalName),
-                  subtitle: Text('Diunggah: ${file.uploadedAt}'),
+                  subtitle: RichText(
+                    text: TextSpan(
+                      style: Theme.of(context).textTheme.bodySmall,
+                      children: [
+                        const TextSpan(text: 'Diunggah: '),
+                        TextSpan(
+                          text: file.uploadedAt,
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   trailing: isDownloading
                       ? CircularProgressIndicator(
                           value: progress > 0.01 ? progress : null,
@@ -474,7 +488,21 @@ class FileListPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.drafts_rounded),
                   title: Text(fileName),
-                  subtitle: Text('Ukuran: ${formatBytes(fileSize, 2)}'),
+                  subtitle: RichText(
+                    text: TextSpan(
+                      style: Theme.of(context).textTheme.bodySmall,
+                      children: [
+                        const TextSpan(text: 'Ukuran: '),
+                        TextSpan(
+                          text: formatBytes(fileSize, 2),
+                          style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) async {
                       if (value == 'open') {
