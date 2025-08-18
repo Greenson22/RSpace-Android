@@ -1,24 +1,27 @@
 // lib/data/models/file_model.dart
 
 class FileItem {
-  final String name;
-  final String url;
-  final int size;
-  final String date;
+  final String uniqueName;
+  final String originalName;
+  final String uploadedAt;
+  final String url; // URL untuk mendownload file
 
   FileItem({
-    required this.name,
+    required this.uniqueName,
+    required this.originalName,
+    required this.uploadedAt,
     required this.url,
-    required this.size,
-    required this.date,
   });
 
-  factory FileItem.fromJson(Map<String, dynamic> json) {
+  // Factory constructor diperbarui untuk parsing JSON baru
+  factory FileItem.fromJson(Map<String, dynamic> json, String baseUrl) {
+    final uniqueName = json['uniqueName'] ?? '';
     return FileItem(
-      name: json['name'] ?? 'Untitled',
-      url: json['url'] ?? '',
-      size: json['size'] ?? 0,
-      date: json['date'] ?? 'No Date',
+      uniqueName: uniqueName,
+      originalName: json['originalName'] ?? 'Untitled',
+      uploadedAt: json['uploadedAt'] ?? 'No Date',
+      // Menggabungkan base URL dengan nama unik untuk membuat link download
+      url: '$baseUrl/$uniqueName',
     );
   }
 }

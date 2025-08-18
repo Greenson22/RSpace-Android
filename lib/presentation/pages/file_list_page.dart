@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/file_provider.dart';
 import '../../data/models/file_model.dart';
+import '../pages/1_topics_page/utils/scaffold_messenger_utils.dart';
 
 class FileListPage extends StatelessWidget {
   const FileListPage({super.key});
@@ -24,10 +26,27 @@ class FileListPage extends StatelessWidget {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Error: ${provider.errorMessage}',
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.cloud_off,
+                        size: 60,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error: ${provider.errorMessage}',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Coba Lagi'),
+                        onPressed: () => provider.fetchFiles(),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -90,16 +109,41 @@ class FileListPage extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 4.0),
                 child: ListTile(
-                  leading: const Icon(Icons.insert_drive_file),
-                  title: Text(file.name),
-                  subtitle: Text(
-                    'Ukuran: ${file.size} bytes - Tanggal: ${file.date}',
+                  leading: const Icon(Icons.archive_outlined),
+                  title: Text(file.originalName),
+                  subtitle: Text('Diunggah: ${file.uploadedAt}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.download_outlined),
+                    tooltip: 'Download File',
+                    onPressed: () async {
+                      try {
+                        final uri = Uri.parse(file.url);
+                        if (await canLaunchUrl(uri)) {
+                          // Membuka URL di browser eksternal untuk download
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } else {
+                          if (context.mounted) {
+                            showAppSnackBar(
+                              context,
+                              'Tidak dapat membuka URL: ${file.url}',
+                              isError: true,
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          showAppSnackBar(
+                            context,
+                            'Error: ${e.toString()}',
+                            isError: true,
+                          );
+                        }
+                      }
+                    },
                   ),
-                  onTap: () {
-                    // Aksi saat item di-tap, misalnya membuka URL
-                    // import 'package:url_launcher/url_launcher.dart';
-                    // launchUrl(Uri.parse(file.url));
-                  },
                 ),
               );
             },
