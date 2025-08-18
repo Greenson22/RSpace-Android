@@ -11,13 +11,24 @@ class SharedPreferencesService {
   static const String _primaryColorKey = 'primary_color';
   static const String _recentColorsKey = 'recent_colors';
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
-  // ==> KUNCI BARU UNTUK LOKASI BACKUP <==
   static const String _customBackupPathKey = 'custom_backup_path';
-  // ==> KUNCI BARU UNTUK PREFERENSI SORTING BACKUP <==
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
+  // ==> KUNCI BARU UNTUK LOKASI DOWNLOAD <==
+  static const String _customDownloadPathKey = 'custom_download_path';
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PREFERENSI SORTING BACKUP <==
+  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PATH DOWNLOAD <==
+  Future<void> saveCustomDownloadPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_customDownloadPathKey, path);
+  }
+
+  Future<String?> loadCustomDownloadPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_customDownloadPathKey);
+  }
+  // --- AKHIR PERUBAHAN ---
+
   Future<void> saveBackupSortPreferences(
     String sortType,
     bool sortAscending,
@@ -35,9 +46,7 @@ class SharedPreferencesService {
         prefs.getBool(_backupSortAscendingKey) ?? false; // Default descending
     return {'sortType': sortType, 'sortAscending': sortAscending};
   }
-  // --- AKHIR PERUBAHAN ---
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PATH BACKUP <==
   Future<void> saveCustomBackupPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_customBackupPathKey, path);
@@ -47,7 +56,6 @@ class SharedPreferencesService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_customBackupPathKey);
   }
-  // --- AKHIR PERUBAHAN ---
 
   Future<void> savePerpuskuDataPath(String path) async {
     final prefs = await SharedPreferences.getInstance();

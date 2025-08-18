@@ -1,13 +1,34 @@
 // lib/presentation/pages/file_list_page.dart
 
+import 'package:flutter/foundation.dart'; // ==> IMPORT DITAMBAHKAN
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart'; // ==> IMPORT DITAMBAHKAN
 import '../providers/file_provider.dart';
 import '../../data/models/file_model.dart';
 import '../pages/1_topics_page/utils/scaffold_messenger_utils.dart';
 
 class FileListPage extends StatelessWidget {
   const FileListPage({super.key});
+
+  // ==> FUNGSI BARU UNTUK MEMILIH FOLDER <==
+  Future<void> _selectDownloadFolder(BuildContext context) async {
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Tujuan Download',
+    );
+
+    if (selectedDirectory != null) {
+      await provider.setDownloadPath(selectedDirectory);
+      if (context.mounted) {
+        showAppSnackBar(context, 'Folder tujuan download berhasil diatur.');
+      }
+    } else {
+      if (context.mounted) {
+        showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,11 +77,15 @@ class FileListPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
+                  // ==> WIDGET BARU DITAMBAHKAN DI SINI <==
+                  _buildPathInfoCard(context),
+                  const SizedBox(height: 24),
                   _buildFileSection(
                     context,
                     provider: provider,
                     title: 'File RSpace',
                     files: provider.rspaceFiles,
+                    isRspaceFile: true,
                   ),
                   const SizedBox(height: 24),
                   _buildFileSection(
@@ -68,6 +93,7 @@ class FileListPage extends StatelessWidget {
                     provider: provider,
                     title: 'File Perpusku',
                     files: provider.perpuskuFiles,
+                    isRspaceFile: false,
                   ),
                 ],
               ),
@@ -78,11 +104,61 @@ class FileListPage extends StatelessWidget {
     );
   }
 
+  // ==> WIDGET BARU UNTUK MENAMPILKAN INFO PATH <==
+  Widget _buildPathInfoCard(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Folder Tujuan Download',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Consumer<FileProvider>(
+              builder: (context, provider, child) {
+                final theme = Theme.of(context);
+                final String displayText =
+                    provider.downloadPath ?? 'Folder belum ditentukan.';
+                final TextStyle? textStyle = theme.textTheme.bodyMedium
+                    ?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: kDebugMode && provider.downloadPath != null
+                          ? FontWeight.bold
+                          : null,
+                    );
+
+                return Text(displayText, style: textStyle);
+              },
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.folder_open),
+                label: const Text('Ubah Folder Tujuan'),
+                onPressed: () => _selectDownloadFolder(context),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFileSection(
     BuildContext context, {
     required FileProvider provider,
     required String title,
     required List<FileItem> files,
+    required bool isRspaceFile, // ==> PARAMETER BARU
   }) {
     final theme = Theme.of(context);
 
@@ -126,7 +202,11 @@ class FileListPage extends StatelessWidget {
                           tooltip: 'Download File',
                           onPressed: () async {
                             try {
-                              final message = await provider.downloadFile(file);
+                              // ==> PANGGIL FUNGSI DENGAN PARAMETER BARU <==
+                              final message = await provider.downloadFile(
+                                file,
+                                isRspaceFile,
+                              );
                               if (context.mounted) {
                                 showAppSnackBar(context, message);
                               }

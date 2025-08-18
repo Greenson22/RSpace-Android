@@ -6,11 +6,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path; // ==> IMPORT DITAMBAHKAN
 import 'package:permission_handler/permission_handler.dart';
 import '../../data/models/file_model.dart';
+// ==> IMPORT DITAMBAHKAN
+import '../../data/services/shared_preferences_service.dart';
 
 class FileProvider with ChangeNotifier {
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -23,7 +26,10 @@ class FileProvider with ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // State untuk melacak progres download
+  // ==> STATE BARU UNTUK PATH DOWNLOAD <==
+  String? _downloadPath;
+  String? get downloadPath => _downloadPath;
+
   final Map<String, double> _downloadProgress = {};
   double getDownloadProgress(String uniqueName) =>
       _downloadProgress[uniqueName] ?? 0.0;
@@ -38,7 +44,24 @@ class FileProvider with ChangeNotifier {
   final String _apiKey = 'frendygerung1234567890';
 
   FileProvider() {
-    fetchFiles();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _loadDownloadPath();
+    await fetchFiles();
+  }
+
+  Future<void> _loadDownloadPath() async {
+    _downloadPath = await _prefsService.loadCustomDownloadPath();
+    notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGATUR PATH DOWNLOAD <==
+  Future<void> setDownloadPath(String newPath) async {
+    await _prefsService.saveCustomDownloadPath(newPath);
+    _downloadPath = newPath;
+    notifyListeners();
   }
 
   Future<void> fetchFiles() async {
@@ -91,7 +114,12 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  Future<String> downloadFile(FileItem file) async {
+  // ==> FUNGSI DOWNLOAD DIPERBARUI TOTAL <==
+  Future<String> downloadFile(FileItem file, bool isRspaceFile) async {
+    if (_downloadPath == null || _downloadPath!.isEmpty) {
+      throw Exception('Folder tujuan download belum ditentukan.');
+    }
+
     if (Platform.isAndroid) {
       final status = await Permission.storage.request();
       if (!status.isGranted) {
@@ -99,12 +127,14 @@ class FileProvider with ChangeNotifier {
       }
     }
 
-    // PERBAIKAN: Menggunakan getDownloadsDirectory() yang modern
-    final Directory? downloadsDir = await getDownloadsDirectory();
-    if (downloadsDir == null) {
-      throw Exception('Tidak dapat menemukan folder Downloads.');
+    final subfolder = isRspaceFile ? 'rspace_download' : 'perpusku_download';
+    final downloadsDir = Directory(path.join(_downloadPath!, subfolder));
+
+    if (!await downloadsDir.exists()) {
+      await downloadsDir.create(recursive: true);
     }
-    final String savePath = '${downloadsDir.path}/${file.originalName}';
+
+    final String savePath = path.join(downloadsDir.path, file.originalName);
 
     try {
       _downloadProgress[file.uniqueName] = 0.01;
