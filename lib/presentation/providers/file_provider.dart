@@ -3,13 +3,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
-import 'package:path/path.dart' as path; // ==> IMPORT DITAMBAHKAN
+import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import '../../data/models/file_model.dart';
-// ==> IMPORT DITAMBAHKAN
 import '../../data/services/shared_preferences_service.dart';
 
 class FileProvider with ChangeNotifier {
@@ -26,13 +26,18 @@ class FileProvider with ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // ==> STATE BARU UNTUK PATH DOWNLOAD <==
   String? _downloadPath;
   String? get downloadPath => _downloadPath;
 
   final Map<String, double> _downloadProgress = {};
   double getDownloadProgress(String uniqueName) =>
       _downloadProgress[uniqueName] ?? 0.0;
+
+  // ==> STATE BARU UNTUK UPLOAD <==
+  final Map<String, double> _uploadProgress = {};
+  double getUploadProgress(String fileName) => _uploadProgress[fileName] ?? 0.0;
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
 
   final String _rspaceEndpoint = 'http://rikal.kecmobar.my.id/api/rspace/files';
   final String _perpuskuEndpoint =
@@ -41,6 +46,11 @@ class FileProvider with ChangeNotifier {
       'http://rikal.kecmobar.my.id/api/rspace/download/';
   final String _perpuskuDownloadBaseUrl =
       'http://rikal.kecmobar.my.id/api/perpusku/download/';
+  // ==> ENDPOINT BARU UNTUK UPLOAD <==
+  final String _rspaceUploadEndpoint =
+      'http://rikal.kecmobar.my.id/api/rspace/upload';
+  final String _perpuskuUploadEndpoint =
+      'http://rikal.kecmobar.my.id/api/perpusku/upload';
   final String _apiKey = 'frendygerung1234567890';
 
   FileProvider() {
@@ -57,7 +67,6 @@ class FileProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGATUR PATH DOWNLOAD <==
   Future<void> setDownloadPath(String newPath) async {
     await _prefsService.saveCustomDownloadPath(newPath);
     _downloadPath = newPath;
@@ -114,7 +123,48 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI DOWNLOAD DIPERBARUI TOTAL <==
+  // ==> FUNGSI BARU UNTUK UPLOAD FILE <==
+  Future<String> uploadFile(PlatformFile file, bool isRspaceFile) async {
+    _isUploading = true;
+    final fileName = file.name;
+    _uploadProgress[fileName] = 0.01; // Start with a small value
+    notifyListeners();
+
+    try {
+      final url = isRspaceFile
+          ? _rspaceUploadEndpoint
+          : _perpuskuUploadEndpoint;
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers['x-api-key'] = _apiKey;
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'zipfile',
+          file.path!,
+          filename: fileName,
+        ),
+      );
+
+      final response = await request.send();
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        await fetchFiles(); // Muat ulang daftar file setelah berhasil
+        return 'File "$fileName" berhasil diunggah.';
+      } else {
+        final responseBody = await response.stream.bytesToString();
+        throw HttpException(
+          'Gagal mengunggah file: Status ${response.statusCode}, Body: $responseBody',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isUploading = false;
+      _uploadProgress.remove(fileName);
+      notifyListeners();
+    }
+  }
+
   Future<String> downloadFile(FileItem file, bool isRspaceFile) async {
     if (_downloadPath == null || _downloadPath!.isEmpty) {
       throw Exception('Folder tujuan download belum ditentukan.');

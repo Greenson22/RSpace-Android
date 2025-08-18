@@ -1,9 +1,9 @@
 // lib/presentation/pages/file_list_page.dart
 
-import 'package:flutter/foundation.dart'; // ==> IMPORT DITAMBAHKAN
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart'; // ==> IMPORT DITAMBAHKAN
+import 'package:file_picker/file_picker.dart';
 import '../providers/file_provider.dart';
 import '../../data/models/file_model.dart';
 import '../pages/1_topics_page/utils/scaffold_messenger_utils.dart';
@@ -11,7 +11,6 @@ import '../pages/1_topics_page/utils/scaffold_messenger_utils.dart';
 class FileListPage extends StatelessWidget {
   const FileListPage({super.key});
 
-  // ==> FUNGSI BARU UNTUK MEMILIH FOLDER <==
   Future<void> _selectDownloadFolder(BuildContext context) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
@@ -26,6 +25,37 @@ class FileListPage extends StatelessWidget {
     } else {
       if (context.mounted) {
         showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
+      }
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGUNGGAH FILE <==
+  Future<void> _uploadFile(BuildContext context, bool isRspaceFile) async {
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null) {
+        final file = result.files.first;
+        if (context.mounted) {
+          showAppSnackBar(context, 'Mengunggah ${file.name}...');
+        }
+        final message = await provider.uploadFile(file, isRspaceFile);
+        if (context.mounted) {
+          showAppSnackBar(context, message);
+        }
+      } else {
+        if (context.mounted) {
+          showAppSnackBar(context, 'Pemilihan file dibatalkan.');
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          'Gagal mengunggah: ${e.toString()}',
+          isError: true,
+        );
       }
     }
   }
@@ -158,18 +188,37 @@ class FileListPage extends StatelessWidget {
     required FileProvider provider,
     required String title,
     required List<FileItem> files,
-    required bool isRspaceFile, // ==> PARAMETER BARU
+    required bool isRspaceFile,
   }) {
     final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Unggah'),
+              onPressed: provider.isUploading
+                  ? null
+                  : () => _uploadFile(context, isRspaceFile),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ),
+          ],
         ),
         const Divider(thickness: 2),
         if (files.isEmpty)
@@ -186,6 +235,10 @@ class FileListPage extends StatelessWidget {
               final file = files[index];
               final progress = provider.getDownloadProgress(file.uniqueName);
               final isDownloading = progress > 0;
+              final uploadProgress = provider.getUploadProgress(
+                file.originalName,
+              );
+              final isUploading = uploadProgress > 0;
 
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -196,6 +249,10 @@ class FileListPage extends StatelessWidget {
                   trailing: isDownloading
                       ? CircularProgressIndicator(
                           value: progress > 0.01 ? progress : null,
+                        )
+                      : isUploading
+                      ? CircularProgressIndicator(
+                          value: uploadProgress > 0.01 ? uploadProgress : null,
                         )
                       : IconButton(
                           icon: const Icon(Icons.download_outlined),
