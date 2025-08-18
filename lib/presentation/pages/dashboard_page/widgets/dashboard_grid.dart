@@ -6,6 +6,7 @@ import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';
 import '../../share_page.dart';
 import '../../backup_management_page.dart';
+import '../../file_list_page.dart'; // ==> TAMBAHKAN IMPORT INI
 import 'dashboard_item.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -24,6 +25,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
+    ),
+    () => Navigator.push(
+      // ==> PINDAHKAN INI
+      context,
+      MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
     () => Navigator.push(
       context,
@@ -49,7 +55,6 @@ class DashboardGrid extends StatelessWidget {
     required this.isKeyboardActive,
   });
 
-  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     int crossAxisCount;
@@ -62,6 +67,7 @@ class DashboardGrid extends StatelessWidget {
     }
 
     const List<Color> gradientColors6 = [Color(0xFF7E57C2), Color(0xFF5E35B1)];
+    const List<Color> gradientColors7 = [Color(0xFF26A69A), Color(0xFF00796B)];
 
     final List<Map<String, dynamic>> itemData = [
       {
@@ -80,9 +86,14 @@ class DashboardGrid extends StatelessWidget {
         'colors': AppTheme.gradientColors5,
       },
       {
+        'icon': Icons.cloud_outlined, // ==> ICON BARU
+        'label': 'File Online', // ==> LABEL BARU
+        'colors': AppTheme.gradientColors4, // ==> WARNA BARU
+      },
+      {
         'icon': Icons.share_outlined,
         'label': 'Bagikan',
-        'colors': const [Color(0xFF26A69A), Color(0xFF00796B)],
+        'colors': gradientColors7,
       },
       {
         'icon': Icons.folder_open_rounded,
