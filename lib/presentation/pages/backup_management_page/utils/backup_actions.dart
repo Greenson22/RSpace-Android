@@ -7,6 +7,7 @@ import '../../../providers/backup_provider.dart';
 import '../../../providers/topic_provider.dart';
 import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'backup_dialogs.dart';
+import 'package:path/path.dart' as path;
 
 Future<void> selectBackupFolder(BuildContext context) async {
   final provider = Provider.of<BackupProvider>(context, listen: false);
@@ -111,6 +112,25 @@ Future<void> importSpecificFile(
   } catch (e) {
     if (context.mounted) {
       showAppSnackBar(context, 'Terjadi error saat import: $e', isError: true);
+    }
+  }
+}
+
+Future<void> uploadBackupFile(
+  BuildContext context,
+  File file,
+  String type,
+) async {
+  final provider = Provider.of<BackupProvider>(context, listen: false);
+  showAppSnackBar(context, 'Mengunggah file ${path.basename(file.path)}...');
+  try {
+    final message = await provider.uploadBackupFile(file, type);
+    if (context.mounted) {
+      showAppSnackBar(context, message);
+    }
+  } catch (e) {
+    if (context.mounted) {
+      showAppSnackBar(context, 'Gagal mengunggah file: $e', isError: true);
     }
   }
 }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/backup_provider.dart';
 import '../utils/backup_dialogs.dart';
 import '../utils/file_utils.dart';
+import 'package:path/path.dart' as path;
 
 class BackupSection extends StatelessWidget {
   final String title;
@@ -31,7 +32,8 @@ class BackupSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<BackupProvider>(context);
-    final isActionInProgress = provider.isBackingUp || provider.isImporting;
+    final isActionInProgress =
+        provider.isBackingUp || provider.isImporting || provider.isUploading;
     final theme = Theme.of(context);
 
     final isPerpuskuBackup = title.contains('PerpusKu');
@@ -165,6 +167,8 @@ class BackupSection extends StatelessWidget {
       'id_ID',
     ).format(lastModified);
     final formattedSize = formatBytes(fileSize, 2);
+    final uploadProgress = provider.getUploadProgress(path.basename(file.path));
+    final isUploading = uploadProgress > 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -215,6 +219,10 @@ class BackupSection extends StatelessWidget {
         contentPadding: const EdgeInsets.only(left: 8, right: 4),
         trailing: provider.isSelectionMode
             ? null
+            : isUploading
+            ? CircularProgressIndicator(
+                value: uploadProgress > 0.01 ? uploadProgress : null,
+              )
             : _buildFileActionMenu(context, file),
       ),
     );
@@ -227,6 +235,8 @@ class BackupSection extends StatelessWidget {
         final backupType = title.contains('RSpace') ? 'RSpace' : 'PerpusKu';
         if (value == 'import') {
           importSpecificFile(context, file, backupType);
+        } else if (value == 'upload') {
+          uploadBackupFile(context, file, backupType);
         } else if (value == 'share') {
           shareFile(context, file);
         } else if (value == 'delete') {
@@ -237,6 +247,13 @@ class BackupSection extends StatelessWidget {
         const PopupMenuItem<String>(
           value: 'import',
           child: ListTile(leading: Icon(Icons.restore), title: Text('Import')),
+        ),
+        const PopupMenuItem<String>(
+          value: 'upload',
+          child: ListTile(
+            leading: Icon(Icons.cloud_upload_outlined),
+            title: Text('Unggah'),
+          ),
         ),
         const PopupMenuItem<String>(
           value: 'share',

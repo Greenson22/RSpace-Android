@@ -1,5 +1,6 @@
 // lib/presentation/providers/backup_provider.dart
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -7,6 +8,7 @@ import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/path_service.dart';
 import '../../data/services/shared_preferences_service.dart';
+import 'package:http/http.dart' as http;
 
 class BackupProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
@@ -20,6 +22,18 @@ class BackupProvider with ChangeNotifier {
 
   bool _isImporting = false;
   bool get isImporting => _isImporting;
+
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
+
+  final Map<String, double> _uploadProgress = {};
+  double getUploadProgress(String fileName) => _uploadProgress[fileName] ?? 0.0;
+
+  final String _rspaceUploadEndpoint =
+      'http://rikal.kecmobar.my.id/api/rspace/upload';
+  final String _perpuskuUploadEndpoint =
+      'http://rikal.kecmobar.my.id/api/perpusku/upload';
+  final String _apiKey = 'frendygerung1234567890';
 
   String? _backupPath;
   String? get backupPath => _backupPath;
@@ -289,6 +303,57 @@ class BackupProvider with ChangeNotifier {
       }
     } finally {
       _isImporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String> uploadBackupFile(File file, String type) async {
+    _isUploading = true;
+    final fileName = path.basename(file.path);
+    _uploadProgress[fileName] = 0.01;
+    notifyListeners();
+
+    try {
+      final url = type == 'RSpace'
+          ? _rspaceUploadEndpoint
+          : _perpuskuUploadEndpoint;
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers['x-api-key'] = _apiKey;
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'zipfile',
+          file.path,
+          filename: fileName,
+        ),
+      );
+
+      final response = await request.send();
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return 'File "$fileName" berhasil diunggah.';
+      } else {
+        final responseBody = await response.stream.bytesToString();
+        String errorMessage = 'Error tidak diketahui';
+        try {
+          final decodedBody = json.decode(responseBody);
+          if (decodedBody is Map && decodedBody.containsKey('message')) {
+            errorMessage = decodedBody['message'];
+          } else {
+            errorMessage = responseBody;
+          }
+        } catch (_) {
+          errorMessage = responseBody;
+        }
+        throw HttpException(
+          'Gagal mengunggah file: $errorMessage (Status ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isUploading = false;
+      _uploadProgress.remove(fileName);
       notifyListeners();
     }
   }
