@@ -288,26 +288,11 @@ class _DashboardPageState extends State<DashboardPage> {
               onPressed: () => _showColorPickerDialog(context),
               tooltip: 'Ganti Warna Primer',
             ),
+            // ==> INI ADALAH TOMBOL TEMA YANG BARU <==
             IconButton(
-              icon: Icon(
-                themeProvider.darkTheme
-                    ? Icons.wb_sunny
-                    : Icons.nightlight_round,
-              ),
-              onPressed: () =>
-                  themeProvider.darkTheme = !themeProvider.darkTheme,
-              tooltip: 'Ganti Tema',
-            ),
-            // ==> ICONBUTTON BARU UNTUK TEMA NATAL <==
-            IconButton(
-              icon: Icon(
-                themeProvider.isChristmasTheme
-                    ? Icons.celebration
-                    : Icons.celebration_outlined,
-                color: themeProvider.isChristmasTheme ? Colors.amber : null,
-              ),
-              onPressed: () => themeProvider.toggleChristmasTheme(),
-              tooltip: 'Aktifkan Tema Natal',
+              icon: Icon(themeProvider.themeCycleData['icon']),
+              onPressed: () => themeProvider.cycleTheme(),
+              tooltip: themeProvider.themeCycleData['tooltip'],
             ),
             IconButton(
               icon: const Icon(Icons.info_outline),
