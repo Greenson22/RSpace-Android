@@ -32,10 +32,12 @@ class _DashboardPageState extends State<DashboardPage> {
   // Timer dan flag untuk mengontrol visibilitas border
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
+  bool _isPathSet = false; // State untuk melacak status path
 
   @override
   void initState() {
     super.initState();
+    _checkPath(); // Cek path saat inisialisasi
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -46,6 +48,16 @@ class _DashboardPageState extends State<DashboardPage> {
     _focusNode.dispose();
     _focusTimer?.cancel(); // Batalkan timer saat dispose
     super.dispose();
+  }
+
+  Future<void> _checkPath() async {
+    final prefsService = SharedPreferencesService();
+    final path = await prefsService.loadCustomStoragePath();
+    if (mounted) {
+      setState(() {
+        _isPathSet = path != null && path.isNotEmpty;
+      });
+    }
   }
 
   void _handleKeyEvent(RawKeyEvent event) {
@@ -131,6 +143,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
         setState(() {
           _dashboardPathKey = UniqueKey();
+          _isPathSet = true; // Update state setelah path diatur
         });
 
         if (mounted) {
@@ -253,6 +266,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _dashboardActions = buildDashboardActions(
       context,
       onShowStorageDialog: () => _showStoragePathDialog(context),
+      isPathSet: _isPathSet,
     );
 
     return RawKeyboardListener(
@@ -265,6 +279,12 @@ class _DashboardPageState extends State<DashboardPage> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           actions: [
+            if (_isPathSet)
+              IconButton(
+                icon: const Icon(Icons.folder_open_rounded),
+                onPressed: () => _showStoragePathDialog(context),
+                tooltip: 'Ubah Penyimpanan Utama',
+              ),
             IconButton(
               icon: const Icon(Icons.color_lens_outlined),
               onPressed: () => _showColorPickerDialog(context),
@@ -310,6 +330,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       isKeyboardActive: _isKeyboardActive,
                       focusedIndex: _focusedIndex,
                       dashboardActions: _dashboardActions,
+                      isPathSet: _isPathSet,
                     ),
                   ],
                 ),

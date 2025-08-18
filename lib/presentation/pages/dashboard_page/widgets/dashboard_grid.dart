@@ -4,16 +4,16 @@ import '../../../theme/app_theme.dart';
 import '../../1_topics_page.dart';
 import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';
-import '../../share_page.dart';
 import '../../backup_management_page.dart';
-import '../../file_list_page.dart'; // ==> TAMBAHKAN IMPORT INI
+import '../../file_list_page.dart';
 import 'dashboard_item.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
   required VoidCallback onShowStorageDialog,
+  required bool isPathSet,
 }) {
-  return [
+  final actions = [
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
@@ -27,34 +27,33 @@ List<VoidCallback> buildDashboardActions(
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
     ),
     () => Navigator.push(
-      // ==> PINDAHKAN INI
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SharePage()),
-    ),
-    onShowStorageDialog,
+    if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const BackupManagementPage()),
     ),
   ];
+  return actions.whereType<VoidCallback>().toList();
 }
 
 class DashboardGrid extends StatelessWidget {
   final int focusedIndex;
   final List<VoidCallback> dashboardActions;
   final bool isKeyboardActive;
+  final bool isPathSet;
 
   const DashboardGrid({
     super.key,
     required this.focusedIndex,
     required this.dashboardActions,
     required this.isKeyboardActive,
+    required this.isPathSet,
   });
 
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     int crossAxisCount;
@@ -67,9 +66,8 @@ class DashboardGrid extends StatelessWidget {
     }
 
     const List<Color> gradientColors6 = [Color(0xFF7E57C2), Color(0xFF5E35B1)];
-    const List<Color> gradientColors7 = [Color(0xFF26A69A), Color(0xFF00796B)];
 
-    final List<Map<String, dynamic>> itemData = [
+    final List<Map<String, dynamic>> allItemData = [
       {
         'icon': Icons.topic_outlined,
         'label': 'Topics',
@@ -86,14 +84,9 @@ class DashboardGrid extends StatelessWidget {
         'colors': AppTheme.gradientColors5,
       },
       {
-        'icon': Icons.cloud_outlined, // ==> ICON BARU
-        'label': 'File Online', // ==> LABEL BARU
-        'colors': AppTheme.gradientColors4, // ==> WARNA BARU
-      },
-      {
-        'icon': Icons.share_outlined,
-        'label': 'Bagikan',
-        'colors': gradientColors7,
+        'icon': Icons.cloud_outlined,
+        'label': 'File Online',
+        'colors': AppTheme.gradientColors4,
       },
       {
         'icon': Icons.folder_open_rounded,
@@ -106,6 +99,10 @@ class DashboardGrid extends StatelessWidget {
         'colors': gradientColors6,
       },
     ];
+
+    final List<Map<String, dynamic>> itemData = allItemData
+        .where((item) => item['label'] != 'Penyimpanan Utama' || !isPathSet)
+        .toList();
 
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
