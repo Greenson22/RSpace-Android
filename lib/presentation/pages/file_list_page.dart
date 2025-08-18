@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/presentation/pages/backup_management_page/utils/backup_actions.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -233,6 +234,7 @@ class FileListPage extends StatelessWidget {
                     provider: provider,
                     title: 'Unduhan RSpace',
                     files: provider.downloadedRspaceFiles,
+                    isRspaceFile: true,
                   ),
                   const SizedBox(height: 24),
                   _buildDownloadedFileSection(
@@ -240,6 +242,7 @@ class FileListPage extends StatelessWidget {
                     provider: provider,
                     title: 'Unduhan Perpusku',
                     files: provider.downloadedPerpuskuFiles,
+                    isRspaceFile: false,
                   ),
                 ],
               ),
@@ -422,6 +425,7 @@ class FileListPage extends StatelessWidget {
     required FileProvider provider,
     required String title,
     required List<File> files,
+    required bool isRspaceFile,
   }) {
     final theme = Theme.of(context);
 
@@ -482,6 +486,9 @@ class FileListPage extends StatelessWidget {
                             isError: true,
                           );
                         }
+                      } else if (value == 'import') {
+                        final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
+                        importSpecificFile(context, file, backupType);
                       } else if (value == 'delete') {
                         _deleteDownloadedFile(context, file);
                       }
@@ -491,6 +498,10 @@ class FileListPage extends StatelessWidget {
                           const PopupMenuItem<String>(
                             value: 'open',
                             child: Text('Buka File'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'import',
+                            child: Text('Import'),
                           ),
                           const PopupMenuItem<String>(
                             value: 'delete',
