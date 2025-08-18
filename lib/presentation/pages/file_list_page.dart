@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../providers/file_provider.dart';
 import '../../data/models/file_model.dart';
 import '../pages/1_topics_page/utils/scaffold_messenger_utils.dart';
@@ -59,12 +58,14 @@ class FileListPage extends StatelessWidget {
                 children: [
                   _buildFileSection(
                     context,
+                    provider: provider,
                     title: 'File RSpace',
                     files: provider.rspaceFiles,
                   ),
                   const SizedBox(height: 24),
                   _buildFileSection(
                     context,
+                    provider: provider,
                     title: 'File Perpusku',
                     files: provider.perpuskuFiles,
                   ),
@@ -79,6 +80,7 @@ class FileListPage extends StatelessWidget {
 
   Widget _buildFileSection(
     BuildContext context, {
+    required FileProvider provider,
     required String title,
     required List<FileItem> files,
   }) {
@@ -106,44 +108,39 @@ class FileListPage extends StatelessWidget {
             itemCount: files.length,
             itemBuilder: (context, index) {
               final file = files[index];
+              final progress = provider.getDownloadProgress(file.uniqueName);
+              final isDownloading = progress > 0;
+
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 4.0),
                 child: ListTile(
                   leading: const Icon(Icons.archive_outlined),
                   title: Text(file.originalName),
                   subtitle: Text('Diunggah: ${file.uploadedAt}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.download_outlined),
-                    tooltip: 'Download File',
-                    onPressed: () async {
-                      try {
-                        final uri = Uri.parse(file.url);
-                        if (await canLaunchUrl(uri)) {
-                          // Membuka URL di browser eksternal untuk download
-                          await launchUrl(
-                            uri,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        } else {
-                          if (context.mounted) {
-                            showAppSnackBar(
-                              context,
-                              'Tidak dapat membuka URL: ${file.url}',
-                              isError: true,
-                            );
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          showAppSnackBar(
-                            context,
-                            'Error: ${e.toString()}',
-                            isError: true,
-                          );
-                        }
-                      }
-                    },
-                  ),
+                  trailing: isDownloading
+                      ? CircularProgressIndicator(
+                          value: progress > 0.01 ? progress : null,
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.download_outlined),
+                          tooltip: 'Download File',
+                          onPressed: () async {
+                            try {
+                              final message = await provider.downloadFile(file);
+                              if (context.mounted) {
+                                showAppSnackBar(context, message);
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                showAppSnackBar(
+                                  context,
+                                  'Gagal mengunduh: ${e.toString()}',
+                                  isError: true,
+                                );
+                              }
+                            }
+                          },
+                        ),
                 ),
               );
             },
