@@ -23,6 +23,13 @@ class FileProvider with ChangeNotifier {
   List<FileItem> _perpuskuFiles = [];
   List<FileItem> get perpuskuFiles => _perpuskuFiles;
 
+  // ==> STATE BARU UNTUK FILE YANG DIUNDUH <==
+  List<File> _downloadedRspaceFiles = [];
+  List<File> get downloadedRspaceFiles => _downloadedRspaceFiles;
+
+  List<File> _downloadedPerpuskuFiles = [];
+  List<File> get downloadedPerpuskuFiles => _downloadedPerpuskuFiles;
+
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -33,7 +40,6 @@ class FileProvider with ChangeNotifier {
   double getDownloadProgress(String uniqueName) =>
       _downloadProgress[uniqueName] ?? 0.0;
 
-  // ==> STATE BARU UNTUK UPLOAD <==
   final Map<String, double> _uploadProgress = {};
   double getUploadProgress(String fileName) => _uploadProgress[fileName] ?? 0.0;
   bool _isUploading = false;
@@ -46,13 +52,10 @@ class FileProvider with ChangeNotifier {
       'http://rikal.kecmobar.my.id/api/rspace/download/';
   final String _perpuskuDownloadBaseUrl =
       'http://rikal.kecmobar.my.id/api/perpusku/download/';
-  // ==> ENDPOINT BARU UNTUK UPLOAD <==
   final String _rspaceUploadEndpoint =
       'http://rikal.kecmobar.my.id/api/rspace/upload';
   final String _perpuskuUploadEndpoint =
       'http://rikal.kecmobar.my.id/api/perpusku/upload';
-
-  // ==> ENDPOINT BARU UNTUK DELETE <==
   final String _rspaceDeleteBaseUrl =
       'http://rikal.kecmobar.my.id/api/rspace/files/';
   final String _perpuskuDeleteBaseUrl =
@@ -66,7 +69,8 @@ class FileProvider with ChangeNotifier {
 
   Future<void> _initialize() async {
     await _loadDownloadPath();
-    await fetchFiles();
+    // Gabungkan pemanggilan fetch data
+    await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
   }
 
   Future<void> _loadDownloadPath() async {
@@ -77,7 +81,47 @@ class FileProvider with ChangeNotifier {
   Future<void> setDownloadPath(String newPath) async {
     await _prefsService.saveCustomDownloadPath(newPath);
     _downloadPath = newPath;
+    // Pindai ulang file setelah path diubah
+    await _scanDownloadedFiles();
     notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAI FILE LOKAL <==
+  Future<void> _scanDownloadedFiles() async {
+    if (_downloadPath == null || _downloadPath!.isEmpty) {
+      _downloadedRspaceFiles = [];
+      _downloadedPerpuskuFiles = [];
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final rspaceDir = Directory(path.join(_downloadPath!, 'rspace_download'));
+      if (await rspaceDir.exists()) {
+        _downloadedRspaceFiles = rspaceDir
+            .listSync()
+            .whereType<File>()
+            .toList();
+      } else {
+        _downloadedRspaceFiles = [];
+      }
+
+      final perpuskuDir = Directory(
+        path.join(_downloadPath!, 'perpusku_download'),
+      );
+      if (await perpuskuDir.exists()) {
+        _downloadedPerpuskuFiles = perpuskuDir
+            .listSync()
+            .whereType<File>()
+            .toList();
+      } else {
+        _downloadedPerpuskuFiles = [];
+      }
+    } catch (e) {
+      _errorMessage = 'Gagal memindai file lokal: ${e.toString()}';
+    } finally {
+      notifyListeners();
+    }
   }
 
   Future<void> fetchFiles() async {
@@ -130,7 +174,6 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE <==
   Future<String> deleteFile(FileItem file, bool isRspaceFile) async {
     final url = isRspaceFile
         ? '$_rspaceDeleteBaseUrl${file.uniqueName}'
@@ -143,7 +186,7 @@ class FileProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        await fetchFiles(); // Muat ulang daftar file setelah berhasil
+        await fetchFiles();
         return 'File "${file.originalName}" berhasil dihapus.';
       } else {
         final responseBody = json.decode(response.body);
@@ -156,11 +199,25 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK UPLOAD FILE <==
+  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE LOKAL <==
+  Future<String> deleteDownloadedFile(File file) async {
+    try {
+      if (await file.exists()) {
+        await file.delete();
+        // Pindai ulang setelah menghapus
+        await _scanDownloadedFiles();
+        return 'File "${path.basename(file.path)}" berhasil dihapus dari perangkat.';
+      }
+      return 'File tidak ditemukan.';
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<String> uploadFile(PlatformFile file, bool isRspaceFile) async {
     _isUploading = true;
     final fileName = file.name;
-    _uploadProgress[fileName] = 0.01; // Start with a small value
+    _uploadProgress[fileName] = 0.01;
     notifyListeners();
 
     try {
@@ -181,7 +238,7 @@ class FileProvider with ChangeNotifier {
       final response = await request.send();
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        await fetchFiles(); // Muat ulang daftar file setelah berhasil
+        await fetchFiles();
         return 'File "$fileName" berhasil diunggah.';
       } else {
         final responseBody = await response.stream.bytesToString();
@@ -245,6 +302,8 @@ class FileProvider with ChangeNotifier {
           final downloadedFile = File(savePath);
           await downloadedFile.writeAsBytes(bytes);
           _downloadProgress.remove(file.uniqueName);
+          // Pindai ulang file setelah unduhan selesai
+          await _scanDownloadedFiles();
           notifyListeners();
           await OpenFile.open(savePath);
         },

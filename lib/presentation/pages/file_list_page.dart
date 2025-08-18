@@ -1,12 +1,16 @@
 // lib/presentation/pages/file_list_page.dart
 
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
 import '../providers/file_provider.dart';
 import '../../data/models/file_model.dart';
 import '../pages/1_topics_page/utils/scaffold_messenger_utils.dart';
+import 'backup_management_page/utils/file_utils.dart';
 
 class FileListPage extends StatelessWidget {
   const FileListPage({super.key});
@@ -59,7 +63,6 @@ class FileListPage extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENANGANI PENGHAPUSAN FILE <==
   Future<void> _deleteFile(
     BuildContext context,
     FileItem file,
@@ -67,28 +70,11 @@ class FileListPage extends StatelessWidget {
   ) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
     try {
-      final confirmed =
-          await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Konfirmasi Hapus'),
-              content: Text(
-                'Anda yakin ingin menghapus file "${file.originalName}"?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Batal'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('Hapus'),
-                ),
-              ],
-            ),
-          ) ??
-          false;
+      final confirmed = await _showConfirmationDialog(
+        context,
+        'Konfirmasi Hapus',
+        'Anda yakin ingin menghapus file "${file.originalName}" dari server?',
+      );
 
       if (confirmed) {
         if (context.mounted) {
@@ -110,15 +96,77 @@ class FileListPage extends StatelessWidget {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE LOKAL <==
+  Future<void> _deleteDownloadedFile(BuildContext context, File file) async {
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    try {
+      final confirmed = await _showConfirmationDialog(
+        context,
+        'Konfirmasi Hapus Lokal',
+        'Anda yakin ingin menghapus file "${path.basename(file.path)}" dari perangkat Anda?',
+      );
+
+      if (confirmed) {
+        if (context.mounted) {
+          showAppSnackBar(
+            context,
+            'Menghapus ${path.basename(file.path)} dari perangkat...',
+          );
+        }
+        final message = await provider.deleteDownloadedFile(file);
+        if (context.mounted) {
+          showAppSnackBar(context, message);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          'Gagal menghapus file lokal: ${e.toString()}',
+          isError: true,
+        );
+      }
+    }
+  }
+
+  // ==> DIALOG KONFIRMASI GENERIK <==
+  Future<bool> _showConfirmationDialog(
+    BuildContext context,
+    String title,
+    String content,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Hapus'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar File Online')),
+      appBar: AppBar(title: const Text('Daftar File Online & Unduhan')),
       body: ChangeNotifierProvider(
         create: (_) => FileProvider(),
         child: Consumer<FileProvider>(
           builder: (context, provider, child) {
-            if (provider.isLoading) {
+            if (provider.isLoading &&
+                provider.rspaceFiles.isEmpty &&
+                provider.perpuskuFiles.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -153,16 +201,20 @@ class FileListPage extends StatelessWidget {
             }
 
             return RefreshIndicator(
-              onRefresh: () => provider.fetchFiles(),
+              onRefresh: () => Future.wait([
+                provider.fetchFiles(),
+                provider.fetchFiles(), // Memanggil scan juga
+              ]),
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
                   _buildPathInfoCard(context),
                   const SizedBox(height: 24),
+                  // File Online
                   _buildFileSection(
                     context,
                     provider: provider,
-                    title: 'File RSpace',
+                    title: 'File Online RSpace',
                     files: provider.rspaceFiles,
                     isRspaceFile: true,
                   ),
@@ -170,9 +222,24 @@ class FileListPage extends StatelessWidget {
                   _buildFileSection(
                     context,
                     provider: provider,
-                    title: 'File Perpusku',
+                    title: 'File Online Perpusku',
                     files: provider.perpuskuFiles,
                     isRspaceFile: false,
+                  ),
+                  const SizedBox(height: 24),
+                  // File Lokal (Unduhan)
+                  _buildDownloadedFileSection(
+                    context,
+                    provider: provider,
+                    title: 'Unduhan RSpace',
+                    files: provider.downloadedRspaceFiles,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDownloadedFileSection(
+                    context,
+                    provider: provider,
+                    title: 'Unduhan Perpusku',
+                    files: provider.downloadedPerpuskuFiles,
                   ),
                 ],
               ),
@@ -272,7 +339,7 @@ class FileListPage extends StatelessWidget {
         if (files.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24.0),
-            child: Center(child: Text('Tidak ada file ditemukan.')),
+            child: Center(child: Text('Tidak ada file online ditemukan.')),
           )
         else
           ListView.builder(
@@ -291,7 +358,7 @@ class FileListPage extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 4.0),
                 child: ListTile(
-                  leading: const Icon(Icons.archive_outlined),
+                  leading: const Icon(Icons.cloud_queue_rounded),
                   title: Text(file.originalName),
                   subtitle: Text('Diunggah: ${file.uploadedAt}'),
                   trailing: isDownloading
@@ -302,7 +369,6 @@ class FileListPage extends StatelessWidget {
                       ? CircularProgressIndicator(
                           value: uploadProgress > 0.01 ? uploadProgress : null,
                         )
-                      // ==> PERUBAHAN DI SINI: MENGGUNAKAN POPUPMENU <==
                       : PopupMenuButton<String>(
                           onSelected: (value) async {
                             if (value == 'download') {
@@ -342,6 +408,99 @@ class FileListPage extends StatelessWidget {
                                 ),
                               ],
                         ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  // ==> WIDGET BARU UNTUK MENAMPILKAN FILE YANG DIUNDUH <==
+  Widget _buildDownloadedFileSection(
+    BuildContext context, {
+    required FileProvider provider,
+    required String title,
+    required List<File> files,
+  }) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Divider(thickness: 2),
+        if (provider.downloadPath == null || provider.downloadPath!.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: Center(
+              child: Text(
+                'Folder tujuan download belum ditentukan.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else if (files.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: Center(
+              child: Text(
+                'Tidak ada file yang telah diunduh di sini.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: files.length,
+            itemBuilder: (context, index) {
+              final file = files[index];
+              final fileName = path.basename(file.path);
+              final fileSize = file.lengthSync();
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4.0),
+                child: ListTile(
+                  leading: const Icon(Icons.drafts_rounded),
+                  title: Text(fileName),
+                  subtitle: Text('Ukuran: ${formatBytes(fileSize, 2)}'),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'open') {
+                        final result = await OpenFile.open(file.path);
+                        if (result.type != ResultType.done && context.mounted) {
+                          showAppSnackBar(
+                            context,
+                            'Tidak dapat membuka file: ${result.message}',
+                            isError: true,
+                          );
+                        }
+                      } else if (value == 'delete') {
+                        _deleteDownloadedFile(context, file);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'open',
+                            child: Text('Buka File'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text(
+                              'Hapus',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                  ),
                 ),
               );
             },
