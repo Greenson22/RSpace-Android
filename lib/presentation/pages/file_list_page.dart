@@ -97,7 +97,6 @@ class FileListPage extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE LOKAL <==
   Future<void> _deleteDownloadedFile(BuildContext context, File file) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
     try {
@@ -130,7 +129,6 @@ class FileListPage extends StatelessWidget {
     }
   }
 
-  // ==> DIALOG KONFIRMASI GENERIK <==
   Future<bool> _showConfirmationDialog(
     BuildContext context,
     String title,
@@ -165,13 +163,15 @@ class FileListPage extends StatelessWidget {
         create: (_) => FileProvider(),
         child: Consumer<FileProvider>(
           builder: (context, provider, child) {
-            if (provider.isLoading &&
-                provider.rspaceFiles.isEmpty &&
-                provider.perpuskuFiles.isEmpty) {
+            // Tampilkan loading indicator hanya jika isLoading true
+            if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (provider.errorMessage != null) {
+            // Tampilkan pesan error jika ada
+            if (provider.errorMessage != null &&
+                provider.rspaceFiles.isEmpty &&
+                provider.perpuskuFiles.isEmpty) {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -190,28 +190,33 @@ class FileListPage extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Coba Lagi'),
-                        onPressed: () => provider.fetchFiles(),
-                      ),
+                      // Hanya tampilkan tombol "Coba Lagi" jika bukan error konfigurasi
+                      if (!provider.errorMessage!.contains('Konfigurasi'))
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                          onPressed: () => provider.fetchFiles(),
+                        ),
+                      const SizedBox(height: 24),
+                      // Selalu tampilkan kartu konfigurasi jika ada error
+                      _ApiConfigCard(),
                     ],
                   ),
                 ),
               );
             }
 
+            // Tampilan utama jika tidak ada loading atau error
             return RefreshIndicator(
-              onRefresh: () => Future.wait([
-                provider.fetchFiles(),
-                provider.fetchFiles(), // Memanggil scan juga
-              ]),
+              onRefresh: () =>
+                  Future.wait([provider.fetchFiles(), provider.fetchFiles()]),
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
+                  _ApiConfigCard(),
+                  const SizedBox(height: 16),
                   _buildPathInfoCard(context),
                   const SizedBox(height: 24),
-                  // File Online
                   _buildFileSection(
                     context,
                     provider: provider,
@@ -228,7 +233,6 @@ class FileListPage extends StatelessWidget {
                     isRspaceFile: false,
                   ),
                   const SizedBox(height: 24),
-                  // File Lokal (Unduhan)
                   _buildDownloadedFileSection(
                     context,
                     provider: provider,
@@ -254,6 +258,7 @@ class FileListPage extends StatelessWidget {
   }
 
   Widget _buildPathInfoCard(BuildContext context) {
+    // ... (sisa kode sama seperti sebelumnya) ...
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -308,6 +313,7 @@ class FileListPage extends StatelessWidget {
     required List<FileItem> files,
     required bool isRspaceFile,
   }) {
+    // ... (sisa kode sama seperti sebelumnya) ...
     final theme = Theme.of(context);
 
     return Column(
@@ -433,7 +439,6 @@ class FileListPage extends StatelessWidget {
     );
   }
 
-  // ==> WIDGET BARU UNTUK MENAMPILKAN FILE YANG DIUNDUH <==
   Widget _buildDownloadedFileSection(
     BuildContext context, {
     required FileProvider provider,
@@ -441,6 +446,7 @@ class FileListPage extends StatelessWidget {
     required List<File> files,
     required bool isRspaceFile,
   }) {
+    // ... (sisa kode sama seperti sebelumnya) ...
     final theme = Theme.of(context);
 
     return Column(
@@ -545,6 +551,124 @@ class FileListPage extends StatelessWidget {
             },
           ),
       ],
+    );
+  }
+}
+
+class _ApiConfigCard extends StatefulWidget {
+  @override
+  State<_ApiConfigCard> createState() => _ApiConfigCardState();
+}
+
+class _ApiConfigCardState extends State<_ApiConfigCard> {
+  late TextEditingController _domainController;
+  late TextEditingController _apiKeyController;
+  bool _obscureText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    // Inisialisasi controller dengan nilai dari provider atau string kosong
+    _domainController = TextEditingController(text: provider.apiDomain ?? '');
+    _apiKeyController = TextEditingController(text: provider.apiKey ?? '');
+  }
+
+  @override
+  void dispose() {
+    _domainController.dispose();
+    _apiKeyController.dispose();
+    super.dispose();
+  }
+
+  void _saveConfig() {
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    final domain = _domainController.text.trim();
+    final apiKey = _apiKeyController.text.trim();
+
+    if (domain.isEmpty || apiKey.isEmpty) {
+      showAppSnackBar(
+        context,
+        'Domain dan API Key tidak boleh kosong.',
+        isError: true,
+      );
+      return;
+    }
+
+    provider.saveApiConfig(domain, apiKey);
+    showAppSnackBar(context, 'Konfigurasi API berhasil disimpan.');
+    FocusScope.of(context).unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Gunakan Consumer di sini untuk mendapatkan nilai terbaru dari provider
+    return Consumer<FileProvider>(
+      builder: (context, provider, child) {
+        // Tentukan apakah kartu harus terbuka secara default
+        final bool shouldBeExpanded =
+            provider.apiDomain == null || provider.apiKey == null;
+
+        return Card(
+          child: ExpansionTile(
+            leading: const Icon(Icons.settings_ethernet),
+            title: const Text('Konfigurasi Server API'),
+            // ==> KONTROL EXPANSION SECARA DINAMIS <==
+            initiallyExpanded: shouldBeExpanded,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _domainController,
+                      decoration: const InputDecoration(
+                        labelText: 'Domain Server',
+                        hintText: 'Contoh: http://domain.com',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _apiKeyController,
+                      obscureText: _obscureText,
+                      decoration: InputDecoration(
+                        labelText: 'API Key',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureText
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureText = !_obscureText;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text('Simpan & Muat Ulang'),
+                        onPressed: _saveConfig,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

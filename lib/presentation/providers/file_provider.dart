@@ -23,7 +23,6 @@ class FileProvider with ChangeNotifier {
   List<FileItem> _perpuskuFiles = [];
   List<FileItem> get perpuskuFiles => _perpuskuFiles;
 
-  // ==> STATE BARU UNTUK FILE YANG DIUNDUH <==
   List<File> _downloadedRspaceFiles = [];
   List<File> get downloadedRspaceFiles => _downloadedRspaceFiles;
 
@@ -45,32 +44,57 @@ class FileProvider with ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
-  final String _rspaceEndpoint = 'http://rikal.kecmobar.my.id/api/rspace/files';
-  final String _perpuskuEndpoint =
-      'http://rikal.kecmobar.my.id/api/perpusku/files';
-  final String _rspaceDownloadBaseUrl =
-      'http://rikal.kecmobar.my.id/api/rspace/download/';
-  final String _perpuskuDownloadBaseUrl =
-      'http://rikal.kecmobar.my.id/api/perpusku/download/';
-  final String _rspaceUploadEndpoint =
-      'http://rikal.kecmobar.my.id/api/rspace/upload';
-  final String _perpuskuUploadEndpoint =
-      'http://rikal.kecmobar.my.id/api/perpusku/upload';
-  final String _rspaceDeleteBaseUrl =
-      'http://rikal.kecmobar.my.id/api/rspace/files/';
-  final String _perpuskuDeleteBaseUrl =
-      'http://rikal.kecmobar.my.id/api/perpusku/files/';
+  // ==> HAPUS NILAI DEFAULT DAN JADIKAN NULLABLE <==
+  String? _apiDomain;
+  String? _apiKey;
+  String? get apiDomain => _apiDomain;
+  String? get apiKey => _apiKey;
 
-  final String _apiKey = 'frendygerung1234567890';
+  // Getter dinamis sekarang akan menangani nilai null
+  String get _rspaceEndpoint => '$_apiDomain/api/rspace/files';
+  String get _perpuskuEndpoint => '$_apiDomain/api/perpusku/files';
+  String get _rspaceDownloadBaseUrl => '$_apiDomain/api/rspace/download/';
+  String get _perpuskuDownloadBaseUrl => '$_apiDomain/api/perpusku/download/';
+  String get _rspaceUploadEndpoint => '$_apiDomain/api/rspace/upload';
+  String get _perpuskuUploadEndpoint => '$_apiDomain/api/perpusku/upload';
+  String get _rspaceDeleteBaseUrl => '$_apiDomain/api/rspace/files/';
+  String get _perpuskuDeleteBaseUrl => '$_apiDomain/api/perpusku/files/';
 
   FileProvider() {
     _initialize();
   }
 
   Future<void> _initialize() async {
+    await _loadApiConfig();
     await _loadDownloadPath();
-    // Gabungkan pemanggilan fetch data
-    await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
+    // Panggil fetchFiles hanya jika konfigurasi ada
+    if (_apiDomain != null && _apiKey != null) {
+      await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
+    } else {
+      _isLoading = false;
+      _errorMessage =
+          'Konfigurasi Server API belum diatur. Silakan atur domain dan API key terlebih dahulu.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadApiConfig() async {
+    final config = await _prefsService.loadApiConfig();
+    _apiDomain = config['domain'];
+    _apiKey = config['apiKey'];
+    notifyListeners();
+  }
+
+  Future<void> saveApiConfig(String domain, String apiKey) async {
+    // Hapus garis miring di akhir domain jika ada
+    if (domain.endsWith('/')) {
+      domain = domain.substring(0, domain.length - 1);
+    }
+    await _prefsService.saveApiConfig(domain, apiKey);
+    _apiDomain = domain;
+    _apiKey = apiKey;
+    notifyListeners();
+    await fetchFiles();
   }
 
   Future<void> _loadDownloadPath() async {
@@ -81,12 +105,10 @@ class FileProvider with ChangeNotifier {
   Future<void> setDownloadPath(String newPath) async {
     await _prefsService.saveCustomDownloadPath(newPath);
     _downloadPath = newPath;
-    // Pindai ulang file setelah path diubah
     await _scanDownloadedFiles();
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAI FILE LOKAL <==
   Future<void> _scanDownloadedFiles() async {
     if (_downloadPath == null || _downloadPath!.isEmpty) {
       _downloadedRspaceFiles = [];
@@ -125,12 +147,24 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<void> fetchFiles() async {
+    // ==> TAMBAHKAN PEMERIKSAAN DI SINI <==
+    if (_apiDomain == null ||
+        _apiKey == null ||
+        _apiDomain!.isEmpty ||
+        _apiKey!.isEmpty) {
+      _errorMessage =
+          'Konfigurasi Server API belum diatur. Silakan atur domain dan API key terlebih dahulu.';
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final headers = {'x-api-key': _apiKey};
+      final headers = {'x-api-key': _apiKey!};
       final rspaceResponse = await http
           .get(Uri.parse(_rspaceEndpoint), headers: headers)
           .timeout(const Duration(seconds: 15));
@@ -161,7 +195,7 @@ class FileProvider with ChangeNotifier {
       }
     } on SocketException {
       _errorMessage =
-          'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+          'Tidak dapat terhubung ke server. Periksa koneksi internet dan pastikan domain benar.';
     } on TimeoutException {
       _errorMessage = 'Waktu koneksi habis. Server mungkin sedang tidak aktif.';
     } on HttpException catch (e) {
@@ -174,6 +208,9 @@ class FileProvider with ChangeNotifier {
     }
   }
 
+  // Sisa kode (deleteFile, uploadFile, downloadFile, dll) tidak perlu diubah
+  // karena sudah menggunakan getter dinamis yang bergantung pada _apiDomain dan _apiKey.
+  // ... (sisa kode sama seperti sebelumnya) ...
   Future<String> deleteFile(FileItem file, bool isRspaceFile) async {
     final url = isRspaceFile
         ? '$_rspaceDeleteBaseUrl${file.uniqueName}'
@@ -182,7 +219,7 @@ class FileProvider with ChangeNotifier {
     try {
       final response = await http.delete(
         Uri.parse(url),
-        headers: {'x-api-key': _apiKey},
+        headers: {'x-api-key': _apiKey!},
       );
 
       if (response.statusCode == 200) {
@@ -199,12 +236,10 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE LOKAL <==
   Future<String> deleteDownloadedFile(File file) async {
     try {
       if (await file.exists()) {
         await file.delete();
-        // Pindai ulang setelah menghapus
         await _scanDownloadedFiles();
         return 'File "${path.basename(file.path)}" berhasil dihapus dari perangkat.';
       }
@@ -225,7 +260,7 @@ class FileProvider with ChangeNotifier {
           ? _rspaceUploadEndpoint
           : _perpuskuUploadEndpoint;
       var request = http.MultipartRequest('POST', Uri.parse(url));
-      request.headers['x-api-key'] = _apiKey;
+      request.headers['x-api-key'] = _apiKey!;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -281,7 +316,7 @@ class FileProvider with ChangeNotifier {
       notifyListeners();
 
       final request = http.Request('GET', Uri.parse(file.downloadUrl));
-      request.headers['x-api-key'] = _apiKey;
+      request.headers['x-api-key'] = _apiKey!;
       final http.StreamedResponse response = await request.send();
 
       if (response.statusCode != 200) {
@@ -302,7 +337,6 @@ class FileProvider with ChangeNotifier {
           final downloadedFile = File(savePath);
           await downloadedFile.writeAsBytes(bytes);
           _downloadProgress.remove(file.uniqueName);
-          // Pindai ulang file setelah unduhan selesai
           await _scanDownloadedFiles();
           notifyListeners();
           await OpenFile.open(savePath);

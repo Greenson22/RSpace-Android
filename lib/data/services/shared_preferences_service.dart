@@ -14,10 +14,26 @@ class SharedPreferencesService {
   static const String _customBackupPathKey = 'custom_backup_path';
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
-  // ==> KUNCI BARU UNTUK LOKASI DOWNLOAD <==
   static const String _customDownloadPathKey = 'custom_download_path';
+  // ==> KUNCI BARU UNTUK KONFIGURASI API <==
+  static const String _apiDomainKey = 'api_domain';
+  static const String _apiKeyKey = 'api_key';
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT PATH DOWNLOAD <==
+  // ==> FUNGSI BARU UNTUK MENYIMPAN & MEMUAT KONFIGURASI API <==
+  Future<void> saveApiConfig(String domain, String apiKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_apiDomainKey, domain);
+    await prefs.setString(_apiKeyKey, apiKey);
+  }
+
+  Future<Map<String, String?>> loadApiConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    final domain = prefs.getString(_apiDomainKey);
+    final apiKey = prefs.getString(_apiKeyKey);
+    return {'domain': domain, 'apiKey': apiKey};
+  }
+  // --- AKHIR PERUBAHAN ---
+
   Future<void> saveCustomDownloadPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_customDownloadPathKey, path);
@@ -27,7 +43,6 @@ class SharedPreferencesService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_customDownloadPathKey);
   }
-  // --- AKHIR PERUBAHAN ---
 
   Future<void> saveBackupSortPreferences(
     String sortType,
