@@ -25,6 +25,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
   late bool _isDark;
   late bool _isChristmas;
   late Color _selectedColor;
+  // ==> STATE LOKAL BARU UNTUK SLIDER <==
+  late double _dashboardScale;
 
   @override
   void initState() {
@@ -33,6 +35,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     _isDark = provider.darkTheme;
     _isChristmas = provider.isChristmasTheme;
     _selectedColor = provider.primaryColor;
+    // ==> INISIALISASI STATE SLIDER <==
+    _dashboardScale = provider.dashboardItemScale;
   }
 
   /// Menyimpan semua perubahan tema dan menutup dialog.
@@ -42,13 +46,14 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
       isDark: _isDark,
       isChristmas: _isChristmas,
       color: _selectedColor,
+      // ==> SIMPAN NILAI DARI SLIDER <==
+      dashboardScale: _dashboardScale,
     );
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    // ==> DAPATKAN PROVIDER TEMA DI SINI <==
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     return AlertDialog(
@@ -71,7 +76,6 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               onChanged: (value) => setState(() => _isChristmas = value),
             ),
             const Divider(),
-            // ==> BAGIAN BARU UNTUK LATAR BELAKANG <==
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
               child: Text(
@@ -106,7 +110,37 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               ),
             ),
             const Divider(),
+            // ==> BAGIAN BARU UNTUK UKURAN MENU <==
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Ukuran Menu Dasbor',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text(
+                    '${(_dashboardScale * 100).toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            ),
+            Slider(
+              value: _dashboardScale,
+              min: 0.8, // 80%
+              max: 1.2, // 120%
+              divisions: 4,
+              label: '${(_dashboardScale * 100).toStringAsFixed(0)}%',
+              onChanged: (value) {
+                setState(() {
+                  _dashboardScale = value;
+                });
+              },
+            ),
             // --- AKHIR BAGIAN BARU ---
+            const Divider(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
               child: Text(
@@ -114,7 +148,6 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            // Color picker yang interaktif
             ColorPicker(
               pickerColor: _selectedColor,
               onColorChanged: (color) => setState(() => _selectedColor = color),
@@ -125,7 +158,6 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               paletteType: PaletteType.hueWheel,
             ),
             const SizedBox(height: 16),
-            // Palet warna yang telah ditentukan
             BlockPicker(
               pickerColor: _selectedColor,
               onColorChanged: (color) {

@@ -20,9 +20,12 @@ class ThemeProvider with ChangeNotifier {
   bool _isChristmasTheme = false;
   bool get isChristmasTheme => _isChristmasTheme;
 
-  // ==> STATE BARU UNTUK GAMBAR LATAR <==
   String? _backgroundImagePath;
   String? get backgroundImagePath => _backgroundImagePath;
+
+  // ==> STATE BARU UNTUK SKALA MENU <==
+  double _dashboardItemScale = 1.0;
+  double get dashboardItemScale => _dashboardItemScale;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -36,7 +39,12 @@ class ThemeProvider with ChangeNotifier {
   }
 
   /// Memperbarui beberapa properti tema sekaligus dan memberitahu pendengar.
-  void updateTheme({bool? isDark, bool? isChristmas, Color? color}) {
+  void updateTheme({
+    bool? isDark,
+    bool? isChristmas,
+    Color? color,
+    double? dashboardScale, // ==> TAMBAHKAN PARAMETER BARU
+  }) {
     bool needsNotify = false;
 
     if (isDark != null && _darkTheme != isDark) {
@@ -46,7 +54,6 @@ class ThemeProvider with ChangeNotifier {
     }
     if (isChristmas != null && _isChristmasTheme != isChristmas) {
       _isChristmasTheme = isChristmas;
-      // Tema Natal bersifat sementara dan tidak disimpan
       needsNotify = true;
     }
     if (color != null && _primaryColor != color) {
@@ -55,13 +62,18 @@ class ThemeProvider with ChangeNotifier {
       _addRecentColor(color);
       needsNotify = true;
     }
+    // ==> LOGIKA BARU UNTUK SKALA MENU <==
+    if (dashboardScale != null && _dashboardItemScale != dashboardScale) {
+      _dashboardItemScale = dashboardScale;
+      _prefsService.saveDashboardItemScale(dashboardScale);
+      needsNotify = true;
+    }
 
     if (needsNotify) {
       notifyListeners();
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGATUR GAMBAR LATAR <==
   Future<void> setBackgroundImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -74,7 +86,6 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS GAMBAR LATAR <==
   Future<void> clearBackgroundImage() async {
     _backgroundImagePath = null;
     await _prefsService.clearBackgroundImagePath();
@@ -100,9 +111,10 @@ class ThemeProvider with ChangeNotifier {
 
     final recentColorValues = await _prefsService.loadRecentColors();
     _recentColors = recentColorValues.map((v) => Color(v)).toList();
-
-    // ==> MEMUAT PATH GAMBAR LATAR SAAT INISIALISASI <==
     _backgroundImagePath = await _prefsService.loadBackgroundImagePath();
+
+    // ==> MEMUAT SKALA MENU SAAT INISIALISASI <==
+    _dashboardItemScale = await _prefsService.loadDashboardItemScale();
 
     notifyListeners();
   }

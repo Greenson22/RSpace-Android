@@ -17,10 +17,23 @@ class SharedPreferencesService {
   static const String _customDownloadPathKey = 'custom_download_path';
   static const String _apiDomainKey = 'api_domain';
   static const String _apiKeyKey = 'api_key';
-  // ==> KUNCI BARU UNTUK GAMBAR LATAR <==
   static const String _backgroundImageKey = 'background_image_path';
+  // ==> KUNCI BARU UNTUK UKURAN MENU <==
+  static const String _dashboardItemScaleKey = 'dashboard_item_scale';
 
-  // ==> FUNGSI BARU UNTUK GAMBAR LATAR <==
+  // ==> FUNGSI BARU UNTUK UKURAN MENU <==
+  Future<void> saveDashboardItemScale(double scale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_dashboardItemScaleKey, scale);
+  }
+
+  Future<double> loadDashboardItemScale() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Default value 1.0 (ukuran normal)
+    return prefs.getDouble(_dashboardItemScaleKey) ?? 1.0;
+  }
+  // --- AKHIR PERUBAHAN ---
+
   Future<void> saveBackgroundImagePath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_backgroundImageKey, path);
@@ -35,8 +48,8 @@ class SharedPreferencesService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_backgroundImageKey);
   }
-  // --- AKHIR PERUBAHAN ---
 
+  // ... (sisa kode tidak berubah)
   Future<void> saveApiConfig(String domain, String apiKey) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_apiDomainKey, domain);
