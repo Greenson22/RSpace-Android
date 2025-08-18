@@ -20,72 +20,39 @@ class ThemeProvider with ChangeNotifier {
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
-      // Saat tema Natal, warna primer akan diabaikan dan diganti warna merah khas Natal
       return AppTheme.getChristmasTheme(_darkTheme);
     }
     return AppTheme.getTheme(_primaryColor, _darkTheme);
-  }
-
-  /// Menyediakan data (ikon & tooltip) untuk tombol siklus tema di UI.
-  Map<String, dynamic> get themeCycleData {
-    if (!_isChristmasTheme && !_darkTheme) {
-      return {
-        'icon': Icons.wb_sunny_outlined,
-        'tooltip': 'Ganti ke Tema Gelap',
-      };
-    } else if (!_isChristmasTheme && _darkTheme) {
-      return {
-        'icon': Icons.nightlight_round,
-        'tooltip': 'Ganti ke Tema Natal (Terang)',
-      };
-    } else if (_isChristmasTheme && !_darkTheme) {
-      return {
-        'icon': Icons.celebration_outlined,
-        'tooltip': 'Ganti ke Tema Natal (Gelap)',
-      };
-    } else {
-      // _isChristmasTheme && _darkTheme
-      return {'icon': Icons.celebration, 'tooltip': 'Kembali ke Tema Terang'};
-    }
   }
 
   ThemeProvider() {
     _loadTheme();
   }
 
-  set darkTheme(bool value) {
-    _darkTheme = value;
-    _prefsService.saveThemePreference(value);
-    notifyListeners();
-  }
+  /// Memperbarui beberapa properti tema sekaligus dan memberitahu pendengar.
+  void updateTheme({bool? isDark, bool? isChristmas, Color? color}) {
+    bool needsNotify = false;
 
-  /// Mengganti tema ke status berikutnya dalam siklus.
-  void cycleTheme() {
-    if (!_isChristmasTheme && !_darkTheme) {
-      // Dari Terang -> Gelap
-      _darkTheme = true;
-    } else if (!_isChristmasTheme && _darkTheme) {
-      // Dari Gelap -> Natal Terang
-      _darkTheme = false;
-      _isChristmasTheme = true;
-    } else if (_isChristmasTheme && !_darkTheme) {
-      // Dari Natal Terang -> Natal Gelap
-      _darkTheme = true;
-    } else {
-      // Dari Natal Gelap -> Terang
-      _darkTheme = false;
-      _isChristmasTheme = false;
+    if (isDark != null && _darkTheme != isDark) {
+      _darkTheme = isDark;
+      _prefsService.saveThemePreference(isDark);
+      needsNotify = true;
     }
-    // Simpan preferensi mode gelap untuk konsistensi
-    _prefsService.saveThemePreference(_darkTheme);
-    notifyListeners();
-  }
+    if (isChristmas != null && _isChristmasTheme != isChristmas) {
+      _isChristmasTheme = isChristmas;
+      // Tema Natal bersifat sementara dan tidak disimpan
+      needsNotify = true;
+    }
+    if (color != null && _primaryColor != color) {
+      _primaryColor = color;
+      _prefsService.savePrimaryColor(color.value);
+      _addRecentColor(color);
+      needsNotify = true;
+    }
 
-  void setPrimaryColor(Color color) {
-    _primaryColor = color;
-    _prefsService.savePrimaryColor(color.value);
-    _addRecentColor(color);
-    notifyListeners();
+    if (needsNotify) {
+      notifyListeners();
+    }
   }
 
   void _addRecentColor(Color color) {
@@ -104,8 +71,10 @@ class ThemeProvider with ChangeNotifier {
     if (colorValue != null) {
       _primaryColor = Color(colorValue);
     }
+
     final recentColorValues = await _prefsService.loadRecentColors();
     _recentColors = recentColorValues.map((v) => Color(v)).toList();
+
     notifyListeners();
   }
 }
