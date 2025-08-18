@@ -261,7 +261,7 @@ class FileProvider with ChangeNotifier {
     }
 
     if (Platform.isAndroid) {
-      final status = await Permission.storage.request();
+      final status = await Permission.manageExternalStorage.request();
       if (!status.isGranted) {
         throw Exception('Izin penyimpanan ditolak.');
       }
