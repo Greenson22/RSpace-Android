@@ -29,15 +29,14 @@ class _DashboardPageState extends State<DashboardPage> {
   int _focusedIndex = 0;
   List<VoidCallback> _dashboardActions = [];
 
-  // Timer dan flag untuk mengontrol visibilitas border
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
-  bool _isPathSet = false; // State untuk melacak status path
+  bool _isPathSet = false;
 
   @override
   void initState() {
     super.initState();
-    _checkPath(); // Cek path saat inisialisasi
+    _checkPath();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -46,7 +45,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void dispose() {
     _focusNode.dispose();
-    _focusTimer?.cancel(); // Batalkan timer saat dispose
+    _focusTimer?.cancel();
     super.dispose();
   }
 
@@ -62,7 +61,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
-      // Hanya aktifkan timer saat tombol panah ditekan
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
           event.logicalKey == LogicalKeyboardKey.arrowUp ||
           event.logicalKey == LogicalKeyboardKey.arrowLeft ||
@@ -143,7 +141,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
         setState(() {
           _dashboardPathKey = UniqueKey();
-          _isPathSet = true; // Update state setelah path diatur
+          _isPathSet = true;
         });
 
         if (mounted) {
@@ -299,6 +297,17 @@ class _DashboardPageState extends State<DashboardPage> {
               onPressed: () =>
                   themeProvider.darkTheme = !themeProvider.darkTheme,
               tooltip: 'Ganti Tema',
+            ),
+            // ==> ICONBUTTON BARU UNTUK TEMA NATAL <==
+            IconButton(
+              icon: Icon(
+                themeProvider.isChristmasTheme
+                    ? Icons.celebration
+                    : Icons.celebration_outlined,
+                color: themeProvider.isChristmasTheme ? Colors.amber : null,
+              ),
+              onPressed: () => themeProvider.toggleChristmasTheme(),
+              tooltip: 'Aktifkan Tema Natal',
             ),
             IconButton(
               icon: const Icon(Icons.info_outline),

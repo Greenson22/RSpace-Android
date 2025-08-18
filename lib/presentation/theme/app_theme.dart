@@ -42,6 +42,73 @@ class AppTheme {
     return _lightTheme(primaryColor);
   }
 
+  // ==> TEMA SPESIAL NATAL <==
+  static ThemeData getChristmasTheme(bool isDark) {
+    // Palet Warna Natal
+    const Color christmasRed = Color(0xFFC62828); // Merah tua
+    const Color christmasGreen = Color(0xFF2E7D32); // Hijau tua
+    const Color offWhite = Color(0xFFF5F5DC); // Krem/Putih Gading
+
+    if (isDark) {
+      return ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: christmasRed,
+        scaffoldBackgroundColor: const Color(0xFF1A2B27), // Hijau sangat gelap
+        colorScheme: ColorScheme.dark(
+          primary: christmasRed,
+          secondary: christmasGreen,
+          surface: Colors.grey[850]!,
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onSurface: offWhite,
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF2C3E3A),
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.grey[900],
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: christmasRed,
+          foregroundColor: Colors.white,
+        ),
+      );
+    } else {
+      return ThemeData(
+        brightness: Brightness.light,
+        primaryColor: christmasRed,
+        scaffoldBackgroundColor: offWhite,
+        colorScheme: const ColorScheme.light(
+          primary: christmasRed,
+          secondary: christmasGreen,
+          surface: Colors.white,
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onSurface: Colors.black87,
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: christmasRed,
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: christmasRed,
+          foregroundColor: Colors.white,
+        ),
+      );
+    }
+  }
+
   static ThemeData _lightTheme(Color primaryColor) => ThemeData(
     primarySwatch: _createMaterialColor(primaryColor),
     brightness: Brightness.light,
