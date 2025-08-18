@@ -1,4 +1,6 @@
 // lib/presentation/providers/theme_provider.dart
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../theme/app_theme.dart';
@@ -17,6 +19,10 @@ class ThemeProvider with ChangeNotifier {
 
   bool _isChristmasTheme = false;
   bool get isChristmasTheme => _isChristmasTheme;
+
+  // ==> STATE BARU UNTUK GAMBAR LATAR <==
+  String? _backgroundImagePath;
+  String? get backgroundImagePath => _backgroundImagePath;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -55,6 +61,26 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENGATUR GAMBAR LATAR <==
+  Future<void> setBackgroundImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
+
+    if (result != null && result.files.single.path != null) {
+      _backgroundImagePath = result.files.single.path;
+      await _prefsService.saveBackgroundImagePath(_backgroundImagePath!);
+      notifyListeners();
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS GAMBAR LATAR <==
+  Future<void> clearBackgroundImage() async {
+    _backgroundImagePath = null;
+    await _prefsService.clearBackgroundImagePath();
+    notifyListeners();
+  }
+
   void _addRecentColor(Color color) {
     _recentColors.remove(color);
     _recentColors.insert(0, color);
@@ -74,6 +100,9 @@ class ThemeProvider with ChangeNotifier {
 
     final recentColorValues = await _prefsService.loadRecentColors();
     _recentColors = recentColorValues.map((v) => Color(v)).toList();
+
+    // ==> MEMUAT PATH GAMBAR LATAR SAAT INISIALISASI <==
+    _backgroundImagePath = await _prefsService.loadBackgroundImagePath();
 
     notifyListeners();
   }
