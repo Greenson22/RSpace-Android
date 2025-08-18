@@ -5,8 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:my_aplication/data/models/my_task_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/my_task_provider.dart';
-import '../providers/theme_provider.dart'; // Import ThemeProvider
-import '../widgets/snow_widget.dart'; // Import SnowWidget
+import '../providers/theme_provider.dart';
 import 'my_tasks_page/dialogs/category_dialogs.dart';
 import 'my_tasks_page/dialogs/task_dialogs.dart';
 import 'my_tasks_page/widgets/category_card.dart';
@@ -42,11 +41,11 @@ class _MyTasksPageState extends State<MyTasksPage> {
 
   @override
   Widget build(BuildContext context) {
+    // KEMBALIKAN KE ChangeNotifierProvider BIASA
     return ChangeNotifierProvider(
       create: (_) => MyTaskProvider(),
-      child: Consumer2<MyTaskProvider, ThemeProvider>(
-        // Ganti ke Consumer2
-        builder: (context, taskProvider, themeProvider, child) {
+      child: Consumer<MyTaskProvider>(
+        builder: (context, taskProvider, child) {
           void handleKeyEvent(RawKeyEvent event) {
             if (event is RawKeyDownEvent) {
               final categories = taskProvider.categories;
@@ -111,76 +110,67 @@ class _MyTasksPageState extends State<MyTasksPage> {
           final isAnyReordering =
               taskProvider.reorderingCategoryName != null ||
               taskProvider.isCategoryReorderEnabled;
-          final isChristmas = themeProvider.isChristmasTheme;
+          // DAPATKAN STATUS TEMA DARI PROVIDER
+          final isChristmas = Provider.of<ThemeProvider>(
+            context,
+            listen: false,
+          ).isChristmasTheme;
 
           return RawKeyboardListener(
             focusNode: _focusNode,
             onKey: handleKeyEvent,
-            child: Stack(
-              children: [
-                Scaffold(
-                  backgroundColor: isChristmas ? Colors.transparent : null,
-                  appBar: AppBar(
-                    backgroundColor: isChristmas
-                        ? Colors.black.withOpacity(0.2)
-                        : null,
-                    elevation: isChristmas ? 0 : null,
-                    title: const Text('My Tasks'),
-                    actions: [
-                      if (taskProvider.reorderingCategoryName == null) ...[
-                        IconButton(
-                          icon: Icon(
-                            taskProvider.showHiddenCategories
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          tooltip: taskProvider.showHiddenCategories
-                              ? 'Sembunyikan Kategori Tersembunyi'
-                              : 'Tampilkan Kategori Tersembunyi',
-                          onPressed: () => taskProvider.toggleShowHidden(),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            taskProvider.isCategoryReorderEnabled
-                                ? Icons.cancel
-                                : Icons.sort,
-                          ),
-                          tooltip: taskProvider.isCategoryReorderEnabled
-                              ? 'Selesai Mengurutkan'
-                              : 'Urutkan Kategori',
-                          onPressed: () => taskProvider.toggleCategoryReorder(),
-                        ),
-                      ],
-                      if (!isAnyReordering)
-                        IconButton(
-                          icon: const Icon(Icons.clear_all),
-                          tooltip: 'Hapus Semua Centang',
-                          onPressed: () =>
-                              showUncheckAllConfirmationDialog(context),
-                        ),
-                    ],
-                  ),
-                  body: _buildBody(context, taskProvider),
-                  floatingActionButton: isAnyReordering
-                      ? null
-                      : FloatingActionButton(
-                          onPressed: () => showAddCategoryDialog(context),
-                          child: const Icon(Icons.add),
-                          tooltip: 'Tambah Kategori',
-                        ),
-                  floatingActionButtonLocation:
-                      FloatingActionButtonLocation.centerFloat,
-                ),
-                if (isChristmas)
-                  IgnorePointer(
-                    child: const SnowWidget(
-                      isRunning: true,
-                      totalSnow: 150,
-                      speed: 0.4,
-                      snowColor: Colors.white,
+            child: Scaffold(
+              backgroundColor: isChristmas ? Colors.transparent : null,
+              appBar: AppBar(
+                backgroundColor: isChristmas
+                    ? Colors.black.withOpacity(0.2)
+                    : null,
+                elevation: isChristmas ? 0 : null,
+                title: const Text('My Tasks'),
+                actions: [
+                  if (taskProvider.reorderingCategoryName == null) ...[
+                    IconButton(
+                      icon: Icon(
+                        taskProvider.showHiddenCategories
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      tooltip: taskProvider.showHiddenCategories
+                          ? 'Sembunyikan Kategori Tersembunyi'
+                          : 'Tampilkan Kategori Tersembunyi',
+                      onPressed: () => taskProvider.toggleShowHidden(),
                     ),
-                  ),
-              ],
+                    IconButton(
+                      icon: Icon(
+                        taskProvider.isCategoryReorderEnabled
+                            ? Icons.cancel
+                            : Icons.sort,
+                      ),
+                      tooltip: taskProvider.isCategoryReorderEnabled
+                          ? 'Selesai Mengurutkan'
+                          : 'Urutkan Kategori',
+                      onPressed: () => taskProvider.toggleCategoryReorder(),
+                    ),
+                  ],
+                  if (!isAnyReordering)
+                    IconButton(
+                      icon: const Icon(Icons.clear_all),
+                      tooltip: 'Hapus Semua Centang',
+                      onPressed: () =>
+                          showUncheckAllConfirmationDialog(context),
+                    ),
+                ],
+              ),
+              body: _buildBody(context, taskProvider),
+              floatingActionButton: isAnyReordering
+                  ? null
+                  : FloatingActionButton(
+                      onPressed: () => showAddCategoryDialog(context),
+                      child: const Icon(Icons.add),
+                      tooltip: 'Tambah Kategori',
+                    ),
+              floatingActionButtonLocation:
+                  FloatingActionButtonLocation.centerFloat,
             ),
           );
         },

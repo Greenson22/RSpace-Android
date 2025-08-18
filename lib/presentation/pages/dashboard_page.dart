@@ -9,7 +9,6 @@ import '../../data/services/shared_preferences_service.dart';
 import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
-import '../widgets/snow_widget.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'dashboard_page/widgets/dashboard_grid.dart';
@@ -174,98 +173,85 @@ class _DashboardPageState extends State<DashboardPage> {
         return RawKeyboardListener(
           focusNode: _focusNode,
           onKey: _handleKeyEvent,
-          child: Stack(
-            children: [
-              Container(
-                decoration: backgroundImagePath != null
-                    ? BoxDecoration(
-                        image: DecorationImage(
-                          image: FileImage(File(backgroundImagePath)),
-                          fit: BoxFit.cover,
-                          colorFilter: ColorFilter.mode(
-                            Colors.black.withOpacity(0.3),
-                            BlendMode.darken,
-                          ),
-                        ),
-                      )
-                    : null,
-                child: Scaffold(
-                  backgroundColor: backgroundImagePath != null || isChristmas
-                      ? Colors.transparent
-                      : null,
-                  appBar: AppBar(
-                    title: const Text(
-                      'Dashboard',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+          child: Container(
+            decoration: backgroundImagePath != null
+                ? BoxDecoration(
+                    image: DecorationImage(
+                      image: FileImage(File(backgroundImagePath)),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withOpacity(0.3),
+                        BlendMode.darken,
+                      ),
                     ),
-                    backgroundColor: backgroundImagePath != null || isChristmas
-                        ? Colors.black.withOpacity(0.2)
-                        : null,
-                    elevation: backgroundImagePath != null || isChristmas
-                        ? 0
-                        : null,
-                    actions: [
-                      if (_isPathSet)
-                        IconButton(
-                          icon: const Icon(Icons.folder_open_rounded),
-                          onPressed: () => _showStoragePathDialog(context),
-                          tooltip: 'Ubah Penyimpanan Utama',
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.palette_outlined),
-                        onPressed: () => showThemeSettingsDialog(context),
-                        tooltip: 'Pengaturan Tampilan',
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.info_outline),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AboutPage()),
-                        ),
-                        tooltip: 'Tentang Aplikasi',
-                      ),
-                    ],
+                  )
+                : null,
+            child: Scaffold(
+              backgroundColor: backgroundImagePath != null || isChristmas
+                  ? Colors.transparent
+                  : null,
+              appBar: AppBar(
+                title: const Text(
+                  'Dashboard',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: backgroundImagePath != null || isChristmas
+                    ? Colors.black.withOpacity(0.2)
+                    : null,
+                elevation: backgroundImagePath != null || isChristmas
+                    ? 0
+                    : null,
+                actions: [
+                  if (_isPathSet)
+                    IconButton(
+                      icon: const Icon(Icons.folder_open_rounded),
+                      onPressed: () => _showStoragePathDialog(context),
+                      tooltip: 'Ubah Penyimpanan Utama',
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.palette_outlined),
+                    onPressed: () => showThemeSettingsDialog(context),
+                    tooltip: 'Pengaturan Tampilan',
                   ),
-                  body: SafeArea(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1200),
-                        child: RefreshIndicator(
-                          onRefresh: () async {
-                            await Provider.of<TopicProvider>(
-                              context,
-                              listen: false,
-                            ).fetchTopics();
-                          },
-                          child: ListView(
-                            padding: const EdgeInsets.all(16.0),
-                            children: [
-                              DashboardHeader(key: _dashboardPathKey),
-                              const SizedBox(height: 20),
-                              DashboardGrid(
-                                isKeyboardActive: _isKeyboardActive,
-                                focusedIndex: _focusedIndex,
-                                dashboardActions: _dashboardActions,
-                                isPathSet: _isPathSet,
-                              ),
-                            ],
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutPage()),
+                    ),
+                    tooltip: 'Tentang Aplikasi',
+                  ),
+                ],
+              ),
+              body: SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        await Provider.of<TopicProvider>(
+                          context,
+                          listen: false,
+                        ).fetchTopics();
+                      },
+                      child: ListView(
+                        padding: const EdgeInsets.all(16.0),
+                        children: [
+                          DashboardHeader(key: _dashboardPathKey),
+                          const SizedBox(height: 20),
+                          DashboardGrid(
+                            isKeyboardActive: _isKeyboardActive,
+                            focusedIndex: _focusedIndex,
+                            dashboardActions: _dashboardActions,
+                            isPathSet: _isPathSet,
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-              if (isChristmas)
-                IgnorePointer(
-                  child: const SnowWidget(
-                    isRunning: true,
-                    totalSnow: 150,
-                    speed: 0.4,
-                    snowColor: Colors.white,
-                  ),
-                ),
-            ],
+            ),
           ),
         );
       },

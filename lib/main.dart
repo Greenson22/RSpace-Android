@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/presentation/pages/dashboard_page.dart';
-// Perubahan di baris import ini untuk menyesuaikan dengan lokasi file yang baru
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
 import 'package:my_aplication/presentation/providers/topic_provider.dart';
+import 'package:my_aplication/presentation/widgets/snow_widget.dart'; // Import SnowWidget
 import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/my_tasks_page.dart';
@@ -19,7 +19,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
 
-  // Quick Actions ini hanya untuk mobile, jadi kita bungkus dengan pengecekan platform
   if (Platform.isAndroid || Platform.isIOS) {
     const QuickActions quickActions = QuickActions();
     quickActions.initialize((String shortcutType) {
@@ -33,8 +32,7 @@ void main() async {
       const ShortcutItem(
         type: 'action_my_tasks',
         localizedTitle: 'My Tasks',
-        icon:
-            'ic_task_icon', // Pastikan icon ini ada di resource native Android/iOS
+        icon: 'ic_task_icon',
       ),
     ]);
   }
@@ -59,12 +57,30 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
+        final isChristmas = themeProvider.isChristmasTheme;
         return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          home:
-              const DashboardPage(), // Menggunakan fungsi untuk memilih halaman utama
+          home: const DashboardPage(),
+          builder: (context, navigator) {
+            return Stack(
+              children: [
+                // Ini adalah navigator utama aplikasi Anda
+                if (navigator != null) navigator,
+                // Widget salju akan ditampilkan di atas navigator
+                if (isChristmas)
+                  IgnorePointer(
+                    child: const SnowWidget(
+                      isRunning: true,
+                      totalSnow: 200,
+                      speed: 0.5,
+                      snowColor: Colors.white,
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
     );

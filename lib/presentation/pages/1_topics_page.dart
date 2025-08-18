@@ -1,7 +1,6 @@
 // lib/presentation/pages/1_topics_page.dart
 
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
@@ -9,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../data/models/topic_model.dart';
 import '../providers/subject_provider.dart';
+import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
 import '2_subjects_page.dart';
 import '1_topics_page/dialogs/topic_dialogs.dart';
@@ -140,7 +140,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     });
   }
 
-  // ... (sisa method _addTopic, _renameTopic, dll. tidak berubah)
   Future<void> _addTopic(BuildContext context) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showTopicTextInputDialog(
@@ -222,12 +221,19 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
+    final isChristmas = Provider.of<ThemeProvider>(
+      context,
+      listen: false,
+    ).isChristmasTheme;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
+        backgroundColor: isChristmas ? Colors.transparent : null,
         appBar: AppBar(
+          backgroundColor: isChristmas ? Colors.black.withOpacity(0.2) : null,
+          elevation: isChristmas ? 0 : null,
           title: topicProvider.isReorderModeEnabled
               ? const Text('Urutkan Topik')
               : (_isSearching
