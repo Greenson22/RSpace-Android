@@ -58,7 +58,7 @@ class TimeLogProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMBAHKAN SEMUA PRESET <==
+  // ==> FUNGSI DIPERBAIKI <==
   Future<int> addTasksFromPresets() async {
     final todayDate = DateUtils.dateOnly(DateTime.now());
     _findTodayLog();
@@ -68,32 +68,30 @@ class TimeLogProvider with ChangeNotifier {
       _logs.insert(0, _todayLog!);
     }
 
-    int tasksAdded = 0;
+    final List<LoggedTask> tasksToAdd = [];
     final existingTaskNames = _todayLog!.tasks.map((t) => t.name).toSet();
 
+    // Hitung ID tertinggi saat ini sekali saja sebelum loop
+    int latestId = _todayLog!.tasks.isEmpty
+        ? 0
+        : _todayLog!.tasks.map((t) => t.id).reduce((a, b) => a > b ? a : b);
+
     for (final preset in _taskPresets) {
-      // Hanya tambahkan jika tugas dengan nama yang sama belum ada
+      // Hanya tambahkan jika nama tugas belum ada
       if (!existingTaskNames.contains(preset.name)) {
-        final newId =
-            (_todayLog!.tasks.isEmpty
-                ? 0
-                : _todayLog!.tasks
-                      .map((t) => t.id)
-                      .reduce((a, b) => a > b ? a : b)) +
-            1;
-        final newTask = LoggedTask(id: newId, name: preset.name);
-        _todayLog!.tasks.add(newTask);
-        existingTaskNames.add(
-          preset.name,
-        ); // Update set untuk pengecekan berikutnya
-        tasksAdded++;
+        latestId++; // Naikkan ID untuk tugas baru
+        tasksToAdd.add(LoggedTask(id: latestId, name: preset.name));
+        // Tambahkan juga ke set agar tidak ada duplikat dari daftar preset itu sendiri
+        existingTaskNames.add(preset.name);
       }
     }
 
-    if (tasksAdded > 0) {
+    if (tasksToAdd.isNotEmpty) {
+      _todayLog!.tasks.addAll(tasksToAdd);
       await _saveLogs();
     }
-    return tasksAdded;
+
+    return tasksToAdd.length;
   }
 
   Future<void> addTask(String name, {String? category}) async {
@@ -105,10 +103,10 @@ class TimeLogProvider with ChangeNotifier {
       _logs.insert(0, _todayLog!);
     }
 
-    // Cek duplikat sebelum menambahkan
+    // ==> DITAMBAHKAN: Pengecekan duplikat <==
     final taskExists = _todayLog!.tasks.any((task) => task.name == name);
     if (taskExists) {
-      return; // Jangan tambahkan jika sudah ada
+      return;
     }
 
     final newId =
