@@ -45,25 +45,26 @@ class TaskLogTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // ==> Nonaktifkan tombol jika tidak bisa diedit <==
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: isEditable
-                  ? () => provider.incrementDuration(task)
-                  : null,
-              tooltip: 'Tambah 30 menit',
-            ),
-            // ==> Sembunyikan menu jika tidak bisa diedit <==
+            // ## PERUBAHAN UTAMA ##
+            // Tombol IconButton untuk increment dihapus dari sini.
+            // Logikanya dipindahkan ke dalam PopupMenuButton.
             if (isEditable)
               PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'edit') {
+                  if (value == 'increment') {
+                    provider.incrementDuration(task);
+                  } else if (value == 'edit') {
                     showEditDurationDialog(context, task);
                   } else if (value == 'delete') {
                     provider.deleteTask(task);
                   }
                 },
                 itemBuilder: (context) => [
+                  // Item menu baru ditambahkan di sini
+                  const PopupMenuItem(
+                    value: 'increment',
+                    child: Text('Tambah 30 Menit'),
+                  ),
                   const PopupMenuItem(
                     value: 'edit',
                     child: Text('Ubah Durasi'),
