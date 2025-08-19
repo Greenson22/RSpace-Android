@@ -8,7 +8,14 @@ import '../dialogs/task_log_dialogs.dart';
 
 class TaskLogTile extends StatelessWidget {
   final LoggedTask task;
-  const TaskLogTile({super.key, required this.task});
+  // ==> TAMBAHKAN PROPERTI BARU <==
+  final bool isEditable;
+
+  const TaskLogTile({
+    super.key,
+    required this.task,
+    this.isEditable = false, // Nilai default
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,28 +45,36 @@ class TaskLogTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            // ==> Nonaktifkan tombol jika tidak bisa diedit <==
             IconButton(
               icon: const Icon(Icons.add_circle_outline),
-              onPressed: () => provider.incrementDuration(task),
+              onPressed: isEditable
+                  ? () => provider.incrementDuration(task)
+                  : null,
               tooltip: 'Tambah 30 menit',
             ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  showEditDurationDialog(context, task);
-                } else if (value == 'delete') {
-                  provider.deleteTask(task);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'edit', child: Text('Ubah Durasi')),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Hapus', style: TextStyle(color: Colors.red)),
-                ),
-              ],
-            ),
+            // ==> Sembunyikan menu jika tidak bisa diedit <==
+            if (isEditable)
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    showEditDurationDialog(context, task);
+                  } else if (value == 'delete') {
+                    provider.deleteTask(task);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Text('Ubah Durasi'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

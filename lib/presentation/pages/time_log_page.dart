@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../data/models/time_log_model.dart';
 import '../providers/time_log_provider.dart';
 import 'time_log_page/dialogs/task_log_dialogs.dart';
 import 'time_log_page/widgets/task_log_tile.dart';
@@ -16,12 +17,11 @@ class TimeLogPage extends StatelessWidget {
       create: (_) => TimeLogProvider(),
       child: Consumer<TimeLogProvider>(
         builder: (context, provider, child) {
-          // --- LOGIKA BARU UNTUK MEMISAHKAN LOG HARI INI DAN RIWAYAT ---
           final todayLog = provider.todayLog;
+          final editableLog = provider.editableLog;
           final historyLogs = provider.logs
-              .where((log) => log != todayLog)
+              .where((log) => !DateUtils.isSameDay(log.date, DateTime.now()))
               .toList();
-          // --- AKHIR LOGIKA BARU ---
 
           final today = DateTime.now();
           final formattedDate = DateFormat(
@@ -53,13 +53,22 @@ class TimeLogPage extends StatelessWidget {
             ),
             body: RefreshIndicator(
               onRefresh: () => provider.fetchLogs(),
-              // --- PERUBAHAN UTAMA PADA STRUKTUR TAMPILAN ---
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // KARTU UNTUK HARI INI (TETAP SAMA)
+                  // --- KARTU UNTUK HARI INI ---
                   Card(
                     elevation: 2,
+                    // ==> Beri indikator visual jika hari ini sedang aktif <==
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: provider.editableLog == todayLog && todayLog != null
+                          ? BorderSide(
+                              color: Theme.of(context).primaryColor,
+                              width: 2,
+                            )
+                          : BorderSide.none,
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -80,7 +89,6 @@ class TimeLogPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // TAMPILKAN LOADING ATAU DAFTAR TUGAS HARI INI
                   if (provider.isLoading)
                     const Center(child: CircularProgressIndicator())
                   else if (todayLog == null || todayLog.tasks.isEmpty)
@@ -93,11 +101,14 @@ class TimeLogPage extends StatelessWidget {
                       ),
                     )
                   else
-                    ...todayLog.tasks
-                        .map((task) => TaskLogTile(task: task))
-                        .toList(),
+                    ...todayLog.tasks.map(
+                      (task) => TaskLogTile(
+                        task: task,
+                        // ==> Kirim status edit <==
+                        isEditable: editableLog == todayLog,
+                      ),
+                    ),
 
-                  // BAGIAN BARU UNTUK MENAMPILKAN RIWAYAT
                   if (historyLogs.isNotEmpty) ...[
                     const Padding(
                       padding: EdgeInsets.only(top: 24.0, bottom: 8.0),
@@ -109,7 +120,6 @@ class TimeLogPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     ...historyLogs.map((log) {
-                      // Hitung total durasi untuk setiap entri riwayat
                       final totalMinutes = log.tasks.fold<int>(
                         0,
                         (sum, task) => sum + task.durationMinutes,
@@ -119,8 +129,21 @@ class TimeLogPage extends StatelessWidget {
                       final totalDurationString =
                           '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
 
+                      // ==> Tentukan apakah entri riwayat ini yang aktif <==
+                      final bool isThisLogEditable = editableLog == log;
+
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
+                        // ==> Beri indikator visual jika aktif <==
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: isThisLogEditable
+                              ? BorderSide(
+                                  color: Theme.of(context).primaryColor,
+                                  width: 2,
+                                )
+                              : BorderSide.none,
+                        ),
                         child: ExpansionTile(
                           title: Text(
                             DateFormat(
@@ -132,14 +155,41 @@ class TimeLogPage extends StatelessWidget {
                           subtitle: Text(
                             'Total Durasi: $totalDurationString jam',
                           ),
-                          children: log.tasks
-                              .map((task) => TaskLogTile(task: task))
-                              .toList(),
+                          // ==> Tombol aktivasi mode edit <==
+                          trailing: isThisLogEditable
+                              ? const Icon(Icons.edit, color: Colors.green)
+                              : TextButton(
+                                  child: const Text('Aktivasi Edit'),
+                                  onPressed: () => provider.setEditableLog(log),
+                                ),
+                          children: [
+                            // ==> Tampilkan daftar tugas dengan status edit <==
+                            ...log.tasks.map(
+                              (task) => TaskLogTile(
+                                task: task,
+                                isEditable: isThisLogEditable,
+                              ),
+                            ),
+                            // ==> Tombol untuk menambah tugas ke tanggal ini <==
+                            if (isThisLogEditable)
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.add),
+                                  label: const Text(
+                                    'Tambah Tugas ke Tanggal Ini',
+                                  ),
+                                  onPressed: () => showAddTaskLogDialog(
+                                    context,
+                                    date: log.date, // Kirim tanggal spesifik
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     }).toList(),
                   ],
-                  // TAMPILKAN PESAN INI JIKA TIDAK ADA DATA SAMA SEKALI
                   if (!provider.isLoading && provider.logs.isEmpty)
                     const Center(
                       child: Padding(
@@ -149,11 +199,14 @@ class TimeLogPage extends StatelessWidget {
                     ),
                 ],
               ),
-              // --- AKHIR PERUBAHAN TAMPILAN ---
             ),
             floatingActionButton: FloatingActionButton(
-              onPressed: () => showAddTaskLogDialog(context),
-              tooltip: 'Tambah Tugas',
+              onPressed: () => showAddTaskLogDialog(
+                context,
+                // Jika log aktif adalah riwayat, kirim tanggalnya
+                date: editableLog?.date,
+              ),
+              tooltip: 'Tambah Tugas ke Jurnal Aktif',
               child: const Icon(Icons.add),
             ),
           );

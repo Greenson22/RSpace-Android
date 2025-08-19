@@ -21,6 +21,10 @@ class TimeLogProvider with ChangeNotifier {
   TimeLogEntry? _todayLog;
   TimeLogEntry? get todayLog => _todayLog;
 
+  // ==> STATE BARU UNTUK MENGELOLA LOG YANG SEDANG DIEDIT <==
+  TimeLogEntry? _editableLog;
+  TimeLogEntry? get editableLog => _editableLog;
+
   TimeLogProvider() {
     fetchLogs();
   }
@@ -32,12 +36,18 @@ class TimeLogProvider with ChangeNotifier {
     if (fetchPresets) {
       _taskPresets = await _timeLogService.loadTaskPresets();
     }
-    _findTodayLog();
+    _findTodayLogAndSetEditable(); // Diubah
     _isLoading = false;
     notifyListeners();
   }
 
-  void _findTodayLog() {
+  // ==> FUNGSI BARU UNTUK MENGATUR LOG MANA YANG AKTIF <==
+  void setEditableLog(TimeLogEntry? log) {
+    _editableLog = log;
+    notifyListeners();
+  }
+
+  void _findTodayLogAndSetEditable() {
     final todayDate = DateUtils.dateOnly(DateTime.now());
     try {
       _todayLog = _logs.firstWhere(
@@ -46,6 +56,8 @@ class TimeLogProvider with ChangeNotifier {
     } catch (e) {
       _todayLog = null;
     }
+    // Secara default, log yang bisa diedit adalah log hari ini
+    _editableLog = _todayLog;
   }
 
   Future<void> _saveLogs() async {
@@ -58,77 +70,92 @@ class TimeLogProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI DIPERBAIKI <==
   Future<int> addTasksFromPresets() async {
-    final todayDate = DateUtils.dateOnly(DateTime.now());
-    _findTodayLog();
-
-    if (_todayLog == null) {
-      _todayLog = TimeLogEntry(date: todayDate, tasks: []);
-      _logs.insert(0, _todayLog!);
+    // Operasi ini sekarang berlaku pada log yang sedang aktif
+    if (_editableLog == null) {
+      // Jika log aktif (misal hari ini) belum ada, buat dulu
+      final date = DateUtils.dateOnly(DateTime.now());
+      _editableLog = TimeLogEntry(date: date, tasks: []);
+      _logs.insert(0, _editableLog!);
+      if (DateUtils.isSameDay(date, DateTime.now())) {
+        _todayLog = _editableLog;
+      }
     }
 
     final List<LoggedTask> tasksToAdd = [];
-    final existingTaskNames = _todayLog!.tasks.map((t) => t.name).toSet();
+    final existingTaskNames = _editableLog!.tasks.map((t) => t.name).toSet();
 
-    // Hitung ID tertinggi saat ini sekali saja sebelum loop
-    int latestId = _todayLog!.tasks.isEmpty
+    int latestId = _editableLog!.tasks.isEmpty
         ? 0
-        : _todayLog!.tasks.map((t) => t.id).reduce((a, b) => a > b ? a : b);
+        : _editableLog!.tasks.map((t) => t.id).reduce((a, b) => a > b ? a : b);
 
     for (final preset in _taskPresets) {
-      // Hanya tambahkan jika nama tugas belum ada
       if (!existingTaskNames.contains(preset.name)) {
-        latestId++; // Naikkan ID untuk tugas baru
+        latestId++;
         tasksToAdd.add(LoggedTask(id: latestId, name: preset.name));
-        // Tambahkan juga ke set agar tidak ada duplikat dari daftar preset itu sendiri
         existingTaskNames.add(preset.name);
       }
     }
 
     if (tasksToAdd.isNotEmpty) {
-      _todayLog!.tasks.addAll(tasksToAdd);
+      _editableLog!.tasks.addAll(tasksToAdd);
       await _saveLogs();
     }
 
     return tasksToAdd.length;
   }
 
-  Future<void> addTask(String name, {String? category}) async {
-    final todayDate = DateUtils.dateOnly(DateTime.now());
-    _findTodayLog();
+  // ==> Diperbarui untuk menerima tanggal spesifik <==
+  Future<void> addTask(String name, {DateTime? date}) async {
+    final targetDate = DateUtils.dateOnly(
+      date ?? _editableLog?.date ?? DateTime.now(),
+    );
 
-    if (_todayLog == null) {
-      _todayLog = TimeLogEntry(date: todayDate, tasks: []);
-      _logs.insert(0, _todayLog!);
+    TimeLogEntry? targetLog;
+    try {
+      targetLog = _logs.firstWhere(
+        (log) => DateUtils.isSameDay(log.date, targetDate),
+      );
+    } catch (e) {
+      targetLog = null;
     }
 
-    // ==> DITAMBAHKAN: Pengecekan duplikat <==
-    final taskExists = _todayLog!.tasks.any((task) => task.name == name);
+    if (targetLog == null) {
+      targetLog = TimeLogEntry(date: targetDate, tasks: []);
+      _logs.insert(0, targetLog);
+      // Urutkan kembali log setelah menambahkan entri baru
+      _logs.sort((a, b) => b.date.compareTo(a.date));
+    }
+
+    final taskExists = targetLog.tasks.any((task) => task.name == name);
     if (taskExists) {
       return;
     }
 
     final newId =
-        (_todayLog!.tasks.isEmpty
+        (targetLog.tasks.isEmpty
             ? 0
-            : _todayLog!.tasks
+            : targetLog.tasks
                   .map((t) => t.id)
                   .reduce((a, b) => a > b ? a : b)) +
         1;
-    final newTask = LoggedTask(id: newId, name: name, category: category);
-    _todayLog!.tasks.add(newTask);
+    final newTask = LoggedTask(id: newId, name: name);
+    targetLog.tasks.add(newTask);
+
+    // Pastikan log yang diedit tetap menjadi log yang aktif
+    _editableLog = targetLog;
 
     await _saveLogs();
   }
 
+  // ==> Semua fungsi di bawah ini sekarang beroperasi pada _editableLog <==
   Future<void> deleteTask(LoggedTask task) async {
-    _todayLog?.tasks.removeWhere((t) => t.id == task.id);
+    _editableLog?.tasks.removeWhere((t) => t.id == task.id);
     await _saveLogs();
   }
 
   Future<void> updateTaskName(LoggedTask task, String newName) async {
-    final taskToUpdate = _todayLog?.tasks.firstWhere((t) => t.id == task.id);
+    final taskToUpdate = _editableLog?.tasks.firstWhere((t) => t.id == task.id);
     if (taskToUpdate != null) {
       taskToUpdate.name = newName;
       await _saveLogs();
@@ -136,7 +163,7 @@ class TimeLogProvider with ChangeNotifier {
   }
 
   Future<void> updateDuration(LoggedTask task, int newDuration) async {
-    final taskToUpdate = _todayLog?.tasks.firstWhere((t) => t.id == task.id);
+    final taskToUpdate = _editableLog?.tasks.firstWhere((t) => t.id == task.id);
     if (taskToUpdate != null) {
       taskToUpdate.durationMinutes = newDuration < 0 ? 0 : newDuration;
       await _saveLogs();
@@ -144,14 +171,14 @@ class TimeLogProvider with ChangeNotifier {
   }
 
   Future<void> incrementDuration(LoggedTask task) async {
-    final taskToUpdate = _todayLog?.tasks.firstWhere((t) => t.id == task.id);
+    final taskToUpdate = _editableLog?.tasks.firstWhere((t) => t.id == task.id);
     if (taskToUpdate != null) {
       taskToUpdate.durationMinutes += 30;
       await _saveLogs();
     }
   }
 
-  // FUNGSI CRUD UNTUK PRESET
+  // FUNGSI CRUD UNTUK PRESET (TIDAK BERUBAH)
   Future<void> addPreset(String name) async {
     final newId =
         (_taskPresets.isEmpty

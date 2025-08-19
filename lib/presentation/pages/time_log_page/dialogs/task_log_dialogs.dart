@@ -6,7 +6,8 @@ import 'package:my_aplication/data/models/time_log_model.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
 
-void showAddTaskLogDialog(BuildContext context) {
+// ==> FUNGSI DIPERBARUI UNTUK MENERIMA TANGGAL <==
+void showAddTaskLogDialog(BuildContext context, {DateTime? date}) {
   final provider = Provider.of<TimeLogProvider>(context, listen: false);
   final controller = TextEditingController();
   String? selectedTaskName;
@@ -65,7 +66,8 @@ void showAddTaskLogDialog(BuildContext context) {
               TextButton(
                 onPressed: () {
                   if (controller.text.isNotEmpty) {
-                    provider.addTask(controller.text);
+                    // ==> Panggil provider dengan tanggal yang sesuai <==
+                    provider.addTask(controller.text, date: date);
                     Navigator.pop(context);
                   }
                 },
@@ -79,6 +81,7 @@ void showAddTaskLogDialog(BuildContext context) {
   );
 }
 
+// ... Sisa kode tidak berubah ...
 void showEditDurationDialog(BuildContext context, LoggedTask task) {
   final provider = Provider.of<TimeLogProvider>(context, listen: false);
   final controller = TextEditingController(
@@ -114,7 +117,6 @@ void showEditDurationDialog(BuildContext context, LoggedTask task) {
   );
 }
 
-// DIALOG BARU UNTUK MENGELOLA PRESET
 void showManagePresetsDialog(BuildContext context) {
   final provider = Provider.of<TimeLogProvider>(context, listen: false);
   showDialog(
@@ -125,7 +127,6 @@ void showManagePresetsDialog(BuildContext context) {
         content: SizedBox(
           width: double.maxFinite,
           child: Consumer<TimeLogProvider>(
-            // Gunakan Consumer agar daftar update
             builder: (context, provider, child) {
               final presets = provider.taskPresets;
               if (presets.isEmpty) {
@@ -163,7 +164,6 @@ void showManagePresetsDialog(BuildContext context) {
           ),
         ),
         actions: [
-          // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
           if (provider.taskPresets.isNotEmpty)
             TextButton(
               onPressed: () async {
@@ -173,11 +173,11 @@ void showManagePresetsDialog(BuildContext context) {
                 if (confirmed ?? false) {
                   final count = await provider.addTasksFromPresets();
                   if (context.mounted) {
-                    Navigator.pop(context); // Tutup dialog kelola preset
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          '$count tugas dari preset berhasil ditambahkan.',
+                          '$count tugas dari preset berhasil ditambahkan ke jurnal aktif.',
                         ),
                       ),
                     );
@@ -200,14 +200,13 @@ void showManagePresetsDialog(BuildContext context) {
   );
 }
 
-// ==> DIALOG KONFIRMASI BARU <==
 Future<bool?> showAddAllPresetsConfirmationDialog(BuildContext context) {
   return showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: const Text('Konfirmasi'),
       content: const Text(
-        'Anda yakin ingin menambahkan semua tugas dari daftar preset ke jurnal hari ini? (Tugas yang sudah ada tidak akan ditambahkan lagi)',
+        'Anda yakin ingin menambahkan semua tugas dari daftar preset ke jurnal yang sedang aktif? (Tugas yang sudah ada tidak akan ditambahkan lagi)',
       ),
       actions: [
         TextButton(
