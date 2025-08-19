@@ -7,12 +7,15 @@ class LoggedTask {
   String name;
   int durationMinutes;
   String? category;
+  // ==> FIELD BARU DITAMBAHKAN UNTUK MENYIMPAN KONEKSI <==
+  List<String> linkedTaskIds;
 
   LoggedTask({
     required this.id,
     required this.name,
     this.durationMinutes = 0,
     this.category,
+    this.linkedTaskIds = const [], // ==> TAMBAHAN DI KONSTRUKTOR
   });
 
   factory LoggedTask.fromJson(Map<String, dynamic> json) => LoggedTask(
@@ -20,6 +23,10 @@ class LoggedTask {
     name: json['nama'] as String,
     durationMinutes: json['durasi_menit'] as int,
     category: json['kategori'] as String?,
+    // ==> MEMBACA DATA DARI JSON, DENGAN PENANGANAN NULL <==
+    linkedTaskIds: json['linkedTaskIds'] != null
+        ? List<String>.from(json['linkedTaskIds'])
+        : [],
   );
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +34,8 @@ class LoggedTask {
     'nama': name,
     'durasi_menit': durationMinutes,
     'kategori': category,
+    // ==> MENYIMPAN DATA KE JSON <==
+    'linkedTaskIds': linkedTaskIds,
   };
 }
 
