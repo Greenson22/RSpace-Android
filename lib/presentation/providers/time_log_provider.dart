@@ -21,7 +21,6 @@ class TimeLogProvider with ChangeNotifier {
   TimeLogEntry? _todayLog;
   TimeLogEntry? get todayLog => _todayLog;
 
-  // ==> STATE BARU UNTUK MENGELOLA LOG YANG SEDANG DIEDIT <==
   TimeLogEntry? _editableLog;
   TimeLogEntry? get editableLog => _editableLog;
 
@@ -36,14 +35,20 @@ class TimeLogProvider with ChangeNotifier {
     if (fetchPresets) {
       _taskPresets = await _timeLogService.loadTaskPresets();
     }
-    _findTodayLogAndSetEditable(); // Diubah
+    _findTodayLogAndSetEditable();
     _isLoading = false;
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGATUR LOG MANA YANG AKTIF <==
+  // ==> FUNGSI INI DIPERBARUI <==
   void setEditableLog(TimeLogEntry? log) {
-    _editableLog = log;
+    // Jika log yang dipilih adalah log yang sedang aktif,
+    // maka nonaktifkan mode edit dengan mengembalikan fokus ke log hari ini.
+    if (_editableLog == log) {
+      _editableLog = _todayLog;
+    } else {
+      _editableLog = log;
+    }
     notifyListeners();
   }
 
@@ -56,7 +61,6 @@ class TimeLogProvider with ChangeNotifier {
     } catch (e) {
       _todayLog = null;
     }
-    // Secara default, log yang bisa diedit adalah log hari ini
     _editableLog = _todayLog;
   }
 
@@ -71,9 +75,7 @@ class TimeLogProvider with ChangeNotifier {
   }
 
   Future<int> addTasksFromPresets() async {
-    // Operasi ini sekarang berlaku pada log yang sedang aktif
     if (_editableLog == null) {
-      // Jika log aktif (misal hari ini) belum ada, buat dulu
       final date = DateUtils.dateOnly(DateTime.now());
       _editableLog = TimeLogEntry(date: date, tasks: []);
       _logs.insert(0, _editableLog!);
@@ -105,7 +107,6 @@ class TimeLogProvider with ChangeNotifier {
     return tasksToAdd.length;
   }
 
-  // ==> Diperbarui untuk menerima tanggal spesifik <==
   Future<void> addTask(String name, {DateTime? date}) async {
     final targetDate = DateUtils.dateOnly(
       date ?? _editableLog?.date ?? DateTime.now(),
@@ -123,7 +124,6 @@ class TimeLogProvider with ChangeNotifier {
     if (targetLog == null) {
       targetLog = TimeLogEntry(date: targetDate, tasks: []);
       _logs.insert(0, targetLog);
-      // Urutkan kembali log setelah menambahkan entri baru
       _logs.sort((a, b) => b.date.compareTo(a.date));
     }
 
@@ -142,13 +142,11 @@ class TimeLogProvider with ChangeNotifier {
     final newTask = LoggedTask(id: newId, name: name);
     targetLog.tasks.add(newTask);
 
-    // Pastikan log yang diedit tetap menjadi log yang aktif
     _editableLog = targetLog;
 
     await _saveLogs();
   }
 
-  // ==> Semua fungsi di bawah ini sekarang beroperasi pada _editableLog <==
   Future<void> deleteTask(LoggedTask task) async {
     _editableLog?.tasks.removeWhere((t) => t.id == task.id);
     await _saveLogs();
@@ -178,7 +176,6 @@ class TimeLogProvider with ChangeNotifier {
     }
   }
 
-  // FUNGSI CRUD UNTUK PRESET (TIDAK BERUBAH)
   Future<void> addPreset(String name) async {
     final newId =
         (_taskPresets.isEmpty

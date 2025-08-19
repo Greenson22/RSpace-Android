@@ -56,10 +56,8 @@ class TimeLogPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // --- KARTU UNTUK HARI INI ---
                   Card(
                     elevation: 2,
-                    // ==> Beri indikator visual jika hari ini sedang aktif <==
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: provider.editableLog == todayLog && todayLog != null
@@ -88,7 +86,6 @@ class TimeLogPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   if (provider.isLoading)
                     const Center(child: CircularProgressIndicator())
                   else if (todayLog == null || todayLog.tasks.isEmpty)
@@ -104,11 +101,9 @@ class TimeLogPage extends StatelessWidget {
                     ...todayLog.tasks.map(
                       (task) => TaskLogTile(
                         task: task,
-                        // ==> Kirim status edit <==
                         isEditable: editableLog == todayLog,
                       ),
                     ),
-
                   if (historyLogs.isNotEmpty) ...[
                     const Padding(
                       padding: EdgeInsets.only(top: 24.0, bottom: 8.0),
@@ -129,12 +124,10 @@ class TimeLogPage extends StatelessWidget {
                       final totalDurationString =
                           '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
 
-                      // ==> Tentukan apakah entri riwayat ini yang aktif <==
                       final bool isThisLogEditable = editableLog == log;
 
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
-                        // ==> Beri indikator visual jika aktif <==
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: isThisLogEditable
@@ -155,22 +148,30 @@ class TimeLogPage extends StatelessWidget {
                           subtitle: Text(
                             'Total Durasi: $totalDurationString jam',
                           ),
-                          // ==> Tombol aktivasi mode edit <==
-                          trailing: isThisLogEditable
-                              ? const Icon(Icons.edit, color: Colors.green)
-                              : TextButton(
-                                  child: const Text('Aktivasi Edit'),
-                                  onPressed: () => provider.setEditableLog(log),
-                                ),
+                          // ==> TOMBOL INI DIPERBARUI <==
+                          trailing: TextButton(
+                            style: TextButton.styleFrom(
+                              backgroundColor: isThisLogEditable
+                                  ? Colors.green.withOpacity(0.1)
+                                  : null,
+                              foregroundColor: isThisLogEditable
+                                  ? Colors.green.shade800
+                                  : null,
+                            ),
+                            onPressed: () => provider.setEditableLog(log),
+                            child: Text(
+                              isThisLogEditable
+                                  ? 'Selesai Edit'
+                                  : 'Aktivasi Edit',
+                            ),
+                          ),
                           children: [
-                            // ==> Tampilkan daftar tugas dengan status edit <==
                             ...log.tasks.map(
                               (task) => TaskLogTile(
                                 task: task,
                                 isEditable: isThisLogEditable,
                               ),
                             ),
-                            // ==> Tombol untuk menambah tugas ke tanggal ini <==
                             if (isThisLogEditable)
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -181,7 +182,7 @@ class TimeLogPage extends StatelessWidget {
                                   ),
                                   onPressed: () => showAddTaskLogDialog(
                                     context,
-                                    date: log.date, // Kirim tanggal spesifik
+                                    date: log.date,
                                   ),
                                 ),
                               ),
@@ -201,11 +202,8 @@ class TimeLogPage extends StatelessWidget {
               ),
             ),
             floatingActionButton: FloatingActionButton(
-              onPressed: () => showAddTaskLogDialog(
-                context,
-                // Jika log aktif adalah riwayat, kirim tanggalnya
-                date: editableLog?.date,
-              ),
+              onPressed: () =>
+                  showAddTaskLogDialog(context, date: editableLog?.date),
               tooltip: 'Tambah Tugas ke Jurnal Aktif',
               child: const Icon(Icons.add),
             ),
