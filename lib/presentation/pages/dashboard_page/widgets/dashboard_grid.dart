@@ -1,13 +1,15 @@
 // lib/presentation/pages/dashboard_page/widgets/dashboard_grid.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // ==> IMPORT DITAMBAHKAN
-import '../../../providers/theme_provider.dart'; // ==> IMPORT DITAMBAHKAN
+import 'package:provider/provider.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../1_topics_page.dart';
 import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';
 import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
+// ==> IMPORT HALAMAN BARU <==
+import '../../time_log_page.dart';
 import 'dashboard_item.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -23,6 +25,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
+    ),
+    // ==> TAMBAHKAN AKSI NAVIGASI BARU <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
     () => Navigator.push(
       context,
@@ -75,6 +82,7 @@ class DashboardGrid extends StatelessWidget {
           Color(0xFF5E35B1),
         ];
 
+        // ==> TAMBAHKAN DATA ITEM BARU DI SINI <==
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -85,6 +93,11 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.task_alt,
             'label': 'My Tasks',
             'colors': AppTheme.gradientColors2,
+          },
+          {
+            'icon': Icons.timer_outlined,
+            'label': 'Jurnal Aktivitas',
+            'colors': AppTheme.gradientColors3,
           },
           {
             'icon': Icons.pie_chart_outline_rounded,
@@ -118,8 +131,6 @@ class DashboardGrid extends StatelessWidget {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             // ==> SESUAIKAN ASPECT RATIO BERDASARKAN SKALA <==
-            // Jika skala > 1 (lebih besar), aspect ratio < 1 (lebih tinggi)
-            // Jika skala < 1 (lebih kecil), aspect ratio > 1 (lebih lebar)
             childAspectRatio: 1.0 / themeProvider.dashboardItemScale,
           ),
           itemCount: itemData.length,

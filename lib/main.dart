@@ -6,8 +6,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
+// ==> IMPORT PROVIDER BARU <==
+import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:my_aplication/presentation/providers/topic_provider.dart';
-import 'package:my_aplication/presentation/widgets/snow_widget.dart'; // Import SnowWidget
+import 'package:my_aplication/presentation/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/my_tasks_page.dart';
@@ -44,6 +46,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TopicProvider()),
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
         ChangeNotifierProvider(create: (_) => DebugProvider()),
+        // ==> TAMBAHKAN PROVIDER BARU DI SINI <==
+        ChangeNotifierProvider(create: (_) => TimeLogProvider()),
       ],
       child: const MyApp(),
     ),
@@ -66,9 +70,7 @@ class MyApp extends StatelessWidget {
           builder: (context, navigator) {
             return Stack(
               children: [
-                // Ini adalah navigator utama aplikasi Anda
                 if (navigator != null) navigator,
-                // Widget salju akan ditampilkan di atas navigator
                 if (isChristmas)
                   IgnorePointer(
                     child: const SnowWidget(
