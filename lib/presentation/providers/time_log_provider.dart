@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/log_task_preset_model.dart'; // DIUBAH
+import '../../data/models/log_task_preset_model.dart';
 import '../../data/models/time_log_model.dart';
 import '../../data/services/time_log_service.dart';
 
@@ -12,7 +12,6 @@ class TimeLogProvider with ChangeNotifier {
   List<TimeLogEntry> _logs = [];
   List<TimeLogEntry> get logs => _logs;
 
-  // ==> STATE BARU UNTUK PRESET <==
   List<LogTaskPreset> _taskPresets = [];
   List<LogTaskPreset> get taskPresets => _taskPresets;
 
@@ -54,13 +53,49 @@ class TimeLogProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN PRESET <==
   Future<void> _savePresets() async {
     await _timeLogService.saveTaskPresets(_taskPresets);
     notifyListeners();
   }
 
-  // ... (fungsi addTask, deleteTask, dll. tidak berubah) ...
+  // ==> FUNGSI BARU UNTUK MENAMBAHKAN SEMUA PRESET <==
+  Future<int> addTasksFromPresets() async {
+    final todayDate = DateUtils.dateOnly(DateTime.now());
+    _findTodayLog();
+
+    if (_todayLog == null) {
+      _todayLog = TimeLogEntry(date: todayDate, tasks: []);
+      _logs.insert(0, _todayLog!);
+    }
+
+    int tasksAdded = 0;
+    final existingTaskNames = _todayLog!.tasks.map((t) => t.name).toSet();
+
+    for (final preset in _taskPresets) {
+      // Hanya tambahkan jika tugas dengan nama yang sama belum ada
+      if (!existingTaskNames.contains(preset.name)) {
+        final newId =
+            (_todayLog!.tasks.isEmpty
+                ? 0
+                : _todayLog!.tasks
+                      .map((t) => t.id)
+                      .reduce((a, b) => a > b ? a : b)) +
+            1;
+        final newTask = LoggedTask(id: newId, name: preset.name);
+        _todayLog!.tasks.add(newTask);
+        existingTaskNames.add(
+          preset.name,
+        ); // Update set untuk pengecekan berikutnya
+        tasksAdded++;
+      }
+    }
+
+    if (tasksAdded > 0) {
+      await _saveLogs();
+    }
+    return tasksAdded;
+  }
+
   Future<void> addTask(String name, {String? category}) async {
     final todayDate = DateUtils.dateOnly(DateTime.now());
     _findTodayLog();
@@ -68,6 +103,12 @@ class TimeLogProvider with ChangeNotifier {
     if (_todayLog == null) {
       _todayLog = TimeLogEntry(date: todayDate, tasks: []);
       _logs.insert(0, _todayLog!);
+    }
+
+    // Cek duplikat sebelum menambahkan
+    final taskExists = _todayLog!.tasks.any((task) => task.name == name);
+    if (taskExists) {
+      return; // Jangan tambahkan jika sudah ada
     }
 
     final newId =
@@ -112,7 +153,7 @@ class TimeLogProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI CRUD UNTUK PRESET <==
+  // FUNGSI CRUD UNTUK PRESET
   Future<void> addPreset(String name) async {
     final newId =
         (_taskPresets.isEmpty

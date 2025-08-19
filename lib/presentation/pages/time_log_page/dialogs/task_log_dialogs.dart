@@ -1,7 +1,7 @@
 // lib/presentation/pages/time_log_page/dialogs/task_log_dialogs.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/data/models/log_task_preset_model.dart'; // DIUBAH
+import 'package:my_aplication/data/models/log_task_preset_model.dart';
 import 'package:my_aplication/data/models/time_log_model.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
@@ -79,7 +79,6 @@ void showAddTaskLogDialog(BuildContext context) {
   );
 }
 
-// ... (showEditDurationDialog tidak berubah) ...
 void showEditDurationDialog(BuildContext context, LoggedTask task) {
   final provider = Provider.of<TimeLogProvider>(context, listen: false);
   final controller = TextEditingController(
@@ -115,7 +114,7 @@ void showEditDurationDialog(BuildContext context, LoggedTask task) {
   );
 }
 
-// ==> DIALOG BARU UNTUK MENGELOLA PRESET <==
+// DIALOG BARU UNTUK MENGELOLA PRESET
 void showManagePresetsDialog(BuildContext context) {
   final provider = Provider.of<TimeLogProvider>(context, listen: false);
   showDialog(
@@ -164,6 +163,29 @@ void showManagePresetsDialog(BuildContext context) {
           ),
         ),
         actions: [
+          // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
+          if (provider.taskPresets.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                final confirmed = await showAddAllPresetsConfirmationDialog(
+                  context,
+                );
+                if (confirmed ?? false) {
+                  final count = await provider.addTasksFromPresets();
+                  if (context.mounted) {
+                    Navigator.pop(context); // Tutup dialog kelola preset
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '$count tugas dari preset berhasil ditambahkan.',
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Tambah Semua ke Jurnal'),
+            ),
           TextButton(
             onPressed: () => _showAddPresetDialog(context),
             child: const Text('Tambah Baru'),
@@ -175,6 +197,29 @@ void showManagePresetsDialog(BuildContext context) {
         ],
       );
     },
+  );
+}
+
+// ==> DIALOG KONFIRMASI BARU <==
+Future<bool?> showAddAllPresetsConfirmationDialog(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Konfirmasi'),
+      content: const Text(
+        'Anda yakin ingin menambahkan semua tugas dari daftar preset ke jurnal hari ini? (Tugas yang sudah ada tidak akan ditambahkan lagi)',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Batal'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Ya, Tambahkan'),
+        ),
+      ],
+    ),
   );
 }
 
