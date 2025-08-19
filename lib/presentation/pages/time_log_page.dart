@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/time_log_model.dart';
 import '../providers/time_log_provider.dart';
+// ==> 1. IMPORT DIALOG BARU
+import 'time_log_page/dialogs/activity_chart_dialog.dart';
 import 'time_log_page/dialogs/task_log_dialogs.dart';
 import 'time_log_page/widgets/task_log_tile.dart';
 
@@ -44,6 +46,13 @@ class TimeLogPage extends StatelessWidget {
             appBar: AppBar(
               title: const Text('Jurnal Aktivitas'),
               actions: [
+                // ==> 2. TAMBAHKAN TOMBOL INI
+                IconButton(
+                  icon: const Icon(Icons.bar_chart),
+                  onPressed: () =>
+                      showActivityChartDialog(context, provider.logs),
+                  tooltip: 'Lihat Grafik Aktivitas',
+                ),
                 IconButton(
                   icon: const Icon(Icons.list_alt_outlined),
                   onPressed: () => showManagePresetsDialog(context),
@@ -148,7 +157,6 @@ class TimeLogPage extends StatelessWidget {
                           subtitle: Text(
                             'Total Durasi: $totalDurationString jam',
                           ),
-                          // ==> TOMBOL INI DIPERBARUI <==
                           trailing: TextButton(
                             style: TextButton.styleFrom(
                               backgroundColor: isThisLogEditable
