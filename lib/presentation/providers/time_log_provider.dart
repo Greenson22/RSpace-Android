@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../data/models/log_task_preset_model.dart'; // DIUBAH
 import '../../data/models/time_log_model.dart';
 import '../../data/services/time_log_service.dart';
 
@@ -10,6 +11,10 @@ class TimeLogProvider with ChangeNotifier {
 
   List<TimeLogEntry> _logs = [];
   List<TimeLogEntry> get logs => _logs;
+
+  // ==> STATE BARU UNTUK PRESET <==
+  List<LogTaskPreset> _taskPresets = [];
+  List<LogTaskPreset> get taskPresets => _taskPresets;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -21,10 +26,13 @@ class TimeLogProvider with ChangeNotifier {
     fetchLogs();
   }
 
-  Future<void> fetchLogs() async {
+  Future<void> fetchLogs({bool fetchPresets = true}) async {
     _isLoading = true;
     notifyListeners();
     _logs = await _timeLogService.loadTimeLogs();
+    if (fetchPresets) {
+      _taskPresets = await _timeLogService.loadTaskPresets();
+    }
     _findTodayLog();
     _isLoading = false;
     notifyListeners();
@@ -46,6 +54,13 @@ class TimeLogProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK MENYIMPAN PRESET <==
+  Future<void> _savePresets() async {
+    await _timeLogService.saveTaskPresets(_taskPresets);
+    notifyListeners();
+  }
+
+  // ... (fungsi addTask, deleteTask, dll. tidak berubah) ...
   Future<void> addTask(String name, {String? category}) async {
     final todayDate = DateUtils.dateOnly(DateTime.now());
     _findTodayLog();
@@ -95,5 +110,27 @@ class TimeLogProvider with ChangeNotifier {
       taskToUpdate.durationMinutes += 30;
       await _saveLogs();
     }
+  }
+
+  // ==> FUNGSI CRUD UNTUK PRESET <==
+  Future<void> addPreset(String name) async {
+    final newId =
+        (_taskPresets.isEmpty
+            ? 0
+            : _taskPresets.map((p) => p.id).reduce((a, b) => a > b ? a : b)) +
+        1;
+    _taskPresets.add(LogTaskPreset(id: newId, name: name));
+    await _savePresets();
+  }
+
+  Future<void> updatePreset(LogTaskPreset preset, String newName) async {
+    final presetToUpdate = _taskPresets.firstWhere((p) => p.id == preset.id);
+    presetToUpdate.name = newName;
+    await _savePresets();
+  }
+
+  Future<void> deletePreset(LogTaskPreset preset) async {
+    _taskPresets.removeWhere((p) => p.id == preset.id);
+    await _savePresets();
   }
 }

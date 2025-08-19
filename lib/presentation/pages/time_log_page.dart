@@ -34,7 +34,17 @@ class TimeLogPage extends StatelessWidget {
               '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
 
           return Scaffold(
-            appBar: AppBar(title: const Text('Jurnal Aktivitas')),
+            appBar: AppBar(
+              title: const Text('Jurnal Aktivitas'),
+              // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.list_alt_outlined),
+                  onPressed: () => showManagePresetsDialog(context),
+                  tooltip: 'Kelola Preset Tugas',
+                ),
+              ],
+            ),
             body: RefreshIndicator(
               onRefresh: () => provider.fetchLogs(),
               child: ListView(

@@ -94,6 +94,8 @@ class PathService {
   // ==> PATH BARU DITAMBAHKAN DI SINI <==
   Future<String> get timeLogPath async =>
       path.join(await contentsPath, 'time_log.json');
+  Future<String> get logTaskPresetsPath async =>
+      path.join(await contentsPath, 'log_task_presets.json');
 
   Future<String> get perpuskuDataPath async {
     // DIHAPUS: Blok 'if (kDebugMode)' dihapus agar selalu memuat path dari preferensi.
