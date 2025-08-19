@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/my_task_model.dart';
 import '../../data/services/my_task_service.dart';
+// ==> 1. IMPORT SERVICE DAN MODEL DARI TIME LOG
+import '../../data/services/time_log_service.dart';
+import '../../data/models/time_log_model.dart';
 
 class MyTaskProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();
+  // ==> 2. BUAT INSTANCE DARI TIMELOGSERVICE
+  final TimeLogService _timeLogService = TimeLogService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -16,8 +21,8 @@ class MyTaskProvider with ChangeNotifier {
   String? _reorderingCategoryName;
   String? get reorderingCategoryName => _reorderingCategoryName;
 
-  bool _showHiddenCategories = false; // ==> DITAMBAHKAN
-  bool get showHiddenCategories => _showHiddenCategories; // ==> DITAMBAHKAN
+  bool _showHiddenCategories = false;
+  bool get showHiddenCategories => _showHiddenCategories;
 
   List<TaskCategory> _allCategories = [];
   List<TaskCategory> get categories {
@@ -31,7 +36,6 @@ class MyTaskProvider with ChangeNotifier {
     fetchTasks();
   }
 
-  // ==> FUNGSI BARU <==
   void toggleShowHidden() {
     _showHiddenCategories = !_showHiddenCategories;
     notifyListeners();
@@ -130,7 +134,6 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> toggleCategoryVisibility(TaskCategory category) async {
     final index = _allCategories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
@@ -198,27 +201,58 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
+  // ==> 3. MODIFIKASI FUNGSI toggleTaskChecked
   Future<void> toggleTaskChecked(
     TaskCategory category,
     MyTask task, {
     bool confirmUpdate = false,
   }) async {
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
+        (t) => t.id == task.id,
+      );
       if (taskIndex != -1) {
-        final isChecking =
-            !_allCategories[categoryIndex].tasks[taskIndex].checked;
-        _allCategories[categoryIndex].tasks[taskIndex].checked = isChecking;
+        final currentTask = _allCategories[categoryIndex].tasks[taskIndex];
+        final isChecking = !currentTask.checked;
+        currentTask.checked = isChecking;
 
-        if (isChecking && confirmUpdate) {
-          _allCategories[categoryIndex].tasks[taskIndex].date = DateFormat(
-            'yyyy-MM-dd',
-          ).format(DateTime.now());
-          _allCategories[categoryIndex].tasks[taskIndex].count++;
+        if (isChecking) {
+          // Logika ini berjalan saat pengguna mencentang kotak di UI My Tasks
+          if (confirmUpdate) {
+            currentTask.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+            currentTask.count++;
+          }
+          // ==> LOGIKA BARU: Panggil fungsi untuk update Time Log
+          await _updateTimeLogForTask(currentTask.id);
         }
         await _saveTasks();
       }
+    }
+  }
+
+  // ==> 4. FUNGSI HELPER BARU
+  Future<void> _updateTimeLogForTask(String myTaskId) async {
+    // Muat semua data jurnal
+    List<TimeLogEntry> allLogs = await _timeLogService.loadTimeLogs();
+    bool logChanged = false;
+
+    // Cari tugas di jurnal yang terhubung dengan myTaskId
+    for (var logEntry in allLogs) {
+      for (var loggedTask in logEntry.tasks) {
+        if (loggedTask.linkedTaskIds.contains(myTaskId)) {
+          // Jika ditemukan, tambah durasinya sebanyak 30 menit
+          loggedTask.durationMinutes += 30;
+          logChanged = true;
+        }
+      }
+    }
+
+    // Jika ada perubahan, simpan kembali semua data jurnal
+    if (logChanged) {
+      await _timeLogService.saveTimeLogs(allLogs);
     }
   }
 
