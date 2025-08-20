@@ -51,15 +51,36 @@ class DailyLogCard extends StatelessWidget {
         subtitle: Text('Total Durasi: $totalDurationString jam'),
         trailing: isToday
             ? null
-            : TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: isEditable
-                      ? Colors.green.withOpacity(0.1)
-                      : null,
-                  foregroundColor: isEditable ? Colors.green.shade800 : null,
-                ),
-                onPressed: () => provider.setEditableLog(log),
-                child: Text(isEditable ? 'Selesai Edit' : 'Aktivasi Edit'),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isEditable && !isToday)
+                    IconButton(
+                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      onPressed: () async {
+                        final confirmed = await showDeleteLogConfirmationDialog(
+                          context,
+                          date,
+                        );
+                        if (confirmed == true && log != null) {
+                          provider.deleteLog(log!);
+                        }
+                      },
+                      tooltip: 'Hapus Jurnal Hari Ini',
+                    ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: isEditable
+                          ? Colors.green.withOpacity(0.1)
+                          : null,
+                      foregroundColor: isEditable
+                          ? Colors.green.shade800
+                          : null,
+                    ),
+                    onPressed: () => provider.setEditableLog(log),
+                    child: Text(isEditable ? 'Selesai Edit' : 'Aktivasi Edit'),
+                  ),
+                ],
               ),
         children: [
           if (log == null || log!.tasks.isEmpty)

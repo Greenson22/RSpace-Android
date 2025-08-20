@@ -175,6 +175,17 @@ class TimeLogProvider with ChangeNotifier {
     await _saveLogs();
   }
 
+  // FUNGSI BARU UNTUK MENGHAPUS SATU LOG HARIAN
+  Future<void> deleteLog(TimeLogEntry log) async {
+    _logs.removeWhere((l) => l.date == log.date);
+    // Jika log yang dihapus adalah log yang sedang diedit,
+    // kembalikan editable log ke log hari ini.
+    if (_editableLog == log) {
+      _editableLog = _todayLog;
+    }
+    await _saveLogs();
+  }
+
   Future<void> deleteTask(LoggedTask task) async {
     _editableLog?.tasks.removeWhere((t) => t.id == task.id);
     await _saveLogs();

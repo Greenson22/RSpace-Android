@@ -1,10 +1,39 @@
 // lib/presentation/pages/time_log_page/dialogs/task_log_dialogs.dart
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:my_aplication/data/models/log_task_preset_model.dart';
 import 'package:my_aplication/data/models/time_log_model.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
+
+// FUNGSI BARU UNTUK KONFIRMASI PENGHAPUSAN
+Future<bool?> showDeleteLogConfirmationDialog(
+  BuildContext context,
+  DateTime date,
+) {
+  final formattedDate = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(date);
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Konfirmasi Hapus Jurnal'),
+      content: Text(
+        'Anda yakin ingin menghapus semua catatan aktivitas untuk tanggal $formattedDate?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Batal'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text('Ya, Hapus'),
+        ),
+      ],
+    ),
+  );
+}
 
 // ==> FUNGSI DIPERBARUI UNTUK MENERIMA TANGGAL <==
 void showAddTaskLogDialog(BuildContext context, {DateTime? date}) {
