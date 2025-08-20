@@ -1,3 +1,4 @@
+// lib/presentation/pages/3_discussions_page/utils/repetition_code_utils.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -15,6 +16,11 @@ const List<String> kRepetitionCodes = [
 
 // Fungsi untuk mendapatkan indeks kode, berguna untuk perbandingan
 int getRepetitionCodeIndex(String code) {
+  // ==> PERUBAHAN: Berikan R0D nilai yang sangat tinggi agar
+  // dianggap terakhir saat ascending.
+  if (code == 'R0D') {
+    return 998;
+  }
   final index = kRepetitionCodes.indexOf(code);
   return index == -1 ? 999 : index; // Beri nilai besar jika tidak ditemukan
 }
