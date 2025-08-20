@@ -54,15 +54,41 @@ class TimeLogProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI INI DIMODIFIKASI SECARA SIGNIFIKAN <==
   void _findTodayLogAndSetEditable() {
     final todayDate = DateUtils.dateOnly(DateTime.now());
     try {
+      // Coba cari log untuk hari ini
       _todayLog = _logs.firstWhere(
         (log) => DateUtils.isSameDay(log.date, todayDate),
       );
     } catch (e) {
-      _todayLog = null;
+      // Jika log hari ini tidak ditemukan, buat dari log terakhir
+      if (_logs.isNotEmpty) {
+        final lastLog = _logs.first; // Ambil log terbaru
+        // Salin tugas, reset durasi, tapi pertahankan properti lain
+        final newTasks = lastLog.tasks.map((task) {
+          return LoggedTask(
+            id: task.id,
+            name: task.name,
+            durationMinutes: 0, // Durasi direset menjadi 0
+            category: task.category,
+            linkedTaskIds: task.linkedTaskIds, // Koneksi dipertahankan
+          );
+        }).toList();
+
+        // Buat entri log baru untuk hari ini
+        final newTodayLog = TimeLogEntry(date: todayDate, tasks: newTasks);
+        _logs.insert(0, newTodayLog); // Tambahkan ke daftar log
+        _logs.sort((a, b) => b.date.compareTo(a.date)); // Jaga urutan
+        _todayLog = newTodayLog;
+        _saveLogs(); // Simpan log baru secara otomatis
+      } else {
+        // Jika tidak ada log sama sekali, _todayLog tetap null
+        _todayLog = null;
+      }
     }
+    // Set log yang bisa diedit ke log hari ini
     _editableLog = _todayLog;
   }
 
