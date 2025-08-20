@@ -5,15 +5,27 @@ import 'package:provider/provider.dart';
 import '../../../providers/time_log_provider.dart';
 
 class MobileLayout extends StatelessWidget {
-  const MobileLayout({super.key});
+  final DateTimeRange? selectedDateRange;
+  const MobileLayout({super.key, this.selectedDateRange});
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimeLogProvider>(context);
     final todayLog = provider.todayLog;
-    final historyLogs = provider.logs
-        .where((log) => !DateUtils.isSameDay(log.date, DateTime.now()))
-        .toList();
+
+    // Filter riwayat berdasarkan rentang tanggal yang dipilih
+    final historyLogs = provider.logs.where((log) {
+      if (DateUtils.isSameDay(log.date, DateTime.now())) return false;
+      if (selectedDateRange == null) return false;
+
+      final logDate = DateUtils.dateOnly(log.date);
+      final startDate = DateUtils.dateOnly(selectedDateRange!.start);
+      final endDate = DateUtils.dateOnly(selectedDateRange!.end);
+
+      return (logDate.isAtSameMomentAs(startDate) ||
+              logDate.isAfter(startDate)) &&
+          (logDate.isAtSameMomentAs(endDate) || logDate.isBefore(endDate));
+    }).toList();
 
     return ListView(
       padding: const EdgeInsets.all(16.0),
@@ -26,22 +38,32 @@ class MobileLayout extends StatelessWidget {
             isToday: true,
             isEditable: provider.editableLog == todayLog,
           ),
-        if (historyLogs.isNotEmpty) ...[
+        if (selectedDateRange != null) ...[
           const Padding(
             padding: EdgeInsets.only(top: 24.0, bottom: 8.0),
             child: Divider(),
           ),
           Text(
-            'Riwayat Sebelumnya',
+            'Riwayat yang Ditampilkan',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
-          ...historyLogs.map((log) {
-            return DailyLogCard(
-              log: log,
-              isEditable: provider.editableLog == log,
-            );
-          }).toList(),
+          if (historyLogs.isNotEmpty)
+            ...historyLogs.map((log) {
+              return DailyLogCard(
+                log: log,
+                isEditable: provider.editableLog == log,
+              );
+            }).toList()
+          else
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text(
+                  'Tidak ada data pada rentang tanggal yang dipilih.',
+                ),
+              ),
+            ),
         ],
         if (!provider.isLoading && provider.logs.isEmpty)
           const Center(

@@ -5,15 +5,27 @@ import 'package:provider/provider.dart';
 import '../../../providers/time_log_provider.dart';
 
 class DesktopLayout extends StatelessWidget {
-  const DesktopLayout({super.key});
+  final DateTimeRange? selectedDateRange;
+  const DesktopLayout({super.key, this.selectedDateRange});
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimeLogProvider>(context);
     final todayLog = provider.todayLog;
-    final historyLogs = provider.logs
-        .where((log) => !DateUtils.isSameDay(log.date, DateTime.now()))
-        .toList();
+
+    // Filter riwayat berdasarkan rentang tanggal yang dipilih
+    final historyLogs = provider.logs.where((log) {
+      if (DateUtils.isSameDay(log.date, DateTime.now())) return false;
+      if (selectedDateRange == null) return false;
+
+      final logDate = DateUtils.dateOnly(log.date);
+      final startDate = DateUtils.dateOnly(selectedDateRange!.start);
+      final endDate = DateUtils.dateOnly(selectedDateRange!.end);
+
+      return (logDate.isAtSameMomentAs(startDate) ||
+              logDate.isAfter(startDate)) &&
+          (logDate.isAtSameMomentAs(endDate) || logDate.isBefore(endDate));
+    }).toList();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,17 +60,28 @@ class DesktopLayout extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             children: [
               Text(
-                'Riwayat Sebelumnya',
+                selectedDateRange == null
+                    ? 'Pilih Rentang Tanggal'
+                    : 'Riwayat yang Ditampilkan',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
-              if (provider.isLoading && historyLogs.isEmpty)
+              if (selectedDateRange == null)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48.0),
+                    child: Text(
+                      'Gunakan ikon kalender di pojok kanan atas untuk menampilkan riwayat.',
+                    ),
+                  ),
+                )
+              else if (provider.isLoading && historyLogs.isEmpty)
                 const Center(child: CircularProgressIndicator())
               else if (historyLogs.isEmpty)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 48.0),
-                    child: Text('Tidak ada riwayat aktivitas.'),
+                    child: Text('Tidak ada data pada rentang tanggal ini.'),
                   ),
                 )
               else

@@ -8,8 +8,35 @@ import 'time_log_page/dialogs/task_log_dialogs.dart';
 import 'time_log_page/layouts/desktop_layout.dart';
 import 'time_log_page/layouts/mobile_layout.dart';
 
-class TimeLogPage extends StatelessWidget {
+class TimeLogPage extends StatefulWidget {
   const TimeLogPage({super.key});
+
+  @override
+  State<TimeLogPage> createState() => _TimeLogPageState();
+}
+
+class _TimeLogPageState extends State<TimeLogPage> {
+  DateTimeRange? _selectedDateRange;
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    final now = DateTime.now();
+    final initialDateRange =
+        _selectedDateRange ??
+        DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now);
+
+    final newDateRange = await showDateRangePicker(
+      context: context,
+      initialDateRange: initialDateRange,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2101),
+    );
+
+    if (newDateRange != null) {
+      setState(() {
+        _selectedDateRange = newDateRange;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +48,11 @@ class TimeLogPage extends StatelessWidget {
             appBar: AppBar(
               title: const Text('Jurnal Aktivitas'),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () => _selectDateRange(context),
+                  tooltip: 'Pilih Rentang Tanggal Riwayat',
+                ),
                 IconButton(
                   icon: const Icon(Icons.bar_chart),
                   onPressed: () =>
@@ -40,9 +72,9 @@ class TimeLogPage extends StatelessWidget {
                 builder: (context, constraints) {
                   const double breakpoint = 800.0;
                   if (constraints.maxWidth > breakpoint) {
-                    return const DesktopLayout();
+                    return DesktopLayout(selectedDateRange: _selectedDateRange);
                   } else {
-                    return const MobileLayout();
+                    return MobileLayout(selectedDateRange: _selectedDateRange);
                   }
                 },
               ),
