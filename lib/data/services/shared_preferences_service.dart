@@ -1,4 +1,5 @@
 // lib/data/services/shared_preferences_service.dart
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesService {
@@ -7,21 +8,32 @@ class SharedPreferencesService {
   static const String _filterTypeKey = 'filter_type';
   static const String _filterValueKey = 'filter_value';
   static const String _themeKey = 'theme_preference';
-  static const String _customStoragePathKey = 'custom_storage_path';
   static const String _primaryColorKey = 'primary_color';
   static const String _recentColorsKey = 'recent_colors';
-  static const String _perpuskuDataPathKey = 'perpusku_data_path';
-  static const String _customBackupPathKey = 'custom_backup_path';
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
-  static const String _customDownloadPathKey = 'custom_download_path';
   static const String _apiDomainKey = 'api_domain';
   static const String _apiKeyKey = 'api_key';
   static const String _backgroundImageKey = 'background_image_path';
-  // ==> KUNCI BARU UNTUK UKURAN MENU <==
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
 
-  // ==> FUNGSI BARU UNTUK UKURAN MENU <==
+  // --- KUNCI PENYIMPANAN UTAMA ---
+  static const String _customStoragePathKey = 'custom_storage_path';
+  static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
+
+  // --- KUNCI PENYIMPANAN BACKUP ---
+  static const String _customBackupPathKey = 'custom_backup_path';
+  static const String _customBackupPathKeyDebug = 'custom_backup_path_debug';
+
+  // --- KUNCI PENYIMPANAN DOWNLOAD ---
+  static const String _customDownloadPathKey = 'custom_download_path';
+  static const String _customDownloadPathKeyDebug =
+      'custom_download_path_debug';
+
+  // --- KUNCI SUMBER DATA PERPUSKU ---
+  static const String _perpuskuDataPathKey = 'perpusku_data_path';
+  static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
+
   Future<void> saveDashboardItemScale(double scale) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_dashboardItemScaleKey, scale);
@@ -29,10 +41,8 @@ class SharedPreferencesService {
 
   Future<double> loadDashboardItemScale() async {
     final prefs = await SharedPreferences.getInstance();
-    // Default value 1.0 (ukuran normal)
     return prefs.getDouble(_dashboardItemScaleKey) ?? 1.0;
   }
-  // --- AKHIR PERUBAHAN ---
 
   Future<void> saveBackgroundImagePath(String path) async {
     final prefs = await SharedPreferences.getInstance();
@@ -49,7 +59,6 @@ class SharedPreferencesService {
     await prefs.remove(_backgroundImageKey);
   }
 
-  // ... (sisa kode tidak berubah)
   Future<void> saveApiConfig(String domain, String apiKey) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_apiDomainKey, domain);
@@ -65,12 +74,18 @@ class SharedPreferencesService {
 
   Future<void> saveCustomDownloadPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_customDownloadPathKey, path);
+    final key = kDebugMode
+        ? _customDownloadPathKeyDebug
+        : _customDownloadPathKey;
+    await prefs.setString(key, path);
   }
 
   Future<String?> loadCustomDownloadPath() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_customDownloadPathKey);
+    final key = kDebugMode
+        ? _customDownloadPathKeyDebug
+        : _customDownloadPathKey;
+    return prefs.getString(key);
   }
 
   Future<void> saveBackupSortPreferences(
@@ -84,31 +99,33 @@ class SharedPreferencesService {
 
   Future<Map<String, dynamic>> loadBackupSortPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    final sortType =
-        prefs.getString(_backupSortTypeKey) ?? 'date'; // Default by date
-    final sortAscending =
-        prefs.getBool(_backupSortAscendingKey) ?? false; // Default descending
+    final sortType = prefs.getString(_backupSortTypeKey) ?? 'date';
+    final sortAscending = prefs.getBool(_backupSortAscendingKey) ?? false;
     return {'sortType': sortType, 'sortAscending': sortAscending};
   }
 
   Future<void> saveCustomBackupPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_customBackupPathKey, path);
+    final key = kDebugMode ? _customBackupPathKeyDebug : _customBackupPathKey;
+    await prefs.setString(key, path);
   }
 
   Future<String?> loadCustomBackupPath() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_customBackupPathKey);
+    final key = kDebugMode ? _customBackupPathKeyDebug : _customBackupPathKey;
+    return prefs.getString(key);
   }
 
   Future<void> savePerpuskuDataPath(String path) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_perpuskuDataPathKey, path);
+    final key = kDebugMode ? _perpuskuDataPathKeyDebug : _perpuskuDataPathKey;
+    await prefs.setString(key, path);
   }
 
   Future<String?> loadPerpuskuDataPath() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_perpuskuDataPathKey);
+    final key = kDebugMode ? _perpuskuDataPathKeyDebug : _perpuskuDataPathKey;
+    return prefs.getString(key);
   }
 
   Future<void> saveRecentColors(List<int> colorValues) async {
@@ -182,11 +199,13 @@ class SharedPreferencesService {
 
   Future<void> saveCustomStoragePath(String path) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_customStoragePathKey, path);
+    final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
+    await prefs.setString(key, path);
   }
 
   Future<String?> loadCustomStoragePath() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_customStoragePathKey);
+    final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
+    return prefs.getString(key);
   }
 }
