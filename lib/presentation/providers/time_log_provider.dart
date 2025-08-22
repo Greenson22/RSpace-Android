@@ -40,7 +40,7 @@ class TimeLogProvider with ChangeNotifier {
     if (fetchPresets) {
       _taskPresets = await _timeLogService.loadTaskPresets();
     }
-    _findTodayLogAndSetEditable();
+    await _findTodayLogAndSetEditable(); // Diubah menjadi async
     _isLoading = false;
     notifyListeners();
   }
@@ -55,40 +55,62 @@ class TimeLogProvider with ChangeNotifier {
   }
 
   // ==> FUNGSI INI DIMODIFIKASI SECARA SIGNIFIKAN <==
-  void _findTodayLogAndSetEditable() {
+  Future<void> _findTodayLogAndSetEditable() async {
     final todayDate = DateUtils.dateOnly(DateTime.now());
+
     try {
-      // Coba cari log untuk hari ini
+      // Coba cari log untuk hari ini. Jika sudah ada, tidak ada aksi terkait link.
       _todayLog = _logs.firstWhere(
         (log) => DateUtils.isSameDay(log.date, todayDate),
       );
     } catch (e) {
-      // Jika log hari ini tidak ditemukan, buat dari log terakhir
+      // Jika log hari ini TIDAK DITEMUKAN (artinya, ini pertama kali aplikasi dibuka di hari baru)
       if (_logs.isNotEmpty) {
-        final lastLog = _logs.first; // Ambil log terbaru
-        // Salin tugas, reset durasi, tapi pertahankan properti lain
+        // Ambil log terakhir sebagai referensi (asumsi sudah terurut dari baru ke lama)
+        final lastLog = _logs.first;
+
+        // Buat daftar tugas baru untuk hari ini, wariskan nama dan link-nya
         final newTasks = lastLog.tasks.map((task) {
           return LoggedTask(
             id: task.id,
             name: task.name,
-            durationMinutes: 0, // Durasi direset menjadi 0
+            durationMinutes: 0, // Selalu reset durasi menjadi 0
             category: task.category,
-            linkedTaskIds: task.linkedTaskIds, // Koneksi dipertahankan
+            // Salin (wariskan) link dari tugas di hari sebelumnya
+            linkedTaskIds: List<String>.from(task.linkedTaskIds),
           );
         }).toList();
 
         // Buat entri log baru untuk hari ini
         final newTodayLog = TimeLogEntry(date: todayDate, tasks: newTasks);
-        _logs.insert(0, newTodayLog); // Tambahkan ke daftar log
-        _logs.sort((a, b) => b.date.compareTo(a.date)); // Jaga urutan
+        _logs.insert(0, newTodayLog); // Tambahkan ke paling atas
         _todayLog = newTodayLog;
-        _saveLogs(); // Simpan log baru secara otomatis
+
+        // ## LOGIKA BARU: Hapus Link dari Semua Hari SEBELUMNYA ##
+        // Iterasi semua log, dan jika BUKAN log hari ini, hapus linknya.
+        bool needsSave = false;
+        for (final log in _logs) {
+          if (!DateUtils.isSameDay(log.date, todayDate)) {
+            for (final task in log.tasks) {
+              if (task.linkedTaskIds.isNotEmpty) {
+                task.linkedTaskIds.clear();
+                needsSave = true;
+              }
+            }
+          }
+        }
+
+        // Simpan hanya jika ada perubahan (log baru dibuat atau link lama dihapus)
+        if (needsSave || _logs.length == 1) {
+          await _saveLogs();
+        }
       } else {
-        // Jika tidak ada log sama sekali, _todayLog tetap null
+        // Kondisi jika ini adalah log pertama kali, tidak ada yang perlu dilakukan.
         _todayLog = null;
       }
     }
-    // Set log yang bisa diedit ke log hari ini
+
+    // Selalu set log yang bisa diedit ke log hari ini.
     _editableLog = _todayLog;
   }
 
