@@ -145,6 +145,24 @@ class SubjectService {
         return {'date': null, 'code': null};
       }
 
+      // ## LOGIKA BARU DIMULAI DI SINI ##
+      // Cek apakah ada diskusi dengan kode 'R0D' di antara yang sudah difilter
+      final bool hasR0D = filteredDiscussions.any(
+        (d) => d.effectiveRepetitionCode == 'R0D',
+      );
+
+      // Jika ada 'R0D', filter lebih lanjut untuk hanya menyertakan diskusi
+      // yang TIDAK 'Finish', kecuali jika SEMUA diskusi adalah 'Finish'.
+      if (hasR0D) {
+        final activeDiscussions = filteredDiscussions
+            .where((d) => !d.finished)
+            .toList();
+        if (activeDiscussions.isNotEmpty) {
+          filteredDiscussions = activeDiscussions;
+        }
+      }
+      // ## LOGIKA BARU SELESAI ##
+
       final sortType = sortPrefs['sortType'] as String;
       final sortAscending = sortPrefs['sortAscending'] as bool;
 
