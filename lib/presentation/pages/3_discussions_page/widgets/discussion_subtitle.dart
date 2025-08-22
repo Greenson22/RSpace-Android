@@ -114,13 +114,16 @@ class DiscussionSubtitle extends StatelessWidget {
             style: TextStyle(
               color: getColorForRepetitionCode(codeText),
               fontWeight: FontWeight.bold,
-              decoration: discussion.points.isEmpty
+              // ## PERBAIKAN: Tampilkan underline jika diskusi belum selesai (bisa diklik)
+              decoration: !discussion.finished
                   ? TextDecoration.underline
                   : null,
             ),
-            recognizer: discussion.points.isEmpty
+            // ## PERBAIKAN: Logika recognizer diubah agar selalu aktif jika diskusi belum selesai
+            recognizer: !discussion.finished
                 ? (TapGestureRecognizer()
                     ..onTap = () async {
+                      // Aksi ini akan selalu menargetkan diskusi itu sendiri, bukan point di dalamnya.
                       final currentCode = discussion.repetitionCode;
                       final currentIndex = getRepetitionCodeIndex(currentCode);
                       if (currentIndex < provider.repetitionCodes.length - 1) {

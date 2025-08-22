@@ -16,11 +16,8 @@ const List<String> kRepetitionCodes = [
 
 // Fungsi untuk mendapatkan indeks kode, berguna untuk perbandingan
 int getRepetitionCodeIndex(String code) {
-  // ==> PERUBAHAN: Berikan R0D nilai yang sangat tinggi agar
-  // dianggap terakhir saat ascending.
-  if (code == 'R0D') {
-    return 998;
-  }
+  // ## PERBAIKAN: Menghapus logika khusus untuk 'R0D' ##
+  // 'R0D' sekarang akan mendapatkan indeks 0 dari daftar, yang benar secara logika untuk pengurutan.
   final index = kRepetitionCodes.indexOf(code);
   return index == -1 ? 999 : index; // Beri nilai besar jika tidak ditemukan
 }

@@ -146,18 +146,24 @@ class SubjectService {
       }
 
       // ## LOGIKA BARU DIMULAI DI SINI ##
-      // Cek apakah ada diskusi dengan kode 'R0D' di antara yang sudah difilter
-      final bool hasR0D = filteredDiscussions.any(
-        (d) => d.effectiveRepetitionCode == 'R0D',
-      );
+      // Prioritaskan kode selain R0D
+      final activeDiscussions = filteredDiscussions
+          .where((d) => !d.finished)
+          .toList();
 
-      // Jika ada 'R0D', filter lebih lanjut untuk hanya menyertakan diskusi
-      // yang TIDAK 'Finish', kecuali jika SEMUA diskusi adalah 'Finish'.
-      if (hasR0D) {
-        final activeDiscussions = filteredDiscussions
-            .where((d) => !d.finished)
-            .toList();
-        if (activeDiscussions.isNotEmpty) {
+      if (activeDiscussions.isNotEmpty) {
+        // Cek apakah ada diskusi aktif dengan kode selain 'R0D'
+        final hasNonR0D = activeDiscussions.any(
+          (d) => d.effectiveRepetitionCode != 'R0D',
+        );
+
+        // Jika ada, buang semua yang 'R0D' dari pertimbangan untuk sementara
+        if (hasNonR0D) {
+          filteredDiscussions = activeDiscussions
+              .where((d) => d.effectiveRepetitionCode != 'R0D')
+              .toList();
+        } else {
+          // Jika hanya ada R0D atau tidak ada diskusi aktif sama sekali, gunakan semua yang sudah difilter
           filteredDiscussions = activeDiscussions;
         }
       }
@@ -187,6 +193,20 @@ class SubjectService {
             ).compareTo(DateTime.parse(b.effectiveDate!));
           };
           break;
+      }
+
+      // Pastikan list tidak kosong sebelum sorting
+      if (filteredDiscussions.isEmpty) {
+        // Jika setelah filter non-R0D list menjadi kosong,
+        // fallback ke list original yang sudah difilter sekali
+        filteredDiscussions = discussions.where((discussion) {
+          final filterType = filterPrefs['filterType'];
+          if (filterType == null) return true;
+          return true;
+        }).toList();
+        if (filteredDiscussions.isEmpty) {
+          return {'date': null, 'code': null};
+        }
       }
 
       filteredDiscussions.sort(comparator);
