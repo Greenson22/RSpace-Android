@@ -11,6 +11,7 @@ import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
+import 'chat_page.dart';
 import 'dashboard_page/widgets/dashboard_grid.dart';
 import 'dashboard_page/widgets/dashboard_header.dart';
 import 'dashboard_page/dialogs/theme_settings_dialog.dart';
@@ -205,6 +206,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     ? 0
                     : null,
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    tooltip: 'Chat dengan Flo AI',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ChatPage()),
+                      );
+                    },
+                  ),
                   IconButton(
                     icon: Icon(
                       showFlo ? Icons.pets_outlined : Icons.pets_rounded,

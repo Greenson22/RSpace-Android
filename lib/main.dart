@@ -1,9 +1,9 @@
 // lib/main.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/presentation/pages/dashboard_page.dart';
+import 'package:my_aplication/presentation/providers/chat_provider.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
@@ -47,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
         ChangeNotifierProvider(create: (_) => DebugProvider()),
         ChangeNotifierProvider(create: (_) => TimeLogProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: const MyApp(),
     ),
@@ -61,8 +62,6 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final isChristmas = themeProvider.isChristmasTheme;
-
-        // ==> GUNAKAN STATE BARU DARI PROVIDER <==
         final bool showFlo = themeProvider.showFloatingCharacter;
 
         return MaterialApp(
@@ -75,15 +74,14 @@ class MyApp extends StatelessWidget {
               children: [
                 if (navigator != null) navigator,
                 if (isChristmas)
-                  IgnorePointer(
-                    child: const SnowWidget(
+                  const IgnorePointer(
+                    child: SnowWidget(
                       isRunning: true,
                       totalSnow: 200,
                       speed: 0.5,
                       snowColor: Colors.white,
                     ),
                   ),
-                // ==> ATUR KONDISI UNTUK MENAMPILKAN FLO <==
                 if (showFlo)
                   const IgnorePointer(
                     child: FloatingCharacter(isVisible: true),
