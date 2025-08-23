@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
 import '../../../../presentation/widgets/edit_popup_menu.dart';
+// Impor widget LinkifyText yang baru dibuat
+import '../../../widgets/linkify_text.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 
@@ -21,6 +23,7 @@ class PointTile extends StatelessWidget {
   });
 
   void _showSnackBar(BuildContext context, String message) {
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
@@ -106,11 +109,11 @@ class PointTile extends StatelessWidget {
         isFinished ? Icons.check_circle_outline : Icons.arrow_right,
         color: isFinished ? Colors.green : Colors.grey,
       ),
-      title: Text(
+      title: LinkifyText(
+        // GANTI DARI Text MENJADI LinkifyText
         point.pointText,
         style: TextStyle(
           color: effectiveTextColor,
-          // ==> BARIS INI MENAMBAHKAN GARIS CORET <==
           decoration: isFinished ? TextDecoration.lineThrough : null,
         ),
       ),
