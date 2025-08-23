@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/api_key_model.dart';
 import '../models/prompt_model.dart';
+import '../models/chat_message_model.dart';
 
 class SharedPreferencesService {
   static const String _sortTypeKey = 'sort_type';
@@ -19,12 +20,7 @@ class SharedPreferencesService {
   static const String _apiKeyKey = 'api_key';
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
-
-  // KUNCI UNTUK MENYIMPAN STATUS FLO
   static const String _showFloatingCharacterKey = 'show_floating_character';
-
-  // KUNCI BARU UNTUK MODEL GEMINI
-  static const String _geminiModelKey = 'gemini_model';
 
   // Kunci lama (deprecated), digunakan untuk migrasi
   static const String _geminiApiKey_old = 'gemini_api_key';
@@ -38,6 +34,9 @@ class SharedPreferencesService {
   static const String _geminiContentModelKey = 'gemini_model';
   // KUNCI BARU UNTUK MODEL CHAT
   static const String _geminiChatModelKey = 'gemini_chat_model';
+
+  // KUNCI BARU UNTUK RIWAYAT CHAT
+  static const String _geminiChatHistory = 'gemini_chat_history';
 
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
@@ -56,16 +55,17 @@ class SharedPreferencesService {
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
 
-  // ==> FUNGSI UNTUK MENYIMPAN DAN MEMUAT STATUS FLO <==
-  Future<void> saveShowFloPreference(bool showFlo) async {
+  // ==> FUNGSI BARU UNTUK RIWAYAT CHAT <==
+  Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showFloatingCharacterKey, showFlo);
+    final String encodedData = encodeChatMessages(messages);
+    await prefs.setString(_geminiChatHistory, encodedData);
   }
 
-  Future<bool> loadShowFloPreference() async {
+  Future<List<ChatMessage>> loadChatHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    // Default-nya true (aktif) jika belum pernah diatur
-    return prefs.getBool(_showFloatingCharacterKey) ?? true;
+    final String? encodedData = prefs.getString(_geminiChatHistory);
+    return decodeChatMessages(encodedData ?? '[]');
   }
 
   // ==> FUNGSI BARU UNTUK MENYIMPAN DAN MEMUAT LIST API KEY <==
@@ -174,6 +174,16 @@ Ikuti aturan-aturan berikut dengan ketat:
       await savePrompts(prompts);
       return defaultOrFirst;
     }
+  }
+
+  Future<void> saveShowFloPreference(bool showFlo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showFloatingCharacterKey, showFlo);
+  }
+
+  Future<bool> loadShowFloPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_showFloatingCharacterKey) ?? true;
   }
 
   Future<void> saveDashboardItemScale(double scale) async {

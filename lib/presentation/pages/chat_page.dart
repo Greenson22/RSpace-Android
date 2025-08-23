@@ -48,16 +48,62 @@ class _ChatViewState extends State<_ChatView> {
     });
   }
 
+  Future<void> _confirmClearChat() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Riwayat Chat?'),
+        content: const Text(
+          'Semua pesan dalam percakapan ini akan dihapus secara permanen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      if (mounted) {
+        Provider.of<ChatProvider>(context, listen: false).clearChat();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat dengan Flo AI')),
+      appBar: AppBar(
+        title: const Text('Chat dengan Flo AI'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_comment_outlined),
+            tooltip: 'Chat Baru',
+            onPressed: () {
+              Provider.of<ChatProvider>(context, listen: false).startNewChat();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: 'Hapus Riwayat',
+            onPressed: _confirmClearChat,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, provider, child) {
                 _scrollToBottom();
+                if (provider.messages.isEmpty) {
+                  return const Center(child: Text('Riwayat chat kosong.'));
+                }
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(8.0),

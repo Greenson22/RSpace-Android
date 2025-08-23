@@ -2,17 +2,33 @@
 import 'package:flutter/material.dart';
 import '../../data/models/chat_message_model.dart';
 import '../../data/services/chat_service.dart';
+import '../../data/services/shared_preferences_service.dart';
 
 class ChatProvider with ChangeNotifier {
   final ChatService _chatService = ChatService();
-  final List<ChatMessage> _messages = [];
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  List<ChatMessage> _messages = [];
   bool _isTyping = false;
 
   List<ChatMessage> get messages => _messages;
   bool get isTyping => _isTyping;
 
   ChatProvider() {
-    _addInitialMessage();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final history = await _prefsService.loadChatHistory();
+    if (history.isEmpty) {
+      _addInitialMessage();
+    } else {
+      _messages = history;
+    }
+    notifyListeners();
+  }
+
+  Future<void> _saveHistory() async {
+    await _prefsService.saveChatHistory(_messages);
   }
 
   void _addInitialMessage() {
@@ -28,15 +44,28 @@ class ChatProvider with ChangeNotifier {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    // Tambahkan pesan pengguna ke daftar
     _messages.add(ChatMessage(text: text.trim(), role: ChatRole.user));
     _isTyping = true;
     notifyListeners();
+    await _saveHistory();
 
-    // Dapatkan respons dari service
     final response = await _chatService.getResponse(text.trim());
     _messages.add(response);
     _isTyping = false;
+    notifyListeners();
+    await _saveHistory();
+  }
+
+  Future<void> clearChat() async {
+    _messages.clear();
+    await _saveHistory();
+    notifyListeners();
+  }
+
+  Future<void> startNewChat() async {
+    _messages.clear();
+    _addInitialMessage();
+    await _saveHistory();
     notifyListeners();
   }
 }
