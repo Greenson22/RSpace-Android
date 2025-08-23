@@ -22,7 +22,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   List<Prompt> _prompts = [];
   bool _isLoading = true;
-  late Prompt _defaultPrompt;
+  Prompt? _defaultPrompt;
 
   @override
   void initState() {
@@ -31,24 +31,35 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   }
 
   Future<void> _loadSavedData() async {
-    _defaultPrompt = await _prefsService.getActivePrompt();
-    if (_defaultPrompt.isDefault) {
-      _defaultPrompt.isActive =
-          false; // Non-aktifkan sementara agar bisa dibandingkan
+    final defaultPromptValue = await _prefsService.getActivePrompt();
+    if (defaultPromptValue.isDefault) {
+      defaultPromptValue.isActive = false;
     }
 
     var savedPrompts = await _prefsService.loadPrompts();
-    // Jika tidak ada prompt tersimpan, inisialisasi dengan default
+
     if (savedPrompts.isEmpty) {
-      final defaultPrompt = _prefsService.getActivePrompt() as Prompt;
-      defaultPrompt.isActive = true;
-      savedPrompts = [defaultPrompt];
+      // ==> PERBAIKAN DI SINI: Tambahkan 'await' <==
+      final defaultP = await _prefsService.getActivePrompt();
+      defaultP.isActive = true;
+      savedPrompts = [defaultP];
     }
 
-    setState(() {
-      _prompts = savedPrompts;
-      _isLoading = false;
-    });
+    if (savedPrompts.isNotEmpty && !savedPrompts.any((p) => p.isActive)) {
+      final defaultOrFirst = savedPrompts.firstWhere(
+        (p) => p.isDefault,
+        orElse: () => savedPrompts.first,
+      );
+      defaultOrFirst.isActive = true;
+    }
+
+    if (mounted) {
+      setState(() {
+        _defaultPrompt = defaultPromptValue;
+        _prompts = savedPrompts;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _setActivePrompt(Prompt promptToActivate) async {
@@ -169,10 +180,11 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Cari prompt yang aktif untuk nilai groupValue di RadioListTile
-    final activePromptId = _prompts
-        .firstWhere((p) => p.isActive, orElse: () => _defaultPrompt)
-        .id;
+    final activePromptId = _isLoading || _prompts.isEmpty
+        ? ''
+        : _prompts
+              .firstWhere((p) => p.isActive, orElse: () => _defaultPrompt!)
+              .id;
 
     return AlertDialog(
       title: const Text('Manajemen Prompt AI'),
