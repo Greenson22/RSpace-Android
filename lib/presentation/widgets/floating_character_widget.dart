@@ -1,7 +1,12 @@
 // lib/presentation/widgets/floating_character_widget.dart
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
+import '../../data/models/discussion_model.dart';
+import '../../data/services/path_service.dart';
 
 class FloatingCharacter extends StatefulWidget {
   final bool isVisible;
@@ -23,7 +28,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   // Timer
   Timer? _animationTimer;
   Timer? _expressionTimer;
-  Timer? _speechTimer; // Timer baru untuk bicara
+  Timer? _speechTimer;
 
   // State Karakter
   int _characterFrameIndex = 0;
@@ -31,7 +36,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   bool _isFacingRight = true;
   final Random _random = Random();
 
-  // State baru untuk gelembung ucapan
+  // State Gelembung Ucapan
   bool _isSpeaking = false;
   String _speechBubbleText = '';
 
@@ -66,7 +71,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     {'eyes': '｡ºωº｡', 'wink': '｡-ω-｡'}, // Mulut bicara/kaget
   ];
 
-  // Daftar kalimat untuk diucapkan
+  // Kumpulan kalimat untuk Flo, akan digabung dengan data diskusi
   final List<String> _phrases = [
     "Semangat ya!",
     "Jangan lupa istirahat...",
@@ -77,7 +82,6 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   ];
 
   String _getCurrentCharacterFrame() {
-    // Saat berbicara, paksa gunakan ekspresi mulut terbuka
     final expression = _isSpeaking
         ? _expressions[4]
         : _expressions[_expressionIndex];
@@ -91,6 +95,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   @override
   void initState() {
     super.initState();
+    // Inisialisasi Kontroler Animasi
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -98,7 +103,6 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     _floatAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
-
     _moveController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
@@ -107,7 +111,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       CurvedAnimation(parent: _moveController, curve: Curves.easeInOut),
     );
 
-    // Listeners
+    // Listeners untuk membalik arah
     _moveController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         setState(() => _isFacingRight = false);
@@ -129,7 +133,59 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       _moveController.forward();
       _startCharacterAnimation();
       _startExpressionChange();
-      _startSpeech(); // Mulai timer bicara
+      _initializeSpeech(); // Panggil fungsi inisialisasi baru
+    }
+  }
+
+  // Fungsi baru untuk memuat data diskusi dan memulai timer bicara
+  Future<void> _initializeSpeech() async {
+    await _loadDiscussionPhrases();
+    _startSpeech();
+  }
+
+  // Fungsi baru untuk memuat judul diskusi dari file
+  Future<void> _loadDiscussionPhrases() async {
+    final pathService = PathService();
+    final List<String> discussionTitles = [];
+    try {
+      final topicsPath = await pathService.topicsPath;
+      final topicsDir = Directory(topicsPath);
+
+      if (!await topicsDir.exists()) return;
+
+      final topicEntities = topicsDir.listSync();
+      for (var topicEntity in topicEntities) {
+        if (topicEntity is Directory) {
+          final subjectFiles = topicEntity.listSync().whereType<File>().where(
+            (file) =>
+                file.path.endsWith('.json') &&
+                !path.basename(file.path).contains('config'),
+          );
+
+          for (final subjectFile in subjectFiles) {
+            final jsonString = await subjectFile.readAsString();
+            if (jsonString.isEmpty) continue;
+
+            final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+            final contentList = jsonData['content'] as List<dynamic>? ?? [];
+
+            for (var item in contentList) {
+              final discussion = Discussion.fromJson(item);
+              // Tambahkan hanya jika tidak punya points
+              if (discussion.points.isEmpty && !discussion.finished) {
+                discussionTitles.add(discussion.discussion);
+              }
+            }
+          }
+        }
+      }
+      // Gabungkan dengan frasa default
+      if (discussionTitles.isNotEmpty) {
+        _phrases.addAll(discussionTitles);
+      }
+    } catch (e) {
+      debugPrint("Error loading discussion titles for Flo: $e");
+      // Jika error, akan menggunakan frasa default saja
     }
   }
 
@@ -156,8 +212,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
             int newIndex;
             do {
               newIndex = _random.nextInt(4);
-            } while (newIndex ==
-                _expressionIndex); // Hanya ganti ke ekspresi non-bicara
+            } while (newIndex == _expressionIndex);
             _expressionIndex = newIndex;
           });
         }
@@ -165,19 +220,16 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     );
   }
 
-  // Timer baru untuk memicu ucapan
   void _startSpeech() {
     _speechTimer?.cancel();
     _speechTimer = Timer.periodic(Duration(seconds: _random.nextInt(15) + 10), (
       timer,
     ) {
-      // Acak antara 10-25 detik
-      if (mounted && !_isSpeaking) {
+      if (mounted && !_isSpeaking && _phrases.isNotEmpty) {
         setState(() {
           _isSpeaking = true;
           _speechBubbleText = _phrases[_random.nextInt(_phrases.length)];
         });
-        // Sembunyikan gelembung setelah beberapa detik
         Future.delayed(const Duration(seconds: 6), () {
           if (mounted) setState(() => _isSpeaking = false);
         });
@@ -194,7 +246,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
         _moveController.forward();
         _startCharacterAnimation();
         _startExpressionChange();
-        _startSpeech();
+        _initializeSpeech();
       } else {
         _floatController.stop();
         _moveController.stop();
@@ -255,7 +307,6 @@ class CharacterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Pengaturan untuk teks karakter
     final characterTextStyle = TextStyle(
       color: Colors.black.withOpacity(0.8),
       fontSize: 24,
@@ -288,12 +339,9 @@ class CharacterPainter extends CustomPainter {
             floatAnimationValue;
     final characterPosition = Offset(characterX, characterY);
 
-    // Gambar karakter Flo
     characterTextPainter.paint(canvas, characterPosition);
 
-    // Jika sedang berbicara, gambar gelembung ucapan
     if (isSpeaking) {
-      // Pengaturan untuk teks di dalam gelembung
       final speechTextStyle = TextStyle(color: Colors.black87, fontSize: 14);
       final speechTextSpan = TextSpan(text: speechText, style: speechTextStyle);
       final speechTextPainter = TextPainter(
@@ -302,7 +350,6 @@ class CharacterPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: 150);
 
-      // Pengaturan gelembung
       final bubblePadding = const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 8,
@@ -319,22 +366,17 @@ class CharacterPainter extends CustomPainter {
         const Radius.circular(12),
       );
 
-      // Posisi gelembung di atas karakter
       final bubbleX =
           characterPosition.dx +
           (characterTextPainter.width / 2) -
           (bubbleWidth / 2);
-      final bubbleY =
-          characterPosition.dy -
-          bubbleHeight -
-          10; // 10 adalah jarak dari kepala
+      final bubbleY = characterPosition.dy - bubbleHeight - 10;
 
       final Paint bubblePaint = Paint()
         ..color = Colors.white
         ..style = PaintingStyle.fill;
       final Path bubblePath = Path()..addRRect(bubbleRRect);
 
-      // Ekor gelembung
       final tailPath = Path();
       if (isFacingRight) {
         tailPath.moveTo(bubbleWidth * 0.3, bubbleHeight);
@@ -348,7 +390,6 @@ class CharacterPainter extends CustomPainter {
       tailPath.close();
       bubblePath.addPath(tailPath, Offset.zero);
 
-      // Gambar gelembung dan teks
       canvas.save();
       canvas.translate(bubbleX, bubbleY);
       canvas.drawShadow(bubblePath, Colors.black, 5.0, true);
