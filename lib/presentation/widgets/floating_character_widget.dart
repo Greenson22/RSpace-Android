@@ -14,19 +14,28 @@ class FloatingCharacter extends StatefulWidget {
 
 class _FloatingCharacterState extends State<FloatingCharacter>
     with TickerProviderStateMixin {
+  // Kontroler Animasi
   late AnimationController _floatController;
   late AnimationController _moveController;
   late Animation<double> _floatAnimation;
   late Animation<double> _moveAnimation;
 
+  // Timer
   Timer? _animationTimer;
-  Timer? _expressionTimer; // Timer baru untuk ekspresi wajah
+  Timer? _expressionTimer;
+  Timer? _speechTimer; // Timer baru untuk bicara
+
+  // State Karakter
   int _characterFrameIndex = 0;
-  int _expressionIndex = 0; // Index baru untuk ekspresi
+  int _expressionIndex = 0;
   bool _isFacingRight = true;
   final Random _random = Random();
 
-  // Daftar "frame" animasi untuk gerakan (lambaian, kedipan)
+  // State baru untuk gelembung ucapan
+  bool _isSpeaking = false;
+  String _speechBubbleText = '';
+
+  // Daftar "frame" animasi gerakan
   final List<String> _baseFramesRight = [
     '(づ{eyes})づ',
     '(づ{eyes})づ',
@@ -48,21 +57,32 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     '٩({eyes}٩)',
   ];
 
-  // Daftar "ekspresi" mata yang bisa diganti-ganti
+  // Daftar ekspresi mata
   final List<Map<String, String>> _expressions = [
-    {'eyes': '｡◕‿‿◕｡', 'wink': '｡◕‿‿-｡'}, // 0: Normal
-    {'eyes': '｡^‿‿^｡', 'wink': '｡^‿‿-｡'}, // 1: Gembira
-    {'eyes': '｡*‿‿*｡', 'wink': '｡*‿‿-｡'}, // 2: Berbinar
-    {'eyes': '｡>‿‿<｡', 'wink': '｡>‿‿-｡'}, // 3: Fokus/Semangat
+    {'eyes': '｡◕‿‿◕｡', 'wink': '｡◕‿‿-｡'}, // Normal
+    {'eyes': '｡^‿‿^｡', 'wink': '｡^‿‿-｡'}, // Gembira
+    {'eyes': '｡*‿‿*｡', 'wink': '｡*‿‿-｡'}, // Berbinar
+    {'eyes': '｡>‿‿<｡', 'wink': '｡>‿‿-｡'}, // Fokus
+    {'eyes': '｡ºωº｡', 'wink': '｡-ω-｡'}, // Mulut bicara/kaget
   ];
 
-  // Fungsi untuk mendapatkan frame karakter yang sudah digabungkan dengan ekspresi
+  // Daftar kalimat untuk diucapkan
+  final List<String> _phrases = [
+    "Semangat ya!",
+    "Jangan lupa istirahat...",
+    "Sudah cek 'My Tasks' hari ini?",
+    "Ada yang bisa dibantu?",
+    "Ayo kita selesaikan ini!",
+    "Kamu pasti bisa!",
+  ];
+
   String _getCurrentCharacterFrame() {
-    final expression = _expressions[_expressionIndex];
+    // Saat berbicara, paksa gunakan ekspresi mulut terbuka
+    final expression = _isSpeaking
+        ? _expressions[4]
+        : _expressions[_expressionIndex];
     final baseFrames = _isFacingRight ? _baseFramesRight : _baseFramesLeft;
     String frame = baseFrames[_characterFrameIndex];
-
-    // Ganti placeholder {eyes} dan {wink} dengan ekspresi yang aktif
     return frame
         .replaceAll('{eyes}', expression['eyes']!)
         .replaceAll('{wink}', expression['wink']!);
@@ -87,7 +107,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       CurvedAnimation(parent: _moveController, curve: Curves.easeInOut),
     );
 
-    // Listeners untuk membalik arah
+    // Listeners
     _moveController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         setState(() => _isFacingRight = false);
@@ -108,44 +128,61 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       _floatController.forward();
       _moveController.forward();
       _startCharacterAnimation();
-      _startExpressionChange(); // Mulai timer ekspresi
+      _startExpressionChange();
+      _startSpeech(); // Mulai timer bicara
     }
   }
 
-  // Timer untuk animasi lambaian/kedipan (interval cepat & tetap)
   void _startCharacterAnimation() {
     _animationTimer?.cancel();
     _animationTimer = Timer.periodic(const Duration(milliseconds: 400), (
       timer,
     ) {
-      if (mounted) {
-        setState(() {
-          _characterFrameIndex =
-              (_characterFrameIndex + 1) % _baseFramesRight.length;
-        });
-      }
+      if (mounted)
+        setState(
+          () => _characterFrameIndex =
+              (_characterFrameIndex + 1) % _baseFramesRight.length,
+        );
     });
   }
 
-  // Timer baru untuk perubahan ekspresi (interval lambat & acak)
   void _startExpressionChange() {
     _expressionTimer?.cancel();
     _expressionTimer = Timer.periodic(
-      // Durasi acak antara 3 sampai 8 detik
       Duration(seconds: _random.nextInt(6) + 3),
       (timer) {
-        if (mounted) {
+        if (mounted && !_isSpeaking) {
           setState(() {
-            // Pilih ekspresi baru yang berbeda dari yang sekarang
             int newIndex;
             do {
-              newIndex = _random.nextInt(_expressions.length);
-            } while (newIndex == _expressionIndex);
+              newIndex = _random.nextInt(4);
+            } while (newIndex ==
+                _expressionIndex); // Hanya ganti ke ekspresi non-bicara
             _expressionIndex = newIndex;
           });
         }
       },
     );
+  }
+
+  // Timer baru untuk memicu ucapan
+  void _startSpeech() {
+    _speechTimer?.cancel();
+    _speechTimer = Timer.periodic(Duration(seconds: _random.nextInt(15) + 10), (
+      timer,
+    ) {
+      // Acak antara 10-25 detik
+      if (mounted && !_isSpeaking) {
+        setState(() {
+          _isSpeaking = true;
+          _speechBubbleText = _phrases[_random.nextInt(_phrases.length)];
+        });
+        // Sembunyikan gelembung setelah beberapa detik
+        Future.delayed(const Duration(seconds: 6), () {
+          if (mounted) setState(() => _isSpeaking = false);
+        });
+      }
+    });
   }
 
   @override
@@ -157,11 +194,13 @@ class _FloatingCharacterState extends State<FloatingCharacter>
         _moveController.forward();
         _startCharacterAnimation();
         _startExpressionChange();
+        _startSpeech();
       } else {
         _floatController.stop();
         _moveController.stop();
         _animationTimer?.cancel();
         _expressionTimer?.cancel();
+        _speechTimer?.cancel();
       }
     }
   }
@@ -172,6 +211,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     _moveController.dispose();
     _animationTimer?.cancel();
     _expressionTimer?.cancel();
+    _speechTimer?.cancel();
     super.dispose();
   }
 
@@ -185,7 +225,10 @@ class _FloatingCharacterState extends State<FloatingCharacter>
           painter: CharacterPainter(
             floatAnimationValue: _floatAnimation.value,
             moveAnimationValue: _moveAnimation.value,
-            character: _getCurrentCharacterFrame(), // Gunakan fungsi baru
+            character: _getCurrentCharacterFrame(),
+            isSpeaking: _isSpeaking,
+            speechText: _speechBubbleText,
+            isFacingRight: _isFacingRight,
           ),
         );
       },
@@ -197,16 +240,23 @@ class CharacterPainter extends CustomPainter {
   final double floatAnimationValue;
   final double moveAnimationValue;
   final String character;
+  final bool isSpeaking;
+  final String speechText;
+  final bool isFacingRight;
 
   CharacterPainter({
     required this.floatAnimationValue,
     required this.moveAnimationValue,
     required this.character,
+    required this.isSpeaking,
+    required this.speechText,
+    required this.isFacingRight,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final textStyle = TextStyle(
+    // Pengaturan untuk teks karakter
+    final characterTextStyle = TextStyle(
       color: Colors.black.withOpacity(0.8),
       fontSize: 24,
       shadows: [
@@ -217,30 +267,105 @@ class CharacterPainter extends CustomPainter {
         ),
       ],
     );
-    final textSpan = TextSpan(text: character, style: textStyle);
-    final textPainter = TextPainter(
-      text: textSpan,
+    final characterTextSpan = TextSpan(
+      text: character,
+      style: characterTextStyle,
+    );
+    final characterTextPainter = TextPainter(
+      text: characterTextSpan,
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
+    )..layout();
 
     final double padding = 20;
-    final startX =
+    final characterX =
         padding +
-        (size.width - textPainter.width - (2 * padding)) * moveAnimationValue;
-    final startY =
+        (size.width - characterTextPainter.width - (2 * padding)) *
+            moveAnimationValue;
+    final characterY =
         padding +
-        (size.height - textPainter.height - (2 * padding)) *
+        (size.height - characterTextPainter.height - (2 * padding)) *
             floatAnimationValue;
+    final characterPosition = Offset(characterX, characterY);
 
-    textPainter.paint(canvas, Offset(startX, startY));
+    // Gambar karakter Flo
+    characterTextPainter.paint(canvas, characterPosition);
+
+    // Jika sedang berbicara, gambar gelembung ucapan
+    if (isSpeaking) {
+      // Pengaturan untuk teks di dalam gelembung
+      final speechTextStyle = TextStyle(color: Colors.black87, fontSize: 14);
+      final speechTextSpan = TextSpan(text: speechText, style: speechTextStyle);
+      final speechTextPainter = TextPainter(
+        text: speechTextSpan,
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: 150);
+
+      // Pengaturan gelembung
+      final bubblePadding = const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      );
+      final bubbleWidth =
+          speechTextPainter.width + bubblePadding.left + bubblePadding.right;
+      final bubbleHeight =
+          speechTextPainter.height + bubblePadding.top + bubblePadding.bottom;
+      final bubbleRRect = RRect.fromLTRBR(
+        0,
+        0,
+        bubbleWidth,
+        bubbleHeight,
+        const Radius.circular(12),
+      );
+
+      // Posisi gelembung di atas karakter
+      final bubbleX =
+          characterPosition.dx +
+          (characterTextPainter.width / 2) -
+          (bubbleWidth / 2);
+      final bubbleY =
+          characterPosition.dy -
+          bubbleHeight -
+          10; // 10 adalah jarak dari kepala
+
+      final Paint bubblePaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      final Path bubblePath = Path()..addRRect(bubbleRRect);
+
+      // Ekor gelembung
+      final tailPath = Path();
+      if (isFacingRight) {
+        tailPath.moveTo(bubbleWidth * 0.3, bubbleHeight);
+        tailPath.lineTo(bubbleWidth * 0.4, bubbleHeight + 10);
+        tailPath.lineTo(bubbleWidth * 0.5, bubbleHeight);
+      } else {
+        tailPath.moveTo(bubbleWidth * 0.7, bubbleHeight);
+        tailPath.lineTo(bubbleWidth * 0.6, bubbleHeight + 10);
+        tailPath.lineTo(bubbleWidth * 0.5, bubbleHeight);
+      }
+      tailPath.close();
+      bubblePath.addPath(tailPath, Offset.zero);
+
+      // Gambar gelembung dan teks
+      canvas.save();
+      canvas.translate(bubbleX, bubbleY);
+      canvas.drawShadow(bubblePath, Colors.black, 5.0, true);
+      canvas.drawPath(bubblePath, bubblePaint);
+      speechTextPainter.paint(
+        canvas,
+        Offset(bubblePadding.left, bubblePadding.top),
+      );
+      canvas.restore();
+    }
   }
 
   @override
   bool shouldRepaint(covariant CharacterPainter oldDelegate) {
     return floatAnimationValue != oldDelegate.floatAnimationValue ||
         moveAnimationValue != oldDelegate.moveAnimationValue ||
-        character != oldDelegate.character;
+        character != oldDelegate.character ||
+        isSpeaking != oldDelegate.isSpeaking;
   }
 }
