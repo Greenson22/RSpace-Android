@@ -23,6 +23,9 @@ class SharedPreferencesService {
   // KUNCI BARU UNTUK GEMINI API KEY
   static const String _geminiApiKey = 'gemini_api_key';
 
+  // KUNCI BARU UNTUK MODEL GEMINI
+  static const String _geminiModelKey = 'gemini_model';
+
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
@@ -39,6 +42,17 @@ class SharedPreferencesService {
   // --- KUNCI SUMBER DATA PERPUSKU ---
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
+
+  // ==> FUNGSI BARU UNTUK MODEL GEMINI <==
+  Future<void> saveGeminiModel(String modelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_geminiModelKey, modelId);
+  }
+
+  Future<String?> loadGeminiModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_geminiModelKey);
+  }
 
   // ==> FUNGSI BARU UNTUK GEMINI API KEY <==
   Future<void> saveGeminiApiKey(String apiKey) async {

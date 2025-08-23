@@ -1,18 +1,16 @@
 // lib/data/services/gemini_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'shared_preferences_service.dart'; // Import SharedPreferencesService
+import 'shared_preferences_service.dart';
 
 class GeminiService {
-  // Hapus API Key statis dari sini
-  static const String _model = 'gemini-pro';
-
-  // Buat instance SharedPreferencesService
+  // Hapus model statis dari sini
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
   Future<String> generateHtmlContent(String topic) async {
-    // Muat API Key dari SharedPreferences
     final apiKey = await _prefsService.loadGeminiApiKey();
+    // Muat model yang dipilih, atau gunakan default jika belum ada
+    final model = await _prefsService.loadGeminiModel() ?? 'gemini-2.5-flash';
 
     if (apiKey == null || apiKey.isEmpty) {
       throw Exception(
@@ -21,7 +19,7 @@ class GeminiService {
     }
 
     final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$apiKey';
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
 
     final prompt =
         'Buatkan saya konten HTML untuk pembahasan tentang "$topic". '

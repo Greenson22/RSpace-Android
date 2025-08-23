@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../data/services/shared_preferences_service.dart';
 
+// Kelas helper untuk data model
+class GeminiModelInfo {
+  final String name;
+  final String id;
+
+  const GeminiModelInfo({required this.name, required this.id});
+}
+
 void showGeminiApiKeyDialog(BuildContext context) {
   showDialog(
     context: context,
@@ -23,19 +31,36 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
   late TextEditingController _apiKeyController;
   bool _isLoading = true;
   bool _obscureText = true;
+  String? _selectedModelId;
+
+  // Daftar model AI berdasarkan gambar yang Anda berikan
+  final List<GeminiModelInfo> _models = const [
+    GeminiModelInfo(name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro'),
+    GeminiModelInfo(name: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash'),
+    GeminiModelInfo(name: 'Gemini 2.5 Flash-Lite', id: 'gemini-2.5-flash-lite'),
+    GeminiModelInfo(name: 'Gemini 2.0 Flash', id: 'gemini-2.0-flash'),
+    GeminiModelInfo(name: 'Gemma 3 27B', id: 'gemma-3-27b-it'),
+    GeminiModelInfo(name: 'Gemma 3 12B', id: 'gemma-3-12b-it'),
+    GeminiModelInfo(name: 'Gemma 3 4B', id: 'gemma-3-4b-it'),
+    GeminiModelInfo(name: 'Gemma 3n E4B', id: 'gemma-3n-e4b-it'),
+    GeminiModelInfo(name: 'Gemma 3n E2B', id: 'gemma-3n-e2b-it'),
+  ];
 
   @override
   void initState() {
     super.initState();
     _apiKeyController = TextEditingController();
-    _loadApiKey();
+    _loadSavedData();
   }
 
-  Future<void> _loadApiKey() async {
+  Future<void> _loadSavedData() async {
     final apiKey = await _prefsService.loadGeminiApiKey();
+    final modelId = await _prefsService.loadGeminiModel();
     if (mounted) {
       setState(() {
         _apiKeyController.text = apiKey ?? '';
+        // Set model yang tersimpan, atau default ke model pertama jika belum ada
+        _selectedModelId = modelId ?? _models.first.id;
         _isLoading = false;
       });
     }
@@ -47,7 +72,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
     super.dispose();
   }
 
-  Future<void> _saveApiKey() async {
+  Future<void> _saveSettings() async {
     if (_apiKeyController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -58,10 +83,14 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
       return;
     }
     await _prefsService.saveGeminiApiKey(_apiKeyController.text.trim());
+    if (_selectedModelId != null) {
+      await _prefsService.saveGeminiModel(_selectedModelId!);
+    }
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('API Key Gemini berhasil disimpan.'),
+          content: Text('Pengaturan Gemini berhasil disimpan.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -72,7 +101,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Konfigurasi API Key Gemini'),
+      title: const Text('Konfigurasi Gemini AI'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -84,7 +113,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                 children: [
                   const TextSpan(
                     text:
-                        'API Key diperlukan untuk menggunakan fitur "Generate Content with AI". Anda bisa mendapatkan API Key secara gratis di ',
+                        'API Key diperlukan untuk menggunakan fitur AI. Dapatkan kunci gratis di ',
                   ),
                   TextSpan(
                     text: 'Google AI Studio',
@@ -107,7 +136,26 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
             const SizedBox(height: 24),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
-            else
+            else ...[
+              DropdownButtonFormField<String>(
+                value: _selectedModelId,
+                decoration: const InputDecoration(
+                  labelText: 'Pilih Model AI',
+                  border: OutlineInputBorder(),
+                ),
+                items: _models.map((model) {
+                  return DropdownMenuItem<String>(
+                    value: model.id,
+                    child: Text(model.name),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedModelId = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _apiKeyController,
                 obscureText: _obscureText,
@@ -126,6 +174,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -134,7 +183,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Batal'),
         ),
-        ElevatedButton(onPressed: _saveApiKey, child: const Text('Simpan')),
+        ElevatedButton(onPressed: _saveSettings, child: const Text('Simpan')),
       ],
     );
   }
