@@ -60,21 +60,48 @@ class Discussion {
     this.filePath, // ==> TAMBAHAN DI KONSTRUKTOR
   });
 
-  // ==> GETTER BARU UNTUK MENDAPATKAN POINT DENGAN KODE REPETISI TERKECIL <==
+  // ###############################################################
+  // ### GETTER DIPERBARUI DENGAN LOGIKA PRIORITAS YANG BENAR ###
+  // ###############################################################
   Point? get _pointWithMinRepetitionCode {
-    // ==> Diubah: Filter poin yang belum selesai <==
     final activePoints = points.where((p) => !p.finished).toList();
     if (activePoints.isEmpty) {
       return null;
     }
-    // Mengurutkan poin berdasarkan indeks kode repetisinya
-    final sortedPoints = List<Point>.from(activePoints)
-      ..sort(
-        (a, b) => getRepetitionCodeIndex(
-          a.repetitionCode,
-        ).compareTo(getRepetitionCodeIndex(b.repetitionCode)),
-      );
-    return sortedPoints.first;
+
+    // Cek apakah ada poin aktif dengan kode selain 'R0D'
+    final hasNonR0D = activePoints.any((p) => p.repetitionCode != 'R0D');
+
+    // Tentukan poin mana yang akan dipertimbangkan berdasarkan keberadaan non-R0D
+    List<Point> pointsToConsider = hasNonR0D
+        ? activePoints.where((p) => p.repetitionCode != 'R0D').toList()
+        : activePoints;
+
+    if (pointsToConsider.isEmpty) {
+      // Fallback jika semua poin aktif adalah R0D dan sudah terfilter (seharusnya tidak terjadi)
+      pointsToConsider = activePoints;
+    }
+
+    // Urutkan poin yang dipertimbangkan berdasarkan:
+    // 1. Indeks kode repetisinya (paling kecil diutamakan)
+    // 2. Tanggalnya (paling awal diutamakan jika kodenya sama)
+    pointsToConsider.sort((a, b) {
+      int codeComparison = getRepetitionCodeIndex(
+        a.repetitionCode,
+      ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
+      if (codeComparison != 0) {
+        return codeComparison;
+      }
+      try {
+        final dateA = DateTime.parse(a.date);
+        final dateB = DateTime.parse(b.date);
+        return dateA.compareTo(dateB);
+      } catch (e) {
+        return 0; // Jika tanggal tidak valid, anggap sama
+      }
+    });
+
+    return pointsToConsider.first;
   }
 
   // ==> GETTER BARU UNTUK LOGIKA KODE REPETISI EFEKTIF <==
