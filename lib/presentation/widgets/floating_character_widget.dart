@@ -39,6 +39,8 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   // State Gelembung Ucapan
   bool _isSpeaking = false;
   String _speechBubbleText = '';
+  static bool _hasIntroduced =
+      false; // Static agar hanya perkenalan sekali per sesi app
 
   // Daftar "frame" animasi gerakan
   final List<String> _baseFramesRight = [
@@ -71,7 +73,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     {'eyes': '｡ºωº｡', 'wink': '｡-ω-｡'}, // Mulut bicara/kaget
   ];
 
-  // Kumpulan kalimat untuk Flo, akan digabung dengan data diskusi
+  // Kumpulan kalimat baru yang lebih beragam
   final List<String> _phrases = [
     "Semangat ya!",
     "Jangan lupa istirahat...",
@@ -79,7 +81,30 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     "Ada yang bisa dibantu?",
     "Ayo kita selesaikan ini!",
     "Kamu pasti bisa!",
+    // Humor & Kata Lucu
+    "Kenapa nyamuk bunyinya 'nging'? Soalnya kalo bunyinya 'gong' nanti jadi nyagong.",
+    "Aku bukan pemalas, aku cuma lagi mode hemat energi.",
+    "Error 404: Motivasi tidak ditemukan.",
+    "Kalau butuh apa-apa, panggil saja... tapi jangan harap aku datang ya hehe.",
+    "Aku ini seperti bug, kadang muncul tiba-tiba.",
   ];
+
+  // Daftar sapaan berdasarkan waktu
+  final List<String> _greetings = [];
+
+  void _generateGreetings() {
+    final hour = DateTime.now().hour;
+    if (hour >= 4 && hour < 11) {
+      _greetings.add("Selamat pagi!");
+    } else if (hour >= 11 && hour < 15) {
+      _greetings.add("Selamat siang!");
+    } else if (hour >= 15 && hour < 19) {
+      _greetings.add("Selamat sore!");
+    } else {
+      _greetings.add("Selamat malam!");
+      _greetings.add("Sudah mau tidur ya?");
+    }
+  }
 
   String _getCurrentCharacterFrame() {
     final expression = _isSpeaking
@@ -111,7 +136,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       CurvedAnimation(parent: _moveController, curve: Curves.easeInOut),
     );
 
-    // Listeners untuk membalik arah
+    // Listeners
     _moveController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         setState(() => _isFacingRight = false);
@@ -133,17 +158,38 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       _moveController.forward();
       _startCharacterAnimation();
       _startExpressionChange();
-      _initializeSpeech(); // Panggil fungsi inisialisasi baru
+      _initializeSpeech();
     }
   }
 
-  // Fungsi baru untuk memuat data diskusi dan memulai timer bicara
   Future<void> _initializeSpeech() async {
+    // Sapaan berdasarkan waktu
+    _generateGreetings();
+    _phrases.addAll(_greetings);
+
+    // Muat data diskusi
     await _loadDiscussionPhrases();
+
+    // Logika untuk perkenalan diri sekali saja
+    if (!_hasIntroduced) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _isSpeaking = true;
+            _speechBubbleText = "Hai! Namaku Flo, asisten pribadimu!";
+            _hasIntroduced = true;
+          });
+          // Sembunyikan setelah 6 detik
+          Future.delayed(const Duration(seconds: 6), () {
+            if (mounted) setState(() => _isSpeaking = false);
+          });
+        }
+      });
+    }
+
     _startSpeech();
   }
 
-  // Fungsi baru untuk memuat judul diskusi dari file
   Future<void> _loadDiscussionPhrases() async {
     final pathService = PathService();
     final List<String> discussionTitles = [];
@@ -171,7 +217,6 @@ class _FloatingCharacterState extends State<FloatingCharacter>
 
             for (var item in contentList) {
               final discussion = Discussion.fromJson(item);
-              // Tambahkan hanya jika tidak punya points
               if (discussion.points.isEmpty && !discussion.finished) {
                 discussionTitles.add(discussion.discussion);
               }
@@ -179,13 +224,11 @@ class _FloatingCharacterState extends State<FloatingCharacter>
           }
         }
       }
-      // Gabungkan dengan frasa default
       if (discussionTitles.isNotEmpty) {
         _phrases.addAll(discussionTitles);
       }
     } catch (e) {
       debugPrint("Error loading discussion titles for Flo: $e");
-      // Jika error, akan menggunakan frasa default saja
     }
   }
 
@@ -237,6 +280,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     });
   }
 
+  // ... (sisa kode dari didUpdateWidget sampai akhir sama persis)
   @override
   void didUpdateWidget(covariant FloatingCharacter oldWidget) {
     super.didUpdateWidget(oldWidget);
