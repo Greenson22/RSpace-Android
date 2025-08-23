@@ -1,8 +1,18 @@
 // lib/presentation/pages/dashboard_page/dialogs/gemini_prompt_dialog.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../data/models/api_key_model.dart';
 import '../../../../data/models/prompt_model.dart';
 import '../../../../data/services/shared_preferences_service.dart';
+
+// Kelas helper untuk data model
+class GeminiModelInfo {
+  final String name;
+  final String id;
+  const GeminiModelInfo({required this.name, required this.id});
+}
 
 void showGeminiPromptDialog(BuildContext context) {
   showDialog(
@@ -22,7 +32,20 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   List<Prompt> _prompts = [];
   bool _isLoading = true;
-  Prompt? _defaultPrompt;
+  String? _selectedModelId;
+
+  // Daftar model AI
+  final List<GeminiModelInfo> _models = const [
+    GeminiModelInfo(name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro'),
+    GeminiModelInfo(name: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash'),
+    GeminiModelInfo(name: 'Gemini 2.5 Flash-Lite', id: 'gemini-2.5-flash-lite'),
+    GeminiModelInfo(name: 'Gemini 2.0 Flash', id: 'gemini-2.0-flash'),
+    GeminiModelInfo(name: 'Gemma 3 27B', id: 'gemma-3-27b-it'),
+    GeminiModelInfo(name: 'Gemma 3 12B', id: 'gemma-3-12b-it'),
+    GeminiModelInfo(name: 'Gemma 3 4B', id: 'gemma-3-4b-it'),
+    GeminiModelInfo(name: 'Gemma 3n E4B', id: 'gemma-3n-e4b-it'),
+    GeminiModelInfo(name: 'Gemma 3n E2B', id: 'gemma-3n-e2b-it'),
+  ];
 
   @override
   void initState() {
@@ -31,21 +54,19 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   }
 
   Future<void> _loadSavedData() async {
-    final defaultPromptValue = await _prefsService.getActivePrompt();
-    if (defaultPromptValue.isDefault) {
-      defaultPromptValue.isActive = false;
-    }
-
     var savedPrompts = await _prefsService.loadPrompts();
+    final modelId = await _prefsService.loadGeminiModel();
 
+    // Jika tidak ada prompt tersimpan (kasus pertama kali buka),
+    // inisialisasi dengan prompt default.
     if (savedPrompts.isEmpty) {
-      // ==> PERBAIKAN DI SINI: Tambahkan 'await' <==
-      final defaultP = await _prefsService.getActivePrompt();
-      defaultP.isActive = true;
-      savedPrompts = [defaultP];
+      final defaultPrompt = await _prefsService.getActivePrompt();
+      savedPrompts = [defaultPrompt];
+      await _prefsService.savePrompts(savedPrompts);
     }
 
-    if (savedPrompts.isNotEmpty && !savedPrompts.any((p) => p.isActive)) {
+    // Pastikan selalu ada satu prompt yang aktif.
+    if (!savedPrompts.any((p) => p.isActive)) {
       final defaultOrFirst = savedPrompts.firstWhere(
         (p) => p.isDefault,
         orElse: () => savedPrompts.first,
@@ -55,8 +76,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
 
     if (mounted) {
       setState(() {
-        _defaultPrompt = defaultPromptValue;
         _prompts = savedPrompts;
+        _selectedModelId = modelId ?? _models.first.id;
         _isLoading = false;
       });
     }
@@ -85,7 +106,10 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     setState(() {
       _prompts.removeWhere((p) => p.id == promptToDelete.id);
       if (promptToDelete.isActive && _prompts.isNotEmpty) {
-        _prompts.first.isActive = true;
+        _prompts
+                .firstWhere((p) => p.isDefault, orElse: () => _prompts.first)
+                .isActive =
+            true;
       }
     });
     await _prefsService.savePrompts(_prompts);
@@ -101,7 +125,6 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
           final index = _prompts.indexWhere((p) => p.id == result.id);
           if (index != -1) _prompts[index] = result;
         } else {
-          if (_prompts.isEmpty) result.isActive = true;
           _prompts.add(result);
         }
       });
@@ -178,12 +201,26 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     );
   }
 
+  Future<void> _saveModelSelection() async {
+    if (_selectedModelId != null) {
+      await _prefsService.saveGeminiModel(_selectedModelId!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Model AI berhasil disimpan.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activePromptId = _isLoading || _prompts.isEmpty
         ? ''
         : _prompts
-              .firstWhere((p) => p.isActive, orElse: () => _defaultPrompt!)
+              .firstWhere((p) => p.isActive, orElse: () => _prompts.first)
               .id;
 
     return AlertDialog(
@@ -194,13 +231,41 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Pilih atau buat prompt yang akan digunakan untuk generate konten. Gunakan placeholder `{topic}` di dalam isi prompt untuk menyisipkan pembahasan.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    const Divider(height: 24),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedModelId,
+                      decoration: const InputDecoration(
+                        labelText: 'Pilih Model AI',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _models.map((model) {
+                        return DropdownMenuItem<String>(
+                          value: model.id,
+                          child: Text(
+                            model.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedModelId = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Prompt Tersimpan',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Divider(height: 8),
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -253,6 +318,10 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Tutup'),
+        ),
+        ElevatedButton(
+          onPressed: _saveModelSelection,
+          child: const Text('Simpan Model'),
         ),
       ],
     );
