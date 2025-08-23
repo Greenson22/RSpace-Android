@@ -9,8 +9,6 @@ import '../../statistics_page.dart';
 import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
 import '../../time_log_page.dart';
-import '../dialogs/gemini_api_key_dialog.dart';
-import '../dialogs/gemini_prompt_dialog.dart';
 import 'dashboard_item.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -18,6 +16,7 @@ List<VoidCallback> buildDashboardActions(
   required VoidCallback onShowStorageDialog,
   required bool isPathSet,
 }) {
+  // Hapus aksi untuk dialog dari sini
   final actions = [
     () => Navigator.push(
       context,
@@ -39,8 +38,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
-    () => showGeminiApiKeyDialog(context),
-    () => showGeminiPromptDialog(context),
     if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(
       context,
@@ -78,6 +75,7 @@ class DashboardGrid extends StatelessWidget {
           crossAxisCount = 2;
         }
 
+        // Hapus item menu AI dari daftar ini
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -103,16 +101,6 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.cloud_outlined,
             'label': 'File Online',
             'colors': AppTheme.gradientColors4,
-          },
-          {
-            'icon': Icons.key_outlined,
-            'label': 'API Key Gemini',
-            'colors': const [Color(0xFF42A5F5), Color(0xFF1976D2)],
-          },
-          {
-            'icon': Icons.edit_note_outlined,
-            'label': 'Manajemen Prompt',
-            'colors': const [Color(0xFF26A69A), Color(0xFF00796B)],
           },
           {
             'icon': Icons.folder_open_rounded,
