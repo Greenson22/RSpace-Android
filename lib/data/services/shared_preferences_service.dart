@@ -1,6 +1,8 @@
 // lib/data/services/shared_preferences_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart'; // Pastikan package uuid ditambahkan
+import '../models/api_key_model.dart';
 
 class SharedPreferencesService {
   static const String _sortTypeKey = 'sort_type';
@@ -20,11 +22,13 @@ class SharedPreferencesService {
   // KUNCI BARU UNTUK FLO
   static const String _showFloatingCharacterKey = 'show_floating_character';
 
-  // KUNCI BARU UNTUK GEMINI API KEY
-  static const String _geminiApiKey = 'gemini_api_key';
-
   // KUNCI BARU UNTUK MODEL GEMINI
   static const String _geminiModelKey = 'gemini_model';
+
+  // Kunci lama (deprecated), digunakan untuk migrasi
+  static const String _geminiApiKey_old = 'gemini_api_key';
+  // Kunci baru untuk menyimpan list
+  static const String _geminiApiKeys = 'gemini_api_keys_list';
 
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
@@ -43,7 +47,43 @@ class SharedPreferencesService {
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
 
-  // ==> FUNGSI BARU UNTUK MODEL GEMINI <==
+  // ==> FUNGSI BARU UNTUK MENYIMPAN DAN MEMUAT LIST API KEY <==
+  Future<void> saveApiKeys(List<ApiKey> keys) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedData = encodeApiKeys(keys);
+    await prefs.setString(_geminiApiKeys, encodedData);
+  }
+
+  Future<List<ApiKey>> loadApiKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Cek apakah data dengan format list baru sudah ada
+    if (prefs.containsKey(_geminiApiKeys)) {
+      final String? encodedData = prefs.getString(_geminiApiKeys);
+      return decodeApiKeys(encodedData ?? '[]');
+    }
+
+    // Logika Migrasi: Cek apakah ada kunci tunggal yang lama
+    if (prefs.containsKey(_geminiApiKey_old)) {
+      final String? oldKey = prefs.getString(_geminiApiKey_old);
+      if (oldKey != null && oldKey.isNotEmpty) {
+        // Buat key baru dari data lama
+        final migratedKey = ApiKey(
+          id: const Uuid().v4(),
+          name: 'Kunci Lama (Default)',
+          key: oldKey,
+          isActive: true,
+        );
+        final List<ApiKey> keys = [migratedKey];
+        await saveApiKeys(keys); // Simpan dalam format list baru
+        await prefs.remove(_geminiApiKey_old); // Hapus kunci lama
+        return keys;
+      }
+    }
+
+    return []; // Kembalikan list kosong jika tidak ada data
+  }
+
   Future<void> saveGeminiModel(String modelId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_geminiModelKey, modelId);
@@ -52,17 +92,6 @@ class SharedPreferencesService {
   Future<String?> loadGeminiModel() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_geminiModelKey);
-  }
-
-  // ==> FUNGSI BARU UNTUK GEMINI API KEY <==
-  Future<void> saveGeminiApiKey(String apiKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_geminiApiKey, apiKey);
-  }
-
-  Future<String?> loadGeminiApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_geminiApiKey);
   }
 
   // ==> TAMBAHKAN METODE BARU UNTUK PREFERENSI FLO <==

@@ -1,20 +1,32 @@
 // lib/data/services/gemini_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/api_key_model.dart';
 import 'shared_preferences_service.dart';
 
 class GeminiService {
-  // Hapus model statis dari sini
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
+  // Helper untuk mendapatkan API key yang aktif
+  Future<String> _getActiveApiKey() async {
+    final List<ApiKey> keys = await _prefsService.loadApiKeys();
+    try {
+      // Cari kunci pertama yang isActive == true
+      final activeKey = keys.firstWhere((k) => k.isActive);
+      return activeKey.key;
+    } catch (e) {
+      // Jika tidak ada yang aktif, kembalikan string kosong
+      return '';
+    }
+  }
+
   Future<String> generateHtmlContent(String topic) async {
-    final apiKey = await _prefsService.loadGeminiApiKey();
-    // Muat model yang dipilih, atau gunakan default jika belum ada
+    final apiKey = await _getActiveApiKey();
     final model = await _prefsService.loadGeminiModel() ?? 'gemini-2.5-flash';
 
-    if (apiKey == null || apiKey.isEmpty) {
+    if (apiKey.isEmpty) {
       throw Exception(
-        'API Key Gemini belum diatur. Silakan atur melalui menu di Dashboard.',
+        'Tidak ada API Key Gemini yang aktif. Silakan atur melalui menu di Dashboard.',
       );
     }
 
