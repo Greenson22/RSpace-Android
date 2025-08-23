@@ -23,9 +23,12 @@ class ThemeProvider with ChangeNotifier {
   String? _backgroundImagePath;
   String? get backgroundImagePath => _backgroundImagePath;
 
-  // ==> STATE BARU UNTUK SKALA MENU <==
   double _dashboardItemScale = 1.0;
   double get dashboardItemScale => _dashboardItemScale;
+
+  // ==> TAMBAHKAN STATE BARU UNTUK FLO <==
+  bool _showFloatingCharacter = true;
+  bool get showFloatingCharacter => _showFloatingCharacter;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -38,12 +41,11 @@ class ThemeProvider with ChangeNotifier {
     _loadTheme();
   }
 
-  /// Memperbarui beberapa properti tema sekaligus dan memberitahu pendengar.
   void updateTheme({
     bool? isDark,
     bool? isChristmas,
     Color? color,
-    double? dashboardScale, // ==> TAMBAHKAN PARAMETER BARU
+    double? dashboardScale,
   }) {
     bool needsNotify = false;
 
@@ -62,7 +64,6 @@ class ThemeProvider with ChangeNotifier {
       _addRecentColor(color);
       needsNotify = true;
     }
-    // ==> LOGIKA BARU UNTUK SKALA MENU <==
     if (dashboardScale != null && _dashboardItemScale != dashboardScale) {
       _dashboardItemScale = dashboardScale;
       _prefsService.saveDashboardItemScale(dashboardScale);
@@ -72,6 +73,12 @@ class ThemeProvider with ChangeNotifier {
     if (needsNotify) {
       notifyListeners();
     }
+  }
+
+  // ==> TAMBAHKAN METODE UNTUK MENGAKTIFKAN/MENONAKTIFKAN FLO <==
+  void toggleFloatingCharacter() {
+    _showFloatingCharacter = !_showFloatingCharacter;
+    notifyListeners();
   }
 
   Future<void> setBackgroundImage() async {
@@ -86,7 +93,7 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
-  Future<void> clearBackgroundImage() async {
+  Future<void> clearBackgroundImagePath() async {
     _backgroundImagePath = null;
     await _prefsService.clearBackgroundImagePath();
     notifyListeners();
@@ -113,8 +120,10 @@ class ThemeProvider with ChangeNotifier {
     _recentColors = recentColorValues.map((v) => Color(v)).toList();
     _backgroundImagePath = await _prefsService.loadBackgroundImagePath();
 
-    // ==> MEMUAT SKALA MENU SAAT INISIALISASI <==
     _dashboardItemScale = await _prefsService.loadDashboardItemScale();
+
+    // ==> MEMUAT PREFERENSI FLO SAAT APLIKASI DIMULAI <==
+    _showFloatingCharacter = await _prefsService.loadShowFloPreference();
 
     notifyListeners();
   }

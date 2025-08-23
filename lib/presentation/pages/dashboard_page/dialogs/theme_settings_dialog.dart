@@ -102,7 +102,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     tooltip: 'Hapus Gambar Latar',
                     onPressed: () async {
-                      await themeProvider.clearBackgroundImage();
+                      await themeProvider.clearBackgroundImagePath();
                       if (mounted) Navigator.of(context).pop();
                     },
                   ),

@@ -17,6 +17,9 @@ class SharedPreferencesService {
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
 
+  // KUNCI BARU UNTUK FLO
+  static const String _showFloatingCharacterKey = 'show_floating_character';
+
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
@@ -33,6 +36,18 @@ class SharedPreferencesService {
   // --- KUNCI SUMBER DATA PERPUSKU ---
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
+
+  // ==> TAMBAHKAN METODE BARU UNTUK PREFERENSI FLO <==
+  Future<void> saveShowFloPreference(bool showFlo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showFloatingCharacterKey, showFlo);
+  }
+
+  Future<bool> loadShowFloPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Default-nya aktif
+    return prefs.getBool(_showFloatingCharacterKey) ?? true;
+  }
 
   Future<void> saveDashboardItemScale(double scale) async {
     final prefs = await SharedPreferences.getInstance();

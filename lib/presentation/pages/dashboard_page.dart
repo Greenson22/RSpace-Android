@@ -170,6 +170,9 @@ class _DashboardPageState extends State<DashboardPage> {
         final backgroundImagePath = themeProvider.backgroundImagePath;
         final isChristmas = themeProvider.isChristmasTheme;
 
+        // ==> Dapatkan status Flo dari provider <==
+        final bool showFlo = themeProvider.showFloatingCharacter;
+
         return RawKeyboardListener(
           focusNode: _focusNode,
           onKey: _handleKeyEvent,
@@ -202,6 +205,14 @@ class _DashboardPageState extends State<DashboardPage> {
                     ? 0
                     : null,
                 actions: [
+                  // ==> TAMBAHKAN TOMBOL FLO DI SINI <==
+                  IconButton(
+                    icon: Icon(
+                      showFlo ? Icons.pets_outlined : Icons.pets_rounded,
+                    ),
+                    tooltip: showFlo ? 'Nonaktifkan Flo' : 'Aktifkan Flo',
+                    onPressed: () => themeProvider.toggleFloatingCharacter(),
+                  ),
                   if (_isPathSet)
                     IconButton(
                       icon: const Icon(Icons.folder_open_rounded),
