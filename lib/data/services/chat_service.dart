@@ -1,5 +1,4 @@
 // lib/data/services/chat_service.dart
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/chat_message_model.dart';
 import '../models/my_task_model.dart';
@@ -12,6 +11,7 @@ import 'subject_service.dart';
 import 'time_log_service.dart';
 import 'topic_service.dart';
 import 'package:path/path.dart' as path;
+import 'package:flutter/material.dart'; // Import material for DateUtils
 
 class ChatService {
   final GeminiService _geminiService = GeminiService();
@@ -40,7 +40,10 @@ class ChatService {
 
   Future<String> _gatherApplicationContext() async {
     final buffer = StringBuffer();
-    final today = DateFormat('EEEE, d MMMM yyyy').format(DateTime.now());
+    final today = DateFormat(
+      'EEEE, d MMMM yyyy',
+      'id_ID',
+    ).format(DateTime.now());
     buffer.writeln('=== Konteks Data Aplikasi RSpace ===');
     buffer.writeln('Tanggal Hari Ini: $today\n');
 

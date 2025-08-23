@@ -1,5 +1,6 @@
 // lib/presentation/pages/chat_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart'; // Import package baru
 import 'package:provider/provider.dart';
 import '../../data/models/chat_message_model.dart';
 import '../providers/chat_provider.dart';
@@ -48,7 +49,6 @@ class _ChatViewState extends State<_ChatView> {
     });
   }
 
-  // ==> FUNGSI BARU UNTUK KONFIRMASI <==
   Future<void> _confirmStartNewChat() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -112,7 +112,6 @@ class _ChatViewState extends State<_ChatView> {
           IconButton(
             icon: const Icon(Icons.add_comment_outlined),
             tooltip: 'Chat Baru',
-            // ==> PANGGIL FUNGSI KONFIRMASI DI SINI <==
             onPressed: _confirmStartNewChat,
           ),
           IconButton(
@@ -165,6 +164,11 @@ class _ChatMessageBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final isUser = message.role == ChatRole.user;
     final isError = message.role == ChatRole.error;
+    final textColor = isUser
+        ? theme.colorScheme.onPrimary
+        : (isError
+              ? Colors.red.shade900
+              : theme.colorScheme.onSecondaryContainer);
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -184,16 +188,22 @@ class _ChatMessageBubble extends StatelessWidget {
             bottomRight: Radius.circular(isUser ? 0 : 16),
           ),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: isUser
-                ? theme.colorScheme.onPrimary
-                : (isError
-                      ? Colors.red.shade900
-                      : theme.colorScheme.onSecondaryContainer),
-          ),
-        ),
+        // ==> GANTI Text DENGAN MarkdownBody <==
+        child: isUser || isError
+            ? Text(message.text, style: TextStyle(color: textColor))
+            : MarkdownBody(
+                data: message.text,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodyMedium?.copyWith(color: textColor),
+                  h2: theme.textTheme.titleLarge?.copyWith(color: textColor),
+                  h3: theme.textTheme.titleMedium?.copyWith(color: textColor),
+                  code: theme.textTheme.bodyMedium?.copyWith(
+                    fontFamily: 'monospace',
+                    backgroundColor: theme.dividerColor,
+                    color: textColor,
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -260,10 +270,7 @@ class _TypingIndicator extends StatelessWidget {
         child: const SizedBox(
           width: 50,
           height: 20,
-          child: Text(
-            "...",
-            style: TextStyle(fontSize: 18),
-          ), // Placeholder for a more complex typing animation
+          child: Text("...", style: TextStyle(fontSize: 18)),
         ),
       ),
     );
