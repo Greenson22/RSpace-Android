@@ -1,5 +1,4 @@
 // lib/presentation/providers/discussion_provider.dart
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -71,8 +70,6 @@ class DiscussionProvider with ChangeNotifier {
     }
     return counts;
   }
-
-  // --- DATA LOGIC ---
 
   Future<void> loadInitialData() async {
     await _loadPreferences();
@@ -295,7 +292,6 @@ class DiscussionProvider with ChangeNotifier {
     return true;
   }
 
-  // --- ACTIONS ---
   Future<String> getPerpuskuHtmlBasePath() async {
     final perpuskuPath = await _pathService.perpuskuDataPath;
     return path.join(perpuskuPath, 'file_contents', 'topics');
@@ -377,7 +373,6 @@ class DiscussionProvider with ChangeNotifier {
       final tempFile = File(path.join(tempDir.path, tempFileName));
       await tempFile.writeAsString(indexDocument.outerHtml);
 
-      // Menggunakan OpenFile untuk membuka file
       final result = await OpenFile.open(tempFile.path);
 
       if (result.type != ResultType.done) {
@@ -388,7 +383,6 @@ class DiscussionProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI EDIT FILE DIPERBARUI SECARA SIGNIFIKAN <==
   Future<void> editDiscussionFile(Discussion discussion) async {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Tidak ada path file yang ditentukan untuk diedit.');
@@ -405,7 +399,6 @@ class DiscussionProvider with ChangeNotifier {
       }
 
       if (Platform.isLinux) {
-        // Coba buka dengan editor dari environment variable
         final editor =
             Platform.environment['EDITOR'] ?? Platform.environment['VISUAL'];
         ProcessResult result;
@@ -414,23 +407,20 @@ class DiscussionProvider with ChangeNotifier {
           result = await Process.run(editor, [
             contentFile.path,
           ], runInShell: true);
-          if (result.exitCode == 0) return; // Berhasil
+          if (result.exitCode == 0) return;
         }
 
-        // Jika gagal atau tidak diset, coba editor umum
         const commonEditors = ['gedit', 'kate', 'mousepad', 'code'];
         for (final ed in commonEditors) {
           result = await Process.run('which', [ed]);
           if (result.exitCode == 0) {
-            // Jika editor ditemukan
             result = await Process.run(ed, [
               contentFile.path,
             ], runInShell: true);
-            if (result.exitCode == 0) return; // Berhasil
+            if (result.exitCode == 0) return;
           }
         }
 
-        // Fallback terakhir ke xdg-open
         result = await Process.run('xdg-open', [contentFile.path]);
         if (result.exitCode != 0) {
           throw Exception(
@@ -438,7 +428,6 @@ class DiscussionProvider with ChangeNotifier {
           );
         }
       } else {
-        // Logika fallback untuk platform lain (Android, Windows, dll)
         final result = await OpenFile.open(contentFile.path);
         if (result.type != ResultType.done) {
           throw Exception('Gagal membuka file untuk diedit: ${result.message}');
@@ -478,16 +467,37 @@ class DiscussionProvider with ChangeNotifier {
     _saveDiscussions();
   }
 
-  void addDiscussion(String name) {
+  // ==> FUNGSI INI DIPERBARUI <==
+  Future<void> addDiscussion(
+    String name, {
+    bool createHtmlFile = false,
+    String? subjectLinkedPath,
+  }) async {
+    String? newFilePath;
+    if (createHtmlFile) {
+      if (subjectLinkedPath == null || subjectLinkedPath.isEmpty) {
+        throw Exception(
+          "Tidak dapat membuat file HTML karena Subject ini belum ditautkan ke folder PerpusKu.",
+        );
+      }
+      final perpuskuBasePath = await getPerpuskuHtmlBasePath();
+      newFilePath = await _discussionService.createDiscussionFile(
+        perpuskuBasePath: perpuskuBasePath,
+        subjectLinkedPath: subjectLinkedPath,
+        discussionName: name,
+      );
+    }
+
     final newDiscussion = Discussion(
       discussion: name,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
+      filePath: newFilePath, // Set path file jika dibuat
     );
     _allDiscussions.add(newDiscussion);
     _filterAndSortDiscussions();
-    _saveDiscussions();
+    await _saveDiscussions();
   }
 
   void addPoint(Discussion discussion, String text) {

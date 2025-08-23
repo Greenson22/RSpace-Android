@@ -92,15 +92,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             }
           } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
             if (_focusedIndex > 0) {
-              // Di kolom kanan, lompat ke atas
               if (isTwoColumn && _focusedIndex >= middle) {
-                // jika ada item di atasnya di kolom yang sama
                 if (_focusedIndex > middle) {
                   _focusedIndex--;
                 }
-              }
-              // Di kolom kiri
-              else {
+              } else {
                 _focusedIndex--;
               }
             }
@@ -139,21 +135,34 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
   }
 
-  void _showSnackBar(String message) {
+  void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : null,
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
   void _addDiscussion(DiscussionProvider provider) {
-    showTextInputDialog(
+    showAddDiscussionDialog(
       context: context,
       title: 'Tambah Diskusi Baru',
       label: 'Nama Diskusi',
-      onSave: (name) {
-        provider.addDiscussion(name);
-        _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
+      subjectLinkedPath: widget.linkedPath,
+      onSave: (name, createHtmlFile) async {
+        try {
+          await provider.addDiscussion(
+            name,
+            createHtmlFile: createHtmlFile,
+            subjectLinkedPath: widget.linkedPath,
+          );
+          _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
+        } catch (e) {
+          _showSnackBar("Gagal: ${e.toString()}", isError: true);
+        }
       },
     );
   }
@@ -285,7 +294,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   isFocused: _isKeyboardActive && index == _focusedIndex,
                   arePointsVisible: _arePointsVisible,
                   onToggleVisibility: _togglePointsVisibility,
-                  subjectLinkedPath: widget.linkedPath, // ==> DITERUSKAN
+                  subjectLinkedPath: widget.linkedPath,
                 );
               },
             ),
@@ -346,7 +355,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
           arePointsVisible: _arePointsVisible,
           onToggleVisibility: _togglePointsVisibility,
-          subjectLinkedPath: widget.linkedPath, // ==> DITERUSKAN
+          subjectLinkedPath: widget.linkedPath,
         );
       },
     );

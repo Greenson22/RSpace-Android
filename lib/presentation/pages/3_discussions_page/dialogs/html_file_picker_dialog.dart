@@ -13,12 +13,12 @@ enum _PickerViewState { topics, subjects, files }
 
 class HtmlFilePickerDialog extends StatefulWidget {
   final String basePath;
-  final String? initialPath; // ==> DITAMBAHKAN
+  final String? initialPath;
 
   const HtmlFilePickerDialog({
     super.key,
     required this.basePath,
-    this.initialPath, // ==> DITAMBAHKAN
+    this.initialPath,
   });
 
   @override
@@ -58,17 +58,20 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   }
 
   Future<void> _initializeDialog() async {
-    // ==> LOGIKA BARU UNTUK INITIAL PATH <==
     if (widget.initialPath != null && widget.initialPath!.isNotEmpty) {
       try {
-        final parts = path.split(widget.initialPath!);
-        if (parts.length >= 2) {
-          _selectedTopic = parts[parts.length - 2];
-          final subjectPath = path.join(widget.basePath, _selectedTopic);
-          await _loadSubjects(subjectPath);
-          _selectedSubject = parts.last;
-          final filePath = path.join(subjectPath, _selectedSubject);
-          await _loadFiles(filePath);
+        final fullInitialPath = path.join(widget.basePath, widget.initialPath!);
+        final parts = path.split(fullInitialPath);
+
+        // Asumsi path relatif adalah 'topic/subject'
+        if (parts.length > 2) {
+          final subjectDirName = parts[parts.length - 1];
+          final topicDirName = parts[parts.length - 2];
+
+          _selectedTopic = topicDirName;
+          _selectedSubject = subjectDirName;
+
+          await _loadFiles(fullInitialPath);
           setState(() {
             _currentView = _PickerViewState.files;
           });
@@ -79,7 +82,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         // Abaikan jika path tidak valid, fallback ke normal
       }
     }
-    // Fallback ke logika normal jika initialPath tidak ada atau tidak valid
+
     await _loadTopics();
     _loadAllFilesForSearch();
   }
@@ -369,9 +372,17 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     }
 
     if (_currentView == _PickerViewState.files) {
-      setState(() => _currentView = _PickerViewState.subjects);
+      setState(() {
+        _currentView = _PickerViewState.subjects;
+        _selectedSubject = '';
+      });
+      _loadSubjects(path.join(widget.basePath, _selectedTopic));
     } else if (_currentView == _PickerViewState.subjects) {
-      setState(() => _currentView = _PickerViewState.topics);
+      setState(() {
+        _currentView = _PickerViewState.topics;
+        _selectedTopic = '';
+      });
+      _loadTopics();
     } else {
       Navigator.of(context).pop();
     }
