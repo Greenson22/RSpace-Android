@@ -297,6 +297,36 @@ class DiscussionProvider with ChangeNotifier {
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
+  Future<void> writeHtmlToFile(String relativePath, String htmlContent) async {
+    try {
+      final basePath = await getPerpuskuHtmlBasePath();
+      final fullPath = path.join(basePath, relativePath);
+      final file = File(fullPath);
+
+      if (!await file.exists()) {
+        throw Exception("File target tidak ditemukan untuk ditulis.");
+      }
+
+      final fullHtml =
+          '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+$htmlContent
+</body>
+</html>
+''';
+      await file.writeAsString(fullHtml);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> updateDiscussionFilePath(
     Discussion discussion,
     String filePath,

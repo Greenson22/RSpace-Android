@@ -11,7 +11,8 @@ class EditPopupMenu extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onSetFilePath;
   final VoidCallback? onRemoveFilePath;
-  final VoidCallback? onEditFilePath; // ==> TAMBAHKAN CALLBACK BARU
+  final VoidCallback? onEditFilePath;
+  final VoidCallback? onGenerateHtml; // ==> DITAMBAHKAN
   final bool isFinished;
   final bool hasPoints;
   final bool hasFilePath;
@@ -27,7 +28,8 @@ class EditPopupMenu extends StatelessWidget {
     this.onDelete,
     this.onSetFilePath,
     this.onRemoveFilePath,
-    this.onEditFilePath, // ==> TAMBAHKAN DI KONSTRUKTOR
+    this.onEditFilePath,
+    this.onGenerateHtml, // ==> DITAMBAHKAN
     this.isFinished = false,
     this.hasPoints = false,
     this.hasFilePath = false,
@@ -48,15 +50,17 @@ class EditPopupMenu extends StatelessWidget {
         if (value == 'remove_file_path' && onRemoveFilePath != null) {
           onRemoveFilePath!();
         }
-        // ==> TAMBAHKAN PENANGANAN EVENT BARU
         if (value == 'edit_file_path' && onEditFilePath != null) {
           onEditFilePath!();
+        }
+        // ==> DITAMBAHKAN
+        if (value == 'generate_html' && onGenerateHtml != null) {
+          onGenerateHtml!();
         }
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
 
-        // Jika ini adalah menu untuk sebuah Point (ditandai dengan onAddPoint == null)
         if (onAddPoint == null) {
           if (!isFinished) {
             if (onDateChange != null) {
@@ -78,7 +82,6 @@ class EditPopupMenu extends StatelessWidget {
           }
         }
 
-        // Jika ini adalah menu untuk Diskusi
         if (onAddPoint != null) {
           if (!isFinished) {
             menuItems.add(
@@ -95,7 +98,15 @@ class EditPopupMenu extends StatelessWidget {
                 ),
               );
             }
-            // ==> TAMBAHKAN MENU EDIT FILE DI SINI <==
+            // ==> MENU BARU DITAMBAHKAN DI SINI
+            if (hasFilePath && onGenerateHtml != null) {
+              menuItems.add(
+                const PopupMenuItem<String>(
+                  value: 'generate_html',
+                  child: Text('Generate Content with AI'),
+                ),
+              );
+            }
             if (hasFilePath && onEditFilePath != null) {
               menuItems.add(
                 const PopupMenuItem<String>(
@@ -146,7 +157,6 @@ class EditPopupMenu extends StatelessWidget {
         }
 
         if (!isFinished) {
-          // Berlaku untuk Diskusi (jika tidak punya point) dan Point
           if (onMarkAsFinished != null && (onAddPoint == null || !hasPoints)) {
             menuItems.add(const PopupMenuDivider());
             menuItems.add(
@@ -157,7 +167,6 @@ class EditPopupMenu extends StatelessWidget {
             );
           }
         } else {
-          // PERUBAHAN UTAMA: Hanya tampilkan "Aktifkan Lagi" jika tidak memiliki point
           if (onReactivate != null && !hasPoints) {
             menuItems.add(const PopupMenuDivider());
             menuItems.add(
@@ -167,7 +176,6 @@ class EditPopupMenu extends StatelessWidget {
               ),
             );
           } else if (onReactivate != null && onAddPoint == null) {
-            // Ini untuk point, selalu tampilkan
             menuItems.add(const PopupMenuDivider());
             menuItems.add(
               const PopupMenuItem<String>(

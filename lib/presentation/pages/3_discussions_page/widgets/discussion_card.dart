@@ -5,6 +5,7 @@ import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
 import '../../../../presentation/widgets/edit_popup_menu.dart';
 import '../dialogs/discussion_dialogs.dart';
+import '../dialogs/generate_html_dialog.dart';
 import '../utils/repetition_code_utils.dart';
 import 'discussion_subtitle.dart';
 import 'point_tile.dart';
@@ -15,7 +16,7 @@ class DiscussionCard extends StatelessWidget {
   final bool isFocused;
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
-  final String? subjectLinkedPath; // ==> DITAMBAHKAN
+  final String? subjectLinkedPath;
 
   const DiscussionCard({
     super.key,
@@ -24,7 +25,7 @@ class DiscussionCard extends StatelessWidget {
     this.isFocused = false,
     required this.arePointsVisible,
     required this.onToggleVisibility,
-    this.subjectLinkedPath, // ==> DITAMBAHKAN
+    this.subjectLinkedPath,
   });
 
   void _showSnackBar(BuildContext context, String message) {
@@ -119,7 +120,6 @@ class DiscussionCard extends StatelessWidget {
   void _setFilePath(BuildContext context, DiscussionProvider provider) async {
     try {
       final basePath = await provider.getPerpuskuHtmlBasePath();
-      // ==> GUNAKAN subjectLinkedPath SEBAGAI INITIAL PATH <==
       final newPath = await showHtmlFilePicker(
         context,
         basePath,
@@ -159,6 +159,23 @@ class DiscussionCard extends StatelessWidget {
       await provider.editDiscussionFile(discussion);
     } catch (e) {
       _showSnackBar(context, e.toString());
+    }
+  }
+
+  void _generateHtml(BuildContext context) async {
+    final success = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => ChangeNotifierProvider.value(
+        value: Provider.of<DiscussionProvider>(context, listen: false),
+        child: GenerateHtmlDialog(
+          discussionName: discussion.discussion,
+          filePath: discussion.filePath,
+        ),
+      ),
+    );
+
+    if (success == true && context.mounted) {
+      _showSnackBar(context, 'Konten HTML berhasil dibuat!');
     }
   }
 
@@ -244,6 +261,7 @@ class DiscussionCard extends StatelessWidget {
                   onSetFilePath: () => _setFilePath(context, provider),
                   onRemoveFilePath: () => _removeFilePath(context, provider),
                   onEditFilePath: () => _editFile(context, provider),
+                  onGenerateHtml: () => _generateHtml(context),
                   onDateChange: () => _changeDiscussionDate(context, provider),
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),
