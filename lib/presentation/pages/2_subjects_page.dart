@@ -116,12 +116,10 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> _linkSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final newPath = await showPerpuskuPathPickerDialog(context: context);
 
-    // newPath bisa null jika pengguna membatalkan dialog
     if (newPath != null) {
       try {
         await provider.updateSubjectLinkedPath(subject.name, newPath);
@@ -228,7 +226,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(jsonFilePath),
-          // ==> PASS linkedPath KE HALAMAN DISKUSI <==
           child: DiscussionsPage(
             subjectName: subject.name,
             linkedPath: subject.linkedPath,
@@ -236,10 +233,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
         ),
       ),
     ).then((_) {
+      if (!mounted) return;
+      // Cukup panggil fetchSubjects untuk me-refresh data.
       subjectProvider.fetchSubjects();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        FocusScope.of(context).requestFocus(_focusNode);
-      });
+
+      // >>> BARIS PENYEBAB ERROR DIHAPUS DARI SINI <<<
     });
   }
 
@@ -338,8 +336,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onDelete: () => _deleteSubject(context, subject),
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
-              onLinkPath: () =>
-                  _linkSubject(context, subject), // ==> DIHUBUNGKAN
+              onLinkPath: () => _linkSubject(context, subject),
             );
           },
         );
@@ -377,8 +374,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onDelete: () => _deleteSubject(context, subject),
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
-              onLinkPath: () =>
-                  _linkSubject(context, subject), // ==> DIHUBUNGKAN
+              onLinkPath: () => _linkSubject(context, subject),
             );
           },
         );
