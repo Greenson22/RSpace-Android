@@ -48,6 +48,34 @@ class _ChatViewState extends State<_ChatView> {
     });
   }
 
+  // ==> FUNGSI BARU UNTUK KONFIRMASI <==
+  Future<void> _confirmStartNewChat() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mulai Percakapan Baru?'),
+        content: const Text(
+          'Riwayat percakapan saat ini akan dihapus. Anda yakin ingin melanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ya, Mulai Baru'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      if (mounted) {
+        Provider.of<ChatProvider>(context, listen: false).startNewChat();
+      }
+    }
+  }
+
   Future<void> _confirmClearChat() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -84,9 +112,8 @@ class _ChatViewState extends State<_ChatView> {
           IconButton(
             icon: const Icon(Icons.add_comment_outlined),
             tooltip: 'Chat Baru',
-            onPressed: () {
-              Provider.of<ChatProvider>(context, listen: false).startNewChat();
-            },
+            // ==> PANGGIL FUNGSI KONFIRMASI DI SINI <==
+            onPressed: _confirmStartNewChat,
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
