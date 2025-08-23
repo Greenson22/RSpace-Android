@@ -15,9 +15,15 @@ import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/my_tasks_page.dart';
 import 'presentation/providers/theme_provider.dart';
 
+// ==> 1. IMPORT WIDGET KARAKTER BARU ANDA
+import 'presentation/widgets/floating_character_widget.dart';
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
+  // ... (kode main Anda yang lain tidak berubah) ...
+
+  // Kode Anda yang ada di sini
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
 
@@ -80,6 +86,9 @@ class MyApp extends StatelessWidget {
                       snowColor: Colors.white,
                     ),
                   ),
+                // ==> 2. TAMBAHKAN KARAKTER ANDA DI SINI
+                // IgnorePointer agar tidak mengganggu interaksi dengan UI di bawahnya
+                const IgnorePointer(child: FloatingCharacter(isVisible: true)),
               ],
             );
           },
