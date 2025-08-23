@@ -8,8 +8,8 @@ import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';
 import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
-// ==> IMPORT HALAMAN BARU <==
 import '../../time_log_page.dart';
+import '../dialogs/gemini_api_key_dialog.dart';
 import 'dashboard_item.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -26,7 +26,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
     ),
-    // ==> TAMBAHKAN AKSI NAVIGASI BARU <==
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
@@ -39,6 +38,7 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
+    () => showGeminiApiKeyDialog(context),
     if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(
       context,
@@ -64,7 +64,6 @@ class DashboardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ==> GUNAKAN CONSUMER UNTUK MENDAPATKAN NILAI SKALA <==
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final screenWidth = MediaQuery.of(context).size.width;
@@ -77,12 +76,6 @@ class DashboardGrid extends StatelessWidget {
           crossAxisCount = 2;
         }
 
-        const List<Color> gradientColors6 = [
-          Color(0xFF7E57C2),
-          Color(0xFF5E35B1),
-        ];
-
-        // ==> TAMBAHKAN DATA ITEM BARU DI SINI <==
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -110,6 +103,11 @@ class DashboardGrid extends StatelessWidget {
             'colors': AppTheme.gradientColors4,
           },
           {
+            'icon': Icons.key_outlined,
+            'label': 'API Key Gemini',
+            'colors': const [Color(0xFF42A5F5), Color(0xFF1976D2)],
+          },
+          {
             'icon': Icons.folder_open_rounded,
             'label': 'Penyimpanan Utama',
             'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
@@ -117,7 +115,7 @@ class DashboardGrid extends StatelessWidget {
           {
             'icon': Icons.settings_backup_restore_rounded,
             'label': 'Manajemen Backup',
-            'colors': gradientColors6,
+            'colors': const [Color(0xFF7E57C2), Color(0xFF5E35B1)],
           },
         ];
 
@@ -130,7 +128,6 @@ class DashboardGrid extends StatelessWidget {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            // ==> SESUAIKAN ASPECT RATIO BERDASARKAN SKALA <==
             childAspectRatio: 1.0 / themeProvider.dashboardItemScale,
           ),
           itemCount: itemData.length,

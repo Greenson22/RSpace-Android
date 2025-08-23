@@ -14,6 +14,7 @@ import 'about_page.dart';
 import 'dashboard_page/widgets/dashboard_grid.dart';
 import 'dashboard_page/widgets/dashboard_header.dart';
 import 'dashboard_page/dialogs/theme_settings_dialog.dart';
+import 'dashboard_page/dialogs/gemini_api_key_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -169,8 +170,6 @@ class _DashboardPageState extends State<DashboardPage> {
       builder: (context, themeProvider, child) {
         final backgroundImagePath = themeProvider.backgroundImagePath;
         final isChristmas = themeProvider.isChristmasTheme;
-
-        // ==> Dapatkan status Flo dari provider <==
         final bool showFlo = themeProvider.showFloatingCharacter;
 
         return RawKeyboardListener(
@@ -205,7 +204,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     ? 0
                     : null,
                 actions: [
-                  // ==> TAMBAHKAN TOMBOL FLO DI SINI <==
                   IconButton(
                     icon: Icon(
                       showFlo ? Icons.pets_outlined : Icons.pets_rounded,
@@ -219,6 +217,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       onPressed: () => _showStoragePathDialog(context),
                       tooltip: 'Ubah Penyimpanan Utama',
                     ),
+                  IconButton(
+                    icon: const Icon(Icons.key_outlined),
+                    onPressed: () => showGeminiApiKeyDialog(context),
+                    tooltip: 'Konfigurasi API Key Gemini',
+                  ),
                   IconButton(
                     icon: const Icon(Icons.palette_outlined),
                     onPressed: () => showThemeSettingsDialog(context),

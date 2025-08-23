@@ -1,22 +1,28 @@
 // lib/data/services/gemini_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'shared_preferences_service.dart'; // Import SharedPreferencesService
 
 class GeminiService {
-  // Ganti dengan API Key Anda
-  static const String _apiKey = 'YOUR_GEMINI_API_KEY';
+  // Hapus API Key statis dari sini
   static const String _model = 'gemini-pro';
-  static const String _apiUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$_apiKey';
+
+  // Buat instance SharedPreferencesService
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
 
   Future<String> generateHtmlContent(String topic) async {
-    if (_apiKey == 'AIzaSyDKjWo0bbXhcxxeltGv2KaC8dNLDz3i4jM') {
+    // Muat API Key dari SharedPreferences
+    final apiKey = await _prefsService.loadGeminiApiKey();
+
+    if (apiKey == null || apiKey.isEmpty) {
       throw Exception(
-        'API Key Gemini belum diatur di lib/data/services/gemini_service.dart',
+        'API Key Gemini belum diatur. Silakan atur melalui menu di Dashboard.',
       );
     }
 
-    // Prompt ini berfungsi baik untuk judul maupun deskripsi panjang.
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$apiKey';
+
     final prompt =
         'Buatkan saya konten HTML untuk pembahasan tentang "$topic". '
         'Tolong berikan hanya kode HTML untuk bagian body saja, tanpa tag <html>, <head>, atau <body>. '
@@ -26,7 +32,7 @@ class GeminiService {
 
     try {
       final response = await http.post(
-        Uri.parse(_apiUrl),
+        Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -41,7 +47,6 @@ class GeminiService {
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        // Mengakses bagian teks dengan aman
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
           final content = candidates[0]['content'] as Map<String, dynamic>?;

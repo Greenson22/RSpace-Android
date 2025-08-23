@@ -20,6 +20,9 @@ class SharedPreferencesService {
   // KUNCI BARU UNTUK FLO
   static const String _showFloatingCharacterKey = 'show_floating_character';
 
+  // KUNCI BARU UNTUK GEMINI API KEY
+  static const String _geminiApiKey = 'gemini_api_key';
+
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
@@ -36,6 +39,17 @@ class SharedPreferencesService {
   // --- KUNCI SUMBER DATA PERPUSKU ---
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
+
+  // ==> FUNGSI BARU UNTUK GEMINI API KEY <==
+  Future<void> saveGeminiApiKey(String apiKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_geminiApiKey, apiKey);
+  }
+
+  Future<String?> loadGeminiApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_geminiApiKey);
+  }
 
   // ==> TAMBAHKAN METODE BARU UNTUK PREFERENSI FLO <==
   Future<void> saveShowFloPreference(bool showFlo) async {
