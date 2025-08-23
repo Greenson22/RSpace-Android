@@ -15,6 +15,7 @@ import 'dashboard_page/widgets/dashboard_grid.dart';
 import 'dashboard_page/widgets/dashboard_header.dart';
 import 'dashboard_page/dialogs/theme_settings_dialog.dart';
 import 'dashboard_page/dialogs/gemini_api_key_dialog.dart';
+import 'dashboard_page/dialogs/gemini_prompt_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -217,10 +218,27 @@ class _DashboardPageState extends State<DashboardPage> {
                       onPressed: () => _showStoragePathDialog(context),
                       tooltip: 'Ubah Penyimpanan Utama',
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.key_outlined),
-                    onPressed: () => showGeminiApiKeyDialog(context),
-                    tooltip: 'Konfigurasi API Key Gemini',
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.smart_toy_outlined),
+                    tooltip: 'Pengaturan AI',
+                    onSelected: (value) {
+                      if (value == 'api_key') {
+                        showGeminiApiKeyDialog(context);
+                      } else if (value == 'prompt') {
+                        showGeminiPromptDialog(context);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'api_key',
+                            child: Text('Manajemen API Key'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'prompt',
+                            child: Text('Manajemen Prompt'),
+                          ),
+                        ],
                   ),
                   IconButton(
                     icon: const Icon(Icons.palette_outlined),

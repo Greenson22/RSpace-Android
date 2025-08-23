@@ -1,8 +1,9 @@
 // lib/data/services/shared_preferences_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart'; // Pastikan package uuid ditambahkan
+import 'package:uuid/uuid.dart';
 import '../models/api_key_model.dart';
+import '../models/prompt_model.dart';
 
 class SharedPreferencesService {
   static const String _sortTypeKey = 'sort_type';
@@ -29,6 +30,9 @@ class SharedPreferencesService {
   static const String _geminiApiKey_old = 'gemini_api_key';
   // Kunci baru untuk menyimpan list
   static const String _geminiApiKeys = 'gemini_api_keys_list';
+
+  // KUNCI BARU UNTUK PROMPTS
+  static const String _geminiPrompts = 'gemini_prompts_list';
 
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
@@ -94,7 +98,60 @@ class SharedPreferencesService {
     return prefs.getString(_geminiModelKey);
   }
 
-  // ==> TAMBAHKAN METODE BARU UNTUK PREFERENSI FLO <==
+  // ==> FUNGSI BARU UNTUK PROMPTS <==
+  Future<void> savePrompts(List<Prompt> prompts) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedData = encodePrompts(prompts);
+    await prefs.setString(_geminiPrompts, encodedData);
+  }
+
+  Future<List<Prompt>> loadPrompts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? encodedData = prefs.getString(_geminiPrompts);
+    return decodePrompts(encodedData ?? '[]');
+  }
+
+  Prompt _getDefaultPrompt() {
+    return Prompt(
+      id: 'default-prompt',
+      name: 'Prompt Standar (Default)',
+      content: '''
+Buatkan saya konten HTML untuk dimasukkan ke dalam body sebuah website, berdasarkan pembahasan tentang: "{topic}".
+
+Ikuti aturan-aturan berikut dengan ketat:
+1. Gunakan HANYA inline CSS untuk semua styling. Jangan gunakan tag <style>.
+2. Bungkus seluruh konten dalam satu div utama. Berikan div utama ini style background warna biru muda (misalnya, `style="background-color: #f0f8ff; padding: 20px; border-radius: 8px;"`).
+3. Letakkan judul utama di dalam sebuah div tersendiri dengan styling yang menarik (misalnya, `style="background-color: #4a90e2; color: white; padding: 15px; text-align: center; font-size: 24px; border-radius: 5px;"`).
+4. Gunakan warna-warni yang harmonis untuk teks paragraf dan sub-judul. Contohnya, gunakan warna seperti `#333` untuk teks biasa, dan warna biru atau hijau tua untuk sub-judul.
+5. Jika ada blok kode, gunakan tag `<pre>` dan `<code>`. Beri style pada tag `<pre>` agar terlihat seperti blok kode (misalnya, `style="background-color: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace;"`). Di dalam tag `<code>`, gunakan tag `<span>` dengan warna berbeda untuk menyorot keyword, string, dan komentar jika memungkinkan, sesuai bahasa pemrogramannya.
+6. Sertakan simbol-simbol atau emoji yang relevan (contoh: 💡, 🚀, ✅) untuk memperkaya konten secara visual di tempat yang sesuai.
+7. Pastikan outputnya adalah HANYA kode HTML, tanpa penjelasan tambahan di luar kode.
+''',
+      isActive: true, // Default prompt selalu aktif jika tidak ada pilihan lain
+      isDefault: true,
+    );
+  }
+
+  Future<Prompt> getActivePrompt() async {
+    List<Prompt> prompts = await loadPrompts();
+    if (prompts.isEmpty) {
+      return _getDefaultPrompt();
+    }
+    try {
+      // Cari prompt yang aktif
+      return prompts.firstWhere((p) => p.isActive);
+    } catch (e) {
+      // Jika tidak ada yang aktif (misal setelah penghapusan), aktifkan default/pertama
+      final defaultOrFirst = prompts.firstWhere(
+        (p) => p.isDefault,
+        orElse: () => prompts.first,
+      );
+      defaultOrFirst.isActive = true;
+      await savePrompts(prompts);
+      return defaultOrFirst;
+    }
+  }
+
   Future<void> saveShowFloPreference(bool showFlo) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showFloatingCharacterKey, showFlo);
@@ -102,7 +159,6 @@ class SharedPreferencesService {
 
   Future<bool> loadShowFloPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    // Default-nya aktif
     return prefs.getBool(_showFloatingCharacterKey) ?? true;
   }
 
