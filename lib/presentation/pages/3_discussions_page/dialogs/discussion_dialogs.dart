@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'html_file_picker_dialog.dart';
 
-// Fungsi untuk menampilkan dialog input teks generik
 Future<void> showTextInputDialog({
   required BuildContext context,
   required String title,
@@ -41,20 +40,22 @@ Future<void> showTextInputDialog({
   );
 }
 
-// FUNGSI LAMA DIGANTI DENGAN YANG DI BAWAH
-// Future<void> showFilePathDialog(...) {...}
-
-//==> FUNGSI BARU UNTUK MENAMPILKAN FILE PICKER DIALOG <==
+//==> FUNGSI DIPERBARUI UNTUK MENERIMA INITIALPATH <==
 Future<String?> showHtmlFilePicker(
   BuildContext context,
-  String basePath,
-) async {
+  String basePath, {
+  String? initialPath,
+}) async {
   return await showDialog<String>(
     context: context,
-    builder: (context) => HtmlFilePickerDialog(basePath: basePath),
+    builder: (context) => HtmlFilePickerDialog(
+      basePath: basePath,
+      initialPath: initialPath, // ==> DITERUSKAN
+    ),
   );
 }
 
+// ... (Sisa kode tidak berubah)
 // Fungsi untuk menampilkan dialog pemilihan kode repetisi
 void showRepetitionCodeDialog(
   BuildContext context,
@@ -129,7 +130,6 @@ Future<void> showDeleteDiscussionConfirmationDialog({
   );
 }
 
-//==> FUNGSI BARU UNTUK KONFIRMASI HAPUS POINT <==
 Future<void> showDeletePointConfirmationDialog({
   required BuildContext context,
   required String pointText,
@@ -160,7 +160,6 @@ Future<void> showDeletePointConfirmationDialog({
   );
 }
 
-//==> FUNGSI BARU UNTUK KONFIRMASI HAPUS PATH FILE <==
 Future<bool> showRemoveFilePathConfirmationDialog(BuildContext context) async {
   return await showDialog<bool>(
         context: context,
@@ -189,7 +188,6 @@ Future<bool> showRemoveFilePathConfirmationDialog(BuildContext context) async {
       false;
 }
 
-//==> FUNGSI BARU UNTUK KONFIRMASI UPDATE KODE REPETISI <==
 Future<bool> showRepetitionCodeUpdateConfirmationDialog({
   required BuildContext context,
   required String currentCode,
@@ -220,8 +218,6 @@ Future<bool> showRepetitionCodeUpdateConfirmationDialog({
       ) ??
       false;
 }
-
-// --- DIALOGS FOR FILTER & SORT ---
 
 Future<void> showFilterDialog({
   required BuildContext context,

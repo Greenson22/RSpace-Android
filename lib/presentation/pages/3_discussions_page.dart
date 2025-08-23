@@ -10,8 +10,13 @@ import '3_discussions_page/widgets/discussion_stats_header.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
+  final String? linkedPath; // ==> DITAMBAHKAN
 
-  const DiscussionsPage({super.key, required this.subjectName});
+  const DiscussionsPage({
+    super.key,
+    required this.subjectName,
+    this.linkedPath, // ==> DITAMBAHKAN
+  });
 
   @override
   State<DiscussionsPage> createState() => _DiscussionsPageState();
@@ -174,7 +179,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   }
 
   AppBar _buildAppBar(DiscussionProvider provider) {
-    // ... (kode tidak berubah)
     return AppBar(
       title: _isSearching
           ? TextField(
@@ -231,7 +235,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   }
 
   Widget _buildBody(DiscussionProvider provider) {
-    // ... (kode tidak berubah)
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -282,6 +285,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   isFocused: _isKeyboardActive && index == _focusedIndex,
                   arePointsVisible: _arePointsVisible,
                   onToggleVisibility: _togglePointsVisibility,
+                  subjectLinkedPath: widget.linkedPath, // ==> DITERUSKAN
                 );
               },
             ),
@@ -342,13 +346,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
           arePointsVisible: _arePointsVisible,
           onToggleVisibility: _togglePointsVisibility,
+          subjectLinkedPath: widget.linkedPath, // ==> DITERUSKAN
         );
       },
     );
   }
 
   void _showFilterDialog(DiscussionProvider provider) {
-    // ... (kode tidak berubah)
     showFilterDialog(
       context: context,
       isFilterActive: provider.activeFilterType != null,

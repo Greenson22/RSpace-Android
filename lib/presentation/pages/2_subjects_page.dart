@@ -35,8 +35,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   void initState() {
     super.initState();
-    // PERBAIKAN: Memindahkan pemanggilan data ke dalam 'addPostFrameCallback'.
-    // Ini memastikan widget selesai dibangun sebelum state diubah.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Provider.of<SubjectProvider>(context, listen: false).fetchSubjects();
@@ -44,7 +42,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       }
     });
 
-    // Listener untuk search tetap di sini.
     _searchController.addListener(() {
       final provider = Provider.of<SubjectProvider>(context, listen: false);
       provider.search(_searchController.text);
@@ -119,7 +116,25 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ... (sisa method _addSubject, _renameSubject, dll. tidak berubah)
+  // ==> FUNGSI BARU <==
+  Future<void> _linkSubject(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final newPath = await showPerpuskuPathPickerDialog(context: context);
+
+    // newPath bisa null jika pengguna membatalkan dialog
+    if (newPath != null) {
+      try {
+        await provider.updateSubjectLinkedPath(subject.name, newPath);
+        _showSnackBar('Subject "${subject.name}" berhasil ditautkan.');
+      } catch (e) {
+        _showSnackBar(
+          'Gagal menautkan subject: ${e.toString()}',
+          isError: true,
+        );
+      }
+    }
+  }
+
   Future<void> _addSubject(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showSubjectTextInputDialog(
@@ -213,7 +228,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(jsonFilePath),
-          child: DiscussionsPage(subjectName: subject.name),
+          // ==> PASS linkedPath KE HALAMAN DISKUSI <==
+          child: DiscussionsPage(
+            subjectName: subject.name,
+            linkedPath: subject.linkedPath,
+          ),
         ),
       ),
     ).then((_) {
@@ -319,6 +338,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onDelete: () => _deleteSubject(context, subject),
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
+              onLinkPath: () =>
+                  _linkSubject(context, subject), // ==> DIHUBUNGKAN
             );
           },
         );
@@ -356,6 +377,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onDelete: () => _deleteSubject(context, subject),
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
+              onLinkPath: () =>
+                  _linkSubject(context, subject), // ==> DIHUBUNGKAN
             );
           },
         );
@@ -364,7 +387,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
   }
 
   Widget _buildEmptyState(SubjectProvider provider) {
-    // ... (kode tidak berubah)
     if (provider.allSubjects.isEmpty) {
       return Center(
         child: Column(

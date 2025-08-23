@@ -65,6 +65,7 @@ class SubjectService {
           date: relevantDiscussionInfo['date'],
           repetitionCode: relevantDiscussionInfo['code'],
           isHidden: metadata['isHidden'] as bool? ?? false,
+          linkedPath: metadata['linkedPath'] as String?, // ==> DITAMBAHKAN
           // Mengisi data statistik ke model
           discussionCount: discussionCount,
           finishedDiscussionCount: finishedDiscussionCount,
@@ -238,11 +239,21 @@ class SubjectService {
   Future<Map<String, dynamic>> _getSubjectMetadata(File subjectFile) async {
     try {
       if (!await subjectFile.exists()) {
-        return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
+        return {
+          'icon': _defaultIcon,
+          'position': -1,
+          'isHidden': false,
+          'linkedPath': null,
+        };
       }
       final jsonString = await subjectFile.readAsString();
       if (jsonString.isEmpty) {
-        return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
+        return {
+          'icon': _defaultIcon,
+          'position': -1,
+          'isHidden': false,
+          'linkedPath': null,
+        };
       }
 
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -252,9 +263,15 @@ class SubjectService {
         'icon': metadata['icon'] as String? ?? _defaultIcon,
         'position': metadata['position'] as int?,
         'isHidden': metadata['isHidden'] as bool? ?? false,
+        'linkedPath': metadata['linkedPath'] as String?, // ==> DITAMBAHKAN
       };
     } catch (e) {
-      return {'icon': _defaultIcon, 'position': -1, 'isHidden': false};
+      return {
+        'icon': _defaultIcon,
+        'position': -1,
+        'isHidden': false,
+        'linkedPath': null,
+      };
     }
   }
 
@@ -278,6 +295,7 @@ class SubjectService {
       'icon': subject.icon,
       'position': subject.position,
       'isHidden': subject.isHidden,
+      'linkedPath': subject.linkedPath, // ==> DITAMBAHKAN
     };
     jsonData['content'] ??= [];
 
@@ -297,7 +315,12 @@ class SubjectService {
 
     try {
       final initialContent = {
-        'metadata': {'icon': _defaultIcon, 'position': -1, 'isHidden': false},
+        'metadata': {
+          'icon': _defaultIcon,
+          'position': -1,
+          'isHidden': false,
+          'linkedPath': null, // ==> DITAMBAHKAN
+        },
         'content': [],
       };
       await file.writeAsString(jsonEncode(initialContent));
@@ -321,6 +344,28 @@ class SubjectService {
       icon: newIcon,
       position: metadata['position'] as int? ?? -1,
       isHidden: metadata['isHidden'] as bool? ?? false,
+      linkedPath: metadata['linkedPath'] as String?,
+    );
+    await _saveSubjectMetadata(topicPath, subject);
+  }
+
+  // ==> FUNGSI BARU <==
+  Future<void> updateSubjectLinkedPath(
+    String topicPath,
+    String subjectName,
+    String? newPath,
+  ) async {
+    final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
+    final file = File(filePath);
+    if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
+
+    final metadata = await _getSubjectMetadata(file);
+    final subject = Subject(
+      name: subjectName,
+      icon: metadata['icon'] as String? ?? _defaultIcon,
+      position: metadata['position'] as int? ?? -1,
+      isHidden: metadata['isHidden'] as bool? ?? false,
+      linkedPath: newPath, // Set path baru
     );
     await _saveSubjectMetadata(topicPath, subject);
   }
@@ -340,6 +385,7 @@ class SubjectService {
       icon: metadata['icon'] as String? ?? _defaultIcon,
       position: metadata['position'] as int? ?? -1,
       isHidden: isHidden,
+      linkedPath: metadata['linkedPath'] as String?,
     );
     await _saveSubjectMetadata(topicPath, subject);
   }

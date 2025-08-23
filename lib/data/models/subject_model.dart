@@ -6,6 +6,8 @@ class Subject {
   String? date;
   String? repetitionCode;
   bool isHidden;
+  // ==> FIELD BARU DITAMBAHKAN <==
+  String? linkedPath;
   // ==> FIELD BARU UNTUK STATISTIK
   int discussionCount;
   int finishedDiscussionCount;
@@ -18,6 +20,7 @@ class Subject {
     this.date,
     this.repetitionCode,
     this.isHidden = false,
+    this.linkedPath, // ==> TAMBAHAN DI KONSTRUKTOR
     // ==> TAMBAHAN DI KONSTRUKTOR
     this.discussionCount = 0,
     this.finishedDiscussionCount = 0,

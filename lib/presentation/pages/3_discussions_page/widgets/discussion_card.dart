@@ -12,17 +12,19 @@ import 'point_tile.dart';
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;
   final int index;
-  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
+  final bool isFocused;
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
+  final String? subjectLinkedPath; // ==> DITAMBAHKAN
 
   const DiscussionCard({
     super.key,
     required this.discussion,
     required this.index,
-    this.isFocused = false, // ==> SET NILAI DEFAULT
+    this.isFocused = false,
     required this.arePointsVisible,
     required this.onToggleVisibility,
+    this.subjectLinkedPath, // ==> DITAMBAHKAN
   });
 
   void _showSnackBar(BuildContext context, String message) {
@@ -117,7 +119,12 @@ class DiscussionCard extends StatelessWidget {
   void _setFilePath(BuildContext context, DiscussionProvider provider) async {
     try {
       final basePath = await provider.getPerpuskuHtmlBasePath();
-      final newPath = await showHtmlFilePicker(context, basePath);
+      // ==> GUNAKAN subjectLinkedPath SEBAGAI INITIAL PATH <==
+      final newPath = await showHtmlFilePicker(
+        context,
+        basePath,
+        initialPath: subjectLinkedPath,
+      );
 
       if (newPath != null) {
         provider.updateDiscussionFilePath(discussion, newPath);
@@ -147,7 +154,6 @@ class DiscussionCard extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMANGGIL AKSI EDIT <==
   void _editFile(BuildContext context, DiscussionProvider provider) async {
     try {
       await provider.editDiscussionFile(discussion);
@@ -159,7 +165,7 @@ class DiscussionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
-    final theme = Theme.of(context); // Ambil theme
+    final theme = Theme.of(context);
     bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
     final bool isFinished = discussion.finished;
     final iconColor = isFinished ? Colors.green : Colors.blue;
@@ -203,7 +209,6 @@ class DiscussionCard extends StatelessWidget {
     }
 
     return Card(
-      // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
         side: isFocused
@@ -238,8 +243,7 @@ class DiscussionCard extends StatelessWidget {
                   onAddPoint: () => _addPoint(context, provider),
                   onSetFilePath: () => _setFilePath(context, provider),
                   onRemoveFilePath: () => _removeFilePath(context, provider),
-                  onEditFilePath: () =>
-                      _editFile(context, provider), // ==> SAMBUNGKAN FUNGSI
+                  onEditFilePath: () => _editFile(context, provider),
                   onDateChange: () => _changeDiscussionDate(context, provider),
                   onCodeChange: () => _changeDiscussionCode(context, provider),
                   onRename: () => _renameDiscussion(context, provider),

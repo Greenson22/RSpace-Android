@@ -9,13 +9,17 @@ import '../../../../data/services/shared_preferences_service.dart';
 import '../../../providers/discussion_provider.dart';
 import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
 
-// Enum untuk mengelola state tampilan dialog saat ini
 enum _PickerViewState { topics, subjects, files }
 
 class HtmlFilePickerDialog extends StatefulWidget {
   final String basePath;
+  final String? initialPath; // ==> DITAMBAHKAN
 
-  const HtmlFilePickerDialog({super.key, required this.basePath});
+  const HtmlFilePickerDialog({
+    super.key,
+    required this.basePath,
+    this.initialPath, // ==> DITAMBAHKAN
+  });
 
   @override
   State<HtmlFilePickerDialog> createState() => _HtmlFilePickerDialogState();
@@ -28,17 +32,14 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
 
   List<Directory> _topics = [];
   List<Directory> _subjects = [];
-  // File di folder saat ini (untuk pencarian lokal)
   List<File> _currentSubjectFiles = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Map<String, String> _fileTitles = {};
 
-  // State untuk pencarian global
   List<Map<String, String>> _allFilesData = [];
   List<Map<String, String>> _filteredGlobalFiles = [];
 
-  // State untuk pencarian lokal
   List<File> _filteredLocalFiles = [];
 
   bool _isLoading = true;
@@ -51,14 +52,35 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
-        _filterContent(); // Panggil fungsi filter utama
+        _filterContent();
       });
     });
   }
 
   Future<void> _initializeDialog() async {
+    // ==> LOGIKA BARU UNTUK INITIAL PATH <==
+    if (widget.initialPath != null && widget.initialPath!.isNotEmpty) {
+      try {
+        final parts = path.split(widget.initialPath!);
+        if (parts.length >= 2) {
+          _selectedTopic = parts[parts.length - 2];
+          final subjectPath = path.join(widget.basePath, _selectedTopic);
+          await _loadSubjects(subjectPath);
+          _selectedSubject = parts.last;
+          final filePath = path.join(subjectPath, _selectedSubject);
+          await _loadFiles(filePath);
+          setState(() {
+            _currentView = _PickerViewState.files;
+          });
+          _loadAllFilesForSearch();
+          return;
+        }
+      } catch (e) {
+        // Abaikan jika path tidak valid, fallback ke normal
+      }
+    }
+    // Fallback ke logika normal jika initialPath tidak ada atau tidak valid
     await _loadTopics();
-    // Memuat semua file di latar belakang untuk pencarian global
     _loadAllFilesForSearch();
   }
 
@@ -184,7 +206,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     setState(() => _isLoading = false);
   }
 
-  // ==> FUNGSI FILTER UTAMA YANG DIPANGGIL LISTENER <==
   void _filterContent() {
     if (_searchQuery.isEmpty) {
       _filteredGlobalFiles = [];
@@ -192,7 +213,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
       return;
     }
 
-    // Jika di view file, lakukan pencarian LOKAL
     if (_currentView == _PickerViewState.files) {
       _filteredLocalFiles = _currentSubjectFiles.where((file) {
         final fileName = path.basename(file.path).toLowerCase();
@@ -201,9 +221,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         return fileName.contains(_searchQuery) ||
             fileTitle.contains(_searchQuery);
       }).toList();
-    }
-    // Jika di view topik atau subjek, lakukan pencarian GLOBAL
-    else {
+    } else {
       _filteredGlobalFiles = _allFilesData.where((fileData) {
         final title = fileData['title']!.toLowerCase();
         final fileName = fileData['fileName']!.toLowerCase();
@@ -230,7 +248,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     }
   }
 
-  // Widget untuk menampilkan hasil pencarian GLOBAL
   Widget _buildGlobalSearchView() {
     if (_filteredGlobalFiles.isEmpty) {
       return const Center(
@@ -251,7 +268,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     );
   }
 
-  // Widget untuk menampilkan hasil pencarian LOKAL
   Widget _buildLocalSearchView() {
     if (_filteredLocalFiles.isEmpty) {
       return const Center(child: Text("File tidak ditemukan di folder ini."));
@@ -267,7 +283,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     });
   }
 
-  // Widget untuk navigasi folder
   Widget _buildNavigationView() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -420,7 +435,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
           label: const Text('Pilih Folder PerpusKu'),
           onPressed: _selectPerpuskuDataFolder,
         ),
-        // PERBAIKAN: Spacer dihapus dari sini untuk mencegah crash
         if (_currentView != _PickerViewState.topics || _searchQuery.isNotEmpty)
           TextButton(onPressed: _onBackPressed, child: const Text('Kembali')),
         TextButton(

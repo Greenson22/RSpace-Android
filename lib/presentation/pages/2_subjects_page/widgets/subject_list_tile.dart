@@ -10,7 +10,8 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
+  final VoidCallback onLinkPath; // ==> DITAMBAHKAN
+  final bool isFocused;
 
   const SubjectListTile({
     super.key,
@@ -20,7 +21,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    this.isFocused = false, // ==> SET NILAI DEFAULT
+    required this.onLinkPath, // ==> DITAMBAHKAN
+    this.isFocused = false,
   });
 
   @override
@@ -71,14 +73,31 @@ class SubjectListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      subject.name,
-                      style: TextStyle(
-                        fontSize: titleFontSize,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      // ==> DIBUNGKUS DENGAN ROW
+                      children: [
+                        if (subject.linkedPath !=
+                            null) // ==> KONDISI DITAMBAHKAN
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Icon(
+                              Icons.link,
+                              color: theme.primaryColor,
+                              size: 18,
+                            ),
+                          ),
+                        Expanded(
+                          child: Text(
+                            subject.name,
+                            style: TextStyle(
+                              fontSize: titleFontSize,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     if (hasSubtitle) ...[
                       const SizedBox(height: 4),
@@ -95,6 +114,7 @@ class SubjectListTile extends StatelessWidget {
                   if (value == 'delete') onDelete();
                   if (value == 'change_icon') onIconChange();
                   if (value == 'toggle_visibility') onToggleVisibility();
+                  if (value == 'link_path') onLinkPath(); // ==> DITAMBAHKAN
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -104,6 +124,15 @@ class SubjectListTile extends StatelessWidget {
                   const PopupMenuItem(
                     value: 'change_icon',
                     child: Text('Ubah Ikon'),
+                  ),
+                  // ==> MENU BARU DITAMBAHKAN <==
+                  PopupMenuItem<String>(
+                    value: 'link_path',
+                    child: Text(
+                      subject.linkedPath == null
+                          ? 'Link ke PerpusKu'
+                          : 'Ubah Link PerpusKu',
+                    ),
                   ),
                   PopupMenuItem<String>(
                     value: 'toggle_visibility',
@@ -131,7 +160,6 @@ class SubjectListTile extends StatelessWidget {
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
         side: isFocused
             ? BorderSide(color: theme.primaryColor, width: 2.5)
             : BorderSide.none,
@@ -141,7 +169,6 @@ class SubjectListTile extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, Color? textColor) {
-    // ... (kode tidak berubah)
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 11, color: textColor);
@@ -204,7 +231,6 @@ class SubjectListTile extends StatelessWidget {
     Color? textColor,
     double fontSize,
   ) {
-    // ... (kode tidak berubah)
     return RichText(
       text: TextSpan(
         style: Theme.of(

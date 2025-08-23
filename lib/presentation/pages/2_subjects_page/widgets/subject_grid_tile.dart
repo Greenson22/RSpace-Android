@@ -10,7 +10,8 @@ class SubjectGridTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
+  final VoidCallback onLinkPath; // ==> DITAMBAHKAN
+  final bool isFocused;
 
   const SubjectGridTile({
     super.key,
@@ -20,7 +21,8 @@ class SubjectGridTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    this.isFocused = false, // ==> SET NILAI DEFAULT
+    required this.onLinkPath, // ==> DITAMBAHKAN
+    this.isFocused = false,
   });
 
   @override
@@ -54,9 +56,25 @@ class SubjectGridTile extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 4.0),
-                    child: Text(
-                      subject.icon,
-                      style: TextStyle(fontSize: 32, color: textColor),
+                    child: Stack(
+                      // ==> GUNAKAN STACK UNTUK MENUMPUK IKON
+                      clipBehavior: Clip.none,
+                      children: [
+                        Text(
+                          subject.icon,
+                          style: TextStyle(fontSize: 32, color: textColor),
+                        ),
+                        if (subject.linkedPath != null)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Icon(
+                              Icons.link,
+                              color: theme.primaryColor,
+                              size: 16,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   PopupMenuButton<String>(
@@ -65,6 +83,7 @@ class SubjectGridTile extends StatelessWidget {
                       if (value == 'change_icon') onIconChange();
                       if (value == 'toggle_visibility') onToggleVisibility();
                       if (value == 'delete') onDelete();
+                      if (value == 'link_path') onLinkPath(); // ==> DITAMBAHKAN
                     },
                     itemBuilder: (context) => [
                       const PopupMenuItem(
@@ -74,6 +93,15 @@ class SubjectGridTile extends StatelessWidget {
                       const PopupMenuItem(
                         value: 'change_icon',
                         child: Text('Ubah Ikon'),
+                      ),
+                      // ==> MENU BARU DITAMBAHKAN
+                      PopupMenuItem<String>(
+                        value: 'link_path',
+                        child: Text(
+                          subject.linkedPath == null
+                              ? 'Link ke PerpusKu'
+                              : 'Ubah Link PerpusKu',
+                        ),
                       ),
                       PopupMenuItem<String>(
                         value: 'toggle_visibility',
@@ -121,7 +149,6 @@ class SubjectGridTile extends StatelessWidget {
       color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
         side: isFocused
             ? BorderSide(color: theme.primaryColor, width: 2.5)
             : BorderSide.none,
@@ -131,7 +158,6 @@ class SubjectGridTile extends StatelessWidget {
   }
 
   Widget _buildStatsInfo(BuildContext context, Color? textColor) {
-    // ... (kode tidak berubah)
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor);
@@ -192,7 +218,6 @@ class SubjectGridTile extends StatelessWidget {
     Color? textColor,
     double fontSize,
   ) {
-    // ... (kode tidak berubah)
     return RichText(
       text: TextSpan(
         style: Theme.of(

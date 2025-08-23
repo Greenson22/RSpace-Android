@@ -1,6 +1,139 @@
+// lib/presentation/pages/2_subjects_page/dialogs/subject_dialogs.dart
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as path;
+import 'package:my_aplication/data/services/path_service.dart';
+
+// ==> DIALOG BARU UNTUK MEMILIH PATH DARI PERPUSKU <==
+Future<String?> showPerpuskuPathPickerDialog({
+  required BuildContext context,
+}) async {
+  final pathService = PathService();
+  String? basePath;
+  try {
+    basePath = await pathService.perpuskuDataPath;
+    basePath = path.join(basePath, 'file_contents', 'topics');
+  } catch (e) {
+    // Menampilkan pesan error jika path dasar tidak dapat diakses
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Error: ${e.toString()}"),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return null;
+  }
+
+  return showDialog<String>(
+    context: context,
+    builder: (context) => _PerpuskuPathPicker(basePath: basePath!),
+  );
+}
+
+class _PerpuskuPathPicker extends StatefulWidget {
+  final String basePath;
+  const _PerpuskuPathPicker({required this.basePath});
+
+  @override
+  _PerpuskuPathPickerState createState() => _PerpuskuPathPickerState();
+}
+
+class _PerpuskuPathPickerState extends State<_PerpuskuPathPicker> {
+  String _currentPath = '';
+  List<Directory> _items = [];
+  bool _isTopicView = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPath = widget.basePath;
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
+    try {
+      final dir = Directory(_currentPath);
+      if (!await dir.exists()) {
+        throw Exception("Direktori tidak ditemukan: $_currentPath");
+      }
+      final items = dir.listSync().whereType<Directory>().toList();
+      setState(() {
+        _items = items;
+      });
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error memuat folder: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _onItemTapped(Directory item) {
+    if (_isTopicView) {
+      setState(() {
+        _currentPath = item.path;
+        _isTopicView = false;
+      });
+      _loadItems();
+    } else {
+      // Saat subjek dipilih, kembalikan path relatif
+      final relativePath = path.relative(item.path, from: widget.basePath);
+      Navigator.of(context).pop(relativePath);
+    }
+  }
+
+  void _onBackPressed() {
+    if (!_isTopicView) {
+      setState(() {
+        _currentPath = widget.basePath;
+        _isTopicView = true;
+      });
+      _loadItems();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_isTopicView ? 'Pilih Topik' : 'Pilih Subjek'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: _items.isEmpty
+            ? const Center(child: Text("Tidak ada folder ditemukan."))
+            : ListView.builder(
+                itemCount: _items.length,
+                itemBuilder: (context, index) {
+                  final item = _items[index];
+                  return ListTile(
+                    leading: const Icon(Icons.folder),
+                    title: Text(path.basename(item.path)),
+                    onTap: () => _onItemTapped(item),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        if (!_isTopicView)
+          TextButton(
+            onPressed: _onBackPressed,
+            child: const Text('Kembali ke Topik'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+      ],
+    );
+  }
+}
 
 Future<void> showIconPickerDialog({
   required BuildContext context,

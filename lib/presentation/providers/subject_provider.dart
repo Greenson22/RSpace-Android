@@ -1,3 +1,4 @@
+// lib/presentation/providers/subject_provider.dart
 import 'package:flutter/material.dart';
 import '../../data/models/subject_model.dart';
 import '../../data/services/subject_service.dart';
@@ -81,6 +82,19 @@ class SubjectProvider with ChangeNotifier {
 
   Future<void> updateSubjectIcon(String subjectName, String newIcon) async {
     await _subjectService.updateSubjectIcon(topicPath, subjectName, newIcon);
+    await fetchSubjects();
+  }
+
+  // ==> FUNGSI BARU <==
+  Future<void> updateSubjectLinkedPath(
+    String subjectName,
+    String? newPath,
+  ) async {
+    await _subjectService.updateSubjectLinkedPath(
+      topicPath,
+      subjectName,
+      newPath,
+    );
     await fetchSubjects();
   }
 
