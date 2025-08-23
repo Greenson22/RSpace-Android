@@ -19,7 +19,12 @@ class SharedPreferencesService {
   static const String _apiKeyKey = 'api_key';
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
+
+  // KUNCI UNTUK MENYIMPAN STATUS FLO
   static const String _showFloatingCharacterKey = 'show_floating_character';
+
+  // KUNCI BARU UNTUK MODEL GEMINI
+  static const String _geminiModelKey = 'gemini_model';
 
   // Kunci lama (deprecated), digunakan untuk migrasi
   static const String _geminiApiKey_old = 'gemini_api_key';
@@ -50,6 +55,18 @@ class SharedPreferencesService {
   // --- KUNCI SUMBER DATA PERPUSKU ---
   static const String _perpuskuDataPathKey = 'perpusku_data_path';
   static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
+
+  // ==> FUNGSI UNTUK MENYIMPAN DAN MEMUAT STATUS FLO <==
+  Future<void> saveShowFloPreference(bool showFlo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showFloatingCharacterKey, showFlo);
+  }
+
+  Future<bool> loadShowFloPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Default-nya true (aktif) jika belum pernah diatur
+    return prefs.getBool(_showFloatingCharacterKey) ?? true;
+  }
 
   // ==> FUNGSI BARU UNTUK MENYIMPAN DAN MEMUAT LIST API KEY <==
   Future<void> saveApiKeys(List<ApiKey> keys) async {
@@ -157,16 +174,6 @@ Ikuti aturan-aturan berikut dengan ketat:
       await savePrompts(prompts);
       return defaultOrFirst;
     }
-  }
-
-  Future<void> saveShowFloPreference(bool showFlo) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showFloatingCharacterKey, showFlo);
-  }
-
-  Future<bool> loadShowFloPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_showFloatingCharacterKey) ?? true;
   }
 
   Future<void> saveDashboardItemScale(double scale) async {

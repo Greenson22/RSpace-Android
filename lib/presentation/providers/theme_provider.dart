@@ -26,7 +26,7 @@ class ThemeProvider with ChangeNotifier {
   double _dashboardItemScale = 1.0;
   double get dashboardItemScale => _dashboardItemScale;
 
-  // ==> TAMBAHKAN STATE BARU UNTUK FLO <==
+  // State untuk Flo
   bool _showFloatingCharacter = true;
   bool get showFloatingCharacter => _showFloatingCharacter;
 
@@ -75,9 +75,9 @@ class ThemeProvider with ChangeNotifier {
     }
   }
 
-  // ==> TAMBAHKAN METODE UNTUK MENGAKTIFKAN/MENONAKTIFKAN FLO <==
-  void toggleFloatingCharacter() {
+  void toggleFloatingCharacter() async {
     _showFloatingCharacter = !_showFloatingCharacter;
+    await _prefsService.saveShowFloPreference(_showFloatingCharacter);
     notifyListeners();
   }
 
@@ -122,7 +122,6 @@ class ThemeProvider with ChangeNotifier {
 
     _dashboardItemScale = await _prefsService.loadDashboardItemScale();
 
-    // ==> MEMUAT PREFERENSI FLO SAAT APLIKASI DIMULAI <==
     _showFloatingCharacter = await _prefsService.loadShowFloPreference();
 
     notifyListeners();
