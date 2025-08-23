@@ -40,38 +40,81 @@ class DiscussionSubtitle extends StatelessWidget {
     String? displayCode;
 
     if (visiblePoints.isNotEmpty) {
-      int minCodeIndex = 999;
-      for (var point in visiblePoints) {
-        final codeIndex = getRepetitionCodeIndex(point.repetitionCode);
-        if (codeIndex < minCodeIndex) {
-          minCodeIndex = codeIndex;
+      // #############################################
+      // ### LOGIKA PEMBARUAN DIMULAI DI SINI ###
+      // #############################################
+
+      // Langkah 1: Cek apakah ada poin yang memiliki kode selain R0D
+      final hasNonR0DPoints = visiblePoints.any(
+        (point) =>
+            point.repetitionCode != 'R0D' && point.repetitionCode != 'Finish',
+      );
+
+      List<Point> pointsToConsider = [];
+      if (hasNonR0DPoints) {
+        // Jika ada, hanya ambil poin yang bukan R0D
+        pointsToConsider = visiblePoints
+            .where(
+              (point) =>
+                  point.repetitionCode != 'R0D' &&
+                  point.repetitionCode != 'Finish',
+            )
+            .toList();
+      } else {
+        // Jika tidak, ambil semua poin yang terlihat (hanya R0D)
+        pointsToConsider = visiblePoints
+            .where((point) => point.repetitionCode != 'Finish')
+            .toList();
+      }
+
+      // Jika setelah pemfilteran list kosong (misal semua poin R0D sudah selesai)
+      if (pointsToConsider.isEmpty) {
+        // Fallback ke diskusi itu sendiri
+        displayDate = discussion.effectiveDate;
+        displayCode = discussion.effectiveRepetitionCode;
+      } else {
+        // Langkah 2: Temukan kode repetisi terkecil dari poin yang tersisa
+        int minCodeIndex = 999;
+        for (var point in pointsToConsider) {
+          final codeIndex = getRepetitionCodeIndex(point.repetitionCode);
+          if (codeIndex < minCodeIndex) {
+            minCodeIndex = codeIndex;
+          }
+        }
+
+        // Langkah 3: Ambil semua poin dengan kode repetisi terkecil tersebut
+        final lowestCodePoints = pointsToConsider
+            .where(
+              (point) =>
+                  getRepetitionCodeIndex(point.repetitionCode) == minCodeIndex,
+            )
+            .toList();
+
+        // Langkah 4: Urutkan berdasarkan tanggal untuk mendapatkan poin yang paling mendesak
+        lowestCodePoints.sort((a, b) {
+          final dateA = DateTime.tryParse(a.date);
+          final dateB = DateTime.tryParse(b.date);
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return 1;
+          if (dateB == null) return -1;
+          return dateA.compareTo(dateB);
+        });
+
+        // Langkah 5: Tampilkan informasi dari poin yang paling mendesak
+        if (lowestCodePoints.isNotEmpty) {
+          final relevantPoint = lowestCodePoints.first;
+          displayDate = relevantPoint.date;
+          displayCode = relevantPoint.repetitionCode;
+        } else {
+          // Fallback ke diskusi itu sendiri jika tidak ada poin yang relevan
+          displayDate = discussion.effectiveDate;
+          displayCode = discussion.effectiveRepetitionCode;
         }
       }
 
-      final lowestCodePoints = visiblePoints
-          .where(
-            (point) =>
-                getRepetitionCodeIndex(point.repetitionCode) == minCodeIndex,
-          )
-          .toList();
-
-      lowestCodePoints.sort((a, b) {
-        final dateA = DateTime.tryParse(a.date);
-        final dateB = DateTime.tryParse(b.date);
-        if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1;
-        if (dateB == null) return -1;
-        return dateA.compareTo(dateB);
-      });
-
-      if (lowestCodePoints.isNotEmpty) {
-        final relevantPoint = lowestCodePoints.first;
-        displayDate = relevantPoint.date;
-        displayCode = relevantPoint.repetitionCode;
-      } else {
-        displayDate = discussion.effectiveDate;
-        displayCode = discussion.effectiveRepetitionCode;
-      }
+      // #############################################
+      // ### LOGIKA PEMBARUAN SELESAI DI SINI ###
+      // #############################################
     } else {
       displayDate = discussion.effectiveDate;
       displayCode = discussion.effectiveRepetitionCode;
