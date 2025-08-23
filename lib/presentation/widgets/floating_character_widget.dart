@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../../data/models/discussion_model.dart';
 import '../../data/services/path_service.dart';
+import '../../data/services/flo_intelligence_service.dart'; // Import otak Flo
 
 class FloatingCharacter extends StatefulWidget {
   final bool isVisible;
@@ -39,8 +40,10 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   // State Gelembung Ucapan
   bool _isSpeaking = false;
   String _speechBubbleText = '';
-  static bool _hasIntroduced =
-      false; // Static agar hanya perkenalan sekali per sesi app
+  static bool _hasIntroduced = false;
+
+  // Otak Flo
+  final FloIntelligenceService _floBrain = FloIntelligenceService();
 
   // Daftar "frame" animasi gerakan
   final List<String> _baseFramesRight = [
@@ -73,7 +76,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     {'eyes': '｡ºωº｡', 'wink': '｡-ω-｡'}, // Mulut bicara/kaget
   ];
 
-  // Kumpulan kalimat baru yang lebih beragam
+  // Kumpulan kalimat untuk Flo
   final List<String> _phrases = [
     "Semangat ya!",
     "Jangan lupa istirahat...",
@@ -81,12 +84,9 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     "Ada yang bisa dibantu?",
     "Ayo kita selesaikan ini!",
     "Kamu pasti bisa!",
-    // Humor & Kata Lucu
-    "Kenapa nyamuk bunyinya 'nging'? Soalnya kalo bunyinya 'gong' nanti jadi nyagong.",
+    "Kenapa nyamuk bunyinya 'nging'?",
     "Aku bukan pemalas, aku cuma lagi mode hemat energi.",
     "Error 404: Motivasi tidak ditemukan.",
-    "Kalau butuh apa-apa, panggil saja... tapi jangan harap aku datang ya hehe.",
-    "Aku ini seperti bug, kadang muncul tiba-tiba.",
   ];
 
   // Daftar sapaan berdasarkan waktu
@@ -94,13 +94,13 @@ class _FloatingCharacterState extends State<FloatingCharacter>
 
   void _generateGreetings() {
     final hour = DateTime.now().hour;
-    if (hour >= 4 && hour < 11) {
+    if (hour >= 4 && hour < 11)
       _greetings.add("Selamat pagi!");
-    } else if (hour >= 11 && hour < 15) {
+    else if (hour >= 11 && hour < 15)
       _greetings.add("Selamat siang!");
-    } else if (hour >= 15 && hour < 19) {
+    else if (hour >= 15 && hour < 19)
       _greetings.add("Selamat sore!");
-    } else {
+    else {
       _greetings.add("Selamat malam!");
       _greetings.add("Sudah mau tidur ya?");
     }
@@ -120,7 +120,6 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   @override
   void initState() {
     super.initState();
-    // Inisialisasi Kontroler Animasi
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -136,7 +135,6 @@ class _FloatingCharacterState extends State<FloatingCharacter>
       CurvedAnimation(parent: _moveController, curve: Curves.easeInOut),
     );
 
-    // Listeners
     _moveController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         setState(() => _isFacingRight = false);
@@ -163,14 +161,9 @@ class _FloatingCharacterState extends State<FloatingCharacter>
   }
 
   Future<void> _initializeSpeech() async {
-    // Sapaan berdasarkan waktu
     _generateGreetings();
     _phrases.addAll(_greetings);
-
-    // Muat data diskusi
     await _loadDiscussionPhrases();
-
-    // Logika untuk perkenalan diri sekali saja
     if (!_hasIntroduced) {
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
@@ -179,14 +172,12 @@ class _FloatingCharacterState extends State<FloatingCharacter>
             _speechBubbleText = "Hai! Namaku Flo, asisten pribadimu!";
             _hasIntroduced = true;
           });
-          // Sembunyikan setelah 6 detik
           Future.delayed(const Duration(seconds: 6), () {
             if (mounted) setState(() => _isSpeaking = false);
           });
         }
       });
     }
-
     _startSpeech();
   }
 
@@ -196,9 +187,7 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     try {
       final topicsPath = await pathService.topicsPath;
       final topicsDir = Directory(topicsPath);
-
       if (!await topicsDir.exists()) return;
-
       final topicEntities = topicsDir.listSync();
       for (var topicEntity in topicEntities) {
         if (topicEntity is Directory) {
@@ -207,26 +196,20 @@ class _FloatingCharacterState extends State<FloatingCharacter>
                 file.path.endsWith('.json') &&
                 !path.basename(file.path).contains('config'),
           );
-
           for (final subjectFile in subjectFiles) {
             final jsonString = await subjectFile.readAsString();
             if (jsonString.isEmpty) continue;
-
             final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
             final contentList = jsonData['content'] as List<dynamic>? ?? [];
-
             for (var item in contentList) {
               final discussion = Discussion.fromJson(item);
-              if (discussion.points.isEmpty && !discussion.finished) {
+              if (discussion.points.isEmpty && !discussion.finished)
                 discussionTitles.add(discussion.discussion);
-              }
             }
           }
         }
       }
-      if (discussionTitles.isNotEmpty) {
-        _phrases.addAll(discussionTitles);
-      }
+      if (discussionTitles.isNotEmpty) _phrases.addAll(discussionTitles);
     } catch (e) {
       debugPrint("Error loading discussion titles for Flo: $e");
     }
@@ -267,12 +250,21 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     _speechTimer?.cancel();
     _speechTimer = Timer.periodic(Duration(seconds: _random.nextInt(15) + 10), (
       timer,
-    ) {
+    ) async {
+      // Jadikan async
       if (mounted && !_isSpeaking && _phrases.isNotEmpty) {
+        // Tanya "otak" Flo untuk saran cerdas
+        String? intelligentSuggestion = await _floBrain
+            .getIntelligentSuggestion();
+
         setState(() {
           _isSpeaking = true;
-          _speechBubbleText = _phrases[_random.nextInt(_phrases.length)];
+          // Gunakan saran cerdas jika ada, jika tidak, gunakan frasa acak
+          _speechBubbleText =
+              intelligentSuggestion ??
+              _phrases[_random.nextInt(_phrases.length)];
         });
+
         Future.delayed(const Duration(seconds: 6), () {
           if (mounted) setState(() => _isSpeaking = false);
         });
@@ -280,7 +272,6 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     });
   }
 
-  // ... (sisa kode dari didUpdateWidget sampai akhir sama persis)
   @override
   void didUpdateWidget(covariant FloatingCharacter oldWidget) {
     super.didUpdateWidget(oldWidget);
