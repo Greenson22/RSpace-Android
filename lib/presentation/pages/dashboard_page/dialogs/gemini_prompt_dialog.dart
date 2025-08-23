@@ -1,9 +1,6 @@
 // lib/presentation/pages/dashboard_page/dialogs/gemini_prompt_dialog.dart
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../data/models/api_key_model.dart';
 import '../../../../data/models/prompt_model.dart';
 import '../../../../data/services/shared_preferences_service.dart';
 
@@ -32,7 +29,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   List<Prompt> _prompts = [];
   bool _isLoading = true;
-  String? _selectedModelId;
+  String? _selectedContentModelId;
+  String? _selectedChatModelId;
 
   // Daftar model AI
   final List<GeminiModelInfo> _models = const [
@@ -55,18 +53,16 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
 
   Future<void> _loadSavedData() async {
     var savedPrompts = await _prefsService.loadPrompts();
-    final modelId = await _prefsService.loadGeminiModel();
+    final contentModelId = await _prefsService.loadGeminiContentModel();
+    final chatModelId = await _prefsService.loadGeminiChatModel();
 
-    // Jika tidak ada prompt tersimpan (kasus pertama kali buka),
-    // inisialisasi dengan prompt default.
     if (savedPrompts.isEmpty) {
       final defaultPrompt = await _prefsService.getActivePrompt();
       savedPrompts = [defaultPrompt];
       await _prefsService.savePrompts(savedPrompts);
     }
 
-    // Pastikan selalu ada satu prompt yang aktif.
-    if (!savedPrompts.any((p) => p.isActive)) {
+    if (savedPrompts.isNotEmpty && !savedPrompts.any((p) => p.isActive)) {
       final defaultOrFirst = savedPrompts.firstWhere(
         (p) => p.isDefault,
         orElse: () => savedPrompts.first,
@@ -77,7 +73,9 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     if (mounted) {
       setState(() {
         _prompts = savedPrompts;
-        _selectedModelId = modelId ?? _models.first.id;
+        _selectedContentModelId =
+            contentModelId ?? _models[1].id; // Default to Flash
+        _selectedChatModelId = chatModelId ?? _models[1].id; // Default to Flash
         _isLoading = false;
       });
     }
@@ -201,17 +199,21 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     );
   }
 
-  Future<void> _saveModelSelection() async {
-    if (_selectedModelId != null) {
-      await _prefsService.saveGeminiModel(_selectedModelId!);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Model AI berhasil disimpan.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+  Future<void> _saveAllSettings() async {
+    if (_selectedContentModelId != null) {
+      await _prefsService.saveGeminiContentModel(_selectedContentModelId!);
+    }
+    if (_selectedChatModelId != null) {
+      await _prefsService.saveGeminiChatModel(_selectedChatModelId!);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pengaturan model AI berhasil disimpan.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
@@ -224,7 +226,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
               .id;
 
     return AlertDialog(
-      title: const Text('Manajemen Prompt AI'),
+      title: const Text('Manajemen Prompt & Model AI'),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -235,14 +237,14 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Pilih atau buat prompt yang akan digunakan untuk generate konten. Gunakan placeholder `{topic}` di dalam isi prompt untuk menyisipkan pembahasan.',
+                      'Atur model AI yang akan digunakan untuk setiap fitur dan kelola *prompt* kustom Anda.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _selectedModelId,
+                      value: _selectedContentModelId,
                       decoration: const InputDecoration(
-                        labelText: 'Pilih Model AI',
+                        labelText: 'Model untuk Generate Konten',
                         border: OutlineInputBorder(),
                       ),
                       items: _models.map((model) {
@@ -256,13 +258,35 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                       }).toList(),
                       onChanged: (value) {
                         setState(() {
-                          _selectedModelId = value;
+                          _selectedContentModelId = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedChatModelId,
+                      decoration: const InputDecoration(
+                        labelText: 'Model untuk Chat',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _models.map((model) {
+                        return DropdownMenuItem<String>(
+                          value: model.id,
+                          child: Text(
+                            model.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedChatModelId = value;
                         });
                       },
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Prompt Tersimpan',
+                      'Prompt Kustom untuk Generate Konten',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const Divider(height: 8),
@@ -313,14 +337,14 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         OutlinedButton.icon(
           onPressed: () => _addNewOrEditPrompt(),
           icon: const Icon(Icons.add),
-          label: const Text('Tambah Baru'),
+          label: const Text('Tambah Prompt'),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Tutup'),
         ),
         ElevatedButton(
-          onPressed: _saveModelSelection,
+          onPressed: _saveAllSettings,
           child: const Text('Simpan Model'),
         ),
       ],

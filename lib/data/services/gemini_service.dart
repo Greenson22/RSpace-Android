@@ -19,7 +19,8 @@ class GeminiService {
 
   Future<String> getChatCompletion(String query, {String? context}) async {
     final apiKey = await _getActiveApiKey();
-    final model = await _prefsService.loadGeminiModel() ?? 'gemini-2.5-flash';
+    final model =
+        await _prefsService.loadGeminiChatModel() ?? 'gemini-2.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception(
@@ -87,7 +88,8 @@ Jawaban Anda:
 
   Future<String> generateHtmlContent(String topic) async {
     final apiKey = await _getActiveApiKey();
-    final model = await _prefsService.loadGeminiModel() ?? 'gemini-2.5-flash';
+    final model =
+        await _prefsService.loadGeminiContentModel() ?? 'gemini-2.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception(

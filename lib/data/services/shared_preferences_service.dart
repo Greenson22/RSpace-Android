@@ -19,12 +19,7 @@ class SharedPreferencesService {
   static const String _apiKeyKey = 'api_key';
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
-
-  // KUNCI BARU UNTUK FLO
   static const String _showFloatingCharacterKey = 'show_floating_character';
-
-  // KUNCI BARU UNTUK MODEL GEMINI
-  static const String _geminiModelKey = 'gemini_model';
 
   // Kunci lama (deprecated), digunakan untuk migrasi
   static const String _geminiApiKey_old = 'gemini_api_key';
@@ -33,6 +28,11 @@ class SharedPreferencesService {
 
   // KUNCI BARU UNTUK PROMPTS
   static const String _geminiPrompts = 'gemini_prompts_list';
+
+  // Mengubah nama kunci model lama menjadi lebih spesifik
+  static const String _geminiContentModelKey = 'gemini_model';
+  // KUNCI BARU UNTUK MODEL CHAT
+  static const String _geminiChatModelKey = 'gemini_chat_model';
 
   // --- KUNCI PENYIMPANAN UTAMA ---
   static const String _customStoragePathKey = 'custom_storage_path';
@@ -61,17 +61,14 @@ class SharedPreferencesService {
   Future<List<ApiKey>> loadApiKeys() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Cek apakah data dengan format list baru sudah ada
     if (prefs.containsKey(_geminiApiKeys)) {
       final String? encodedData = prefs.getString(_geminiApiKeys);
       return decodeApiKeys(encodedData ?? '[]');
     }
 
-    // Logika Migrasi: Cek apakah ada kunci tunggal yang lama
     if (prefs.containsKey(_geminiApiKey_old)) {
       final String? oldKey = prefs.getString(_geminiApiKey_old);
       if (oldKey != null && oldKey.isNotEmpty) {
-        // Buat key baru dari data lama
         final migratedKey = ApiKey(
           id: const Uuid().v4(),
           name: 'Kunci Lama (Default)',
@@ -79,23 +76,35 @@ class SharedPreferencesService {
           isActive: true,
         );
         final List<ApiKey> keys = [migratedKey];
-        await saveApiKeys(keys); // Simpan dalam format list baru
-        await prefs.remove(_geminiApiKey_old); // Hapus kunci lama
+        await saveApiKeys(keys);
+        await prefs.remove(_geminiApiKey_old);
         return keys;
       }
     }
 
-    return []; // Kembalikan list kosong jika tidak ada data
+    return [];
   }
 
-  Future<void> saveGeminiModel(String modelId) async {
+  // ==> FUNGSI BARU UNTUK MODEL CHAT <==
+  Future<void> saveGeminiChatModel(String modelId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_geminiModelKey, modelId);
+    await prefs.setString(_geminiChatModelKey, modelId);
   }
 
-  Future<String?> loadGeminiModel() async {
+  Future<String?> loadGeminiChatModel() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_geminiModelKey);
+    return prefs.getString(_geminiChatModelKey);
+  }
+
+  // Mengubah nama fungsi lama menjadi lebih spesifik
+  Future<void> saveGeminiContentModel(String modelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_geminiContentModelKey, modelId);
+  }
+
+  Future<String?> loadGeminiContentModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_geminiContentModelKey);
   }
 
   // ==> FUNGSI BARU UNTUK PROMPTS <==
@@ -127,7 +136,7 @@ Ikuti aturan-aturan berikut dengan ketat:
 6. Sertakan simbol-simbol atau emoji yang relevan (contoh: 💡, 🚀, ✅) untuk memperkaya konten secara visual di tempat yang sesuai.
 7. Pastikan outputnya adalah HANYA kode HTML, tanpa penjelasan tambahan di luar kode.
 ''',
-      isActive: true, // Default prompt selalu aktif jika tidak ada pilihan lain
+      isActive: true,
       isDefault: true,
     );
   }
@@ -138,10 +147,8 @@ Ikuti aturan-aturan berikut dengan ketat:
       return _getDefaultPrompt();
     }
     try {
-      // Cari prompt yang aktif
       return prompts.firstWhere((p) => p.isActive);
     } catch (e) {
-      // Jika tidak ada yang aktif (misal setelah penghapusan), aktifkan default/pertama
       final defaultOrFirst = prompts.firstWhere(
         (p) => p.isDefault,
         orElse: () => prompts.first,
