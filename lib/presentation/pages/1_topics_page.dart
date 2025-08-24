@@ -64,6 +64,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   }
 
   void _handleKeyEvent(RawKeyEvent event) {
+    // ## PERBAIKAN: Abaikan event dari tombol Alt ##
+    if (event.logicalKey == LogicalKeyboardKey.altLeft ||
+        event.logicalKey == LogicalKeyboardKey.altRight) {
+      return;
+    }
+
     if (event is RawKeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
           event.logicalKey == LogicalKeyboardKey.arrowUp ||
