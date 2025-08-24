@@ -83,16 +83,29 @@ class DiscussionProvider with ChangeNotifier {
 
     final filterPrefs = await _prefsService.loadFilterPreference();
     _activeFilterType = filterPrefs['filterType'];
-    if (_activeFilterType == 'code') {
+
+    // ## PERBAIKAN DIMULAI DI SINI ##
+    if (_activeFilterType == 'date_today_and_before') {
+      // Jika filter spesial ditemukan, buat rentang tanggal dinamis
+      _activeFilterType = 'date'; // Secara internal, ini tetap filter tanggal
+      final now = DateTime.now();
+      _selectedDateRange = DateTimeRange(
+        start: DateTime(2000),
+        end: DateTime(now.year, now.month, now.day),
+      );
+    } else if (_activeFilterType == 'code') {
       _selectedRepetitionCode = filterPrefs['filterValue'];
     } else if (_activeFilterType == 'date' &&
         filterPrefs['filterValue'] != null) {
+      // Ini menangani rentang tanggal statis (dari 'Pilih Rentang Tanggal')
       final dates = filterPrefs['filterValue']!.split('/');
       _selectedDateRange = DateTimeRange(
         start: DateTime.parse(dates[0]),
         end: DateTime.parse(dates[1]),
       );
     }
+    // ## PERBAIKAN SELESAI ##
+
     notifyListeners();
   }
 
@@ -700,6 +713,20 @@ $htmlContent
     final dateRangeString =
         '${range.start.toIso8601String()}/${range.end.toIso8601String()}';
     _prefsService.saveFilterPreference('date', dateRangeString);
+    _filterAndSortDiscussions();
+  }
+
+  // ## FUNGSI BARU UNTUK FILTER DINAMIS ##
+  void applyTodayAndBeforeFilter() {
+    _activeFilterType = 'date';
+    final now = DateTime.now();
+    _selectedDateRange = DateTimeRange(
+      start: DateTime(2000),
+      end: DateTime(now.year, now.month, now.day),
+    );
+    _selectedRepetitionCode = null;
+    // Simpan kunci spesial untuk mengidentifikasi filter dinamis ini
+    _prefsService.saveFilterPreference('date_today_and_before', null);
     _filterAndSortDiscussions();
   }
 

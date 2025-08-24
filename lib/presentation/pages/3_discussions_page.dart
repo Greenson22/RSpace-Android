@@ -384,6 +384,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           provider.applyDateFilter(range);
           _showSnackBar('Filter tanggal diterapkan.');
         },
+        // ## PERBAIKAN: Panggil fungsi provider yang baru ##
+        onSelectTodayAndBefore: () {
+          provider.applyTodayAndBeforeFilter();
+          _showSnackBar('Filter diterapkan: Hari ini dan sebelumnya.');
+        },
       ),
     );
   }

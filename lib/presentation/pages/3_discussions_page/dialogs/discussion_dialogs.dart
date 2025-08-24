@@ -369,6 +369,7 @@ Future<void> showRepetitionCodeFilterDialog({
 Future<void> showDateFilterDialog({
   required BuildContext context,
   required Function(DateTimeRange) onSelectRange,
+  required Function() onSelectTodayAndBefore,
   required DateTimeRange? initialDateRange,
 }) async {
   final now = DateTime.now();
@@ -392,7 +393,7 @@ Future<void> showDateFilterDialog({
             ListTile(
               title: const Text('Hari ini dan sebelumnya'),
               onTap: () {
-                onSelectRange(DateTimeRange(start: DateTime(2000), end: today));
+                onSelectTodayAndBefore();
                 Navigator.pop(context);
               },
             ),
