@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
-import '../../../../presentation/widgets/edit_popup_menu.dart';
-// Impor widget LinkifyText yang baru dibuat
+// Impor widget menu yang baru
+import '../../../widgets/point_edit_popup_menu.dart';
 import '../../../widgets/linkify_text.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
@@ -22,6 +22,7 @@ class PointTile extends StatelessWidget {
     this.isActive = true,
   });
 
+  // ... (semua fungsi helper di sini tetap sama) ...
   void _showSnackBar(BuildContext context, String message) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -110,7 +111,6 @@ class PointTile extends StatelessWidget {
         color: isFinished ? Colors.green : Colors.grey,
       ),
       title: LinkifyText(
-        // GANTI DARI Text MENJADI LinkifyText
         point.pointText,
         style: TextStyle(
           color: effectiveTextColor,
@@ -174,7 +174,8 @@ class PointTile extends StatelessWidget {
                 ],
               ),
             ),
-      trailing: EditPopupMenu(
+      // ==> PERUBAHAN DI SINI <==
+      trailing: PointEditPopupMenu(
         isFinished: isFinished,
         onDateChange: () => _changePointDate(context, provider),
         onCodeChange: () => _changePointCode(context, provider),

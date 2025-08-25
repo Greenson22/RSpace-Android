@@ -1,35 +1,34 @@
 // lib/presentation/widgets/edit_popup_menu.dart
 import 'package:flutter/material.dart';
+import 'popup_menu_items/discussion_menu_items.dart';
+import 'popup_menu_items/file_menu_items.dart';
+import 'popup_menu_items/lifecycle_menu_items.dart';
 
 class EditPopupMenu extends StatelessWidget {
-  final VoidCallback? onDateChange;
-  final VoidCallback? onCodeChange;
-  final VoidCallback? onRename;
-  final VoidCallback? onMarkAsFinished;
-  final VoidCallback? onAddPoint;
-  final VoidCallback? onReactivate;
-  final VoidCallback? onDelete;
-  final VoidCallback? onSetFilePath;
-  final VoidCallback? onRemoveFilePath;
-  final VoidCallback? onEditFilePath;
-  final VoidCallback? onGenerateHtml; // ==> DITAMBAHKAN
+  final VoidCallback onAddPoint;
+  final VoidCallback onRename;
+  final VoidCallback onSetFilePath;
+  final VoidCallback onGenerateHtml;
+  final VoidCallback onEditFilePath;
+  final VoidCallback onRemoveFilePath;
+  final VoidCallback onMarkAsFinished;
+  final VoidCallback onReactivate;
+  final VoidCallback onDelete;
   final bool isFinished;
   final bool hasPoints;
   final bool hasFilePath;
 
   const EditPopupMenu({
     super.key,
-    this.onDateChange,
-    this.onCodeChange,
-    this.onRename,
-    this.onMarkAsFinished,
-    this.onAddPoint,
-    this.onReactivate,
-    this.onDelete,
-    this.onSetFilePath,
-    this.onRemoveFilePath,
-    this.onEditFilePath,
-    this.onGenerateHtml, // ==> DITAMBAHKAN
+    required this.onAddPoint,
+    required this.onRename,
+    required this.onSetFilePath,
+    required this.onGenerateHtml,
+    required this.onEditFilePath,
+    required this.onRemoveFilePath,
+    required this.onMarkAsFinished,
+    required this.onReactivate,
+    required this.onDelete,
     this.isFinished = false,
     this.hasPoints = false,
     this.hasFilePath = false,
@@ -39,154 +38,54 @@ class EditPopupMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       onSelected: (value) {
-        if (value == 'edit_date' && onDateChange != null) onDateChange!();
-        if (value == 'edit_code' && onCodeChange != null) onCodeChange!();
-        if (value == 'rename' && onRename != null) onRename!();
-        if (value == 'finish' && onMarkAsFinished != null) onMarkAsFinished!();
-        if (value == 'add_point' && onAddPoint != null) onAddPoint!();
-        if (value == 'reactivate' && onReactivate != null) onReactivate!();
-        if (value == 'delete' && onDelete != null) onDelete!();
-        if (value == 'set_file_path' && onSetFilePath != null) onSetFilePath!();
-        if (value == 'remove_file_path' && onRemoveFilePath != null) {
-          onRemoveFilePath!();
-        }
-        if (value == 'edit_file_path' && onEditFilePath != null) {
-          onEditFilePath!();
-        }
-        // ==> DITAMBAHKAN
-        if (value == 'generate_html' && onGenerateHtml != null) {
-          onGenerateHtml!();
-        }
+        // Logika onSelected tetap sama
+        if (value == 'add_point') onAddPoint();
+        if (value == 'rename') onRename();
+        if (value == 'set_file_path') onSetFilePath();
+        if (value == 'generate_html') onGenerateHtml();
+        if (value == 'edit_file_path') onEditFilePath();
+        if (value == 'remove_file_path') onRemoveFilePath();
+        if (value == 'finish') onMarkAsFinished();
+        if (value == 'reactivate') onReactivate();
+        if (value == 'delete') onDelete();
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
 
-        if (onAddPoint == null) {
-          if (!isFinished) {
-            if (onDateChange != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'edit_date',
-                  child: Text('Ubah Tanggal'),
-                ),
-              );
-            }
-            if (onCodeChange != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'edit_code',
-                  child: Text('Ubah Kode Repetisi'),
-                ),
-              );
-            }
-          }
-        }
+        // Gabungkan item menu dari komponen-komponen
+        menuItems.addAll(
+          buildDiscussionMenuItems(
+            onAddPoint: onAddPoint,
+            onRename: onRename,
+            isFinished: isFinished,
+          ),
+        );
 
-        if (onAddPoint != null) {
-          if (!isFinished) {
-            menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'add_point',
-                child: Text('Tambah Poin'),
-              ),
-            );
-            if (onSetFilePath != null) {
-              menuItems.add(
-                PopupMenuItem<String>(
-                  value: 'set_file_path',
-                  child: Text(hasFilePath ? 'Ubah Path File' : 'Set Path File'),
-                ),
-              );
-            }
-            // ==> MENU BARU DITAMBAHKAN DI SINI
-            if (hasFilePath && onGenerateHtml != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'generate_html',
-                  child: Text('Generate Content with AI'),
-                ),
-              );
-            }
-            if (hasFilePath && onEditFilePath != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'edit_file_path',
-                  child: Text('Edit File Konten'),
-                ),
-              );
-            }
-            if (hasFilePath && onRemoveFilePath != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'remove_file_path',
-                  child: Text(
-                    'Hapus Path File',
-                    style: TextStyle(color: Colors.orange),
-                  ),
-                ),
-              );
-            }
-          }
-          if (!hasPoints) {
-            if (onDateChange != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'edit_date',
-                  child: Text('Ubah Tanggal'),
-                ),
-              );
-            }
-            if (onCodeChange != null) {
-              menuItems.add(
-                const PopupMenuItem<String>(
-                  value: 'edit_code',
-                  child: Text('Ubah Kode Repetisi'),
-                ),
-              );
-            }
-          }
-        }
-
-        if (onRename != null) {
-          menuItems.add(
-            const PopupMenuItem<String>(
-              value: 'rename',
-              child: Text('Ubah Nama'),
+        if (!isFinished) {
+          menuItems.add(const PopupMenuDivider());
+          menuItems.addAll(
+            buildFileMenuItems(
+              hasFilePath: hasFilePath,
+              onSetFilePath: onSetFilePath,
+              onGenerateHtml: onGenerateHtml,
+              onEditFilePath: onEditFilePath,
+              onRemoveFilePath: onRemoveFilePath,
             ),
           );
         }
 
-        if (!isFinished) {
-          if (onMarkAsFinished != null && (onAddPoint == null || !hasPoints)) {
-            menuItems.add(const PopupMenuDivider());
-            menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'finish',
-                child: Text('Tandai Selesai'),
-              ),
-            );
-          }
+        // Tampilkan menu lifecycle hanya jika tidak ada poin
+        if (!hasPoints) {
+          menuItems.add(const PopupMenuDivider());
+          menuItems.addAll(
+            buildLifecycleMenuItems(
+              isFinished: isFinished,
+              onMarkAsFinished: onMarkAsFinished,
+              onReactivate: onReactivate,
+              onDelete: onDelete,
+            ),
+          );
         } else {
-          if (onReactivate != null && !hasPoints) {
-            menuItems.add(const PopupMenuDivider());
-            menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'reactivate',
-                child: Text('Aktifkan Lagi'),
-              ),
-            );
-          } else if (onReactivate != null && onAddPoint == null) {
-            menuItems.add(const PopupMenuDivider());
-            menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'reactivate',
-                child: Text('Aktifkan Lagi'),
-              ),
-            );
-          }
-        }
-
-        if (onDelete != null) {
           menuItems.add(const PopupMenuDivider());
           menuItems.add(
             const PopupMenuItem<String>(

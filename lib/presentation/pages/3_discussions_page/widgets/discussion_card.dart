@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
-import '../../../../presentation/widgets/edit_popup_menu.dart';
+// Impor widget menu yang baru
+import '../../../widgets/discussion_edit_popup_menu.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../utils/repetition_code_utils.dart';
@@ -28,6 +29,7 @@ class DiscussionCard extends StatelessWidget {
     this.subjectLinkedPath,
   });
 
+  // ... (semua fungsi helper di sini tetap sama) ...
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
@@ -253,7 +255,8 @@ class DiscussionCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                EditPopupMenu(
+                // ==> PERUBAHAN DI SINI <==
+                DiscussionEditPopupMenu(
                   isFinished: isFinished,
                   hasPoints: discussion.points.isNotEmpty,
                   hasFilePath: hasFile,
