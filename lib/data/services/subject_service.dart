@@ -112,6 +112,14 @@ class SubjectService {
         subjectJsonPath,
       );
 
+      // ==========================================================
+      // ==> PERBAIKAN: Cek apakah semua discussion sudah selesai.
+      if (discussions.isNotEmpty && discussions.every((d) => d.finished)) {
+        // Jika ya, langsung kembalikan status 'Finish'.
+        return {'date': null, 'code': 'Finish'};
+      }
+      // ==========================================================
+
       List<Discussion> filteredDiscussions = discussions.where((discussion) {
         final filterType = filterPrefs['filterType'];
         if (filterType == null) return true;
