@@ -17,6 +17,7 @@ import 'dashboard_page/widgets/dashboard_header.dart';
 import 'dashboard_page/dialogs/theme_settings_dialog.dart';
 import 'dashboard_page/dialogs/gemini_api_key_dialog.dart';
 import 'dashboard_page/dialogs/gemini_prompt_dialog.dart';
+import '../providers/sync_provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -42,14 +43,78 @@ class _DashboardPageState extends State<DashboardPage> {
     _checkPath();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
+      Provider.of<SyncProvider>(
+        context,
+        listen: false,
+      ).addListener(_onSyncStateChanged);
     });
   }
 
   @override
   void dispose() {
+    Provider.of<SyncProvider>(
+      context,
+      listen: false,
+    ).removeListener(_onSyncStateChanged);
     _focusNode.dispose();
     _focusTimer?.cancel();
     super.dispose();
+  }
+
+  void _onSyncStateChanged() {
+    final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+    if (!syncProvider.isSyncing) {
+      Navigator.of(context, rootNavigator: true).pop();
+      syncProvider.showResultDialog(context);
+    }
+  }
+
+  Future<void> _handleBackupAndSync() async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Konfirmasi Backup & Sync'),
+            content: const Text(
+              'Proses ini akan membuat file backup lokal untuk RSpace & PerpusKu, lalu mengunggahnya ke server. Lanjutkan?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Ya, Lanjutkan'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmed && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Consumer<SyncProvider>(
+          builder: (context, provider, child) {
+            return AlertDialog(
+              content: Row(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 20),
+                  Expanded(child: Text(provider.syncStatusMessage)),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+      Provider.of<SyncProvider>(
+        context,
+        listen: false,
+      ).performBackupAndUpload();
+    }
   }
 
   Future<void> _checkPath() async {
@@ -165,6 +230,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _dashboardActions = buildDashboardActions(
       context,
       onShowStorageDialog: () => _showStoragePathDialog(context),
+      onBackupAndSync: _handleBackupAndSync,
       isPathSet: _isPathSet,
     );
 

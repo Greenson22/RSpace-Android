@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/my_tasks_page.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'package:my_aplication/presentation/providers/sync_provider.dart';
 import 'presentation/widgets/floating_character_widget.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -48,6 +49,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DebugProvider()),
         ChangeNotifierProvider(create: (_) => TimeLogProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => SyncProvider()),
       ],
       child: const MyApp(),
     ),
