@@ -41,7 +41,13 @@ class PointEditPopupMenu extends StatelessWidget {
             menuItems.add(
               const PopupMenuItem<String>(
                 value: 'edit_date',
-                child: Text('Ubah Tanggal'),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month_outlined),
+                    SizedBox(width: 8),
+                    Text('Ubah Tanggal'),
+                  ],
+                ),
               ),
             );
           }
@@ -49,7 +55,13 @@ class PointEditPopupMenu extends StatelessWidget {
             menuItems.add(
               const PopupMenuItem<String>(
                 value: 'edit_code',
-                child: Text('Ubah Kode Repetisi'),
+                child: Row(
+                  children: [
+                    Icon(Icons.repeat_outlined),
+                    SizedBox(width: 8),
+                    Text('Ubah Kode Repetisi'),
+                  ],
+                ),
               ),
             );
           }
@@ -57,7 +69,13 @@ class PointEditPopupMenu extends StatelessWidget {
             menuItems.add(
               const PopupMenuItem<String>(
                 value: 'rename',
-                child: Text('Ubah Nama'),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined),
+                    SizedBox(width: 8),
+                    Text('Ubah Nama'),
+                  ],
+                ),
               ),
             );
           }
@@ -70,7 +88,13 @@ class PointEditPopupMenu extends StatelessWidget {
             menuItems.add(
               const PopupMenuItem<String>(
                 value: 'finish',
-                child: Text('Tandai Selesai'),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_outline),
+                    SizedBox(width: 8),
+                    Text('Tandai Selesai'),
+                  ],
+                ),
               ),
             );
           }
@@ -79,7 +103,13 @@ class PointEditPopupMenu extends StatelessWidget {
             menuItems.add(
               const PopupMenuItem<String>(
                 value: 'reactivate',
-                child: Text('Aktifkan Lagi'),
+                child: Row(
+                  children: [
+                    Icon(Icons.replay),
+                    SizedBox(width: 8),
+                    Text('Aktifkan Lagi'),
+                  ],
+                ),
               ),
             );
           }
@@ -90,7 +120,13 @@ class PointEditPopupMenu extends StatelessWidget {
           menuItems.add(
             const PopupMenuItem<String>(
               value: 'delete',
-              child: Text('Hapus', style: TextStyle(color: Colors.red)),
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Hapus', style: TextStyle(color: Colors.red)),
+                ],
+              ),
             ),
           );
         }
