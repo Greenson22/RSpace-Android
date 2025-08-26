@@ -1,12 +1,35 @@
 // lib/presentation/pages/about_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // Asumsi widget ini ada di path yang benar sesuai contoh Anda.
 // import 'package:my_aplication/presentation/widgets/waving_flag.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  String _version = '...';
+
+  @override
+  void initState() {
+    super.initState();
+    _initPackageInfo();
+  }
+
+  Future<void> _initPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = 'Versi ${info.version} (${info.buildNumber})';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +84,14 @@ class AboutPage extends StatelessWidget {
                     'Manajemen Pengetahuan & Tugas Pribadi Anda',
                     style: textTheme.titleMedium?.copyWith(
                       color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // ==> WIDGET UNTUK MENAMPILKAN VERSI <==
+                  Text(
+                    _version,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade500,
                     ),
                   ),
                 ],
