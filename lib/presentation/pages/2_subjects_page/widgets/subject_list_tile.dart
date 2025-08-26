@@ -10,7 +10,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  final VoidCallback onLinkPath; // ==> DITAMBAHKAN
+  final VoidCallback onLinkPath;
   final bool isFocused;
 
   const SubjectListTile({
@@ -21,7 +21,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    required this.onLinkPath, // ==> DITAMBAHKAN
+    required this.onLinkPath,
     this.isFocused = false,
   });
 
@@ -74,10 +74,8 @@ class SubjectListTile extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(
-                      // ==> DIBUNGKUS DENGAN ROW
                       children: [
-                        if (subject.linkedPath !=
-                            null) // ==> KONDISI DITAMBAHKAN
+                        if (subject.linkedPath != null)
                           Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: Icon(
@@ -114,34 +112,67 @@ class SubjectListTile extends StatelessWidget {
                   if (value == 'delete') onDelete();
                   if (value == 'change_icon') onIconChange();
                   if (value == 'toggle_visibility') onToggleVisibility();
-                  if (value == 'link_path') onLinkPath(); // ==> DITAMBAHKAN
+                  if (value == 'link_path') onLinkPath();
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: 'rename',
-                    child: Text('Ubah Nama'),
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined),
+                        SizedBox(width: 8),
+                        Text('Ubah Nama'),
+                      ],
+                    ),
                   ),
                   const PopupMenuItem(
                     value: 'change_icon',
-                    child: Text('Ubah Ikon'),
+                    child: Row(
+                      children: [
+                        Icon(Icons.emoji_emotions_outlined),
+                        SizedBox(width: 8),
+                        Text('Ubah Ikon'),
+                      ],
+                    ),
                   ),
-                  // ==> MENU BARU DITAMBAHKAN <==
                   PopupMenuItem<String>(
                     value: 'link_path',
-                    child: Text(
-                      subject.linkedPath == null
-                          ? 'Link ke PerpusKu'
-                          : 'Ubah Link PerpusKu',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.link_outlined),
+                        const SizedBox(width: 8),
+                        Text(
+                          subject.linkedPath == null
+                              ? 'Link ke PerpusKu'
+                              : 'Ubah Link PerpusKu',
+                        ),
+                      ],
                     ),
                   ),
                   PopupMenuItem<String>(
                     value: 'toggle_visibility',
-                    child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isHidden
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                      ],
+                    ),
                   ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'delete',
-                    child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Hapus', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
                   ),
                 ],
               ),
