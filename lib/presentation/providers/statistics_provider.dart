@@ -1,13 +1,16 @@
 // lib/presentation/providers/statistics_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../../data/models/discussion_model.dart';
 import '../../data/models/statistics_model.dart';
+import '../../data/models/time_log_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/my_task_service.dart';
 import '../../data/services/path_service.dart';
 import '../../data/services/subject_service.dart';
+import '../../data/services/time_log_service.dart';
 import '../../data/services/topic_service.dart';
 
 class StatisticsProvider with ChangeNotifier {
@@ -16,6 +19,8 @@ class StatisticsProvider with ChangeNotifier {
   final DiscussionService _discussionService = DiscussionService();
   final MyTaskService _myTaskService = MyTaskService();
   final PathService _pathService = PathService();
+  // ==> TAMBAHKAN TIMELOG SERVICE <==
+  final TimeLogService _timeLogService = TimeLogService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -108,6 +113,43 @@ class StatisticsProvider with ChangeNotifier {
         }
       }
 
+      // ==> LOGIKA BARU UNTUK MENGHITUNG STATISTIK JURNAL <==
+      Duration totalTimeLogged = Duration.zero;
+      Duration averageTimePerDay = Duration.zero;
+      String? mostActiveDay;
+      int mostActiveDayMinutes = 0;
+
+      final List<TimeLogEntry> timeLogs = await _timeLogService.loadTimeLogs();
+      if (timeLogs.isNotEmpty) {
+        int totalMinutes = 0;
+        TimeLogEntry? mostActiveEntry;
+
+        for (final log in timeLogs) {
+          final dailyMinutes = log.tasks.fold<int>(
+            0,
+            (sum, task) => sum + task.durationMinutes,
+          );
+          totalMinutes += dailyMinutes;
+
+          if (dailyMinutes > mostActiveDayMinutes) {
+            mostActiveDayMinutes = dailyMinutes;
+            mostActiveEntry = log;
+          }
+        }
+
+        totalTimeLogged = Duration(minutes: totalMinutes);
+        averageTimePerDay = Duration(
+          minutes: (totalMinutes / timeLogs.length).round(),
+        );
+        if (mostActiveEntry != null) {
+          mostActiveDay = DateFormat(
+            'EEEE, d MMM yyyy',
+            'id_ID',
+          ).format(mostActiveEntry.date);
+        }
+      }
+      // --- AKHIR LOGIKA BARU ---
+
       _stats = AppStatistics(
         topicCount: topics.length,
         subjectCount: totalSubjectCount,
@@ -118,8 +160,12 @@ class StatisticsProvider with ChangeNotifier {
         taskCount: taskCount,
         completedTaskCount: completedTaskCount,
         perTopicStats: perTopicStats,
-        // ==> MASUKKAN MAP REPETITION CODE KE STATS <==
         repetitionCodeCounts: repetitionCodeCounts,
+        // ==> MASUKKAN DATA BARU KE MODEL <==
+        totalTimeLogged: totalTimeLogged,
+        averageTimePerDay: averageTimePerDay,
+        mostActiveDay: mostActiveDay,
+        mostActiveDayMinutes: mostActiveDayMinutes,
       );
     } catch (e) {
       debugPrint("Error generating statistics: $e");

@@ -29,6 +29,12 @@ class AppStatistics {
   // ==> FIELD BARU UNTUK MENYIMPAN JUMLAH SETIAP REPETITION CODE <==
   final Map<String, int> repetitionCodeCounts;
 
+  // ==> FIELD BARU UNTUK JURNAL AKTIVITAS <==
+  final Duration totalTimeLogged;
+  final Duration averageTimePerDay;
+  final String? mostActiveDay; // Format: "Senin, 1 Jan 2024"
+  final int mostActiveDayMinutes;
+
   AppStatistics({
     this.topicCount = 0,
     this.subjectCount = 0,
@@ -39,6 +45,11 @@ class AppStatistics {
     this.taskCount = 0,
     this.completedTaskCount = 0,
     this.perTopicStats = const [],
-    this.repetitionCodeCounts = const {}, // Default value
+    this.repetitionCodeCounts = const {},
+    // ==> INISIALISASI NILAI DEFAULT <==
+    this.totalTimeLogged = Duration.zero,
+    this.averageTimePerDay = Duration.zero,
+    this.mostActiveDay,
+    this.mostActiveDayMinutes = 0,
   });
 }

@@ -173,6 +173,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
         const SizedBox(height: 16),
         _buildTaskSummary(stats),
         const SizedBox(height: 16),
+        // ==> TAMBAHKAN KARTU BARU DI SINI <==
+        _buildActivitySummary(stats),
+        const SizedBox(height: 16),
         if (stats.perTopicStats.isNotEmpty)
           PerTopicSection(
             perTopicStats: stats.perTopicStats,
@@ -200,6 +203,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 _buildContentSummary(stats),
                 const SizedBox(height: 16),
                 _buildTaskSummary(stats),
+                const SizedBox(height: 16),
+                // ==> TAMBAHKAN KARTU BARU DI SINI <==
+                _buildActivitySummary(stats),
               ],
             ),
           ),
@@ -328,6 +334,46 @@ class _StatisticsPageState extends State<StatisticsPage> {
           color: valueColor ?? theme.colorScheme.primary,
         ),
       ),
+    );
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMBUAT KARTU JURNAL AKTIVITAS <==
+  SummaryCard _buildActivitySummary(AppStatistics stats) {
+    // Helper untuk format durasi
+    String formatDuration(Duration duration) {
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes.remainder(60);
+      return '${hours}j ${minutes}m';
+    }
+
+    return SummaryCard(
+      title: 'Ringkasan Aktivitas',
+      icon: Icons.timer_outlined,
+      color: Colors.teal.shade700,
+      children: [
+        _buildStatTile(
+          context,
+          'Total Waktu Tercatat',
+          formatDuration(stats.totalTimeLogged),
+          Icons.hourglass_bottom_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Rata-rata per Hari',
+          formatDuration(stats.averageTimePerDay),
+          Icons.av_timer_outlined,
+        ),
+        if (stats.mostActiveDay != null)
+          _buildStatTile(
+            context,
+            'Hari Terproduktif',
+            '${stats.mostActiveDay} (${formatDuration(Duration(minutes: stats.mostActiveDayMinutes))})',
+            Icons.whatshot_outlined,
+            valueColor: Theme.of(context).brightness == Brightness.light
+                ? Colors.orange.shade800
+                : Colors.orange.shade300,
+          ),
+      ],
     );
   }
 }
