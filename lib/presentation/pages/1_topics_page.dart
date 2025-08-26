@@ -15,6 +15,7 @@ import '1_topics_page/dialogs/topic_dialogs.dart';
 import '1_topics_page/widgets/topic_grid_tile.dart';
 import '1_topics_page/widgets/topic_list_tile.dart';
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
+import '../widgets/ad_banner_widget.dart'; // Impor widget iklan
 
 class TopicsPage extends StatelessWidget {
   const TopicsPage({super.key});
@@ -296,14 +297,23 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             ),
           ],
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 600) {
-              return _buildGridView();
-            } else {
-              return _buildListView();
-            }
-          },
+        body: Column(
+          // Bungkus dengan Column
+          children: [
+            Expanded(
+              // Bungkus konten utama dengan Expanded
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 600) {
+                    return _buildGridView();
+                  } else {
+                    return _buildListView();
+                  }
+                },
+              ),
+            ),
+            const AdBannerWidget(), // Tambahkan widget iklan di sini
+          ],
         ),
         floatingActionButton: topicProvider.isReorderModeEnabled
             ? null

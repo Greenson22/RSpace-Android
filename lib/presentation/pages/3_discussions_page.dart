@@ -7,6 +7,7 @@ import '../providers/discussion_provider.dart';
 import '3_discussions_page/dialogs/discussion_dialogs.dart';
 import '3_discussions_page/widgets/discussion_card.dart';
 import '3_discussions_page/widgets/discussion_stats_header.dart';
+import '../widgets/ad_banner_widget.dart'; // Impor widget iklan
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -176,7 +177,16 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       onKey: _handleKeyEvent,
       child: Scaffold(
         appBar: _buildAppBar(provider),
-        body: _buildBody(provider),
+        body: Column(
+          // Bungkus dengan Column
+          children: [
+            Expanded(
+              // Bungkus konten utama dengan Expanded
+              child: _buildBody(provider),
+            ),
+            const AdBannerWidget(), // Tambahkan widget iklan di sini
+          ],
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _addDiscussion(provider),
           tooltip: 'Tambah Diskusi',

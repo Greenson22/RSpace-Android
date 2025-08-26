@@ -1,5 +1,6 @@
 // lib/data/services/ad_service.dart
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
@@ -14,16 +15,23 @@ class AdService {
   }
 
   // Fungsi untuk membuat dan memuat banner ad
-  static BannerAd createBannerAd() {
+  static BannerAd createBannerAd({VoidCallback? onAdLoaded}) {
     BannerAd ad = BannerAd(
       adUnitId: bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (Ad ad) => print('BannerAd loaded.'),
+        onAdLoaded: (Ad ad) {
+          if (kDebugMode) {
+            print('BannerAd loaded.');
+          }
+          onAdLoaded?.call();
+        },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           ad.dispose();
-          print('BannerAd failed to load: $error');
+          if (kDebugMode) {
+            print('BannerAd failed to load: $error');
+          }
         },
       ),
     );

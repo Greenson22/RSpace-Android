@@ -12,6 +12,7 @@ import '3_discussions_page.dart';
 import '2_subjects_page/dialogs/subject_dialogs.dart';
 import '2_subjects_page/widgets/subject_grid_tile.dart';
 import '2_subjects_page/widgets/subject_list_tile.dart';
+import '../widgets/ad_banner_widget.dart'; // Impor widget iklan
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -286,14 +287,23 @@ class _SubjectsPageState extends State<SubjectsPage> {
           ],
           elevation: 0,
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > 600) {
-              return _buildGridView(context);
-            } else {
-              return _buildListView(context);
-            }
-          },
+        body: Column(
+          // Bungkus dengan Column
+          children: [
+            Expanded(
+              // Bungkus konten utama dengan Expanded
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 600) {
+                    return _buildGridView(context);
+                  } else {
+                    return _buildListView(context);
+                  }
+                },
+              ),
+            ),
+            const AdBannerWidget(), // Tambahkan widget iklan di sini
+          ],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _addSubject(context),
