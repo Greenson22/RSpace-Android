@@ -1,6 +1,7 @@
 // lib/main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/presentation/providers/chat_provider.dart';
@@ -21,6 +22,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
+
+  if (Platform.isAndroid || Platform.isIOS) {
+    MobileAds.instance.initialize();
+  }
 
   if (Platform.isAndroid || Platform.isIOS) {
     const QuickActions quickActions = QuickActions();

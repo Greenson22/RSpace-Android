@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import '../../data/services/ad_service.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
@@ -30,6 +32,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   Key _dashboardPathKey = UniqueKey();
 
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
+
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = 0;
   List<VoidCallback> _dashboardActions = [];
@@ -42,6 +47,11 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _checkPath();
+
+    if (Platform.isAndroid || Platform.isIOS) {
+      _loadBannerAd();
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
       Provider.of<SyncProvider>(
@@ -53,6 +63,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
+    _bannerAd?.dispose();
     Provider.of<SyncProvider>(
       context,
       listen: false,
@@ -60,6 +71,13 @@ class _DashboardPageState extends State<DashboardPage> {
     _focusNode.dispose();
     _focusTimer?.cancel();
     super.dispose();
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = AdService.createBannerAd()..load();
+    setState(() {
+      _isBannerAdReady = true;
+    });
   }
 
   Future<void> _checkPath() async {
@@ -369,31 +387,46 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
               body: SafeArea(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: RefreshIndicator(
-                      onRefresh: () async {
-                        await Provider.of<TopicProvider>(
-                          context,
-                          listen: false,
-                        ).fetchTopics();
-                      },
-                      child: ListView(
-                        padding: const EdgeInsets.all(16.0),
-                        children: [
-                          DashboardHeader(key: _dashboardPathKey),
-                          const SizedBox(height: 20),
-                          DashboardGrid(
-                            isKeyboardActive: _isKeyboardActive,
-                            focusedIndex: _focusedIndex,
-                            dashboardActions: _dashboardActions,
-                            isPathSet: _isPathSet,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1200),
+                          child: RefreshIndicator(
+                            onRefresh: () async {
+                              await Provider.of<TopicProvider>(
+                                context,
+                                listen: false,
+                              ).fetchTopics();
+                            },
+                            child: ListView(
+                              padding: const EdgeInsets.all(16.0),
+                              children: [
+                                DashboardHeader(key: _dashboardPathKey),
+                                const SizedBox(height: 20),
+                                DashboardGrid(
+                                  isKeyboardActive: _isKeyboardActive,
+                                  focusedIndex: _focusedIndex,
+                                  dashboardActions: _dashboardActions,
+                                  isPathSet: _isPathSet,
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                    if (_isBannerAdReady)
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: SizedBox(
+                          width: _bannerAd!.size.width.toDouble(),
+                          height: _bannerAd!.size.height.toDouble(),
+                          child: AdWidget(ad: _bannerAd!),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
