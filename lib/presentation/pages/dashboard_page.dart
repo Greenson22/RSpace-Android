@@ -230,7 +230,6 @@ class _DashboardPageState extends State<DashboardPage> {
     _dashboardActions = buildDashboardActions(
       context,
       onShowStorageDialog: () => _showStoragePathDialog(context),
-      onBackupAndSync: _handleBackupAndSync,
       isPathSet: _isPathSet,
     );
 
@@ -281,6 +280,11 @@ class _DashboardPageState extends State<DashboardPage> {
                         MaterialPageRoute(builder: (_) => const ChatPage()),
                       );
                     },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.sync_rounded),
+                    tooltip: 'Backup & Sync Otomatis',
+                    onPressed: _handleBackupAndSync,
                   ),
                   IconButton(
                     icon: Icon(

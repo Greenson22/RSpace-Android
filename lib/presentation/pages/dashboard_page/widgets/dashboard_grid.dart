@@ -14,7 +14,6 @@ import 'dashboard_item.dart';
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
   required VoidCallback onShowStorageDialog,
-  required VoidCallback onBackupAndSync,
   required bool isPathSet,
 }) {
   final List<VoidCallback?> actions = [
@@ -43,7 +42,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const BackupManagementPage()),
     ),
-    onBackupAndSync,
   ];
   return actions.whereType<VoidCallback>().toList();
 }
@@ -112,11 +110,6 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.settings_backup_restore_rounded,
             'label': 'Manajemen Backup',
             'colors': const [Color(0xFF7E57C2), Color(0xFF5E35B1)],
-          },
-          {
-            'icon': Icons.sync_rounded,
-            'label': 'Backup & Sync',
-            'colors': const [Color(0xFF26A69A), Color(0xFF00897B)],
           },
         ];
 
