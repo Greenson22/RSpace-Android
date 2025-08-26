@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
 // Impor widget menu yang baru
-import '../../../widgets/discussion_edit_popup_menu.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../utils/repetition_code_utils.dart';
@@ -310,30 +309,112 @@ class DiscussionCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ==> PERUBAHAN DI SINI <==
-                DiscussionEditPopupMenu(
-                  isFinished: isFinished,
-                  hasPoints: discussion.points.isNotEmpty,
-                  hasFilePath: hasFile,
-                  // ==> PROPERTI BARU DITAMBAHKAN <==
-                  canCreateFile: subjectLinkedPath != null,
-                  onAddPoint: () => _addPoint(context, provider),
-                  // ==> FUNGSI BARU DIPANGGIL DI SINI <==
-                  onCreateFile: () => _createHtmlFileForDiscussion(
-                    context,
-                    provider,
-                    subjectLinkedPath!,
-                  ),
-                  onSetFilePath: () => _setFilePath(context, provider),
-                  onRemoveFilePath: () => _removeFilePath(context, provider),
-                  onEditFilePath: () => _editFile(context, provider),
-                  onGenerateHtml: () => _generateHtml(context),
-                  onDateChange: () => _changeDiscussionDate(context, provider),
-                  onCodeChange: () => _changeDiscussionCode(context, provider),
-                  onRename: () => _renameDiscussion(context, provider),
-                  onMarkAsFinished: () => _markAsFinished(context, provider),
-                  onReactivate: () => _reactivateDiscussion(context, provider),
-                  onDelete: () => _deleteDiscussion(context, provider),
+                MenuAnchor(
+                  builder:
+                      (
+                        BuildContext context,
+                        MenuController controller,
+                        Widget? child,
+                      ) {
+                        return IconButton(
+                          onPressed: () {
+                            if (controller.isOpen) {
+                              controller.close();
+                            } else {
+                              controller.open();
+                            }
+                          },
+                          icon: const Icon(Icons.more_vert),
+                          tooltip: 'Opsi Diskusi',
+                        );
+                      },
+                  menuChildren: <Widget>[
+                    if (!isFinished)
+                      MenuItemButton(
+                        onPressed: () => _addPoint(context, provider),
+                        child: const Text('Tambah Poin'),
+                      ),
+                    SubmenuButton(
+                      menuChildren: <Widget>[
+                        MenuItemButton(
+                          onPressed: () => _renameDiscussion(context, provider),
+                          child: const Text('Ubah Nama'),
+                        ),
+                        if (!discussion.points.isNotEmpty) ...[
+                          MenuItemButton(
+                            onPressed: () =>
+                                _changeDiscussionDate(context, provider),
+                            child: const Text('Ubah Tanggal'),
+                          ),
+                          MenuItemButton(
+                            onPressed: () =>
+                                _changeDiscussionCode(context, provider),
+                            child: const Text('Ubah Kode Repetisi'),
+                          ),
+                        ],
+                      ],
+                      child: const Text('Edit'),
+                    ),
+                    if (!isFinished)
+                      SubmenuButton(
+                        menuChildren: <Widget>[
+                          if (subjectLinkedPath != null && !hasFile)
+                            MenuItemButton(
+                              onPressed: () => _createHtmlFileForDiscussion(
+                                context,
+                                provider,
+                                subjectLinkedPath!,
+                              ),
+                              child: const Text('Buat File HTML Baru'),
+                            ),
+                          MenuItemButton(
+                            onPressed: () => _setFilePath(context, provider),
+                            child: Text(
+                              hasFile ? 'Ubah Path File' : 'Set Path File',
+                            ),
+                          ),
+                          if (hasFile) ...[
+                            MenuItemButton(
+                              onPressed: () => _generateHtml(context),
+                              child: const Text('Generate Konten (AI)'),
+                            ),
+                            MenuItemButton(
+                              onPressed: () => _editFile(context, provider),
+                              child: const Text('Edit File Konten'),
+                            ),
+                            const Divider(),
+                            MenuItemButton(
+                              onPressed: () =>
+                                  _removeFilePath(context, provider),
+                              child: const Text(
+                                'Hapus Path File',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ],
+                        child: const Text('File'),
+                      ),
+                    const Divider(),
+                    if (isFinished)
+                      MenuItemButton(
+                        onPressed: () =>
+                            _reactivateDiscussion(context, provider),
+                        child: const Text('Aktifkan Lagi'),
+                      )
+                    else
+                      MenuItemButton(
+                        onPressed: () => _markAsFinished(context, provider),
+                        child: const Text('Tandai Selesai'),
+                      ),
+                    MenuItemButton(
+                      onPressed: () => _deleteDiscussion(context, provider),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
                 if (discussion.points.isNotEmpty)
                   IconButton(
