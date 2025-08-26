@@ -1,4 +1,5 @@
 // lib/presentation/pages/dashboard_page.dart
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import '../../data/services/shared_preferences_service.dart';
 import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/topic_provider.dart';
+import '../providers/sync_provider.dart'; // Pastikan SyncProvider diimpor
 import '1_topics_page/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'chat_page.dart';
@@ -17,7 +19,6 @@ import 'dashboard_page/widgets/dashboard_header.dart';
 import 'dashboard_page/dialogs/theme_settings_dialog.dart';
 import 'dashboard_page/dialogs/gemini_api_key_dialog.dart';
 import 'dashboard_page/dialogs/gemini_prompt_dialog.dart';
-import '../providers/sync_provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -61,62 +62,6 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
-  void _onSyncStateChanged() {
-    final syncProvider = Provider.of<SyncProvider>(context, listen: false);
-    if (!syncProvider.isSyncing) {
-      Navigator.of(context, rootNavigator: true).pop();
-      syncProvider.showResultDialog(context);
-    }
-  }
-
-  Future<void> _handleBackupAndSync() async {
-    final confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Konfirmasi Backup & Sync'),
-            content: const Text(
-              'Proses ini akan membuat file backup lokal untuk RSpace & PerpusKu, lalu mengunggahnya ke server. Lanjutkan?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Ya, Lanjutkan'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    if (confirmed && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Consumer<SyncProvider>(
-          builder: (context, provider, child) {
-            return AlertDialog(
-              content: Row(
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(width: 20),
-                  Expanded(child: Text(provider.syncStatusMessage)),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-      Provider.of<SyncProvider>(
-        context,
-        listen: false,
-      ).performBackupAndUpload();
-    }
-  }
-
   Future<void> _checkPath() async {
     final prefsService = SharedPreferencesService();
     final path = await prefsService.loadCustomStoragePath();
@@ -124,6 +69,14 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _isPathSet = path != null && path.isNotEmpty;
       });
+    }
+  }
+
+  void _onSyncStateChanged() {
+    final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+    if (!syncProvider.isSyncing) {
+      Navigator.of(context, rootNavigator: true).pop();
+      syncProvider.showResultDialog(context);
     }
   }
 
@@ -174,6 +127,54 @@ class _DashboardPageState extends State<DashboardPage> {
           _dashboardActions[_focusedIndex]();
         }
       }
+    }
+  }
+
+  Future<void> _handleBackupAndSync() async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Konfirmasi Backup & Sync'),
+            content: const Text(
+              'Proses ini akan membuat file backup lokal untuk RSpace & PerpusKu, lalu mengunggahnya ke server. Lanjutkan?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Ya, Lanjutkan'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmed && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Consumer<SyncProvider>(
+          builder: (context, provider, child) {
+            return AlertDialog(
+              content: Row(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 20),
+                  Expanded(child: Text(provider.syncStatusMessage)),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+      Provider.of<SyncProvider>(
+        context,
+        listen: false,
+      ).performBackupAndUpload();
     }
   }
 
@@ -271,6 +272,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ? 0
                     : null,
                 actions: [
+                  // ==> AKSI UTAMA TETAP DI LUAR <==
                   IconButton(
                     icon: const Icon(Icons.chat_bubble_outline),
                     tooltip: 'Chat dengan Flo AI',
@@ -286,53 +288,83 @@ class _DashboardPageState extends State<DashboardPage> {
                     tooltip: 'Backup & Sync Otomatis',
                     onPressed: _handleBackupAndSync,
                   ),
-                  IconButton(
-                    icon: Icon(
-                      showFlo ? Icons.pets_outlined : Icons.pets_rounded,
-                    ),
-                    tooltip: showFlo ? 'Nonaktifkan Flo' : 'Aktifkan Flo',
-                    onPressed: () => themeProvider.toggleFloatingCharacter(),
-                  ),
-                  if (_isPathSet)
-                    IconButton(
-                      icon: const Icon(Icons.folder_open_rounded),
-                      onPressed: () => _showStoragePathDialog(context),
-                      tooltip: 'Ubah Penyimpanan Utama',
-                    ),
+
+                  // ==> TOMBOL-TOMBOL LAIN DIKELOMPOKKAN DI SINI <==
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.smart_toy_outlined),
-                    tooltip: 'Pengaturan AI',
+                    tooltip: 'Opsi Lainnya',
                     onSelected: (value) {
-                      if (value == 'api_key') {
+                      if (value == 'theme_settings') {
+                        showThemeSettingsDialog(context);
+                      } else if (value == 'api_key') {
                         showGeminiApiKeyDialog(context);
                       } else if (value == 'prompt') {
                         showGeminiPromptDialog(context);
+                      } else if (value == 'toggle_flo') {
+                        themeProvider.toggleFloatingCharacter();
+                      } else if (value == 'storage_path') {
+                        _showStoragePathDialog(context);
+                      } else if (value == 'about') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AboutPage()),
+                        );
                       }
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
                           const PopupMenuItem<String>(
+                            value: 'theme_settings',
+                            child: ListTile(
+                              leading: Icon(Icons.palette_outlined),
+                              title: Text('Pengaturan Tampilan'),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
                             value: 'api_key',
-                            child: Text('Manajemen API Key'),
+                            child: ListTile(
+                              leading: Icon(Icons.vpn_key_outlined),
+                              title: Text('Manajemen API Key'),
+                            ),
                           ),
                           const PopupMenuItem<String>(
                             value: 'prompt',
-                            child: Text('Manajemen Prompt'),
+                            child: ListTile(
+                              leading: Icon(Icons.smart_toy_outlined),
+                              title: Text('Manajemen Prompt'),
+                            ),
+                          ),
+                          if (_isPathSet)
+                            const PopupMenuItem<String>(
+                              value: 'storage_path',
+                              child: ListTile(
+                                leading: Icon(Icons.folder_open_rounded),
+                                title: Text('Ubah Penyimpanan Utama'),
+                              ),
+                            ),
+                          PopupMenuItem<String>(
+                            value: 'toggle_flo',
+                            child: ListTile(
+                              leading: Icon(
+                                showFlo
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              title: Text(
+                                showFlo
+                                    ? 'Sembunyikan Karakter Flo'
+                                    : 'Tampilkan Karakter Flo',
+                              ),
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem<String>(
+                            value: 'about',
+                            child: ListTile(
+                              leading: Icon(Icons.info_outline),
+                              title: Text('Tentang Aplikasi'),
+                            ),
                           ),
                         ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.palette_outlined),
-                    onPressed: () => showThemeSettingsDialog(context),
-                    tooltip: 'Pengaturan Tampilan',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.info_outline),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AboutPage()),
-                    ),
-                    tooltip: 'Tentang Aplikasi',
                   ),
                 ],
               ),
