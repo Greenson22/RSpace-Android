@@ -481,6 +481,24 @@ $htmlContent
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MEMBUAT DAN MENAUTKAN FILE DARI DISKUSI YANG ADA <==
+  Future<void> createAndLinkHtmlFile(
+    Discussion discussion,
+    String subjectLinkedPath,
+  ) async {
+    // Memanggil service untuk membuat file fisik
+    final newRelativePath = await _discussionService.createDiscussionFile(
+      perpuskuBasePath: await getPerpuskuHtmlBasePath(),
+      subjectLinkedPath: subjectLinkedPath,
+      discussionName: discussion.discussion,
+    );
+
+    // Menautkan path file yang baru dibuat ke diskusi yang ada
+    discussion.filePath = newRelativePath;
+    _filterAndSortDiscussions();
+    await _saveDiscussions();
+  }
+
   void incrementRepetitionCode(dynamic item) {
     if (item is Discussion) {
       final currentCode = item.repetitionCode;

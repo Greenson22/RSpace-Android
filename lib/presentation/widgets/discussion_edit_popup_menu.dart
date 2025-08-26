@@ -11,12 +11,14 @@ class DiscussionEditPopupMenu extends StatelessWidget {
   final VoidCallback onMarkAsFinished;
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
+  final VoidCallback onCreateFile; // ==> DITAMBAHKAN
   final VoidCallback onDateChange;
   final VoidCallback onCodeChange;
 
   final bool isFinished;
   final bool hasPoints;
   final bool hasFilePath;
+  final bool canCreateFile; // ==> DITAMBAHKAN
 
   const DiscussionEditPopupMenu({
     super.key,
@@ -29,11 +31,13 @@ class DiscussionEditPopupMenu extends StatelessWidget {
     required this.onMarkAsFinished,
     required this.onReactivate,
     required this.onDelete,
+    required this.onCreateFile, // ==> DITAMBAHKAN
     required this.onDateChange,
     required this.onCodeChange,
     this.isFinished = false,
     this.hasPoints = false,
     this.hasFilePath = false,
+    this.canCreateFile = false, // ==> DITAMBAHKAN
   });
 
   @override
@@ -51,6 +55,7 @@ class DiscussionEditPopupMenu extends StatelessWidget {
         if (value == 'delete') onDelete();
         if (value == 'edit_date') onDateChange();
         if (value == 'edit_code') onCodeChange();
+        if (value == 'create_file') onCreateFile(); // ==> DITAMBAHKAN
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> menuItems = [];
@@ -64,6 +69,18 @@ class DiscussionEditPopupMenu extends StatelessWidget {
           );
 
           menuItems.add(const PopupMenuDivider());
+
+          // ==> LOGIKA BARU UNTUK MENAMPILKAN MENU <==
+          if (canCreateFile && !hasFilePath) {
+            menuItems.add(
+              const PopupMenuItem<String>(
+                value: 'create_file',
+                child: Text('Buat File HTML'),
+              ),
+            );
+          }
+          // --- AKHIR LOGIKA BARU ---
+
           menuItems.add(
             PopupMenuItem<String>(
               value: 'set_file_path',

@@ -29,7 +29,46 @@ class DiscussionCard extends StatelessWidget {
     this.subjectLinkedPath,
   });
 
-  // ... (semua fungsi helper di sini tetap sama) ...
+  // ... (semua fungsi helper lainnya tetap sama)
+
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  void _createHtmlFileForDiscussion(
+    BuildContext context,
+    DiscussionProvider provider,
+    String subjectLinkedPath,
+  ) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Buat File HTML?'),
+            content: Text(
+              'Ini akan membuat file .html baru di dalam folder subject yang tertaut dan menautkannya ke diskusi "${discussion.discussion}".',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Buat & Tautkan'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmed && context.mounted) {
+      try {
+        await provider.createAndLinkHtmlFile(discussion, subjectLinkedPath);
+        _showSnackBar(context, 'File HTML berhasil dibuat dan ditautkan.');
+      } catch (e) {
+        _showSnackBar(context, 'Gagal membuat file: ${e.toString()}');
+      }
+    }
+  }
+
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
@@ -276,7 +315,15 @@ class DiscussionCard extends StatelessWidget {
                   isFinished: isFinished,
                   hasPoints: discussion.points.isNotEmpty,
                   hasFilePath: hasFile,
+                  // ==> PROPERTI BARU DITAMBAHKAN <==
+                  canCreateFile: subjectLinkedPath != null,
                   onAddPoint: () => _addPoint(context, provider),
+                  // ==> FUNGSI BARU DIPANGGIL DI SINI <==
+                  onCreateFile: () => _createHtmlFileForDiscussion(
+                    context,
+                    provider,
+                    subjectLinkedPath!,
+                  ),
                   onSetFilePath: () => _setFilePath(context, provider),
                   onRemoveFilePath: () => _removeFilePath(context, provider),
                   onEditFilePath: () => _editFile(context, provider),
