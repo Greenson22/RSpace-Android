@@ -194,10 +194,11 @@ class DiscussionCard extends StatelessWidget {
         ? Icons.check_circle
         : (hasFile ? Icons.link : Icons.chat_bubble_outline);
 
-    final sortedPoints = List<Point>.from(discussion.points);
+    final allPoints = List<Point>.from(discussion.points);
     final sortType = provider.sortType;
     final sortAscending = provider.sortAscending;
 
+    // Komparator asli untuk pengurutan awal
     Comparator<Point> comparator;
     switch (sortType) {
       case 'name':
@@ -220,12 +221,27 @@ class DiscussionCard extends StatelessWidget {
         };
         break;
     }
-    sortedPoints.sort(comparator);
+
+    // 1. Lakukan pengurutan awal untuk semua item
+    allPoints.sort(comparator);
     if (!sortAscending) {
-      final reversedPoints = sortedPoints.reversed.toList();
-      sortedPoints.clear();
-      sortedPoints.addAll(reversedPoints);
+      // Balik urutan jika descending
+      final reversed = allPoints.reversed.toList();
+      allPoints.clear();
+      allPoints.addAll(reversed);
     }
+
+    // 2. Pisahkan list berdasarkan prioritas
+    final normalPoints = allPoints
+        .where((p) => !p.finished && p.repetitionCode != 'R0D')
+        .toList();
+    final r0dPoints = allPoints
+        .where((p) => !p.finished && p.repetitionCode == 'R0D')
+        .toList();
+    final finishedPoints = allPoints.where((p) => p.finished).toList();
+
+    // 3. Gabungkan kembali sesuai urutan prioritas yang baru
+    final sortedPoints = [...normalPoints, ...r0dPoints, ...finishedPoints];
 
     return Card(
       shape: RoundedRectangleBorder(
