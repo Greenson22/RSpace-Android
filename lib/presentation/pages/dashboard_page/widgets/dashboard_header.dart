@@ -99,10 +99,20 @@ class _DashboardPathState extends State<_DashboardPath> {
         if (snapshot.hasData) {
           // ==> PERUBAHAN DI SINI <==
           final theme = Theme.of(context);
-          final textStyle = theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.primary,
-            fontWeight: kDebugMode ? FontWeight.bold : null,
-          );
+          final TextStyle? textStyle;
+
+          if (kDebugMode) {
+            // Jika dalam mode debug, gunakan warna kuning dan tebalkan.
+            textStyle = theme.textTheme.bodySmall?.copyWith(
+              color: Colors.amber.shade800,
+              fontWeight: FontWeight.bold,
+            );
+          } else {
+            // Jika dalam mode rilis, gunakan warna primer tema.
+            textStyle = theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary,
+            );
+          }
 
           return Row(
             children: [
