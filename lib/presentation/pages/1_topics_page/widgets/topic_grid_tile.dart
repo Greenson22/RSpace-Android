@@ -9,7 +9,7 @@ class TopicGridTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
-  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
+  final bool isFocused;
 
   const TopicGridTile({
     super.key,
@@ -19,7 +19,7 @@ class TopicGridTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onToggleVisibility,
-    this.isFocused = false, // ==> SET NILAI DEFAULT
+    this.isFocused = false,
   });
 
   @override
@@ -75,20 +75,48 @@ class TopicGridTile extends StatelessWidget {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'rename',
-                      child: Text('Ubah Nama'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined),
+                          SizedBox(width: 8),
+                          Text('Ubah Nama'),
+                        ],
+                      ),
                     ),
                     const PopupMenuItem(
                       value: 'change_icon',
-                      child: Text('Ubah Ikon'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.emoji_emotions_outlined),
+                          SizedBox(width: 8),
+                          Text('Ubah Ikon'),
+                        ],
+                      ),
                     ),
                     PopupMenuItem<String>(
                       value: 'toggle_visibility',
-                      child: Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isHidden
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                        ],
+                      ),
                     ),
                     const PopupMenuDivider(),
                     const PopupMenuItem(
                       value: 'delete',
-                      child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Hapus', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -104,7 +132,6 @@ class TopicGridTile extends StatelessWidget {
       color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        // ==> TAMBAHKAN LOGIKA UNTUK BORDER <==
         side: isFocused
             ? BorderSide(color: theme.primaryColor, width: 2.5)
             : BorderSide.none,
