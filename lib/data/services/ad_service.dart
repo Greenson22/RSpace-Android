@@ -6,6 +6,16 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 class AdService {
   // Gunakan ID unit iklan pengujian dari AdMob
   static String get bannerAdUnitId {
+    if (kReleaseMode) {
+      // Mode Produksi
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-5320800343545863/2766800880';
+      } else if (Platform.isIOS) {
+        // Ganti dengan ID unit iklan banner iOS Anda
+        return 'ca-app-pub-5320800343545863/2766800880';
+      }
+    }
+    // Mode Debug (menggunakan ID pengujian)
     if (Platform.isAndroid) {
       return 'ca-app-pub-3940256099942544/6300978111';
     } else if (Platform.isIOS) {
