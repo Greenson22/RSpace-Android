@@ -9,6 +9,8 @@ import '../../statistics_page.dart';
 import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
 import '../../time_log_page.dart';
+// ==> IMPORT HALAMAN BARU <==
+import '../../feedback_center_page.dart';
 import 'dashboard_item.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -28,6 +30,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
+    ),
+    // ==> TAMBAHKAN AKSI BARU DI SINI <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
     ),
     () => Navigator.push(
       context,
@@ -90,6 +97,12 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.timer_outlined,
             'label': 'Jurnal Aktivitas',
             'colors': AppTheme.gradientColors3,
+          },
+          // ==> TAMBAHKAN ITEM BARU DI SINI <==
+          {
+            'icon': Icons.lightbulb_outline,
+            'label': 'Pusat Umpan Balik',
+            'colors': AppTheme.gradientColors6,
           },
           {
             'icon': Icons.pie_chart_outline_rounded,

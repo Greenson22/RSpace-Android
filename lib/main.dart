@@ -16,6 +16,8 @@ import 'presentation/pages/my_tasks_page.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'package:my_aplication/presentation/providers/sync_provider.dart';
 import 'presentation/widgets/floating_character_widget.dart';
+// ==> IMPORT PROVIDER BARU <==
+import 'presentation/providers/feedback_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -55,6 +57,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TimeLogProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
+        // ==> DAFTARKAN PROVIDER BARU <==
+        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
       ],
       child: const MyApp(),
     ),

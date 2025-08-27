@@ -33,6 +33,11 @@ class AppTheme {
     Color(0xFFBA68C8),
     Color(0xFF9C27B0),
   ];
+  // ==> TAMBAHKAN GRADIENT BARU <==
+  static const List<Color> gradientColors6 = [
+    Color(0xFF7986CB),
+    Color(0xFF3F51B5),
+  ];
 
   // ==> FUNGSI BARU UNTUK MEMBUAT THEME SECARA DINAMIS <==
   static ThemeData getTheme(Color primaryColor, bool isDark) {
