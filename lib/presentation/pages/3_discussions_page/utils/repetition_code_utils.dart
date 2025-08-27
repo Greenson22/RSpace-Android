@@ -16,10 +16,20 @@ const List<String> kRepetitionCodes = [
 
 // Fungsi untuk mendapatkan indeks kode, berguna untuk perbandingan
 int getRepetitionCodeIndex(String code) {
-  // ## PERBAIKAN: Menghapus logika khusus untuk 'R0D' ##
-  // 'R0D' sekarang akan mendapatkan indeks 0 dari daftar, yang benar secara logika untuk pengurutan.
+  // ======================= AWAL PERBAIKAN =======================
+  // Berikan nilai indeks yang sangat besar untuk R0D dan Finish
+  // agar mereka selalu berada di akhir saat sorting ascending.
+  if (code == 'R0D') {
+    return 998; // Nilai besar sebelum Finish
+  }
+  if (code == 'Finish') {
+    return 999; // Nilai terbesar, paling akhir
+  }
+  // ======================= AKHIR PERBAIKAN =======================
+
   final index = kRepetitionCodes.indexOf(code);
-  return index == -1 ? 999 : index; // Beri nilai besar jika tidak ditemukan
+  // Beri nilai besar jika tidak ditemukan (sebagai fallback)
+  return index == -1 ? 1000 : index;
 }
 
 Color getColorForRepetitionCode(String code) {
