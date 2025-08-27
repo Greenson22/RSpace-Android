@@ -22,22 +22,17 @@ class SnowWidget extends StatefulWidget {
 
 class _SnowWidgetState extends State<SnowWidget>
     with SingleTickerProviderStateMixin {
-  late List<Snowflake> _snowflakes;
   late AnimationController _controller;
+  late List<Snowflake> _snowflakes;
   late Size _size;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 1))
-          ..addListener(() {
-            if (mounted) {
-              setState(() {
-                _updateSnowflakes();
-              });
-            }
-          });
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
 
     if (widget.isRunning) {
       _controller.repeat();
@@ -66,12 +61,6 @@ class _SnowWidgetState extends State<SnowWidget>
     }
   }
 
-  void _updateSnowflakes() {
-    for (var snowflake in _snowflakes) {
-      snowflake.fall(_size, widget.speed);
-    }
-  }
-
   @override
   void dispose() {
     _controller.dispose();
@@ -85,6 +74,8 @@ class _SnowWidgetState extends State<SnowWidget>
       painter: SnowPainter(
         snowflakes: _snowflakes,
         snowColor: widget.snowColor,
+        controller: _controller, // Oper controller sebagai Listenable
+        speed: widget.speed,
       ),
     );
   }
@@ -93,11 +84,27 @@ class _SnowWidgetState extends State<SnowWidget>
 class SnowPainter extends CustomPainter {
   final List<Snowflake> snowflakes;
   final Color snowColor;
+  final AnimationController controller;
+  final double speed;
 
-  SnowPainter({required this.snowflakes, required this.snowColor});
+  SnowPainter({
+    required this.snowflakes,
+    required this.snowColor,
+    required this.controller,
+    required this.speed,
+  }) : super(repaint: controller); // Repaint hanya ketika controller berubah
+
+  void _updateSnowflakes(Size size) {
+    for (var snowflake in snowflakes) {
+      snowflake.fall(size, speed);
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Pindahkan logika update ke sini, akan terpanggil setiap frame animasi
+    _updateSnowflakes(size);
+
     final paint = Paint()
       ..color = snowColor
       ..style = PaintingStyle.fill;
@@ -112,8 +119,9 @@ class SnowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+  bool shouldRepaint(covariant SnowPainter oldDelegate) {
+    // Tidak perlu lagi karena kita sudah menggunakan Listenable di konstruktor
+    return false;
   }
 }
 
