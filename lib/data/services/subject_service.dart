@@ -112,15 +112,37 @@ class SubjectService {
         subjectJsonPath,
       );
 
-      // ==========================================================
-      // ==> PERBAIKAN: Cek apakah semua discussion sudah selesai.
+      // Jika semua diskusi sudah selesai, kembalikan status 'Finish'.
       if (discussions.isNotEmpty && discussions.every((d) => d.finished)) {
-        // Jika ya, langsung kembalikan status 'Finish'.
         return {'date': null, 'code': 'Finish'};
       }
-      // ==========================================================
 
-      List<Discussion> filteredDiscussions = discussions.where((discussion) {
+      // ======================= AWAL PERBAIKAN =======================
+      // 1. Buat daftar baru yang hanya berisi diskusi yang sudah jatuh tempo.
+      final today = DateTime.now();
+      final normalizedToday = DateTime(today.year, today.month, today.day);
+
+      List<Discussion> dueDiscussions = discussions.where((d) {
+        if (d.finished) return false; // Abaikan yang sudah selesai
+        if (d.effectiveDate == null)
+          return false; // Abaikan yang tidak punya tanggal
+        try {
+          final discussionDate = DateTime.parse(d.effectiveDate!);
+          // Simpan hanya jika tanggalnya hari ini atau di masa lalu.
+          return !discussionDate.isAfter(normalizedToday);
+        } catch (e) {
+          return false; // Abaikan jika format tanggal salah
+        }
+      }).toList();
+
+      // 2. Jika tidak ada diskusi yang jatuh tempo, Subject ini tidak relevan untuk ditampilkan tanggalnya.
+      if (dueDiscussions.isEmpty) {
+        return {'date': null, 'code': null};
+      }
+      // ======================= AKHIR PERBAIKAN =======================
+
+      // 3. Semua logika selanjutnya sekarang beroperasi pada `dueDiscussions`, bukan `discussions` asli.
+      List<Discussion> filteredDiscussions = dueDiscussions.where((discussion) {
         final filterType = filterPrefs['filterType'];
         if (filterType == null) return true;
 
@@ -154,29 +176,23 @@ class SubjectService {
         return {'date': null, 'code': null};
       }
 
-      // ## LOGIKA BARU DIMULAI DI SINI ##
-      // Prioritaskan kode selain R0D
       final activeDiscussions = filteredDiscussions
           .where((d) => !d.finished)
           .toList();
 
       if (activeDiscussions.isNotEmpty) {
-        // Cek apakah ada diskusi aktif dengan kode selain 'R0D'
         final hasNonR0D = activeDiscussions.any(
           (d) => d.effectiveRepetitionCode != 'R0D',
         );
 
-        // Jika ada, buang semua yang 'R0D' dari pertimbangan untuk sementara
         if (hasNonR0D) {
           filteredDiscussions = activeDiscussions
               .where((d) => d.effectiveRepetitionCode != 'R0D')
               .toList();
         } else {
-          // Jika hanya ada R0D atau tidak ada diskusi aktif sama sekali, gunakan semua yang sudah difilter
           filteredDiscussions = activeDiscussions;
         }
       }
-      // ## LOGIKA BARU SELESAI ##
 
       final sortType = sortPrefs['sortType'] as String;
       final sortAscending = sortPrefs['sortAscending'] as bool;
@@ -204,15 +220,8 @@ class SubjectService {
           break;
       }
 
-      // Pastikan list tidak kosong sebelum sorting
       if (filteredDiscussions.isEmpty) {
-        // Jika setelah filter non-R0D list menjadi kosong,
-        // fallback ke list original yang sudah difilter sekali
-        filteredDiscussions = discussions.where((discussion) {
-          final filterType = filterPrefs['filterType'];
-          if (filterType == null) return true;
-          return true;
-        }).toList();
+        filteredDiscussions = dueDiscussions;
         if (filteredDiscussions.isEmpty) {
           return {'date': null, 'code': null};
         }
