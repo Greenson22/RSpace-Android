@@ -24,6 +24,14 @@ class CountdownProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Memuat ulang semua timer dari penyimpanan.
+  Future<void> refreshTimers() async {
+    _isLoading = true;
+    notifyListeners();
+    // Panggil kembali inisialisasi untuk memuat ulang data
+    _initialize();
+  }
+
   void _startTicker() {
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {

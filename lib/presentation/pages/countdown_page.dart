@@ -35,29 +35,41 @@ class _CountdownView extends StatelessWidget {
     final provider = Provider.of<CountdownProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Hitung Mundur')),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.timers.isEmpty
-          ? const Center(
-              child: Text('Tidak ada timer. Tekan + untuk menambah.'),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
-              itemCount: provider.timers.length,
-              itemBuilder: (context, index) {
-                final timer = provider.timers[index];
-                // ====================== PERUBAHAN DI SINI ======================
-                // Tambahkan Key unik untuk setiap item dalam list
-                return _buildTimerCard(
-                  key: ValueKey(timer.id), // Kunci unik ditambahkan
-                  context: context,
-                  provider: provider,
-                  timer: timer,
-                );
-                // ==================== AKHIR PERUBAHAN ====================
-              },
-            ),
+      appBar: AppBar(
+        title: const Text('Hitung Mundur'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => provider.refreshTimers(),
+            tooltip: 'Muat Ulang Timer',
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () => provider.refreshTimers(),
+        child: provider.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : provider.timers.isEmpty
+            ? const Center(
+                child: Text('Tidak ada timer. Tekan + untuk menambah.'),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
+                itemCount: provider.timers.length,
+                itemBuilder: (context, index) {
+                  final timer = provider.timers[index];
+                  // ====================== PERUBAHAN DI SINI ======================
+                  // Tambahkan Key unik untuk setiap item dalam list
+                  return _buildTimerCard(
+                    key: ValueKey(timer.id), // Kunci unik ditambahkan
+                    context: context,
+                    provider: provider,
+                    timer: timer,
+                  );
+                  // ==================== AKHIR PERUBAHAN ====================
+                },
+              ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showAddCountdownDialog(context),
         child: const Icon(Icons.add),
