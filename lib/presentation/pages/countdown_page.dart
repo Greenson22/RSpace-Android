@@ -45,15 +45,8 @@ class _CountdownView extends StatelessWidget {
               itemCount: provider.timers.length,
               itemBuilder: (context, index) {
                 final timer = provider.timers[index];
-                final initialDuration = timer.createdAt
-                    .difference(DateTime.now())
-                    .abs();
-                return _buildTimerCard(
-                  context,
-                  provider,
-                  timer,
-                  initialDuration,
-                );
+                // Kalkulasi yang salah sudah dihapus dari sini
+                return _buildTimerCard(context, provider, timer);
               },
             ),
       floatingActionButton: FloatingActionButton(
@@ -68,9 +61,8 @@ class _CountdownView extends StatelessWidget {
     BuildContext context,
     CountdownProvider provider,
     CountdownItem timer,
-    Duration initialDuration,
   ) {
-    final isFinished = timer.initialDuration.inSeconds <= 0;
+    final isFinished = timer.remainingDuration.inSeconds <= 0;
     return Card(
       color: isFinished ? Colors.grey.shade300 : null,
       child: Padding(
@@ -95,7 +87,9 @@ class _CountdownView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              _formatDuration(timer.initialDuration),
+              _formatDuration(
+                timer.remainingDuration,
+              ), // Menampilkan sisa waktu
               style: TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
@@ -118,7 +112,7 @@ class _CountdownView extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () =>
-                      provider.resetTimer(timer.id, initialDuration),
+                      provider.resetTimer(timer.id), // Memanggil reset baru
                   iconSize: 40,
                 ),
               ],

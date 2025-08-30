@@ -29,12 +29,13 @@ class CountdownProvider with ChangeNotifier {
     _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
       bool shouldNotify = false;
       for (var item in _timers) {
-        if (item.isRunning && item.initialDuration.inSeconds > 0) {
-          item.initialDuration =
-              item.initialDuration - const Duration(seconds: 1);
+        if (item.isRunning && item.remainingDuration.inSeconds > 0) {
+          item.remainingDuration =
+              item.remainingDuration - const Duration(seconds: 1);
           shouldNotify = true;
-        } else if (item.isRunning && item.initialDuration.inSeconds <= 0) {
+        } else if (item.isRunning && item.remainingDuration.inSeconds <= 0) {
           item.isRunning = false;
+          _service.saveTimers(_timers); // Simpan saat timer selesai otomatis
           shouldNotify = true;
         }
       }
@@ -45,7 +46,11 @@ class CountdownProvider with ChangeNotifier {
   }
 
   Future<void> addTimer(String name, Duration duration) async {
-    final newItem = CountdownItem(name: name, initialDuration: duration);
+    final newItem = CountdownItem(
+      name: name,
+      originalDuration: duration, // Simpan durasi asli
+      remainingDuration: duration, // Atur sisa waktu awal
+    );
     _timers.add(newItem);
     await _service.saveTimers(_timers);
     notifyListeners();
@@ -59,17 +64,17 @@ class CountdownProvider with ChangeNotifier {
 
   void toggleTimer(String id) {
     final timer = _timers.firstWhere((item) => item.id == id);
-    if (timer.initialDuration.inSeconds > 0) {
+    if (timer.remainingDuration.inSeconds > 0) {
       timer.isRunning = !timer.isRunning;
-      _service.saveTimers(_timers);
+      _service.saveTimers(_timers); // Simpan status isRunning
       notifyListeners();
     }
   }
 
-  void resetTimer(String id, Duration initialDuration) {
+  void resetTimer(String id) {
     final timer = _timers.firstWhere((item) => item.id == id);
     timer.isRunning = false;
-    timer.initialDuration = initialDuration;
+    timer.remainingDuration = timer.originalDuration; // Reset dari durasi asli
     _service.saveTimers(_timers);
     notifyListeners();
   }
