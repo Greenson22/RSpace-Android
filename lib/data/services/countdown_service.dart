@@ -12,7 +12,8 @@ class CountdownService {
     final file = File(filePath);
     if (!await file.exists()) {
       await file.create(recursive: true);
-      await file.writeAsString('[]');
+      // Membuat file dengan struktur JSON yang baru
+      await file.writeAsString(jsonEncode({'metadata': null, 'countdown': []}));
     }
     return file;
   }
@@ -21,14 +22,35 @@ class CountdownService {
     final file = await _getTimersFile();
     final jsonString = await file.readAsString();
     if (jsonString.isEmpty) return [];
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList.map((json) => CountdownItem.fromJson(json)).toList();
+
+    final dynamic jsonData = jsonDecode(jsonString);
+
+    // Cek apakah formatnya adalah Map (struktur baru) atau List (struktur lama)
+    if (jsonData is Map<String, dynamic>) {
+      // Struktur baru: {'metadata': ..., 'countdown': [...]}
+      final List<dynamic> jsonList = jsonData['countdown'] ?? [];
+      return jsonList.map((json) => CountdownItem.fromJson(json)).toList();
+    } else if (jsonData is List) {
+      // Struktur lama (untuk kompatibilitas): [...]
+      // Konversi data lama ke format baru dan simpan kembali
+      final List<CountdownItem> timers = jsonData
+          .map((json) => CountdownItem.fromJson(json))
+          .toList();
+      await saveTimers(timers); // Simpan dalam format baru
+      return timers;
+    }
+
+    return [];
   }
 
   Future<void> saveTimers(List<CountdownItem> timers) async {
     final file = await _getTimersFile();
     final listJson = timers.map((timer) => timer.toJson()).toList();
+
+    // Bungkus list ke dalam struktur JSON yang baru
+    final newJsonData = {'metadata': null, 'countdown': listJson};
+
     const encoder = JsonEncoder.withIndent('  ');
-    await file.writeAsString(encoder.convert(listJson));
+    await file.writeAsString(encoder.convert(newJsonData));
   }
 }
