@@ -1,5 +1,6 @@
 // lib/presentation/pages/3_discussions_page/dialogs/smart_link_dialog.dart
 
+import 'dart:math'; // Import for max function
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
@@ -72,12 +73,30 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
             }
 
             final suggestions = snapshot.data!;
+            // ==> PERUBAHAN DIMULAI DI SINI <==
+
+            // 1. Cari skor tertinggi dari semua saran.
+            // Gunakan import 'dart:math'; jika belum ada.
+            final maxScore = suggestions.map((s) => s.score).reduce(max);
+
             return ListView.builder(
               itemCount: suggestions.length,
               itemBuilder: (context, index) {
                 final suggestion = suggestions[index];
+
+                // 2. Hitung persentase relevansi.
+                final percentage = maxScore > 0
+                    ? (suggestion.score / maxScore) * 100
+                    : 0;
+
                 return ListTile(
-                  leading: CircleAvatar(child: Text((index + 1).toString())),
+                  // 3. Tampilkan persentase di CircleAvatar.
+                  leading: CircleAvatar(
+                    child: Text(
+                      '${percentage.toStringAsFixed(0)}%',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
                   title: Text(suggestion.title),
                   subtitle: Text(
                     suggestion.relativePath,
@@ -87,6 +106,7 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
                 );
               },
             );
+            // ==> PERUBAHAN SELESAI DI SINI <==
           },
         ),
       ),
