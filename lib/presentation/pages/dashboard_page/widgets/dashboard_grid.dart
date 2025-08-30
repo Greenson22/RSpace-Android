@@ -13,6 +13,7 @@ import '../../orphaned_files_page.dart';
 import '../../unlinked_discussions_page.dart';
 import '../../broken_links_page.dart';
 import '../../feedback_center_page.dart';
+import '../../finished_discussions_page.dart';
 import 'dashboard_item.dart';
 
 // ==> FUNGSI INI DIPERBARUI DAN DISUSUN ULANG <==
@@ -52,7 +53,12 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
     ),
-    // Urutan 7: File Yatim
+    // Urutan 7: Diskusi Selesai
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FinishedDiscussionsPage()),
+    ),
+    // Urutan 8: File Yatim
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
@@ -137,6 +143,11 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.link_off_outlined,
             'label': 'Diskusi Tanpa Link',
             'colors': const [Color(0xFFEF5350), Color(0xFFD32F2F)],
+          },
+          {
+            'icon': Icons.archive_outlined,
+            'label': 'Diskusi Selesai',
+            'colors': const [Color(0xFF4DB6AC), Color(0xFF00897B)],
           },
           {
             'icon': Icons.cleaning_services_outlined,

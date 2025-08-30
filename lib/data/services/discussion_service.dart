@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
-// ==> IMPORT TAMBAHAN <==
 import 'path_service.dart';
 
 class DiscussionService {
@@ -97,12 +96,18 @@ class DiscussionService {
     await saveDiscussions(filePath, discussions);
   }
 
-  // ==> FUNGSI deleteDiscussion LAMA DIHAPUS <==
+  Future<void> deleteMultipleDiscussions(
+    String filePath,
+    List<String> discussionNames,
+  ) async {
+    final discussions = await loadDiscussions(filePath);
+    discussions.removeWhere((d) => discussionNames.contains(d.discussion));
+    await saveDiscussions(filePath, discussions);
+  }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE FISIK <==
   Future<void> deleteLinkedFile(String? relativePath) async {
     if (relativePath == null || relativePath.isEmpty) {
-      return; // Tidak ada yang perlu dihapus
+      return;
     }
     try {
       final pathService = PathService();
