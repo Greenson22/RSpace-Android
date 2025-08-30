@@ -93,25 +93,40 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                     );
                   } else {
                     final subject = _subjects[index];
+                    // ==> PERUBAHAN DIMULAI DI SINI <==
+
+                    // Cek apakah subject tujuan memiliki tautan ke PerpusKu.
+                    final bool isLinked =
+                        subject.linkedPath != null &&
+                        subject.linkedPath!.isNotEmpty;
+
                     return ListTile(
+                      enabled:
+                          isLinked, // Membuat ListTile bisa diklik atau tidak.
                       leading: Text(
                         subject.icon,
                         style: const TextStyle(fontSize: 24),
                       ),
                       title: Text(subject.name),
-                      onTap: () {
-                        // ==> PERUBAHAN DI SINI: Kembalikan Map <==
-                        final subjectJsonPath = path.join(
-                          _selectedTopicPath!,
-                          '${subject.name}.json',
-                        );
-                        final Map<String, String?> result = {
-                          'jsonPath': subjectJsonPath,
-                          'linkedPath': subject.linkedPath,
-                        };
-                        Navigator.of(context).pop(result);
-                      },
+                      // Tampilkan ikon 'link_off' jika tidak tertaut.
+                      trailing: !isLinked
+                          ? const Icon(Icons.link_off, color: Colors.grey)
+                          : null,
+                      onTap: isLinked
+                          ? () {
+                              final subjectJsonPath = path.join(
+                                _selectedTopicPath!,
+                                '${subject.name}.json',
+                              );
+                              final Map<String, String?> result = {
+                                'jsonPath': subjectJsonPath,
+                                'linkedPath': subject.linkedPath,
+                              };
+                              Navigator.of(context).pop(result);
+                            }
+                          : null, // Nonaktifkan onTap jika tidak tertaut.
                     );
+                    // ==> PERUBAHAN SELESAI DI SINI <==
                   }
                 },
               ),
