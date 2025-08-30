@@ -16,7 +16,6 @@ import 'presentation/pages/my_tasks_page.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'package:my_aplication/presentation/providers/sync_provider.dart';
 import 'presentation/widgets/floating_character_widget.dart';
-// ==> IMPORT PROVIDER BARU <==
 import 'presentation/providers/feedback_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -57,7 +56,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TimeLogProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
-        // ==> DAFTARKAN PROVIDER BARU <==
         ChangeNotifierProvider(create: (_) => FeedbackProvider()),
       ],
       child: const MyApp(),
@@ -65,8 +63,55 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+// ===================================================================
+// == PERUBAHAN DIMULAI DI SINI: MyApp diubah menjadi StatefulWidget ==
+// ===================================================================
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  // Kunci unik untuk MaterialApp. Mengubah kunci ini akan membangun ulang
+  // seluruh widget tree di bawahnya, efektif me-reload semua provider.
+  Key _appKey = UniqueKey();
+  DateTime _lastKnownDay = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Daftarkan observer untuk mendengarkan perubahan siklus hidup aplikasi.
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    // Hapus observer saat widget tidak lagi digunakan.
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Cek hanya saat aplikasi kembali aktif (resume).
+    if (state == AppLifecycleState.resumed) {
+      final now = DateTime.now();
+      // Bandingkan hanya tanggal, bulan, dan tahun (abaikan waktu).
+      if (now.year != _lastKnownDay.year ||
+          now.month != _lastKnownDay.month ||
+          now.day != _lastKnownDay.day) {
+        // Jika hari telah berganti, update state untuk memicu reload.
+        setState(() {
+          _appKey = UniqueKey();
+          _lastKnownDay = now;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +121,8 @@ class MyApp extends StatelessWidget {
         final bool showFlo = themeProvider.showFloatingCharacter;
 
         return MaterialApp(
+          // Gunakan kunci yang sudah kita siapkan.
+          key: _appKey,
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
