@@ -11,54 +11,65 @@ import '../../file_list_page.dart';
 import '../../time_log_page.dart';
 import '../../orphaned_files_page.dart';
 import '../../unlinked_discussions_page.dart';
-import '../../broken_links_page.dart'; // ==> IMPORT HALAMAN BARU
+import '../../broken_links_page.dart';
 import '../../feedback_center_page.dart';
 import 'dashboard_item.dart';
 
+// ==> FUNGSI INI DIPERBARUI DAN DISUSUN ULANG <==
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
   required VoidCallback onShowStorageDialog,
   required bool isPathSet,
 }) {
   final List<VoidCallback?> actions = [
+    // Urutan 1: Topics
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
     ),
+    // Urutan 2: My Tasks
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
     ),
+    // Urutan 3: Jurnal Aktivitas (Time Log)
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
-    ),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
-    ),
-    // ==> TAMBAHKAN AKSI BARU DI SINI <==
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const BrokenLinksPage()),
-    ),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
-    ),
+    // Urutan 4: Statistik
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
     ),
+    // Urutan 5: File Online
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
+    // Urutan 6: Diskusi Tanpa Link
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
+    ),
+    // Urutan 7: File Yatim
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
+    ),
+    // Urutan 8: Cek Tautan Rusak
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const BrokenLinksPage()),
+    ),
+    // Urutan 9: Pusat Umpan Balik
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
+    ),
+    // Urutan 10: Penyimpanan Utama (Kondisional)
     if (!isPathSet) onShowStorageDialog,
+    // Urutan 11: Manajemen Backup
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const BackupManagementPage()),
@@ -95,7 +106,7 @@ class DashboardGrid extends StatelessWidget {
           crossAxisCount = 2;
         }
 
-        // Hapus item menu AI dari daftar ini
+        // ==> LIST DATA INI JUGA DIPERBARUI, DISUSUN ULANG, DAN DUPLIKAT DIHAPUS <==
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -106,6 +117,26 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.task_alt,
             'label': 'My Tasks',
             'colors': AppTheme.gradientColors2,
+          },
+          {
+            'icon': Icons.timer_outlined,
+            'label': 'Jurnal Aktivitas',
+            'colors': AppTheme.gradientColors3,
+          },
+          {
+            'icon': Icons.pie_chart_outline_rounded,
+            'label': 'Statistik',
+            'colors': AppTheme.gradientColors5,
+          },
+          {
+            'icon': Icons.cloud_outlined,
+            'label': 'File Online',
+            'colors': AppTheme.gradientColors4,
+          },
+          {
+            'icon': Icons.link_off_outlined,
+            'label': 'Diskusi Tanpa Link',
+            'colors': const [Color(0xFFEF5350), Color(0xFFD32F2F)],
           },
           {
             'icon': Icons.cleaning_services_outlined,
@@ -121,27 +152,6 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.lightbulb_outline,
             'label': 'Pusat Umpan Balik',
             'colors': AppTheme.gradientColors6,
-          },
-          // ==> TAMBAHKAN DATA ITEM BARU DI SINI <==
-          {
-            'icon': Icons.cleaning_services_outlined,
-            'label': 'File Yatim',
-            'colors': const [Color(0xFFBDBDBD), Color(0xFF616161)],
-          },
-          {
-            'icon': Icons.lightbulb_outline,
-            'label': 'Pusat Umpan Balik',
-            'colors': AppTheme.gradientColors6,
-          },
-          {
-            'icon': Icons.pie_chart_outline_rounded,
-            'label': 'Statistik',
-            'colors': AppTheme.gradientColors5,
-          },
-          {
-            'icon': Icons.cloud_outlined,
-            'label': 'File Online',
-            'colors': AppTheme.gradientColors4,
           },
           {
             'icon': Icons.folder_open_rounded,
