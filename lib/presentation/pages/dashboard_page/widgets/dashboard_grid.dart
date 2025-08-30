@@ -9,7 +9,7 @@ import '../../statistics_page.dart';
 import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
 import '../../time_log_page.dart';
-// ==> IMPORT HALAMAN BARU <==
+import '../../orphaned_files_page.dart'; // ==> IMPORT HALAMAN BARU
 import '../../unlinked_discussions_page.dart';
 import '../../feedback_center_page.dart';
 import 'dashboard_item.dart';
@@ -36,6 +36,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
+    ),
+    // ==> TAMBAHKAN AKSI BARU DI SINI <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
     ),
     () => Navigator.push(
       context,
@@ -108,6 +113,12 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.link_off_outlined,
             'label': 'Diskusi Tanpa Link',
             'colors': const [Color(0xFFEF5350), Color(0xFFD32F2F)],
+          },
+          // ==> TAMBAHKAN DATA ITEM BARU DI SINI <==
+          {
+            'icon': Icons.cleaning_services_outlined,
+            'label': 'File Yatim',
+            'colors': const [Color(0xFFBDBDBD), Color(0xFF616161)],
           },
           {
             'icon': Icons.lightbulb_outline,
