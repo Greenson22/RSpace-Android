@@ -10,6 +10,7 @@ import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
 import '../../time_log_page.dart';
 // ==> IMPORT HALAMAN BARU <==
+import '../../unlinked_discussions_page.dart';
 import '../../feedback_center_page.dart';
 import 'dashboard_item.dart';
 
@@ -32,6 +33,10 @@ List<VoidCallback> buildDashboardActions(
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
     // ==> TAMBAHKAN AKSI BARU DI SINI <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
+    ),
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
@@ -99,6 +104,11 @@ class DashboardGrid extends StatelessWidget {
             'colors': AppTheme.gradientColors3,
           },
           // ==> TAMBAHKAN ITEM BARU DI SINI <==
+          {
+            'icon': Icons.link_off_outlined,
+            'label': 'Diskusi Tanpa Link',
+            'colors': const [Color(0xFFEF5350), Color(0xFFD32F2F)],
+          },
           {
             'icon': Icons.lightbulb_outline,
             'label': 'Pusat Umpan Balik',

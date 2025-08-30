@@ -11,6 +11,7 @@ import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:my_aplication/presentation/providers/topic_provider.dart';
 import 'package:my_aplication/presentation/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:my_aplication/presentation/providers/unlinked_discussions_provider.dart'; // ==> IMPORT PROVIDER BARU
 import 'package:quick_actions/quick_actions.dart';
 import 'presentation/pages/my_tasks_page.dart';
 import 'presentation/providers/theme_provider.dart';
@@ -57,6 +58,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
         ChangeNotifierProvider(create: (_) => FeedbackProvider()),
+        // ==> DAFTARKAN PROVIDER BARU DI SINI <==
+        ChangeNotifierProvider(create: (_) => UnlinkedDiscussionsProvider()),
       ],
       child: const MyApp(),
     ),
