@@ -99,6 +99,10 @@ class _CreatePerpuskuSubjectDialog extends StatefulWidget {
 
 class _CreatePerpuskuSubjectDialogState
     extends State<_CreatePerpuskuSubjectDialog> {
+  // ==> PERUBAHAN 1: Tambahkan controller dan form key <==
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _folderNameController;
+
   String _selectedTopic = '';
   List<Directory> _topics = [];
   bool _isLoading = true;
@@ -106,7 +110,16 @@ class _CreatePerpuskuSubjectDialogState
   @override
   void initState() {
     super.initState();
+    // ==> PERUBAHAN 2: Inisialisasi controller <==
+    _folderNameController = TextEditingController(text: widget.suggestedName);
     _loadTopics();
+  }
+
+  // ==> PERUBAHAN 3: Jangan lupa dispose controller <==
+  @override
+  void dispose() {
+    _folderNameController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTopics() async {
@@ -121,6 +134,11 @@ class _CreatePerpuskuSubjectDialogState
   }
 
   Future<void> _createFolderAndPop() async {
+    // ==> PERUBAHAN 4: Tambahkan validasi form <==
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     if (_selectedTopic.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -132,15 +150,17 @@ class _CreatePerpuskuSubjectDialogState
     }
 
     try {
+      // ==> PERUBAHAN 5: Gunakan teks dari controller <==
+      final newFolderName = _folderNameController.text.trim();
       final newSubjectPath = path.join(
         widget.basePath,
         _selectedTopic,
-        widget.suggestedName,
+        newFolderName, // Diganti dari widget.suggestedName
       );
       final newDir = Directory(newSubjectPath);
       if (await newDir.exists()) {
         throw Exception(
-          'Folder dengan nama "${widget.suggestedName}" sudah ada di dalam topik "$_selectedTopic".',
+          'Folder dengan nama "$newFolderName" sudah ada di dalam topik "$_selectedTopic".',
         );
       }
       await newDir.create(recursive: true);
@@ -149,7 +169,7 @@ class _CreatePerpuskuSubjectDialogState
       final metadataFile = File(path.join(newDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode({"content": []}));
 
-      final relativePath = path.join(_selectedTopic, widget.suggestedName);
+      final relativePath = path.join(_selectedTopic, newFolderName);
       if (mounted) Navigator.pop(context, relativePath);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,40 +184,57 @@ class _CreatePerpuskuSubjectDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Buat Folder Subjek Baru'),
-      content: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Akan membuat folder bernama:'),
-                Text(
-                  widget.suggestedName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+      title: const Text('Buat Folder Subjek Baru'),
+      // ==> PERUBAHAN 6: Bungkus konten dengan Form <==
+      content: Form(
+        key: _formKey,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ==> PERUBAHAN 7: Ganti Text menjadi TextFormField <==
+                  TextFormField(
+                    controller: _folderNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Folder di PerpusKu',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Nama folder tidak boleh kosong.';
+                      }
+                      // Anda bisa menambahkan validasi lain di sini,
+                      // misalnya melarang karakter ilegal untuk nama folder.
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedTopic.isEmpty ? null : _selectedTopic,
-                  hint: const Text('Pilih Topik Tujuan...'),
-                  isExpanded: true,
-                  items: _topics.map((dir) {
-                    final topicName = path.basename(dir.path);
-                    return DropdownMenuItem(
-                      value: topicName,
-                      child: Text(topicName),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedTopic = value);
-                    }
-                  },
-                ),
-              ],
-            ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedTopic.isEmpty ? null : _selectedTopic,
+                    hint: const Text('Pilih Topik Tujuan...'),
+                    isExpanded: true,
+                    items: _topics.map((dir) {
+                      final topicName = path.basename(dir.path);
+                      return DropdownMenuItem(
+                        value: topicName,
+                        child: Text(topicName),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedTopic = value);
+                      }
+                    },
+                    // Tambahkan validasi untuk dropdown jika perlu
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Silakan pilih topik.'
+                        : null,
+                  ),
+                ],
+              ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
