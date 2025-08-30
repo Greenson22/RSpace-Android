@@ -45,8 +45,15 @@ class _CountdownView extends StatelessWidget {
               itemCount: provider.timers.length,
               itemBuilder: (context, index) {
                 final timer = provider.timers[index];
-                // Kalkulasi yang salah sudah dihapus dari sini
-                return _buildTimerCard(context, provider, timer);
+                // ====================== PERUBAHAN DI SINI ======================
+                // Tambahkan Key unik untuk setiap item dalam list
+                return _buildTimerCard(
+                  key: ValueKey(timer.id), // Kunci unik ditambahkan
+                  context: context,
+                  provider: provider,
+                  timer: timer,
+                );
+                // ==================== AKHIR PERUBAHAN ====================
               },
             ),
       floatingActionButton: FloatingActionButton(
@@ -57,13 +64,17 @@ class _CountdownView extends StatelessWidget {
     );
   }
 
-  Widget _buildTimerCard(
-    BuildContext context,
-    CountdownProvider provider,
-    CountdownItem timer,
-  ) {
+  Widget _buildTimerCard({
+    // Tambahkan parameter Key
+    Key? key,
+    required BuildContext context,
+    required CountdownProvider provider,
+    required CountdownItem timer,
+  }) {
     final isFinished = timer.remainingDuration.inSeconds <= 0;
     return Card(
+      // Teruskan Key ke Card
+      key: key,
       color: isFinished ? Colors.grey.shade300 : null,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -87,9 +98,7 @@ class _CountdownView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              _formatDuration(
-                timer.remainingDuration,
-              ), // Menampilkan sisa waktu
+              _formatDuration(timer.remainingDuration),
               style: TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
@@ -111,8 +120,7 @@ class _CountdownView extends StatelessWidget {
                 const SizedBox(width: 24),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () =>
-                      provider.resetTimer(timer.id), // Memanggil reset baru
+                  onPressed: () => provider.resetTimer(timer.id),
                   iconSize: 40,
                 ),
               ],

@@ -35,7 +35,8 @@ class CountdownProvider with ChangeNotifier {
           shouldNotify = true;
         } else if (item.isRunning && item.remainingDuration.inSeconds <= 0) {
           item.isRunning = false;
-          _service.saveTimers(_timers); // Simpan saat timer selesai otomatis
+          // Simpan saat timer selesai secara otomatis
+          _service.saveTimers(_timers);
           shouldNotify = true;
         }
       }
@@ -45,39 +46,49 @@ class CountdownProvider with ChangeNotifier {
     });
   }
 
+  // ====================== PERUBAHAN DI SINI ======================
   Future<void> addTimer(String name, Duration duration) async {
     final newItem = CountdownItem(
       name: name,
-      originalDuration: duration, // Simpan durasi asli
-      remainingDuration: duration, // Atur sisa waktu awal
+      originalDuration: duration,
+      remainingDuration: duration,
     );
     _timers.add(newItem);
-    await _service.saveTimers(_timers);
+    // Notifikasi UI terlebih dahulu untuk respons instan
     notifyListeners();
+    // Kemudian simpan perubahan ke file
+    await _service.saveTimers(_timers);
   }
 
   Future<void> removeTimer(String id) async {
     _timers.removeWhere((item) => item.id == id);
-    await _service.saveTimers(_timers);
+    // Notifikasi UI terlebih dahulu
     notifyListeners();
+    // Kemudian simpan perubahan
+    await _service.saveTimers(_timers);
   }
 
   void toggleTimer(String id) {
     final timer = _timers.firstWhere((item) => item.id == id);
     if (timer.remainingDuration.inSeconds > 0) {
       timer.isRunning = !timer.isRunning;
-      _service.saveTimers(_timers); // Simpan status isRunning
+      // Notifikasi UI terlebih dahulu
       notifyListeners();
+      // Kemudian simpan perubahan
+      _service.saveTimers(_timers);
     }
   }
 
   void resetTimer(String id) {
     final timer = _timers.firstWhere((item) => item.id == id);
     timer.isRunning = false;
-    timer.remainingDuration = timer.originalDuration; // Reset dari durasi asli
-    _service.saveTimers(_timers);
+    timer.remainingDuration = timer.originalDuration;
+    // Notifikasi UI terlebih dahulu
     notifyListeners();
+    // Kemudian simpan perubahan
+    _service.saveTimers(_timers);
   }
+  // ==================== AKHIR PERUBAHAN ====================
 
   @override
   void dispose() {
