@@ -160,6 +160,9 @@ class DiscussionCard extends StatelessWidget {
     showDeleteDiscussionConfirmationDialog(
       context: context,
       discussionName: discussion.discussion,
+      // ==> KIRIM INFORMASI APAKAH FILE ADA ATAU TIDAK <==
+      hasLinkedFile:
+          discussion.filePath != null && discussion.filePath!.isNotEmpty,
       onDelete: () {
         provider.deleteDiscussion(discussion);
         _showSnackBar(

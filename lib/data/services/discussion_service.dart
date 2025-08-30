@@ -4,9 +4,39 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
+import '../../core/services/path_service.dart'; // Import PathService
 
 class DiscussionService {
+  // ... (fungsi-fungsi yang sudah ada seperti moveDiscussionFile, loadDiscussions, dll.)
+
   // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<void> _deleteLinkedFile(String? relativePath) async {
+    if (relativePath == null || relativePath.isEmpty) {
+      return; // Tidak ada yang perlu dihapus
+    }
+    try {
+      // Dapatkan path dasar PerpusKu. Asumsi PathService sudah ada.
+      final pathService = PathService();
+      final perpuskuBasePath = await pathService.perpuskuDataPath;
+      final fullPath = path.join(
+        perpuskuBasePath,
+        'file_contents',
+        'topics',
+        relativePath,
+      );
+
+      final fileToDelete = File(fullPath);
+      if (await fileToDelete.exists()) {
+        await fileToDelete.delete();
+        debugPrint("Successfully deleted linked file: $fullPath");
+      }
+    } catch (e) {
+      // Gagal menghapus file tidak akan menghentikan penghapusan diskusi,
+      // tapi kita catat error-nya.
+      debugPrint("Error deleting linked file: $e");
+    }
+  }
+
   Future<String?> moveDiscussionFile({
     required String perpuskuBasePath,
     required String sourceDiscussionFilePath,
@@ -118,7 +148,12 @@ class DiscussionService {
     await saveDiscussions(filePath, discussions);
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> deleteDiscussion(String filePath, Discussion discussion) async {
+    // Hapus file fisik terlebih dahulu
+    await _deleteLinkedFile(discussion.filePath);
+
+    // Lanjutkan dengan menghapus data dari JSON
     final discussions = await loadDiscussions(filePath);
     discussions.removeWhere((d) => d.discussion == discussion.discussion);
     await saveDiscussions(filePath, discussions);

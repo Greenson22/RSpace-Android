@@ -631,10 +631,16 @@ $htmlContent
     _filterAndSortDiscussions();
   }
 
+  // ==> FUNGSI INI SEDIKIT DIMODIFIKASI <==
   void deleteDiscussion(Discussion discussion) {
+    // Logika penghapusan file fisik sekarang ditangani oleh service.
+    // Kita hanya perlu memanggil service dan kemudian memperbarui state lokal.
+    _discussionService.deleteDiscussion(_jsonFilePath, discussion);
+
+    // Hapus dari state lokal untuk memperbarui UI secara instan.
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
     _filterAndSortDiscussions();
-    _saveDiscussions();
+    // Tidak perlu memanggil _saveDiscussions() lagi di sini karena service sudah melakukannya.
   }
 
   Future<void> addDiscussion(

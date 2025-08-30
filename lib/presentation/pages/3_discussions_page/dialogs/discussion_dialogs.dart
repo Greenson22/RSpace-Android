@@ -176,14 +176,33 @@ Future<void> showDeleteDiscussionConfirmationDialog({
   required BuildContext context,
   required String discussionName,
   required VoidCallback onDelete,
+  // ==> TAMBAHKAN PARAMETER BARU <==
+  bool hasLinkedFile = false,
 }) async {
   return showDialog<void>(
     context: context,
     builder: (context) {
       return AlertDialog(
         title: const Text('Hapus Diskusi'),
-        content: Text(
-          'Anda yakin ingin menghapus diskusi "$discussionName" beserta semua isinya?',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Anda yakin ingin menghapus diskusi "$discussionName" beserta semua isinya?',
+            ),
+            // ==> TAMPILKAN PERINGATAN JIKA ADA FILE TERTAUT <==
+            if (hasLinkedFile) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'PERINGATAN: File HTML yang tertaut dengan diskusi ini juga akan dihapus secara permanen.',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(
