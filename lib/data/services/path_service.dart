@@ -97,9 +97,11 @@ class PathService {
   Future<String> get logTaskPresetsPath async =>
       path.join(await contentsPath, 'log_task_presets.json');
 
-  // ==> TAMBAHKAN BARIS INI <==
   Future<String> get feedbackPath async =>
       path.join(await contentsPath, 'feedback.json');
+
+  Future<String> get countdownTimersPath async =>
+      path.join(await contentsPath, 'countdown_timers.json');
 
   Future<String> get perpuskuDataPath async {
     // DIHAPUS: Blok 'if (kDebugMode)' dihapus agar selalu memuat path dari preferensi.

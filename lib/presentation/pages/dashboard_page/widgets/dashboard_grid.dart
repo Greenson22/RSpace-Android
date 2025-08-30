@@ -14,7 +14,7 @@ import '../../unlinked_discussions_page.dart';
 import '../../broken_links_page.dart';
 import '../../feedback_center_page.dart';
 import '../../finished_discussions_page.dart';
-// ==> IMPORT DIALOG BARU
+import '../../time_hub_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 
@@ -35,7 +35,7 @@ List<VoidCallback> buildDashboardActions(
     ),
     () => Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const TimeLogPage()),
+      MaterialPageRoute(builder: (_) => const TimeHubPage()),
     ),
     () => Navigator.push(
       context,
@@ -101,8 +101,8 @@ class DashboardGrid extends StatelessWidget {
             'colors': AppTheme.gradientColors2,
           },
           {
-            'icon': Icons.timer_outlined,
-            'label': 'Jurnal Aktivitas',
+            'icon': Icons.watch_later_outlined,
+            'label': 'Waktu',
             'colors': AppTheme.gradientColors3,
           },
           {
