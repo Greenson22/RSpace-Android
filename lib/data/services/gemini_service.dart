@@ -2,6 +2,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/api_key_model.dart';
+// ==> IMPORT MODEL BARU
+import '../models/discussion_model.dart';
+import '../models/link_suggestion_model.dart';
 import 'shared_preferences_service.dart';
 
 class GeminiService {
@@ -17,10 +20,107 @@ class GeminiService {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENCARI TAUTAN CERDAS DENGAN GEMINI
+  Future<List<LinkSuggestion>> findSmartLinks({
+    required Discussion discussion,
+    required List<Map<String, String>> allFiles,
+  }) async {
+    final apiKey = await _getActiveApiKey();
+    final model =
+        await _prefsService.loadGeminiContentModel() ?? 'gemini-1.5-flash';
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    // Format daftar file menjadi string yang mudah dibaca oleh AI
+    final fileListString = allFiles
+        .map(
+          (f) => "- Judul: \"${f['title']}\", Path: \"${f['relativePath']}\"",
+        )
+        .join("\n");
+
+    // Format poin-poin diskusi
+    final pointsString = discussion.points
+        .map((p) => "- ${p.pointText}")
+        .join("\n");
+
+    final prompt =
+        '''
+      Anda adalah asisten AI yang bertugas menemukan file yang paling relevan.
+      Berdasarkan detail diskusi berikut:
+      - Judul Diskusi: "${discussion.discussion}"
+      - Poin-Poin Catatan:
+      $pointsString
+
+      Pilihlah maksimal 3 file yang paling relevan dari daftar di bawah ini:
+      $fileListString
+
+      Aturan Jawaban:
+      1.  HANYA kembalikan dalam format array JSON.
+      2.  Setiap objek dalam array HARUS memiliki kunci "title" dan "relativePath".
+      3.  Pastikan nilai "relativePath" persis sama dengan yang ada di daftar.
+      4.  Jangan sertakan penjelasan atau teks lain di luar array JSON.
+
+      Contoh Jawaban:
+      [
+        {"title": "Judul File Pilihan 1", "relativePath": "TopikA/SubjekB/file1.html"},
+        {"title": "Judul File Pilihan 2", "relativePath": "TopikC/SubjekD/file2.html"}
+      ]
+      ''';
+
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+          // Tambahkan pengaturan untuk memastikan output adalah JSON
+          'generationConfig': {'responseMimeType': 'application/json'},
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final textResponse =
+            body['candidates'][0]['content']['parts'][0]['text'];
+        final List<dynamic> jsonResponse = jsonDecode(textResponse);
+
+        return jsonResponse
+            .map(
+              (item) => LinkSuggestion(
+                title: item['title'] ?? 'Tanpa Judul',
+                relativePath: item['relativePath'] ?? '',
+                score: 1.0, // Skor default untuk hasil AI
+              ),
+            )
+            .toList();
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody['error']?['message'] ?? response.body;
+        throw Exception(
+          'Gagal mendapatkan respons: ${response.statusCode}\nError: $errorMessage',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ... (sisa kode getChatCompletion dan generateHtmlContent tidak berubah)
   Future<String> getChatCompletion(String query, {String? context}) async {
     final apiKey = await _getActiveApiKey();
     final model =
-        await _prefsService.loadGeminiChatModel() ?? 'gemini-2.5-flash';
+        await _prefsService.loadGeminiChatModel() ?? 'gemini-1.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception(
@@ -89,7 +189,7 @@ Jawaban Anda:
   Future<String> generateHtmlContent(String topic) async {
     final apiKey = await _getActiveApiKey();
     final model =
-        await _prefsService.loadGeminiContentModel() ?? 'gemini-2.5-flash';
+        await _prefsService.loadGeminiContentModel() ?? 'gemini-1.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception(

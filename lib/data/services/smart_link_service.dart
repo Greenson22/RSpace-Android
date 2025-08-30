@@ -14,7 +14,8 @@ class SmartLinkService {
   // Cache sederhana untuk menyimpan data file PerpusKu agar tidak perlu memindai berulang kali.
   static List<Map<String, String>>? _perpuskuFileCache;
 
-  Future<List<Map<String, String>>> _getAllPerpuskuFiles() async {
+  // ==> UBAH DARI _getAllPerpuskuFiles MENJADI getAllPerpuskuFiles
+  Future<List<Map<String, String>>> getAllPerpuskuFiles() async {
     if (_perpuskuFileCache != null) {
       return _perpuskuFileCache!;
     }
@@ -78,7 +79,8 @@ class SmartLinkService {
     required String topicName,
     required String subjectName,
   }) async {
-    final perpuskuFiles = await _getAllPerpuskuFiles();
+    // ==> PANGGIL FUNGSI PUBLIK YANG BARU
+    final perpuskuFiles = await getAllPerpuskuFiles();
     if (perpuskuFiles.isEmpty) return [];
 
     final List<LinkSuggestion> suggestions = [];
