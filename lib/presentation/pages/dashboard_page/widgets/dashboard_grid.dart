@@ -9,8 +9,9 @@ import '../../statistics_page.dart';
 import '../../backup_management_page.dart';
 import '../../file_list_page.dart';
 import '../../time_log_page.dart';
-import '../../orphaned_files_page.dart'; // ==> IMPORT HALAMAN BARU
+import '../../orphaned_files_page.dart';
 import '../../unlinked_discussions_page.dart';
+import '../../broken_links_page.dart'; // ==> IMPORT HALAMAN BARU
 import '../../feedback_center_page.dart';
 import 'dashboard_item.dart';
 
@@ -32,15 +33,18 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
-    // ==> TAMBAHKAN AKSI BARU DI SINI <==
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
     ),
-    // ==> TAMBAHKAN AKSI BARU DI SINI <==
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
+    ),
+    // ==> TAMBAHKAN AKSI BARU DI SINI <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const BrokenLinksPage()),
     ),
     () => Navigator.push(
       context,
@@ -104,15 +108,19 @@ class DashboardGrid extends StatelessWidget {
             'colors': AppTheme.gradientColors2,
           },
           {
-            'icon': Icons.timer_outlined,
-            'label': 'Jurnal Aktivitas',
-            'colors': AppTheme.gradientColors3,
+            'icon': Icons.cleaning_services_outlined,
+            'label': 'File Yatim',
+            'colors': const [Color(0xFFBDBDBD), Color(0xFF616161)],
           },
-          // ==> TAMBAHKAN ITEM BARU DI SINI <==
           {
-            'icon': Icons.link_off_outlined,
-            'label': 'Diskusi Tanpa Link',
-            'colors': const [Color(0xFFEF5350), Color(0xFFD32F2F)],
+            'icon': Icons.heart_broken_outlined,
+            'label': 'Cek Tautan Rusak',
+            'colors': const [Color(0xFFE57373), Color(0xFFC62828)],
+          },
+          {
+            'icon': Icons.lightbulb_outline,
+            'label': 'Pusat Umpan Balik',
+            'colors': AppTheme.gradientColors6,
           },
           // ==> TAMBAHKAN DATA ITEM BARU DI SINI <==
           {
