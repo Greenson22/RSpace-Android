@@ -156,19 +156,29 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
     showDeleteDiscussionConfirmationDialog(
       context: context,
       discussionName: discussion.discussion,
-      // ==> KIRIM INFORMASI APAKAH FILE ADA ATAU TIDAK <==
       hasLinkedFile:
           discussion.filePath != null && discussion.filePath!.isNotEmpty,
-      onDelete: () {
-        provider.deleteDiscussion(discussion);
-        _showSnackBar(
-          context,
-          'Diskusi "${discussion.discussion}" berhasil dihapus.',
-        );
+      // Jadikan onDelete sebuah fungsi async
+      onDelete: () async {
+        try {
+          // Panggil dan tunggu proses penghapusan selesai
+          await provider.deleteDiscussion(discussion);
+          if (context.mounted) {
+            _showSnackBar(
+              context,
+              'Diskusi "${discussion.discussion}" berhasil dihapus.',
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            _showSnackBar(context, "Gagal menghapus: ${e.toString()}");
+          }
+        }
       },
     );
   }

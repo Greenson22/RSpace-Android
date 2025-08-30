@@ -631,16 +631,30 @@ $htmlContent
     _filterAndSortDiscussions();
   }
 
-  // ==> FUNGSI INI SEDIKIT DIMODIFIKASI <==
-  void deleteDiscussion(Discussion discussion) {
-    // Logika penghapusan file fisik sekarang ditangani oleh service.
-    // Kita hanya perlu memanggil service dan kemudian memperbarui state lokal.
-    _discussionService.deleteDiscussion(_jsonFilePath, discussion);
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
+  Future<void> deleteDiscussion(Discussion discussion) async {
+    // 1. Simpan path file yang akan dihapus sebelum objeknya hilang
+    final pathToDelete = discussion.filePath;
 
-    // Hapus dari state lokal untuk memperbarui UI secara instan.
+    // 2. Hapus diskusi dari daftar di memori untuk memperbarui UI
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
-    _filterAndSortDiscussions();
-    // Tidak perlu memanggil _saveDiscussions() lagi di sini karena service sudah melakukannya.
+    _filterAndSortDiscussions(); // Ini akan memanggil notifyListeners()
+
+    try {
+      // 3. Simpan daftar diskusi yang sudah diperbarui ke file JSON
+      await _saveDiscussions();
+
+      // 4. Setelah data JSON berhasil disimpan, baru hapus file fisiknya
+      if (pathToDelete != null) {
+        await _discussionService.deleteLinkedFile(pathToDelete);
+      }
+    } catch (e) {
+      // Jika terjadi error, muat ulang data dari disk untuk membatalkan perubahan di UI
+      debugPrint("Error during discussion deletion process: $e");
+      await loadInitialData();
+      // Lemparkan kembali error agar UI bisa menampilkan pesan
+      rethrow;
+    }
   }
 
   Future<void> addDiscussion(
