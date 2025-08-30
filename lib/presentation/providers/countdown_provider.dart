@@ -54,9 +54,6 @@ class CountdownProvider with ChangeNotifier {
     });
   }
 
-  // ====================== PERUBAHAN UTAMA DI SINI ======================
-
-  // Menyimpan perubahan ke file JSON.
   Future<void> _saveChanges() async {
     await _service.saveTimers(_timers);
   }
@@ -68,16 +65,17 @@ class CountdownProvider with ChangeNotifier {
       originalDuration: duration,
       remainingDuration: duration,
     );
-    _timers.add(newItem);
-    notifyListeners(); // Update UI
-    await _saveChanges(); // Simpan ke file
+    // Panggil service untuk membaca, menambah, dan menyimpan.
+    await _service.addTimerAndSave(newItem);
+    // Setelah disimpan, muat ulang semua data untuk memastikan konsistensi.
+    await refreshTimers();
   }
 
   // Fungsi ini sekarang menghapus dari memori, lalu langsung menyimpan.
   Future<void> removeTimer(String id) async {
     _timers.removeWhere((item) => item.id == id);
-    notifyListeners(); // Update UI
     await _saveChanges(); // Simpan ke file
+    notifyListeners(); // Update UI
   }
 
   // Fungsi ini sekarang mengubah state di memori, lalu langsung menyimpan.
@@ -85,8 +83,8 @@ class CountdownProvider with ChangeNotifier {
     final timer = _timers.firstWhere((item) => item.id == id);
     if (timer.remainingDuration.inSeconds > 0) {
       timer.isRunning = !timer.isRunning;
-      notifyListeners(); // Update UI
       await _saveChanges(); // Simpan ke file
+      notifyListeners(); // Update UI
     }
   }
 
@@ -95,8 +93,8 @@ class CountdownProvider with ChangeNotifier {
     final timer = _timers.firstWhere((item) => item.id == id);
     timer.isRunning = false;
     timer.remainingDuration = timer.originalDuration;
-    notifyListeners(); // Update UI
     await _saveChanges(); // Simpan ke file
+    notifyListeners(); // Update UI
   }
 
   @override

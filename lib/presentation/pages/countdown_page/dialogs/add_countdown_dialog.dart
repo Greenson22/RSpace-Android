@@ -42,9 +42,8 @@ class _AddCountdownDialogState extends State<AddCountdownDialog> {
         return;
       }
       final provider = Provider.of<CountdownProvider>(context, listen: false);
+      // Cukup panggil addTimer, provider akan menangani sisanya
       await provider.addTimer(_nameController.text, totalDuration);
-      // Setelah menambahkan, panggil refreshTimers untuk memuat ulang state
-      await provider.refreshTimers();
 
       if (mounted) {
         Navigator.of(context).pop();

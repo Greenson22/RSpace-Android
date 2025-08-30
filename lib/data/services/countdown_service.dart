@@ -53,4 +53,14 @@ class CountdownService {
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(newJsonData));
   }
+
+  /// Membaca data saat ini, menambahkan timer baru, lalu menyimpan kembali.
+  Future<void> addTimerAndSave(CountdownItem newTimer) async {
+    // 1. Baca data yang ada saat ini dari file.
+    final List<CountdownItem> currentTimers = await loadTimers();
+    // 2. Tambahkan timer baru ke daftar yang sudah ada.
+    currentTimers.add(newTimer);
+    // 3. Simpan kembali seluruh daftar yang sudah diperbarui.
+    await saveTimers(currentTimers);
+  }
 }
