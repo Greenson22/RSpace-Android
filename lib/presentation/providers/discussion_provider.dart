@@ -55,6 +55,11 @@ class DiscussionProvider with ChangeNotifier {
   bool _showFinishedDiscussions = false;
   bool get showFinishedDiscussions => _showFinishedDiscussions;
 
+  // ==> STATE BARU UNTUK SELEKSI <==
+  final Set<Discussion> _selectedDiscussions = {};
+  Set<Discussion> get selectedDiscussions => _selectedDiscussions;
+  bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
+
   final List<String> repetitionCodes = kRepetitionCodes;
 
   int get totalDiscussionCount => _allDiscussions.length;
@@ -69,6 +74,26 @@ class DiscussionProvider with ChangeNotifier {
       counts[code] = (counts[code] ?? 0) + 1;
     }
     return counts;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGELOLA SELEKSI <==
+  void toggleSelection(Discussion discussion) {
+    if (_selectedDiscussions.contains(discussion)) {
+      _selectedDiscussions.remove(discussion);
+    } else {
+      _selectedDiscussions.add(discussion);
+    }
+    notifyListeners();
+  }
+
+  void selectAllFiltered() {
+    _selectedDiscussions.addAll(_filteredDiscussions);
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedDiscussions.clear();
+    notifyListeners();
   }
 
   Future<void> loadInitialData() async {
@@ -125,18 +150,35 @@ class DiscussionProvider with ChangeNotifier {
     await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN DISKUSI <==
   Future<void> moveDiscussion(
-      Discussion discussion, String targetSubjectPath) async {
+    Discussion discussion,
+    String targetSubjectPath,
+  ) async {
     try {
-      // Tambahkan diskusi ke file subjek target
       await _discussionService.addDiscussion(targetSubjectPath, discussion);
-
-      // Hapus diskusi dari file subjek saat ini (sumber)
       deleteDiscussion(discussion);
     } catch (e) {
-      // Tangani error jika terjadi
       debugPrint("Error moving discussion: $e");
+      rethrow;
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN BANYAK DISKUSI <==
+  Future<void> moveSelectedDiscussions(String targetSubjectPath) async {
+    try {
+      final discussionsToMove = _selectedDiscussions.toList();
+      // Tambahkan semua diskusi yang dipilih ke file target
+      await _discussionService.addDiscussions(
+        targetSubjectPath,
+        discussionsToMove,
+      );
+      // Hapus semua diskusi yang dipilih dari file sumber
+      _allDiscussions.removeWhere((d) => _selectedDiscussions.contains(d));
+      _selectedDiscussions.clear();
+      _filterAndSortDiscussions();
+      await _saveDiscussions();
+    } catch (e) {
+      debugPrint("Error moving selected discussions: $e");
       rethrow;
     }
   }
@@ -497,19 +539,16 @@ $htmlContent
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT DAN MENAUTKAN FILE DARI DISKUSI YANG ADA <==
   Future<void> createAndLinkHtmlFile(
     Discussion discussion,
     String subjectLinkedPath,
   ) async {
-    // Memanggil service untuk membuat file fisik
     final newRelativePath = await _discussionService.createDiscussionFile(
       perpuskuBasePath: await getPerpuskuHtmlBasePath(),
       subjectLinkedPath: subjectLinkedPath,
       discussionName: discussion.discussion,
     );
 
-    // Menautkan path file yang baru dibuat ke diskusi yang ada
     discussion.filePath = newRelativePath;
     _filterAndSortDiscussions();
     await _saveDiscussions();
@@ -544,7 +583,6 @@ $htmlContent
     _saveDiscussions();
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> addDiscussion(
     String name, {
     bool createHtmlFile = false,
@@ -570,7 +608,7 @@ $htmlContent
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
-      filePath: newFilePath, // Set path file jika dibuat
+      filePath: newFilePath,
     );
     _allDiscussions.add(newDiscussion);
     _filterAndSortDiscussions();
@@ -750,7 +788,6 @@ $htmlContent
     _filterAndSortDiscussions();
   }
 
-  // ## FUNGSI BARU UNTUK FILTER DINAMIS ##
   void applyTodayAndBeforeFilter() {
     _activeFilterType = 'date';
     final now = DateTime.now();
@@ -759,7 +796,6 @@ $htmlContent
       end: DateTime(now.year, now.month, now.day),
     );
     _selectedRepetitionCode = null;
-    // Simpan kunci spesial untuk mengidentifikasi filter dinamis ini
     _prefsService.saveFilterPreference('date_today_and_before', null);
     _filterAndSortDiscussions();
   }

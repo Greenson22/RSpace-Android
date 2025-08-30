@@ -7,16 +7,16 @@ import '../providers/discussion_provider.dart';
 import '3_discussions_page/dialogs/discussion_dialogs.dart';
 import '3_discussions_page/widgets/discussion_card.dart';
 import '3_discussions_page/widgets/discussion_stats_header.dart';
-import '../widgets/ad_banner_widget.dart'; // Impor widget iklan
+import '../widgets/ad_banner_widget.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
-  final String? linkedPath; // ==> DITAMBAHKAN
+  final String? linkedPath;
 
   const DiscussionsPage({
     super.key,
     required this.subjectName,
-    this.linkedPath, // ==> DITAMBAHKAN
+    this.linkedPath,
   });
 
   @override
@@ -58,6 +58,17 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
+      final provider = Provider.of<DiscussionProvider>(context, listen: false);
+
+      // ## Penanganan Tombol Saat Mode Seleksi ##
+      if (provider.isSelectionMode) {
+        if (event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.backspace) {
+          provider.clearSelection();
+        }
+        return; // Hentikan penanganan tombol lain saat mode seleksi
+      }
+
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
           event.logicalKey == LogicalKeyboardKey.arrowUp ||
           event.logicalKey == LogicalKeyboardKey.arrowLeft ||
@@ -68,10 +79,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           if (mounted) setState(() => _isKeyboardActive = false);
         });
 
-        final provider = Provider.of<DiscussionProvider>(
-          context,
-          listen: false,
-        );
         final discussions = provider.filteredDiscussions;
         final totalItems = discussions.length;
         if (totalItems == 0) return;
@@ -115,10 +122,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           }
         });
       } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-        final provider = Provider.of<DiscussionProvider>(
-          context,
-          listen: false,
-        );
         if (_focusedIndex < provider.filteredDiscussions.length) {
           final discussion = provider.filteredDiscussions[_focusedIndex];
           final originalIndex = provider.allDiscussions.indexOf(discussion);
@@ -168,6 +171,24 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN DISKUSI TERPILIH <==
+  void _moveSelectedDiscussions(DiscussionProvider provider) async {
+    final targetSubjectPath = await showMoveDiscussionDialog(context);
+    if (targetSubjectPath != null && mounted) {
+      try {
+        await provider.moveSelectedDiscussions(targetSubjectPath);
+        _showSnackBar(
+          '${provider.selectedDiscussions.length} diskusi berhasil dipindahkan.',
+        );
+      } catch (e) {
+        _showSnackBar(
+          'Gagal memindahkan diskusi: ${e.toString()}',
+          isError: true,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
@@ -176,28 +197,50 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        appBar: _buildAppBar(provider),
+        appBar: provider.isSelectionMode
+            ? _buildSelectionAppBar(provider)
+            : _buildDefaultAppBar(provider),
         body: Column(
-          // Bungkus dengan Column
           children: [
-            Expanded(
-              // Bungkus konten utama dengan Expanded
-              child: _buildBody(provider),
-            ),
-            const AdBannerWidget(), // Tambahkan widget iklan di sini
+            Expanded(child: _buildBody(provider)),
+            const AdBannerWidget(),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _addDiscussion(provider),
-          tooltip: 'Tambah Diskusi',
-          child: const Icon(Icons.add),
-        ),
+        floatingActionButton: provider.isSelectionMode
+            ? null
+            : FloatingActionButton(
+                onPressed: () => _addDiscussion(provider),
+                tooltip: 'Tambah Diskusi',
+                child: const Icon(Icons.add),
+              ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
 
-  AppBar _buildAppBar(DiscussionProvider provider) {
+  AppBar _buildSelectionAppBar(DiscussionProvider provider) {
+    return AppBar(
+      title: Text('${provider.selectedDiscussions.length} dipilih'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => provider.clearSelection(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          onPressed: () => provider.selectAllFiltered(),
+          tooltip: 'Pilih Semua',
+        ),
+        IconButton(
+          icon: const Icon(Icons.move_up),
+          onPressed: () => _moveSelectedDiscussions(provider),
+          tooltip: 'Pindahkan Pilihan',
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildDefaultAppBar(DiscussionProvider provider) {
     return AppBar(
       title: _isSearching
           ? TextField(
@@ -394,7 +437,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           provider.applyDateFilter(range);
           _showSnackBar('Filter tanggal diterapkan.');
         },
-        // ## PERBAIKAN: Panggil fungsi provider yang baru ##
         onSelectTodayAndBefore: () {
           provider.applyTodayAndBeforeFilter();
           _showSnackBar('Filter diterapkan: Hari ini dan sebelumnya.');

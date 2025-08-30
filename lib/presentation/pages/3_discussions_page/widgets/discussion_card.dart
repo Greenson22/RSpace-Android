@@ -83,22 +83,28 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN DISKUSI (YANG HILANG) <==
   void _moveDiscussion(
     BuildContext context,
     DiscussionProvider provider,
   ) async {
+    // Jika belum dalam mode seleksi, aktifkan dan pilih item ini
+    if (!provider.isSelectionMode) {
+      provider.toggleSelection(discussion);
+    }
+    // Tampilkan dialog pemindahan
     final targetSubjectPath = await showMoveDiscussionDialog(context);
     if (targetSubjectPath != null && context.mounted) {
       try {
-        await provider.moveDiscussion(discussion, targetSubjectPath);
-        _showSnackBar(context, 'Diskusi berhasil dipindahkan.');
+        await provider.moveSelectedDiscussions(targetSubjectPath);
+        _showSnackBar(
+          context,
+          '${provider.selectedDiscussions.length} diskusi berhasil dipindahkan.',
+        );
       } catch (e) {
         _showSnackBar(context, 'Gagal memindahkan diskusi: ${e.toString()}');
       }
     }
   }
-  // =============================================================
 
   void _changeDiscussionDate(
     BuildContext context,
@@ -238,12 +244,18 @@ class DiscussionCard extends StatelessWidget {
     final theme = Theme.of(context);
     bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
     final bool isFinished = discussion.finished;
-    final iconColor = isFinished ? Colors.green : Colors.blue;
+    final bool isSelected = provider.selectedDiscussions.contains(discussion);
+    final iconColor = isFinished
+        ? Colors.green
+        : (isSelected ? theme.primaryColor : Colors.blue);
     final bool hasFile =
         discussion.filePath != null && discussion.filePath!.isNotEmpty;
-    final IconData iconData = isFinished
+    IconData iconData = isFinished
         ? Icons.check_circle
         : (hasFile ? Icons.link : Icons.chat_bubble_outline);
+    if (isSelected) {
+      iconData = Icons.check_circle;
+    }
 
     final allPoints = List<Point>.from(discussion.points);
     final sortType = provider.sortType;
@@ -290,6 +302,7 @@ class DiscussionCard extends StatelessWidget {
     final sortedPoints = [...normalPoints, ...r0dPoints, ...finishedPoints];
 
     return Card(
+      color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
         side: isFocused
@@ -299,6 +312,16 @@ class DiscussionCard extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
+            onTap: () {
+              if (provider.isSelectionMode) {
+                provider.toggleSelection(discussion);
+              } else {
+                onToggleVisibility(index);
+              }
+            },
+            onLongPress: () {
+              provider.toggleSelection(discussion);
+            },
             leading: IconButton(
               icon: Icon(iconData, color: iconColor, size: 24),
               onPressed: hasFile ? () => _openFile(context, provider) : null,
@@ -317,195 +340,109 @@ class DiscussionCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'add_point') {
-                      _addPoint(context, provider);
-                    }
-                    if (value == 'rename') {
-                      _renameDiscussion(context, provider);
-                    }
-                    if (value == 'move') {
-                      _moveDiscussion(
-                        context,
-                        provider,
-                      ); // ==> PANGGIL FUNGSI BARU
-                    }
-                    if (value == 'edit_date') {
-                      _changeDiscussionDate(context, provider);
-                    }
-                    if (value == 'edit_code') {
-                      _changeDiscussionCode(context, provider);
-                    }
-                    if (value == 'create_file') {
-                      _createHtmlFileForDiscussion(
-                        context,
-                        provider,
-                        subjectLinkedPath!,
-                      );
-                    }
-                    if (value == 'set_file_path') {
-                      _setFilePath(context, provider);
-                    }
-                    if (value == 'generate_html') {
-                      _generateHtml(context);
-                    }
-                    if (value == 'edit_file_path') {
-                      _editFile(context, provider);
-                    }
-                    if (value == 'remove_file_path') {
-                      _removeFilePath(context, provider);
-                    }
-                    if (value == 'finish') {
-                      _markAsFinished(context, provider);
-                    }
-                    if (value == 'reactivate') {
-                      _reactivateDiscussion(context, provider);
-                    }
-                    if (value == 'delete') {
-                      _deleteDiscussion(context, provider);
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    return <PopupMenuEntry<String>>[
-                      if (!isFinished)
+                if (!provider.isSelectionMode)
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'add_point') {
+                        _addPoint(context, provider);
+                      }
+                      if (value == 'rename') {
+                        _renameDiscussion(context, provider);
+                      }
+                      if (value == 'move') {
+                        _moveDiscussion(context, provider);
+                      }
+                      if (value == 'edit_date') {
+                        _changeDiscussionDate(context, provider);
+                      }
+                      if (value == 'edit_code') {
+                        _changeDiscussionCode(context, provider);
+                      }
+                      if (value == 'create_file') {
+                        _createHtmlFileForDiscussion(
+                          context,
+                          provider,
+                          subjectLinkedPath!,
+                        );
+                      }
+                      if (value == 'set_file_path') {
+                        _setFilePath(context, provider);
+                      }
+                      if (value == 'generate_html') {
+                        _generateHtml(context);
+                      }
+                      if (value == 'edit_file_path') {
+                        _editFile(context, provider);
+                      }
+                      if (value == 'remove_file_path') {
+                        _removeFilePath(context, provider);
+                      }
+                      if (value == 'finish') {
+                        _markAsFinished(context, provider);
+                      }
+                      if (value == 'reactivate') {
+                        _reactivateDiscussion(context, provider);
+                      }
+                      if (value == 'delete') {
+                        _deleteDiscussion(context, provider);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) {
+                      return <PopupMenuEntry<String>>[
+                        if (!isFinished)
+                          const PopupMenuItem<String>(
+                            value: 'add_point',
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_comment_outlined),
+                                SizedBox(width: 8),
+                                Text('Tambah Poin'),
+                              ],
+                            ),
+                          ),
                         const PopupMenuItem<String>(
-                          value: 'add_point',
+                          value: 'move',
                           child: Row(
                             children: [
-                              Icon(Icons.add_comment_outlined),
+                              Icon(Icons.move_up_outlined),
                               SizedBox(width: 8),
-                              Text('Tambah Poin'),
+                              Text('Pindahkan'),
                             ],
                           ),
                         ),
-                      const PopupMenuItem<String>(
-                        value: 'move',
-                        child: Row(
-                          children: [
-                            Icon(Icons.move_up_outlined),
-                            SizedBox(width: 8),
-                            Text('Pindahkan'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        enabled: false, // Disable the parent item
-                        padding: EdgeInsets.zero,
-                        child: SubmenuButton(
-                          menuChildren: <PopupMenuEntry<String>>[
-                            const PopupMenuItem<String>(
-                              value: 'rename',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.drive_file_rename_outline),
-                                  SizedBox(width: 8),
-                                  Text('Ubah Nama'),
-                                ],
-                              ),
-                            ),
-                            if (!discussion.points.isNotEmpty) ...[
-                              const PopupMenuItem<String>(
-                                value: 'edit_date',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.calendar_today_outlined),
-                                    SizedBox(width: 8),
-                                    Text('Ubah Tanggal'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem<String>(
-                                value: 'edit_code',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.code),
-                                    SizedBox(width: 8),
-                                    Text('Ubah Kode Repetisi'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                          child: const Row(
-                            children: [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (!isFinished)
                         PopupMenuItem<String>(
-                          enabled: false, // Disable the parent item
+                          enabled: false,
                           padding: EdgeInsets.zero,
                           child: SubmenuButton(
                             menuChildren: <PopupMenuEntry<String>>[
-                              if (subjectLinkedPath != null && !hasFile)
-                                const PopupMenuItem<String>(
-                                  value: 'create_file',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.note_add_outlined),
-                                      SizedBox(width: 8),
-                                      Text('Buat File HTML Baru'),
-                                    ],
-                                  ),
-                                ),
-                              PopupMenuItem<String>(
-                                value: 'set_file_path',
+                              const PopupMenuItem<String>(
+                                value: 'rename',
                                 child: Row(
                                   children: [
-                                    Icon(
-                                      hasFile
-                                          ? Icons.folder_open_outlined
-                                          : Icons.create_new_folder_outlined,
-                                    ),
+                                    Icon(Icons.drive_file_rename_outline),
                                     SizedBox(width: 8),
-                                    Text(
-                                      hasFile
-                                          ? 'Ubah Path File'
-                                          : 'Set Path File',
-                                    ),
+                                    Text('Ubah Nama'),
                                   ],
                                 ),
                               ),
-                              if (hasFile) ...[
+                              if (!discussion.points.isNotEmpty) ...[
                                 const PopupMenuItem<String>(
-                                  value: 'generate_html',
+                                  value: 'edit_date',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.auto_awesome_outlined),
+                                      Icon(Icons.calendar_today_outlined),
                                       SizedBox(width: 8),
-                                      Text('Generate Konten (AI)'),
+                                      Text('Ubah Tanggal'),
                                     ],
                                   ),
                                 ),
                                 const PopupMenuItem<String>(
-                                  value: 'edit_file_path',
+                                  value: 'edit_code',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit_document),
+                                      Icon(Icons.code),
                                       SizedBox(width: 8),
-                                      Text('Edit File Konten'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuDivider(),
-                                const PopupMenuItem<String>(
-                                  value: 'remove_file_path',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.link_off,
-                                        color: Colors.orange,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Hapus Path File',
-                                        style: TextStyle(color: Colors.orange),
-                                      ),
+                                      Text('Ubah Kode Repetisi'),
                                     ],
                                   ),
                                 ),
@@ -513,50 +450,139 @@ class DiscussionCard extends StatelessWidget {
                             ],
                             child: const Row(
                               children: [
-                                Icon(Icons.description_outlined),
+                                Icon(Icons.edit_outlined),
                                 SizedBox(width: 8),
-                                Text('File'),
+                                Text('Edit'),
                               ],
                             ),
                           ),
                         ),
-                      const PopupMenuDivider(),
-                      if (isFinished)
-                        const PopupMenuItem<String>(
-                          value: 'reactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.replay),
-                              SizedBox(width: 8),
-                              Text('Aktifkan Lagi'),
-                            ],
+                        if (!isFinished)
+                          PopupMenuItem<String>(
+                            enabled: false,
+                            padding: EdgeInsets.zero,
+                            child: SubmenuButton(
+                              menuChildren: <PopupMenuEntry<String>>[
+                                if (subjectLinkedPath != null && !hasFile)
+                                  const PopupMenuItem<String>(
+                                    value: 'create_file',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.note_add_outlined),
+                                        SizedBox(width: 8),
+                                        Text('Buat File HTML Baru'),
+                                      ],
+                                    ),
+                                  ),
+                                PopupMenuItem<String>(
+                                  value: 'set_file_path',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        hasFile
+                                            ? Icons.folder_open_outlined
+                                            : Icons.create_new_folder_outlined,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        hasFile
+                                            ? 'Ubah Path File'
+                                            : 'Set Path File',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (hasFile) ...[
+                                  const PopupMenuItem<String>(
+                                    value: 'generate_html',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.auto_awesome_outlined),
+                                        SizedBox(width: 8),
+                                        Text('Generate Konten (AI)'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'edit_file_path',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit_document),
+                                        SizedBox(width: 8),
+                                        Text('Edit File Konten'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuDivider(),
+                                  const PopupMenuItem<String>(
+                                    value: 'remove_file_path',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.link_off,
+                                          color: Colors.orange,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Hapus Path File',
+                                          style: TextStyle(
+                                            color: Colors.orange,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.description_outlined),
+                                  SizedBox(width: 8),
+                                  Text('File'),
+                                ],
+                              ),
+                            ),
                           ),
-                        )
-                      else
+                        const PopupMenuDivider(),
+                        if (isFinished)
+                          const PopupMenuItem<String>(
+                            value: 'reactivate',
+                            child: Row(
+                              children: [
+                                Icon(Icons.replay),
+                                SizedBox(width: 8),
+                                Text('Aktifkan Lagi'),
+                              ],
+                            ),
+                          )
+                        else
+                          const PopupMenuItem<String>(
+                            value: 'finish',
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle_outline),
+                                SizedBox(width: 8),
+                                Text('Tandai Selesai'),
+                              ],
+                            ),
+                          ),
                         const PopupMenuItem<String>(
-                          value: 'finish',
+                          value: 'delete',
                           child: Row(
                             children: [
-                              Icon(Icons.check_circle_outline),
+                              Icon(Icons.delete_outline, color: Colors.red),
                               SizedBox(width: 8),
-                              Text('Tandai Selesai'),
+                              Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
                             ],
                           ),
                         ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Hapus', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ];
-                  },
-                ),
-                if (discussion.points.isNotEmpty)
+                      ];
+                    },
+                  ),
+                if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
                     icon: Icon(
                       arePointsVisibleForThisCard

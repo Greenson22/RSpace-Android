@@ -35,30 +35,36 @@ class DiscussionService {
     await file.writeAsString(encoder.convert(newJsonData));
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMBAHKAN SATU DISKUSI <==
   Future<void> addDiscussion(String filePath, Discussion discussion) async {
     final discussions = await loadDiscussions(filePath);
     discussions.add(discussion);
     await saveDiscussions(filePath, discussions);
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS SATU DISKUSI <==
+  // ==> FUNGSI BARU UNTUK MENAMBAHKAN BEBERAPA DISKUSI <==
+  Future<void> addDiscussions(
+    String filePath,
+    List<Discussion> discussionsToAdd,
+  ) async {
+    final discussions = await loadDiscussions(filePath);
+    discussions.addAll(discussionsToAdd);
+    await saveDiscussions(filePath, discussions);
+  }
+
   Future<void> deleteDiscussion(String filePath, Discussion discussion) async {
     final discussions = await loadDiscussions(filePath);
     discussions.removeWhere((d) => d.discussion == discussion.discussion);
     await saveDiscussions(filePath, discussions);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT FILE HTML <==
   Future<String> createDiscussionFile({
     required String perpuskuBasePath,
     required String subjectLinkedPath,
     required String discussionName,
   }) async {
-    // Membersihkan nama diskusi agar aman untuk nama file
     String fileName = discussionName
-        .replaceAll(RegExp(r'[^\w\s-]'), '') // Hapus karakter tidak valid
-        .replaceAll(' ', '_') // Ganti spasi dengan underscore
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(' ', '_')
         .toLowerCase();
     fileName = '$fileName.html';
 
@@ -71,13 +77,11 @@ class DiscussionService {
     final filePath = path.join(directoryPath, fileName);
     final file = File(filePath);
     if (await file.exists()) {
-      // Jika file sudah ada, tambahkan timestamp untuk membuatnya unik
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       fileName = '${path.basenameWithoutExtension(fileName)}_$timestamp.html';
     }
 
     final finalFile = File(path.join(directoryPath, fileName));
-    // Template HTML dasar
     const htmlTemplate = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -93,7 +97,6 @@ class DiscussionService {
 ''';
     await finalFile.writeAsString(htmlTemplate);
 
-    // Mengembalikan path relatif untuk disimpan di data discussion
     return path.join(subjectLinkedPath, fileName);
   }
 }
