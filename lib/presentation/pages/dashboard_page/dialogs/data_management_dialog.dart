@@ -1,0 +1,111 @@
+// lib/presentation/pages/dashboard_page/dialogs/data_management_dialog.dart
+
+import 'package:flutter/material.dart';
+import '../../unlinked_discussions_page.dart';
+import '../../finished_discussions_page.dart';
+import '../../orphaned_files_page.dart';
+import '../../broken_links_page.dart';
+
+/// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
+void showDataManagementDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => const DataManagementDialog(),
+  );
+}
+
+class DataManagementDialog extends StatelessWidget {
+  const DataManagementDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Helper untuk membuat item list di dialog
+    Widget _buildDialogOption({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required VoidCallback onTap,
+    }) {
+      return SimpleDialogOption(
+        onPressed: onTap,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Row(
+          children: [
+            Icon(icon, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SimpleDialog(
+      title: const Text('Kelola & Perawatan Data'),
+      children: <Widget>[
+        _buildDialogOption(
+          icon: Icons.link_off_outlined,
+          title: 'Diskusi Tanpa Link',
+          subtitle: 'Lihat diskusi yang belum memiliki tautan file HTML.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const UnlinkedDiscussionsPage(),
+              ),
+            );
+          },
+        ),
+        _buildDialogOption(
+          icon: Icons.archive_outlined,
+          title: 'Diskusi Selesai',
+          subtitle: 'Lihat dan kelola semua diskusi yang sudah selesai.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const FinishedDiscussionsPage(),
+              ),
+            );
+          },
+        ),
+        _buildDialogOption(
+          icon: Icons.cleaning_services_outlined,
+          title: 'File Yatim',
+          subtitle: 'Temukan file HTML yang tidak tertaut ke diskusi manapun.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
+            );
+          },
+        ),
+        _buildDialogOption(
+          icon: Icons.heart_broken_outlined,
+          title: 'Cek Tautan Rusak',
+          subtitle: 'Temukan diskusi yang tautan filenya rusak atau hilang.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BrokenLinksPage()),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}

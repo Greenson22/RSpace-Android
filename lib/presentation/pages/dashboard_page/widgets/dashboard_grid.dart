@@ -14,68 +14,44 @@ import '../../unlinked_discussions_page.dart';
 import '../../broken_links_page.dart';
 import '../../feedback_center_page.dart';
 import '../../finished_discussions_page.dart';
+// ==> IMPORT DIALOG BARU
+import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 
-// ==> FUNGSI INI DIPERBARUI DAN DISUSUN ULANG <==
+// ==> FUNGSI INI DIPERBARUI <==
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
   required VoidCallback onShowStorageDialog,
   required bool isPathSet,
 }) {
   final List<VoidCallback?> actions = [
-    // Urutan 1: Topics
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
     ),
-    // Urutan 2: My Tasks
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
     ),
-    // Urutan 3: Jurnal Aktivitas (Time Log)
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
-    // Urutan 4: Statistik
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
     ),
-    // Urutan 5: File Online
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
-    // Urutan 6: Diskusi Tanpa Link
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const UnlinkedDiscussionsPage()),
-    ),
-    // Urutan 7: Diskusi Selesai
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const FinishedDiscussionsPage()),
-    ),
-    // Urutan 8: File Yatim
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const OrphanedFilesPage()),
-    ),
-    // Urutan 8: Cek Tautan Rusak
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const BrokenLinksPage()),
-    ),
-    // Urutan 9: Pusat Umpan Balik
+    // ==> PANGGIL FUNGSI UNTUK MENAMPILKAN DIALOG
+    () => showDataManagementDialog(context),
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
     ),
-    // Urutan 10: Penyimpanan Utama (Kondisional)
     if (!isPathSet) onShowStorageDialog,
-    // Urutan 11: Manajemen Backup
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const BackupManagementPage()),
@@ -112,7 +88,7 @@ class DashboardGrid extends StatelessWidget {
           crossAxisCount = 2;
         }
 
-        // ==> LIST DATA INI JUGA DIPERBARUI, DISUSUN ULANG, DAN DUPLIKAT DIHAPUS <==
+        // ==> LIST DATA INI DIPERBARUI <==
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -139,25 +115,11 @@ class DashboardGrid extends StatelessWidget {
             'label': 'File Online',
             'colors': AppTheme.gradientColors4,
           },
+          // ==> TOMBOL BARU DITAMBAHKAN DI SINI
           {
-            'icon': Icons.link_off_outlined,
-            'label': 'Diskusi Tanpa Link',
-            'colors': const [Color(0xFFEF5350), Color(0xFFD32F2F)],
-          },
-          {
-            'icon': Icons.archive_outlined,
-            'label': 'Diskusi Selesai',
-            'colors': const [Color(0xFF4DB6AC), Color(0xFF00897B)],
-          },
-          {
-            'icon': Icons.cleaning_services_outlined,
-            'label': 'File Yatim',
-            'colors': const [Color(0xFFBDBDBD), Color(0xFF616161)],
-          },
-          {
-            'icon': Icons.heart_broken_outlined,
-            'label': 'Cek Tautan Rusak',
-            'colors': const [Color(0xFFE57373), Color(0xFFC62828)],
+            'icon': Icons.construction_outlined,
+            'label': 'Kelola Data',
+            'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
           },
           {
             'icon': Icons.lightbulb_outline,
