@@ -5,18 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/data/services/path_service.dart';
+import 'package:file_picker/file_picker.dart'; // Impor file_picker
 
-// ==> DIALOG BARU UNTUK MEMILIH PATH DARI PERPUSKU <==
-Future<String?> showPerpuskuPathPickerDialog({
+// ==> DIALOG BARU UNTUK MEMILIH ATAU MEMBUAT FOLDER PERPUSKU <==
+Future<String?> showLinkOrCreatePerpuskuDialog({
   required BuildContext context,
+  required String forSubjectName,
 }) async {
   final pathService = PathService();
-  String? basePath;
+  String? perpuskuTopicsPath;
   try {
-    basePath = await pathService.perpuskuDataPath;
-    basePath = path.join(basePath, 'file_contents', 'topics');
+    perpuskuTopicsPath = await pathService.perpuskuDataPath;
+    perpuskuTopicsPath = path.join(
+      perpuskuTopicsPath,
+      'file_contents',
+      'topics',
+    );
   } catch (e) {
-    // Menampilkan pesan error jika path dasar tidak dapat diakses
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Error: ${e.toString()}"),
@@ -26,9 +31,226 @@ Future<String?> showPerpuskuPathPickerDialog({
     return null;
   }
 
-  return showDialog<String>(
+  // Opsi 1: Memilih folder yang sudah ada
+  Future<String?> pickExistingSubject() async {
+    return await showDialog<String>(
+      context: context,
+      builder: (context) => _PerpuskuPathPicker(basePath: perpuskuTopicsPath!),
+    );
+  }
+
+  // Opsi 2: Membuat folder baru
+  Future<String?> createNewSubject() async {
+    return await showDialog<String>(
+      context: context,
+      builder: (context) => _CreatePerpuskuSubjectDialog(
+        basePath: perpuskuTopicsPath!,
+        suggestedName: forSubjectName,
+      ),
+    );
+  }
+
+  return await showDialog<String>(
     context: context,
-    builder: (context) => _PerpuskuPathPicker(basePath: basePath!),
+    builder: (context) {
+      return AlertDialog(
+        title: Text('Tautkan ke PerpusKu'),
+        content: Text(
+          'Subject "$forSubjectName" harus ditautkan ke folder di PerpusKu. Pilih folder yang sudah ada atau buat yang baru.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          OutlinedButton(
+            onPressed: () async {
+              final result = await createNewSubject();
+              if (result != null) Navigator.pop(context, result);
+            },
+            child: const Text('Buat Folder Baru'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final result = await pickExistingSubject();
+              if (result != null) Navigator.pop(context, result);
+            },
+            child: const Text('Pilih Folder Ada'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _CreatePerpuskuSubjectDialog extends StatefulWidget {
+  final String basePath;
+  final String suggestedName;
+
+  const _CreatePerpuskuSubjectDialog({
+    required this.basePath,
+    required this.suggestedName,
+  });
+
+  @override
+  State<_CreatePerpuskuSubjectDialog> createState() =>
+      _CreatePerpuskuSubjectDialogState();
+}
+
+class _CreatePerpuskuSubjectDialogState
+    extends State<_CreatePerpuskuSubjectDialog> {
+  String _selectedTopic = '';
+  List<Directory> _topics = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTopics();
+  }
+
+  Future<void> _loadTopics() async {
+    setState(() => _isLoading = true);
+    try {
+      final dir = Directory(widget.basePath);
+      _topics = dir.listSync().whereType<Directory>().toList();
+    } catch (e) {
+      // Handle error
+    }
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _createFolderAndPop() async {
+    if (_selectedTopic.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan pilih topik terlebih dahulu.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final newSubjectPath = path.join(
+        widget.basePath,
+        _selectedTopic,
+        widget.suggestedName,
+      );
+      final newDir = Directory(newSubjectPath);
+      if (await newDir.exists()) {
+        throw Exception(
+          'Folder dengan nama "${widget.suggestedName}" sudah ada di dalam topik "$_selectedTopic".',
+        );
+      }
+      await newDir.create(recursive: true);
+
+      // Buat file metadata.json kosong
+      final metadataFile = File(path.join(newDir.path, 'metadata.json'));
+      await metadataFile.writeAsString(jsonEncode({"content": []}));
+
+      final relativePath = path.join(_selectedTopic, widget.suggestedName);
+      if (mounted) Navigator.pop(context, relativePath);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Gagal membuat folder: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Buat Folder Subjek Baru'),
+      content: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Akan membuat folder bernama:'),
+                Text(
+                  widget.suggestedName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _selectedTopic.isEmpty ? null : _selectedTopic,
+                  hint: const Text('Pilih Topik Tujuan...'),
+                  isExpanded: true,
+                  items: _topics.map((dir) {
+                    final topicName = path.basename(dir.path);
+                    return DropdownMenuItem(
+                      value: topicName,
+                      child: Text(topicName),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedTopic = value);
+                    }
+                  },
+                ),
+              ],
+            ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: _createFolderAndPop,
+          child: const Text('Buat & Tautkan'),
+        ),
+      ],
+    );
+  }
+}
+
+// Sisa kode dari file asli...
+// (Kelas _PerpuskuPathPicker, showIconPickerDialog, showSubjectTextInputDialog, showDeleteConfirmationDialog, etc.)
+// ... Letakkan semua fungsi lain yang sudah ada di sini ...
+
+Future<void> showSubjectTextInputDialog({
+  required BuildContext context,
+  required String title,
+  required String label,
+  String initialValue = '',
+  required Function(String) onSave,
+}) async {
+  final controller = TextEditingController(text: initialValue);
+  return showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: label),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                onSave(controller.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      );
+    },
   );
 }
 
@@ -231,44 +453,6 @@ Future<void> showIconPickerDialog({
             ],
           );
         },
-      );
-    },
-  );
-}
-
-Future<void> showSubjectTextInputDialog({
-  required BuildContext context,
-  required String title,
-  required String label,
-  String initialValue = '',
-  required Function(String) onSave,
-}) async {
-  final controller = TextEditingController(text: initialValue);
-  return showDialog<void>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: label),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                onSave(controller.text);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
       );
     },
   );

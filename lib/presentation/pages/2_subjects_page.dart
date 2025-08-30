@@ -12,7 +12,7 @@ import '3_discussions_page.dart';
 import '2_subjects_page/dialogs/subject_dialogs.dart';
 import '2_subjects_page/widgets/subject_grid_tile.dart';
 import '2_subjects_page/widgets/subject_list_tile.dart';
-import '../widgets/ad_banner_widget.dart'; // Impor widget iklan
+import '../widgets/ad_banner_widget.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -59,7 +59,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
   }
 
   void _handleKeyEvent(RawKeyEvent event) {
-    // ## PERBAIKAN: Abaikan event dari tombol Alt ##
     if (event.logicalKey == LogicalKeyboardKey.altLeft ||
         event.logicalKey == LogicalKeyboardKey.altRight) {
       return;
@@ -123,9 +122,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
+  // ==> FUNGSI DIPERBARUI: Sekarang hanya memanggil dialog baru <==
   Future<void> _linkSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    final newPath = await showPerpuskuPathPickerDialog(context: context);
+    final newPath = await showLinkOrCreatePerpuskuDialog(
+      context: context,
+      forSubjectName: subject.name,
+    );
 
     if (newPath != null) {
       try {
@@ -140,18 +143,35 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
+  // ==> FUNGSI DIPERBARUI: Alur diubah total <==
   Future<void> _addSubject(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
+
+    // Langkah 1: Minta nama subject RSpace
     await showSubjectTextInputDialog(
       context: context,
-      title: 'Tambah Subject Baru',
-      label: 'Nama Subject',
+      title: 'Tambah Subject Baru (Langkah 1/2)',
+      label: 'Nama Subject di RSpace',
       onSave: (name) async {
-        try {
-          await provider.addSubject(name);
-          _showSnackBar('Subject "$name" berhasil ditambahkan.');
-        } catch (e) {
-          _showSnackBar(e.toString(), isError: true);
+        // Langkah 2: Setelah nama didapat, langsung minta untuk menautkan/membuat folder PerpusKu
+        final newPath = await showLinkOrCreatePerpuskuDialog(
+          context: context,
+          forSubjectName: name,
+        );
+
+        // Langkah 3: Jika path berhasil didapat, baru buat subject RSpace dan simpan pathnya
+        if (newPath != null) {
+          try {
+            // Buat subject di RSpace
+            await provider.addSubject(name);
+            // Langsung update dengan linkedPath yang baru
+            await provider.updateSubjectLinkedPath(name, newPath);
+            _showSnackBar(
+              'Subject "$name" berhasil ditambahkan dan ditautkan.',
+            );
+          } catch (e) {
+            _showSnackBar(e.toString(), isError: true);
+          }
         }
       },
     );
@@ -218,15 +238,53 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  void _navigateToDiscussionsPage(BuildContext context, Subject subject) {
+  // ==> FUNGSI DIPERBARUI: Menangani penautan wajib sebelum navigasi <==
+  Future<void> _navigateToDiscussionsPage(
+    BuildContext context,
+    Subject subject,
+  ) async {
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
     );
+
+    String? currentLinkedPath = subject.linkedPath;
+
+    // Jika belum tertaut, paksa pengguna untuk menautkan
+    if (currentLinkedPath == null || currentLinkedPath.isEmpty) {
+      final newPath = await showLinkOrCreatePerpuskuDialog(
+        context: context,
+        forSubjectName: subject.name,
+      );
+
+      // ==> PERBAIKAN DIMULAI DI SINI <==
+      // Cek apakah widget masih ada setelah dialog ditutup.
+      if (!mounted) return;
+      // ==> PERBAIKAN SELESAI DI SINI <==
+
+      if (newPath != null) {
+        try {
+          await subjectProvider.updateSubjectLinkedPath(subject.name, newPath);
+          currentLinkedPath = newPath; // Update path untuk navigasi
+        } catch (e) {
+          _showSnackBar(
+            'Gagal menautkan subject: ${e.toString()}',
+            isError: true,
+          );
+          return; // Hentikan navigasi jika penautan gagal
+        }
+      } else {
+        return; // Hentikan navigasi jika pengguna membatalkan dialog
+      }
+    }
+
     final jsonFilePath = path.join(
       subjectProvider.topicPath,
       '${subject.name}.json',
     );
+
+    // Pastikan untuk menggunakan context yang aman di sini juga.
+    if (!mounted) return;
 
     Navigator.push(
       context,
@@ -235,16 +293,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
           create: (_) => DiscussionProvider(jsonFilePath),
           child: DiscussionsPage(
             subjectName: subject.name,
-            linkedPath: subject.linkedPath,
+            linkedPath: currentLinkedPath,
           ),
         ),
       ),
     ).then((_) {
       if (!mounted) return;
-      // Cukup panggil fetchSubjects untuk me-refresh data.
       subjectProvider.fetchSubjects();
-
-      // >>> BARIS PENYEBAB ERROR DIHAPUS DARI SINI <<<
     });
   }
 
@@ -288,10 +343,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
           elevation: 0,
         ),
         body: Column(
-          // Bungkus dengan Column
           children: [
             Expanded(
-              // Bungkus konten utama dengan Expanded
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 600) {
@@ -302,7 +355,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
                 },
               ),
             ),
-            const AdBannerWidget(), // Tambahkan widget iklan di sini
+            const AdBannerWidget(),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
