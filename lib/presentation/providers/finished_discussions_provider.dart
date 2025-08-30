@@ -59,7 +59,30 @@ class FinishedDiscussionsProvider with ChangeNotifier {
   }
 
   Future<void> deleteSelected() async {
-    // Kelompokkan diskusi yang akan dihapus berdasarkan path filenya
+    // ====================== AWAL PERUBAHAN ======================
+    // Langkah 1: Hapus file HTML fisik yang tertaut terlebih dahulu
+    for (final selected in _selectedDiscussions) {
+      // Cek apakah ada file path yang tertaut
+      if (selected.discussion.filePath != null &&
+          selected.discussion.filePath!.isNotEmpty) {
+        try {
+          // Panggil service untuk menghapus file fisiknya
+          await _discussionService.deleteLinkedFile(
+            selected.discussion.filePath,
+          );
+        } catch (e) {
+          // Jika gagal, tampilkan pesan error dan hentikan proses
+          debugPrint("Gagal menghapus file HTML tertaut: ${e.toString()}");
+          // Anda bisa melempar error di sini agar UI bisa menampilkannya
+          throw Exception(
+            'Gagal menghapus file: ${selected.discussion.filePath}. Proses dibatalkan.',
+          );
+        }
+      }
+    }
+    // ======================= AKHIR PERUBAHAN =======================
+
+    // Langkah 2: Kelompokkan diskusi untuk dihapus dari file JSON
     final Map<String, List<String>> discussionsToDeleteByFile = {};
 
     for (final selected in _selectedDiscussions) {
@@ -72,7 +95,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       }
     }
 
-    // Panggil service untuk menghapus diskusi dari setiap file
+    // Langkah 3: Panggil service untuk menghapus data diskusi dari setiap file JSON
     for (final entry in discussionsToDeleteByFile.entries) {
       await _discussionService.deleteMultipleDiscussions(
         entry.key,
@@ -80,7 +103,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       );
     }
 
-    // Hapus dari state lokal dan perbarui UI
+    // Langkah 4: Hapus dari state lokal dan perbarui UI
     _finishedDiscussions.removeWhere((d) => _selectedDiscussions.contains(d));
     _selectedDiscussions.clear();
     notifyListeners();
