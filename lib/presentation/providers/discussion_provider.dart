@@ -125,6 +125,22 @@ class DiscussionProvider with ChangeNotifier {
     await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN DISKUSI <==
+  Future<void> moveDiscussion(
+      Discussion discussion, String targetSubjectPath) async {
+    try {
+      // Tambahkan diskusi ke file subjek target
+      await _discussionService.addDiscussion(targetSubjectPath, discussion);
+
+      // Hapus diskusi dari file subjek saat ini (sumber)
+      deleteDiscussion(discussion);
+    } catch (e) {
+      // Tangani error jika terjadi
+      debugPrint("Error moving discussion: $e");
+      rethrow;
+    }
+  }
+
   Map<String, String?> _getEffectiveDiscussionInfoForSorting(
     Discussion discussion,
   ) {

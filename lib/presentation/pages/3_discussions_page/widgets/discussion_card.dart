@@ -27,7 +27,6 @@ class DiscussionCard extends StatelessWidget {
     this.subjectLinkedPath,
   });
 
-  // ... (semua fungsi helper tidak berubah) ...
   void _createHtmlFileForDiscussion(
     BuildContext context,
     DiscussionProvider provider,
@@ -83,6 +82,23 @@ class DiscussionCard extends StatelessWidget {
       },
     );
   }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN DISKUSI (YANG HILANG) <==
+  void _moveDiscussion(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) async {
+    final targetSubjectPath = await showMoveDiscussionDialog(context);
+    if (targetSubjectPath != null && context.mounted) {
+      try {
+        await provider.moveDiscussion(discussion, targetSubjectPath);
+        _showSnackBar(context, 'Diskusi berhasil dipindahkan.');
+      } catch (e) {
+        _showSnackBar(context, 'Gagal memindahkan diskusi: ${e.toString()}');
+      }
+    }
+  }
+  // =============================================================
 
   void _changeDiscussionDate(
     BuildContext context,
@@ -303,28 +319,52 @@ class DiscussionCard extends StatelessWidget {
               children: [
                 PopupMenuButton<String>(
                   onSelected: (value) {
-                    if (value == 'add_point') _addPoint(context, provider);
-                    if (value == 'rename') _renameDiscussion(context, provider);
-                    if (value == 'edit_date')
+                    if (value == 'add_point') {
+                      _addPoint(context, provider);
+                    }
+                    if (value == 'rename') {
+                      _renameDiscussion(context, provider);
+                    }
+                    if (value == 'move') {
+                      _moveDiscussion(
+                        context,
+                        provider,
+                      ); // ==> PANGGIL FUNGSI BARU
+                    }
+                    if (value == 'edit_date') {
                       _changeDiscussionDate(context, provider);
-                    if (value == 'edit_code')
+                    }
+                    if (value == 'edit_code') {
                       _changeDiscussionCode(context, provider);
-                    if (value == 'create_file')
+                    }
+                    if (value == 'create_file') {
                       _createHtmlFileForDiscussion(
                         context,
                         provider,
                         subjectLinkedPath!,
                       );
-                    if (value == 'set_file_path')
+                    }
+                    if (value == 'set_file_path') {
                       _setFilePath(context, provider);
-                    if (value == 'generate_html') _generateHtml(context);
-                    if (value == 'edit_file_path') _editFile(context, provider);
-                    if (value == 'remove_file_path')
+                    }
+                    if (value == 'generate_html') {
+                      _generateHtml(context);
+                    }
+                    if (value == 'edit_file_path') {
+                      _editFile(context, provider);
+                    }
+                    if (value == 'remove_file_path') {
                       _removeFilePath(context, provider);
-                    if (value == 'finish') _markAsFinished(context, provider);
-                    if (value == 'reactivate')
+                    }
+                    if (value == 'finish') {
+                      _markAsFinished(context, provider);
+                    }
+                    if (value == 'reactivate') {
                       _reactivateDiscussion(context, provider);
-                    if (value == 'delete') _deleteDiscussion(context, provider);
+                    }
+                    if (value == 'delete') {
+                      _deleteDiscussion(context, provider);
+                    }
                   },
                   itemBuilder: (BuildContext context) {
                     return <PopupMenuEntry<String>>[
@@ -339,6 +379,16 @@ class DiscussionCard extends StatelessWidget {
                             ],
                           ),
                         ),
+                      const PopupMenuItem<String>(
+                        value: 'move',
+                        child: Row(
+                          children: [
+                            Icon(Icons.move_up_outlined),
+                            SizedBox(width: 8),
+                            Text('Pindahkan'),
+                          ],
+                        ),
+                      ),
                       PopupMenuItem<String>(
                         enabled: false, // Disable the parent item
                         padding: EdgeInsets.zero,

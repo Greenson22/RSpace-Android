@@ -35,6 +35,20 @@ class DiscussionService {
     await file.writeAsString(encoder.convert(newJsonData));
   }
 
+  // ==> FUNGSI BARU UNTUK MENAMBAHKAN SATU DISKUSI <==
+  Future<void> addDiscussion(String filePath, Discussion discussion) async {
+    final discussions = await loadDiscussions(filePath);
+    discussions.add(discussion);
+    await saveDiscussions(filePath, discussions);
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS SATU DISKUSI <==
+  Future<void> deleteDiscussion(String filePath, Discussion discussion) async {
+    final discussions = await loadDiscussions(filePath);
+    discussions.removeWhere((d) => d.discussion == discussion.discussion);
+    await saveDiscussions(filePath, discussions);
+  }
+
   // ==> FUNGSI BARU UNTUK MEMBUAT FILE HTML <==
   Future<String> createDiscussionFile({
     required String perpuskuBasePath,

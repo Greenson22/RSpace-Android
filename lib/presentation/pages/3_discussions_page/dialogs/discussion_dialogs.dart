@@ -1,6 +1,15 @@
 // lib/presentation/pages/3_discussions_page/dialogs/discussion_dialogs.dart
 import 'package:flutter/material.dart';
 import 'html_file_picker_dialog.dart';
+import 'move_discussion_dialog.dart'; // ==> IMPORT DIALOG BARU
+
+// ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PEMINDAHAN <==
+Future<String?> showMoveDiscussionDialog(BuildContext context) async {
+  return await showDialog<String>(
+    context: context,
+    builder: (context) => const MoveDiscussionDialog(),
+  );
+}
 
 Future<void> showAddDiscussionDialog({
   required BuildContext context,
