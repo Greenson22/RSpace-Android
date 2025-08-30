@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../providers/orphaned_file_provider.dart';
-import '../../data/models/orphaned_file_model.dart'; // Import OrphanedFile
+import '../../data/models/orphaned_file_model.dart';
 
 class OrphanedFilesPage extends StatelessWidget {
   const OrphanedFilesPage({super.key});
@@ -18,8 +18,35 @@ class OrphanedFilesPage extends StatelessWidget {
   }
 }
 
-class _OrphanedFilesView extends StatelessWidget {
+// ==> UBAH MENJADI STATEFUL WIDGET <==
+class _OrphanedFilesView extends StatefulWidget {
   const _OrphanedFilesView();
+
+  @override
+  State<_OrphanedFilesView> createState() => _OrphanedFilesViewState();
+}
+
+class _OrphanedFilesViewState extends State<_OrphanedFilesView> {
+  // ==> TAMBAHKAN CONTROLLER UNTUK SEARCH BAR <==
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // ==> TAMBAHKAN LISTENER UNTUK MENTRIGGER FUNGSI SEARCH DI PROVIDER <==
+    _searchController.addListener(() {
+      Provider.of<OrphanedFileProvider>(
+        context,
+        listen: false,
+      ).search(_searchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _confirmAndDelete(
     BuildContext context,
@@ -80,64 +107,95 @@ class _OrphanedFilesView extends StatelessWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () => provider.fetchOrphanedFiles(),
-        child: Builder(
-          builder: (context) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (provider.error != null) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Error: ${provider.error}',
-                    style: const TextStyle(color: Colors.red),
-                  ),
+      // ==> GANTI BODY DENGAN COLUMN UNTUK MENAMBAHKAN SEARCH BAR <==
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Cari berdasarkan judul atau path...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
-              );
-            }
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _searchController.clear(),
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => provider.fetchOrphanedFiles(),
+              child: Builder(
+                builder: (context) {
+                  if (provider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            if (provider.orphanedFiles.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    '🎉 Hebat! Tidak ada file HTML yatim yang ditemukan.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-              );
-            }
+                  if (provider.error != null) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Error: ${provider.error}',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
+                  }
 
-            return ListView.builder(
-              itemCount: provider.orphanedFiles.length,
-              itemBuilder: (context, index) {
-                final item = provider.orphanedFiles[index];
-                return ListTile(
-                  leading: const Icon(
-                    Icons.description_outlined,
-                    color: Colors.grey,
-                  ),
-                  title: Text(item.title),
-                  subtitle: Text(item.relativePath),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () =>
-                        _confirmAndDelete(context, provider, index),
-                    tooltip: 'Hapus File',
-                  ),
-                  onTap: () {
-                    OpenFile.open(item.fileObject.path);
-                  },
-                );
-              },
-            );
-          },
-        ),
+                  if (provider.orphanedFiles.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          _searchController.text.isEmpty
+                              ? '🎉 Hebat! Tidak ada file HTML yatim yang ditemukan.'
+                              : 'File tidak ditemukan untuk kueri "${_searchController.text}".',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: provider.orphanedFiles.length,
+                    itemBuilder: (context, index) {
+                      final item = provider.orphanedFiles[index];
+                      return ListTile(
+                        leading: const Icon(
+                          Icons.description_outlined,
+                          color: Colors.grey,
+                        ),
+                        title: Text(item.title),
+                        subtitle: Text(item.relativePath),
+                        trailing: IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: () =>
+                              _confirmAndDelete(context, provider, index),
+                          tooltip: 'Hapus File',
+                        ),
+                        onTap: () {
+                          OpenFile.open(item.fileObject.path);
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

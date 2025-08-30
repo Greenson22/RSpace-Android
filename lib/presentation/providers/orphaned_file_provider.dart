@@ -14,8 +14,13 @@ class OrphanedFileProvider with ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  List<OrphanedFile> _orphanedFiles = [];
-  List<OrphanedFile> get orphanedFiles => _orphanedFiles;
+  List<OrphanedFile> _allOrphanedFiles = [];
+  // ==> TAMBAHKAN LIST BARU UNTUK HASIL FILTER <==
+  List<OrphanedFile> _filteredOrphanedFiles = [];
+  List<OrphanedFile> get orphanedFiles => _filteredOrphanedFiles;
+
+  // ==> TAMBAHKAN STATE UNTUK QUERY PENCARIAN <==
+  String _searchQuery = '';
 
   OrphanedFileProvider() {
     fetchOrphanedFiles();
@@ -27,7 +32,9 @@ class OrphanedFileProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _orphanedFiles = await _service.findOrphanedFiles();
+      _allOrphanedFiles = await _service.findOrphanedFiles();
+      // ==> PANGGIL FUNGSI FILTER SETELAH MENDAPATKAN DATA <==
+      _filterFiles();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -36,15 +43,37 @@ class OrphanedFileProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MELAKUKAN PENCARIAN <==
+  void search(String query) {
+    _searchQuery = query;
+    _filterFiles();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENERAPKAN FILTER <==
+  void _filterFiles() {
+    if (_searchQuery.isEmpty) {
+      _filteredOrphanedFiles = _allOrphanedFiles;
+    } else {
+      final query = _searchQuery.toLowerCase();
+      _filteredOrphanedFiles = _allOrphanedFiles.where((file) {
+        final title = file.title.toLowerCase();
+        final path = file.relativePath.toLowerCase();
+        return title.contains(query) || path.contains(query);
+      }).toList();
+    }
+    notifyListeners();
+  }
+
   Future<void> deleteFile(OrphanedFile file) async {
     try {
       if (await file.fileObject.exists()) {
         await file.fileObject.delete();
-        _orphanedFiles.remove(file); // Hapus dari daftar di UI
+        // Hapus dari kedua list
+        _allOrphanedFiles.remove(file);
+        _filteredOrphanedFiles.remove(file);
         notifyListeners();
       }
     } catch (e) {
-      // Lemparkan error agar UI bisa menampilkannya
       throw Exception('Gagal menghapus file: $e');
     }
   }
