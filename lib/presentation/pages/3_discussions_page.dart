@@ -348,6 +348,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   isFocused: _isKeyboardActive && index == _focusedIndex,
                   arePointsVisible: _arePointsVisible,
                   onToggleVisibility: _togglePointsVisibility,
+                  subjectName: widget.subjectName, // ==> TAMBAHKAN INI
                   subjectLinkedPath: widget.linkedPath,
                 );
               },
@@ -409,6 +410,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
           arePointsVisible: _arePointsVisible,
           onToggleVisibility: _togglePointsVisibility,
+          subjectName: widget.subjectName, // ==> TAMBAHKAN INI
           subjectLinkedPath: widget.linkedPath,
         );
       },

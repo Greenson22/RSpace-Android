@@ -5,9 +5,11 @@ import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
+import '../dialogs/smart_link_dialog.dart'; // ==> IMPORT DIALOG BARU
 import '../utils/repetition_code_utils.dart';
 import 'discussion_subtitle.dart';
 import 'point_tile.dart';
+import '../../2_subjects_page.dart'; // Impor untuk mendapatkan TopicName
 
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;
@@ -15,6 +17,7 @@ class DiscussionCard extends StatelessWidget {
   final bool isFocused;
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
+  final String subjectName; // ==> TAMBAHKAN INI
   final String? subjectLinkedPath;
 
   const DiscussionCard({
@@ -24,6 +27,7 @@ class DiscussionCard extends StatelessWidget {
     this.isFocused = false,
     required this.arePointsVisible,
     required this.onToggleVisibility,
+    required this.subjectName, // ==> TAMBAHKAN INI
     this.subjectLinkedPath,
   });
 
@@ -238,6 +242,29 @@ class DiscussionCard extends StatelessWidget {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG <==
+  void _findSmartLink(BuildContext context, DiscussionProvider provider) async {
+    // Dapatkan TopicName dari route
+    final subjectsPage = context.findAncestorWidgetOfExactType<SubjectsPage>();
+    final topicName = subjectsPage?.topicName ?? 'Unknown';
+
+    final success = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => ChangeNotifierProvider.value(
+        value: provider,
+        child: SmartLinkDialog(
+          discussion: discussion,
+          topicName: topicName,
+          subjectName:
+              subjectName, // Anda perlu menambahkan subjectName ke DiscussionCard
+        ),
+      ),
+    );
+    if (success == true && context.mounted) {
+      _showSnackBar(context, 'Diskusi berhasil ditautkan.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -386,6 +413,9 @@ class DiscussionCard extends StatelessWidget {
                       if (value == 'delete') {
                         _deleteDiscussion(context, provider);
                       }
+                      if (value == 'smart_link') {
+                        _findSmartLink(context, provider); // ==> PANGGIL FUNGSI
+                      }
                     },
                     itemBuilder: (BuildContext context) {
                       return <PopupMenuEntry<String>>[
@@ -529,6 +559,21 @@ class DiscussionCard extends StatelessWidget {
                                             color: Colors.orange,
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                  ),
+                                ] else ...[
+                                  // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+                                  const PopupMenuItem<String>(
+                                    value: 'smart_link',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.auto_awesome_outlined,
+                                          color: Colors.amber,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text('Cari Tautan Cerdas'),
                                       ],
                                     ),
                                   ),
