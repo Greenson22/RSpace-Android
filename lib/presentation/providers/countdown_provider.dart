@@ -35,7 +35,8 @@ class CountdownProvider with ChangeNotifier {
           shouldNotify = true;
         } else if (item.isRunning && item.remainingDuration.inSeconds <= 0) {
           item.isRunning = false;
-          // Penyimpanan otomatis saat timer selesai dihapus dari sini
+          // Simpan saat timer selesai secara otomatis
+          _service.saveTimers(_timers);
           shouldNotify = true;
         }
       }
@@ -45,45 +46,54 @@ class CountdownProvider with ChangeNotifier {
     });
   }
 
-  // Fungsi-fungsi di bawah ini sekarang hanya mengubah data di memori
-  void addTimer(String name, Duration duration) {
+  // ====================== PERUBAHAN UTAMA DI SINI ======================
+
+  // Menyimpan perubahan ke file JSON.
+  Future<void> _saveChanges() async {
+    await _service.saveTimers(_timers);
+  }
+
+  // Fungsi ini sekarang menambahkan ke memori, lalu langsung menyimpan.
+  Future<void> addTimer(String name, Duration duration) async {
     final newItem = CountdownItem(
       name: name,
       originalDuration: duration,
       remainingDuration: duration,
     );
     _timers.add(newItem);
-    notifyListeners();
+    notifyListeners(); // Update UI
+    await _saveChanges(); // Simpan ke file
   }
 
-  void removeTimer(String id) {
+  // Fungsi ini sekarang menghapus dari memori, lalu langsung menyimpan.
+  Future<void> removeTimer(String id) async {
     _timers.removeWhere((item) => item.id == id);
-    notifyListeners();
+    notifyListeners(); // Update UI
+    await _saveChanges(); // Simpan ke file
   }
 
-  void toggleTimer(String id) {
+  // Fungsi ini sekarang mengubah state di memori, lalu langsung menyimpan.
+  Future<void> toggleTimer(String id) async {
     final timer = _timers.firstWhere((item) => item.id == id);
     if (timer.remainingDuration.inSeconds > 0) {
       timer.isRunning = !timer.isRunning;
-      notifyListeners();
+      notifyListeners(); // Update UI
+      await _saveChanges(); // Simpan ke file
     }
   }
 
-  void resetTimer(String id) {
+  // Fungsi ini sekarang mereset di memori, lalu langsung menyimpan.
+  Future<void> resetTimer(String id) async {
     final timer = _timers.firstWhere((item) => item.id == id);
     timer.isRunning = false;
     timer.remainingDuration = timer.originalDuration;
-    notifyListeners();
+    notifyListeners(); // Update UI
+    await _saveChanges(); // Simpan ke file
   }
 
-  // ====================== PERUBAHAN UTAMA DI SINI ======================
   @override
   void dispose() {
     _ticker?.cancel();
-    // 1. Simpan semua timer ke file JSON saat provider akan dihancurkan (keluar halaman)
-    _service.saveTimers(_timers);
-    // 2. Hapus semua timer dari memori
-    _timers.clear();
     super.dispose();
   }
 }
