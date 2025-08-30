@@ -71,6 +71,32 @@ class CountdownProvider with ChangeNotifier {
     await refreshTimers();
   }
 
+  /// Memperbarui timer yang ada berdasarkan ID.
+  Future<void> updateTimer(
+    String id,
+    String newName,
+    Duration newDuration,
+  ) async {
+    final timerIndex = _timers.indexWhere((item) => item.id == id);
+    if (timerIndex != -1) {
+      final timer = _timers[timerIndex];
+      timer.name = newName;
+      // Set kedua durasi agar reset berfungsi dengan benar
+      timer.remainingDuration = newDuration;
+      // Perbarui juga originalDuration
+      _timers[timerIndex] = CountdownItem(
+        id: timer.id,
+        name: newName,
+        remainingDuration: newDuration,
+        originalDuration: newDuration, // Perbarui ini juga
+        isRunning: false, // Selalu set ke false saat diedit
+        createdAt: timer.createdAt,
+      );
+      await _saveChanges();
+      notifyListeners();
+    }
+  }
+
   // Fungsi ini sekarang menghapus dari memori, lalu langsung menyimpan.
   Future<void> removeTimer(String id) async {
     _timers.removeWhere((item) => item.id == id);

@@ -6,6 +6,7 @@ import 'countdown_page/dialogs/add_countdown_dialog.dart';
 import '../../data/models/countdown_model.dart';
 // Import baru untuk dialog konfirmasi
 import 'countdown_page/dialogs/countdown_dialogs.dart';
+import 'countdown_page/dialogs/edit_countdown_dialog.dart';
 
 class CountdownPage extends StatelessWidget {
   const CountdownPage({super.key});
@@ -105,6 +106,12 @@ class _CountdownView extends StatelessWidget {
                   ),
                 ),
                 // ====================== PERUBAHAN DI SINI ======================
+                // Tombol Edit ditambahkan di sini
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => showEditCountdownDialog(context, timer),
+                  tooltip: 'Ubah Timer',
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                   onPressed: () async {
@@ -119,7 +126,6 @@ class _CountdownView extends StatelessWidget {
                     }
                   },
                 ),
-                // ==================== AKHIR PERUBAHAN ====================
               ],
             ),
             const SizedBox(height: 16),
