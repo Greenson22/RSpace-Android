@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/countdown_provider.dart';
 import 'countdown_page/dialogs/add_countdown_dialog.dart';
 import '../../data/models/countdown_model.dart';
+// Import baru untuk dialog konfirmasi
+import 'countdown_page/dialogs/countdown_dialogs.dart';
 
 class CountdownPage extends StatelessWidget {
   const CountdownPage({super.key});
@@ -90,10 +92,22 @@ class _CountdownView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // ====================== PERUBAHAN DI SINI ======================
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => provider.removeTimer(timer.id),
+                  onPressed: () async {
+                    // Panggil dialog konfirmasi
+                    final confirmed = await showDeleteConfirmationDialog(
+                      context,
+                      timer.name,
+                    );
+                    // Hapus hanya jika pengguna menekan "Hapus"
+                    if (confirmed) {
+                      provider.removeTimer(timer.id);
+                    }
+                  },
                 ),
+                // ==================== AKHIR PERUBAHAN ====================
               ],
             ),
             const SizedBox(height: 16),
