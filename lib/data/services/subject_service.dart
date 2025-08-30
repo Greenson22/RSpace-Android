@@ -65,7 +65,9 @@ class SubjectService {
           date: relevantDiscussionInfo['date'],
           repetitionCode: relevantDiscussionInfo['code'],
           isHidden: metadata['isHidden'] as bool? ?? false,
-          linkedPath: metadata['linkedPath'] as String?, // ==> DITAMBAHKAN
+          // ## PERBAIKAN KRUSIAL ADA DI SINI ##
+          // Pastikan untuk membaca dan meneruskan 'linkedPath' dari metadata.
+          linkedPath: metadata['linkedPath'] as String?,
           // Mengisi data statistik ke model
           discussionCount: discussionCount,
           finishedDiscussionCount: finishedDiscussionCount,
@@ -112,36 +114,28 @@ class SubjectService {
         subjectJsonPath,
       );
 
-      // Jika semua diskusi sudah selesai, kembalikan status 'Finish'.
       if (discussions.isNotEmpty && discussions.every((d) => d.finished)) {
         return {'date': null, 'code': 'Finish'};
       }
 
-      // ======================= AWAL PERBAIKAN =======================
-      // 1. Buat daftar baru yang hanya berisi diskusi yang sudah jatuh tempo.
       final today = DateTime.now();
       final normalizedToday = DateTime(today.year, today.month, today.day);
 
       List<Discussion> dueDiscussions = discussions.where((d) {
-        if (d.finished) return false; // Abaikan yang sudah selesai
-        if (d.effectiveDate == null)
-          return false; // Abaikan yang tidak punya tanggal
+        if (d.finished) return false;
+        if (d.effectiveDate == null) return false;
         try {
           final discussionDate = DateTime.parse(d.effectiveDate!);
-          // Simpan hanya jika tanggalnya hari ini atau di masa lalu.
           return !discussionDate.isAfter(normalizedToday);
         } catch (e) {
-          return false; // Abaikan jika format tanggal salah
+          return false;
         }
       }).toList();
 
-      // 2. Jika tidak ada diskusi yang jatuh tempo, Subject ini tidak relevan untuk ditampilkan tanggalnya.
       if (dueDiscussions.isEmpty) {
         return {'date': null, 'code': null};
       }
-      // ======================= AKHIR PERBAIKAN =======================
 
-      // 3. Semua logika selanjutnya sekarang beroperasi pada `dueDiscussions`, bukan `discussions` asli.
       List<Discussion> filteredDiscussions = dueDiscussions.where((discussion) {
         final filterType = filterPrefs['filterType'];
         if (filterType == null) return true;
@@ -280,7 +274,7 @@ class SubjectService {
         'icon': metadata['icon'] as String? ?? _defaultIcon,
         'position': metadata['position'] as int?,
         'isHidden': metadata['isHidden'] as bool? ?? false,
-        'linkedPath': metadata['linkedPath'] as String?, // ==> DITAMBAHKAN
+        'linkedPath': metadata['linkedPath'] as String?,
       };
     } catch (e) {
       return {
@@ -312,7 +306,7 @@ class SubjectService {
       'icon': subject.icon,
       'position': subject.position,
       'isHidden': subject.isHidden,
-      'linkedPath': subject.linkedPath, // ==> DITAMBAHKAN
+      'linkedPath': subject.linkedPath,
     };
     jsonData['content'] ??= [];
 
@@ -336,7 +330,7 @@ class SubjectService {
           'icon': _defaultIcon,
           'position': -1,
           'isHidden': false,
-          'linkedPath': null, // ==> DITAMBAHKAN
+          'linkedPath': null,
         },
         'content': [],
       };
@@ -366,7 +360,6 @@ class SubjectService {
     await _saveSubjectMetadata(topicPath, subject);
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> updateSubjectLinkedPath(
     String topicPath,
     String subjectName,
@@ -382,7 +375,7 @@ class SubjectService {
       icon: metadata['icon'] as String? ?? _defaultIcon,
       position: metadata['position'] as int? ?? -1,
       isHidden: metadata['isHidden'] as bool? ?? false,
-      linkedPath: newPath, // Set path baru
+      linkedPath: newPath,
     );
     await _saveSubjectMetadata(topicPath, subject);
   }

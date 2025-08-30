@@ -1,6 +1,7 @@
 // lib/data/services/discussion_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
 
@@ -8,8 +9,10 @@ class DiscussionService {
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
+      // Jika file tidak ada, buat dengan struktur yang benar
       await file.create(recursive: true);
-      await file.writeAsString(jsonEncode({'content': []}));
+      await file.writeAsString(jsonEncode({'metadata': {}, 'content': []}));
+      return [];
     }
 
     final jsonString = await file.readAsString();
@@ -17,22 +20,49 @@ class DiscussionService {
       return [];
     }
 
-    final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-    final contentList = jsonData['content'] as List<dynamic>? ?? [];
-
-    return contentList.map((item) => Discussion.fromJson(item)).toList();
+    try {
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final contentList = jsonData['content'] as List<dynamic>? ?? [];
+      return contentList.map((item) => Discussion.fromJson(item)).toList();
+    } catch (e) {
+      // Jika file korup atau format lama, coba tangani
+      debugPrint("Error decoding discussion file, attempting fallback: $e");
+      return [];
+    }
   }
 
+  // ## FUNGSI INI TELAH DIPERBAIKI ##
   Future<void> saveDiscussions(
     String filePath,
     List<Discussion> discussions,
   ) async {
     final file = File(filePath);
-    final newJsonData = {
-      'content': discussions.map((d) => d.toJson()).toList(),
-    };
+    Map<String, dynamic> jsonData = {};
+
+    // 1. Baca data yang ada untuk mempertahankan 'metadata'
+    try {
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        if (jsonString.isNotEmpty) {
+          jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        }
+      }
+    } catch (e) {
+      debugPrint(
+        "Could not read existing discussion file, creating new structure: $e",
+      );
+      jsonData = {};
+    }
+
+    // 2. Pastikan blok metadata ada
+    jsonData['metadata'] ??= {};
+
+    // 3. Perbarui hanya blok 'content'
+    jsonData['content'] = discussions.map((d) => d.toJson()).toList();
+
+    // 4. Tulis kembali keseluruhan data yang sudah digabungkan
     const encoder = JsonEncoder.withIndent('  ');
-    await file.writeAsString(encoder.convert(newJsonData));
+    await file.writeAsString(encoder.convert(jsonData));
   }
 
   Future<void> addDiscussion(String filePath, Discussion discussion) async {
@@ -41,7 +71,6 @@ class DiscussionService {
     await saveDiscussions(filePath, discussions);
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMBAHKAN BEBERAPA DISKUSI <==
   Future<void> addDiscussions(
     String filePath,
     List<Discussion> discussionsToAdd,
