@@ -171,15 +171,16 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN DISKUSI TERPILIH <==
+  // ==> FUNGSI DIPERBAIKI DI SINI <==
   void _moveSelectedDiscussions(DiscussionProvider provider) async {
     final targetSubjectPath = await showMoveDiscussionDialog(context);
     if (targetSubjectPath != null && mounted) {
+      // 1. Simpan jumlah item SEBELUM memanggil fungsi provider
+      final int movedCount = provider.selectedDiscussions.length;
       try {
         await provider.moveSelectedDiscussions(targetSubjectPath);
-        _showSnackBar(
-          '${provider.selectedDiscussions.length} diskusi berhasil dipindahkan.',
-        );
+        // 2. Gunakan variabel yang sudah disimpan untuk menampilkan pesan
+        _showSnackBar('$movedCount diskusi berhasil dipindahkan.');
       } catch (e) {
         _showSnackBar(
           'Gagal memindahkan diskusi: ${e.toString()}',
