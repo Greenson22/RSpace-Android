@@ -35,8 +35,7 @@ class CountdownProvider with ChangeNotifier {
           shouldNotify = true;
         } else if (item.isRunning && item.remainingDuration.inSeconds <= 0) {
           item.isRunning = false;
-          // Simpan saat timer selesai secara otomatis
-          _service.saveTimers(_timers);
+          // Penyimpanan otomatis saat timer selesai dihapus dari sini
           shouldNotify = true;
         }
       }
@@ -46,36 +45,27 @@ class CountdownProvider with ChangeNotifier {
     });
   }
 
-  // ====================== PERUBAHAN DI SINI ======================
-  Future<void> addTimer(String name, Duration duration) async {
+  // Fungsi-fungsi di bawah ini sekarang hanya mengubah data di memori
+  void addTimer(String name, Duration duration) {
     final newItem = CountdownItem(
       name: name,
       originalDuration: duration,
       remainingDuration: duration,
     );
     _timers.add(newItem);
-    // Notifikasi UI terlebih dahulu untuk respons instan
     notifyListeners();
-    // Kemudian simpan perubahan ke file
-    await _service.saveTimers(_timers);
   }
 
-  Future<void> removeTimer(String id) async {
+  void removeTimer(String id) {
     _timers.removeWhere((item) => item.id == id);
-    // Notifikasi UI terlebih dahulu
     notifyListeners();
-    // Kemudian simpan perubahan
-    await _service.saveTimers(_timers);
   }
 
   void toggleTimer(String id) {
     final timer = _timers.firstWhere((item) => item.id == id);
     if (timer.remainingDuration.inSeconds > 0) {
       timer.isRunning = !timer.isRunning;
-      // Notifikasi UI terlebih dahulu
       notifyListeners();
-      // Kemudian simpan perubahan
-      _service.saveTimers(_timers);
     }
   }
 
@@ -83,16 +73,17 @@ class CountdownProvider with ChangeNotifier {
     final timer = _timers.firstWhere((item) => item.id == id);
     timer.isRunning = false;
     timer.remainingDuration = timer.originalDuration;
-    // Notifikasi UI terlebih dahulu
     notifyListeners();
-    // Kemudian simpan perubahan
-    _service.saveTimers(_timers);
   }
-  // ==================== AKHIR PERUBAHAN ====================
 
+  // ====================== PERUBAHAN UTAMA DI SINI ======================
   @override
   void dispose() {
     _ticker?.cancel();
+    // 1. Simpan semua timer ke file JSON saat provider akan dihancurkan (keluar halaman)
+    _service.saveTimers(_timers);
+    // 2. Hapus semua timer dari memori
+    _timers.clear();
     super.dispose();
   }
 }
