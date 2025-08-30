@@ -10,6 +10,7 @@ class GeminiService {
   static const String _geminiPrompts = 'gemini_prompts_list';
   static const String _geminiContentModelKey = 'gemini_model';
   static const String _geminiChatModelKey = 'gemini_chat_model';
+  static const String _geminiGeneralModelKey = 'gemini_general_model';
 
   Future<void> saveApiKeys(List<ApiKey> keys) async {
     final prefs = await SharedPreferences.getInstance();
@@ -62,6 +63,16 @@ class GeminiService {
   Future<String?> loadGeminiChatModel() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_geminiChatModelKey);
+  }
+
+  Future<void> saveGeminiGeneralModel(String modelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_geminiGeneralModelKey, modelId);
+  }
+
+  Future<String?> loadGeminiGeneralModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_geminiGeneralModelKey);
   }
 
   Future<void> savePrompts(List<Prompt> prompts) async {

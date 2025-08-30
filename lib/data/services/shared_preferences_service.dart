@@ -68,6 +68,10 @@ class SharedPreferencesService {
   Future<void> saveGeminiChatModel(String modelId) =>
       _geminiService.saveGeminiChatModel(modelId);
   Future<String?> loadGeminiChatModel() => _geminiService.loadGeminiChatModel();
+  Future<void> saveGeminiGeneralModel(String modelId) =>
+      _geminiService.saveGeminiGeneralModel(modelId);
+  Future<String?> loadGeminiGeneralModel() =>
+      _geminiService.loadGeminiGeneralModel();
   Future<void> savePrompts(List<Prompt> prompts) =>
       _geminiService.savePrompts(prompts);
   Future<List<Prompt>> loadPrompts() => _geminiService.loadPrompts();

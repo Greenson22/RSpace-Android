@@ -27,7 +27,7 @@ class GeminiService {
   }) async {
     final apiKey = await _getActiveApiKey();
     final model =
-        await _prefsService.loadGeminiContentModel() ?? 'gemini-1.5-flash';
+        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');

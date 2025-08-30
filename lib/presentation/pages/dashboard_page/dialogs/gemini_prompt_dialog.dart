@@ -31,6 +31,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   bool _isLoading = true;
   String? _selectedContentModelId;
   String? _selectedChatModelId;
+  String? _selectedGeneralModelId;
 
   // Daftar model AI
   final List<GeminiModelInfo> _models = const [
@@ -55,6 +56,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     var savedPrompts = await _prefsService.loadPrompts();
     final contentModelId = await _prefsService.loadGeminiContentModel();
     final chatModelId = await _prefsService.loadGeminiChatModel();
+    final generalModelId = await _prefsService.loadGeminiGeneralModel();
 
     if (savedPrompts.isEmpty) {
       final defaultPrompt = await _prefsService.getActivePrompt();
@@ -76,6 +78,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         _selectedContentModelId =
             contentModelId ?? _models[1].id; // Default to Flash
         _selectedChatModelId = chatModelId ?? _models[1].id; // Default to Flash
+        _selectedGeneralModelId =
+            generalModelId ?? _models[1].id; // Default to Flash
         _isLoading = false;
       });
     }
@@ -206,6 +210,9 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     if (_selectedChatModelId != null) {
       await _prefsService.saveGeminiChatModel(_selectedChatModelId!);
     }
+    if (_selectedGeneralModelId != null) {
+      await _prefsService.saveGeminiGeneralModel(_selectedGeneralModelId!);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -239,6 +246,28 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                     Text(
                       'Atur model AI yang akan digunakan untuk setiap fitur dan kelola *prompt* kustom Anda.',
                       style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedGeneralModelId,
+                      decoration: const InputDecoration(
+                        labelText: 'Model untuk Tugas Umum (Pencarian, dll)',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _models.map((model) {
+                        return DropdownMenuItem<String>(
+                          value: model.id,
+                          child: Text(
+                            model.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedGeneralModelId = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
