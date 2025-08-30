@@ -11,6 +11,8 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final VoidCallback onLinkPath;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onEditIndexFile;
   final bool isFocused;
 
   const SubjectListTile({
@@ -22,6 +24,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onIconChange,
     required this.onToggleVisibility,
     required this.onLinkPath,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    required this.onEditIndexFile,
     this.isFocused = false,
   });
 
@@ -113,6 +117,8 @@ class SubjectListTile extends StatelessWidget {
                   if (value == 'change_icon') onIconChange();
                   if (value == 'toggle_visibility') onToggleVisibility();
                   if (value == 'link_path') onLinkPath();
+                  // ==> TAMBAHKAN AKSI BARU <==
+                  if (value == 'edit_index') onEditIndexFile();
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -135,6 +141,20 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+                  if (subject.linkedPath != null &&
+                      subject.linkedPath!.isNotEmpty)
+                    const PopupMenuItem<String>(
+                      value: 'edit_index',
+                      child: Row(
+                        children: [
+                          Icon(Icons.code_outlined),
+                          SizedBox(width: 8),
+                          Text('Edit Template Induk'),
+                        ],
+                      ),
+                    ),
+                  // ==> AKHIR PENAMBAHAN <==
                   PopupMenuItem<String>(
                     value: 'link_path',
                     child: Row(

@@ -125,4 +125,12 @@ class SubjectProvider with ChangeNotifier {
     await _subjectService.deleteSubject(topicPath, subjectName);
     await fetchSubjects();
   }
+
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<void> editSubjectIndexFile(Subject subject) async {
+    if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
+      throw Exception('Subject ini tidak memiliki tautan ke folder PerpusKu.');
+    }
+    await _subjectService.openSubjectIndexFile(subject.linkedPath!);
+  }
 }

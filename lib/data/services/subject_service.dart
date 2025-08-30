@@ -8,6 +8,8 @@ import 'discussion_service.dart';
 import 'path_service.dart';
 import 'shared_preferences_service.dart';
 import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart';
+// ==> Tambahkan import ini untuk OpenFile
+import 'package:open_file/open_file.dart';
 
 class SubjectService {
   final PathService _pathService = PathService();
@@ -435,6 +437,62 @@ class SubjectService {
       await getSubjects(topicPath);
     } catch (e) {
       throw Exception('Gagal menghapus subject: $e');
+    }
+  }
+
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<void> openSubjectIndexFile(String subjectLinkedPath) async {
+    try {
+      final pathService = PathService();
+      final perpuskuBasePath = await pathService.perpuskuDataPath;
+      final subjectDirectoryPath = path.join(
+        perpuskuBasePath,
+        'file_contents',
+        'topics',
+        subjectLinkedPath,
+      );
+      final indexFilePath = path.join(subjectDirectoryPath, 'index.html');
+      final indexFile = File(indexFilePath);
+
+      if (!await indexFile.exists()) {
+        throw Exception(
+          'File index.html tidak ditemukan di dalam folder subject ini.',
+        );
+      }
+
+      // Logika untuk membuka file editor (mirip dengan di DiscussionProvider)
+      if (Platform.isLinux) {
+        final editor =
+            Platform.environment['EDITOR'] ?? Platform.environment['VISUAL'];
+        ProcessResult result;
+        if (editor != null && editor.isNotEmpty) {
+          result = await Process.run(editor, [
+            indexFile.path,
+          ], runInShell: true);
+          if (result.exitCode == 0) return;
+        }
+        const commonEditors = ['gedit', 'kate', 'mousepad', 'code'];
+        for (final ed in commonEditors) {
+          result = await Process.run('which', [ed]);
+          if (result.exitCode == 0) {
+            result = await Process.run(ed, [indexFile.path], runInShell: true);
+            if (result.exitCode == 0) return;
+          }
+        }
+        result = await Process.run('xdg-open', [indexFile.path]);
+        if (result.exitCode != 0) {
+          throw Exception(
+            'Gagal membuka file dengan semua metode: ${result.stderr}',
+          );
+        }
+      } else {
+        final result = await OpenFile.open(indexFile.path);
+        if (result.type != ResultType.done) {
+          throw Exception('Gagal membuka file untuk diedit: ${result.message}');
+        }
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 }

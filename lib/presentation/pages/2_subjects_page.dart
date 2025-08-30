@@ -239,6 +239,18 @@ class _SubjectsPageState extends State<SubjectsPage> {
   }
 
   // ==> FUNGSI DIPERBARUI: Menangani penautan wajib sebelum navigasi <==
+  // ==> FUNGSI BARU UNTUK MENANGANI AKSI EDIT <==
+  Future<void> _editIndexFile(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    try {
+      await provider.editSubjectIndexFile(subject);
+    } catch (e) {
+      _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
+    }
+  }
+
+  // ... (sisa fungsi tidak berubah)
+
   Future<void> _navigateToDiscussionsPage(
     BuildContext context,
     Subject subject,
@@ -406,6 +418,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
+              // ==> TAMBAHKAN PROPERTI BARU <==
+              onEditIndexFile: () => _editIndexFile(context, subject),
             );
           },
         );
@@ -444,6 +458,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
+              // ==> TAMBAHKAN PROPERTI BARU <==
+              onEditIndexFile: () => _editIndexFile(context, subject),
             );
           },
         );
