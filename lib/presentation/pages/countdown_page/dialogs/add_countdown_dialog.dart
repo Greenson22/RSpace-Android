@@ -25,7 +25,7 @@ class _AddCountdownDialogState extends State<AddCountdownDialog> {
   int _minutes = 5;
   int _seconds = 0;
 
-  void _saveTimer() {
+  void _saveTimer() async {
     if (_formKey.currentState!.validate()) {
       final totalDuration = Duration(
         hours: _hours,
@@ -41,11 +41,14 @@ class _AddCountdownDialogState extends State<AddCountdownDialog> {
         );
         return;
       }
-      Provider.of<CountdownProvider>(
-        context,
-        listen: false,
-      ).addTimer(_nameController.text, totalDuration);
-      Navigator.of(context).pop();
+      final provider = Provider.of<CountdownProvider>(context, listen: false);
+      await provider.addTimer(_nameController.text, totalDuration);
+      // Setelah menambahkan, panggil refreshTimers untuk memuat ulang state
+      await provider.refreshTimers();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
