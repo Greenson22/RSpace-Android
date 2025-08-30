@@ -56,6 +56,62 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
+  // ==> FUNGSI DIPERBARUI UNTUK MENANGANI RETURN VALUE BARU DARI DIALOG <==
+  void _moveSelectedDiscussions(DiscussionProvider provider) async {
+    // Tipe data yang diharapkan sekarang adalah Map.
+    final targetInfo = await showMoveDiscussionDialog(context);
+
+    if (targetInfo != null && mounted) {
+      try {
+        final String targetJsonPath = targetInfo['jsonPath']!;
+        final String? targetLinkedPath = targetInfo['linkedPath'];
+
+        // Panggil provider dengan parameter yang sudah disesuaikan.
+        final String logMessage = await provider.moveSelectedDiscussions(
+          targetJsonPath,
+          targetLinkedPath,
+        );
+
+        // Tampilkan log yang detail di SnackBar yang bisa menampilkan banyak baris.
+        _showSnackBar(logMessage, isLong: true);
+      } catch (e) {
+        _showSnackBar(
+          'Gagal memindahkan diskusi: ${e.toString()}',
+          isError: true,
+        );
+      }
+    }
+  }
+
+  // ==> FUNGSI _showSnackBar DIPERBARUI UNTUK MENAMPILKAN LOG PANJANG <==
+  void _showSnackBar(
+    String message, {
+    bool isError = false,
+    bool isLong = false,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : null,
+        // Durasi lebih lama untuk pesan log yang panjang
+        duration: isLong
+            ? const Duration(seconds: 10)
+            : const Duration(seconds: 4),
+        action: isLong
+            ? SnackBarAction(
+                label: 'TUTUP',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+              )
+            : null,
+      ),
+    );
+  }
+
+  // ... (sisa kode _DiscussionsPageState tidak berubah, salin saja) ...
+
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -139,17 +195,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : null,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   void _addDiscussion(DiscussionProvider provider) {
     showAddDiscussionDialog(
       context: context,
@@ -169,25 +214,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         }
       },
     );
-  }
-
-  // ==> FUNGSI DIPERBAIKI DI SINI <==
-  void _moveSelectedDiscussions(DiscussionProvider provider) async {
-    final targetSubjectPath = await showMoveDiscussionDialog(context);
-    if (targetSubjectPath != null && mounted) {
-      // 1. Simpan jumlah item SEBELUM memanggil fungsi provider
-      final int movedCount = provider.selectedDiscussions.length;
-      try {
-        await provider.moveSelectedDiscussions(targetSubjectPath);
-        // 2. Gunakan variabel yang sudah disimpan untuk menampilkan pesan
-        _showSnackBar('$movedCount diskusi berhasil dipindahkan.');
-      } catch (e) {
-        _showSnackBar(
-          'Gagal memindahkan diskusi: ${e.toString()}',
-          isError: true,
-        );
-      }
-    }
   }
 
   @override

@@ -6,6 +6,44 @@ import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
 
 class DiscussionService {
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<String?> moveDiscussionFile({
+    required String perpuskuBasePath,
+    required String sourceDiscussionFilePath,
+    required String targetSubjectLinkedPath,
+  }) async {
+    try {
+      final sourceFile = File(
+        path.join(perpuskuBasePath, sourceDiscussionFilePath),
+      );
+      if (!await sourceFile.exists()) {
+        // Jika file sumber tidak ada, tidak ada yang perlu dilakukan.
+        return null;
+      }
+
+      final fileName = path.basename(sourceFile.path);
+      final targetDirectoryPath = path.join(
+        perpuskuBasePath,
+        targetSubjectLinkedPath,
+      );
+      final targetDirectory = Directory(targetDirectoryPath);
+
+      if (!await targetDirectory.exists()) {
+        // Buat direktori tujuan jika belum ada (sebagai fallback).
+        await targetDirectory.create(recursive: true);
+      }
+
+      final newFilePath = path.join(targetDirectoryPath, fileName);
+      await sourceFile.rename(newFilePath);
+
+      // Kembalikan path relatif yang baru untuk disimpan di model Discussion.
+      return path.join(targetSubjectLinkedPath, fileName);
+    } catch (e) {
+      // Jika terjadi error, lemparkan kembali agar bisa ditangani oleh provider.
+      throw Exception('Gagal memindahkan file fisik: $e');
+    }
+  }
+
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {

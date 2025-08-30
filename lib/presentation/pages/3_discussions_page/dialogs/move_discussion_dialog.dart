@@ -8,6 +8,7 @@ import '../../../../data/services/path_service.dart';
 import '../../../../data/services/subject_service.dart';
 import '../../../../data/services/topic_service.dart';
 
+// ==> Tipe data yang dikembalikan diubah menjadi Map
 class MoveDiscussionDialog extends StatefulWidget {
   const MoveDiscussionDialog({super.key});
 
@@ -75,8 +76,10 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                   if (_isTopicView) {
                     final topic = _topics[index];
                     return ListTile(
-                      leading: Text(topic.icon,
-                          style: const TextStyle(fontSize: 24)),
+                      leading: Text(
+                        topic.icon,
+                        style: const TextStyle(fontSize: 24),
+                      ),
                       title: Text(topic.name),
                       onTap: () async {
                         final topicsPath = await _pathService.topicsPath;
@@ -91,13 +94,22 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                   } else {
                     final subject = _subjects[index];
                     return ListTile(
-                      leading: Text(subject.icon,
-                          style: const TextStyle(fontSize: 24)),
+                      leading: Text(
+                        subject.icon,
+                        style: const TextStyle(fontSize: 24),
+                      ),
                       title: Text(subject.name),
                       onTap: () {
-                        final subjectPath = path.join(
-                            _selectedTopicPath!, '${subject.name}.json');
-                        Navigator.of(context).pop(subjectPath);
+                        // ==> PERUBAHAN DI SINI: Kembalikan Map <==
+                        final subjectJsonPath = path.join(
+                          _selectedTopicPath!,
+                          '${subject.name}.json',
+                        );
+                        final Map<String, String?> result = {
+                          'jsonPath': subjectJsonPath,
+                          'linkedPath': subject.linkedPath,
+                        };
+                        Navigator.of(context).pop(result);
                       },
                     );
                   }

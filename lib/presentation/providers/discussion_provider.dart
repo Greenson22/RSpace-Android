@@ -1,4 +1,5 @@
 // lib/presentation/providers/discussion_provider.dart
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -20,11 +21,14 @@ class DiscussionProvider with ChangeNotifier {
   final PathService _pathService = PathService();
 
   final String _jsonFilePath;
+  // ==> TAMBAHKAN PROPERTI BARU UNTUK MENYIMPAN LINKEDPATH DARI SUBJECT SUMBER <==
+  final String? sourceSubjectLinkedPath;
 
-  DiscussionProvider(this._jsonFilePath) {
+  DiscussionProvider(this._jsonFilePath, {this.sourceSubjectLinkedPath}) {
     loadInitialData();
   }
 
+  // ... (properti lain tetap sama) ...
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -55,7 +59,6 @@ class DiscussionProvider with ChangeNotifier {
   bool _showFinishedDiscussions = false;
   bool get showFinishedDiscussions => _showFinishedDiscussions;
 
-  // ==> STATE BARU UNTUK SELEKSI <==
   final Set<Discussion> _selectedDiscussions = {};
   Set<Discussion> get selectedDiscussions => _selectedDiscussions;
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
@@ -76,7 +79,78 @@ class DiscussionProvider with ChangeNotifier {
     return counts;
   }
 
-  // ==> FUNGSI BARU UNTUK MENGELOLA SELEKSI <==
+  // ==> FUNGSI INI DIPERBARUI TOTAL UNTUK MENANGANI PEMINDAHAN FILE & LOGGING <==
+  Future<String> moveSelectedDiscussions(
+    String targetSubjectJsonPath,
+    String? targetSubjectLinkedPath,
+  ) async {
+    final log = StringBuffer();
+    final discussionsToMove = _selectedDiscussions.toList();
+    final perpuskuBasePath = await getPerpuskuHtmlBasePath();
+
+    log.writeln('${discussionsToMove.length} item akan dipindahkan:');
+    log.writeln('--------------------');
+
+    for (final discussion in discussionsToMove) {
+      log.writeln('Memindahkan diskusi: "${discussion.discussion}"');
+
+      // Cek apakah diskusi memiliki file yang tertaut
+      if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
+        // Cek apakah subject sumber dan tujuan memiliki linkedPath
+        if (sourceSubjectLinkedPath != null &&
+            targetSubjectLinkedPath != null) {
+          try {
+            final newRelativePath = await _discussionService.moveDiscussionFile(
+              perpuskuBasePath: perpuskuBasePath,
+              sourceDiscussionFilePath: discussion.filePath!,
+              targetSubjectLinkedPath: targetSubjectLinkedPath,
+            );
+
+            if (newRelativePath != null) {
+              log.writeln(
+                '  > Berhasil memindahkan file HTML ke "$targetSubjectLinkedPath".',
+              );
+              // Perbarui filePath di objek discussion SEBELUM disimpan
+              discussion.filePath = newRelativePath;
+            }
+          } catch (e) {
+            log.writeln('  > GAGAL memindahkan file HTML: $e');
+            // Lanjutkan proses meskipun file gagal dipindah
+          }
+        } else {
+          log.writeln(
+            '  > File HTML tidak dipindahkan (subject sumber atau tujuan tidak tertaut).',
+          );
+        }
+      }
+    }
+
+    try {
+      // Tambahkan semua diskusi (yang filePath-nya mungkin sudah diupdate) ke file tujuan
+      await _discussionService.addDiscussions(
+        targetSubjectJsonPath,
+        discussionsToMove,
+      );
+      log.writeln('--------------------');
+      log.writeln(
+        'Berhasil memindahkan data ${discussionsToMove.length} diskusi.',
+      );
+
+      // Hapus semua diskusi dari file sumber
+      _allDiscussions.removeWhere((d) => _selectedDiscussions.contains(d));
+      _selectedDiscussions.clear();
+      _filterAndSortDiscussions(); // Panggil sebelum save
+      await _saveDiscussions();
+    } catch (e) {
+      log.writeln('--------------------');
+      log.writeln('GAGAL memindahkan data diskusi: $e');
+      rethrow;
+    }
+
+    return log.toString();
+  }
+
+  // ... (sisa kode DiscussionProvider tidak ada yang berubah, salin saja semuanya) ...
   void toggleSelection(Discussion discussion) {
     if (_selectedDiscussions.contains(discussion)) {
       _selectedDiscussions.remove(discussion);
@@ -159,26 +233,6 @@ class DiscussionProvider with ChangeNotifier {
       deleteDiscussion(discussion);
     } catch (e) {
       debugPrint("Error moving discussion: $e");
-      rethrow;
-    }
-  }
-
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN BANYAK DISKUSI <==
-  Future<void> moveSelectedDiscussions(String targetSubjectPath) async {
-    try {
-      final discussionsToMove = _selectedDiscussions.toList();
-      // Tambahkan semua diskusi yang dipilih ke file target
-      await _discussionService.addDiscussions(
-        targetSubjectPath,
-        discussionsToMove,
-      );
-      // Hapus semua diskusi yang dipilih dari file sumber
-      _allDiscussions.removeWhere((d) => _selectedDiscussions.contains(d));
-      _selectedDiscussions.clear();
-      _filterAndSortDiscussions();
-      await _saveDiscussions();
-    } catch (e) {
-      debugPrint("Error moving selected discussions: $e");
       rethrow;
     }
   }

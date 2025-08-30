@@ -96,14 +96,17 @@ class DiscussionCard extends StatelessWidget {
       provider.toggleSelection(discussion);
     }
     // Tampilkan dialog pemindahan
-    final targetSubjectPath = await showMoveDiscussionDialog(context);
-    if (targetSubjectPath != null && context.mounted) {
+    final targetInfo = await showMoveDiscussionDialog(context);
+    if (targetInfo != null && context.mounted) {
       try {
-        await provider.moveSelectedDiscussions(targetSubjectPath);
-        _showSnackBar(
-          context,
-          '${provider.selectedDiscussions.length} diskusi berhasil dipindahkan.',
+        final String targetJsonPath = targetInfo['jsonPath']!;
+        final String? targetLinkedPath = targetInfo['linkedPath'];
+
+        final String logMessage = await provider.moveSelectedDiscussions(
+          targetJsonPath,
+          targetLinkedPath,
         );
+        _showSnackBar(context, logMessage);
       } catch (e) {
         _showSnackBar(context, 'Gagal memindahkan diskusi: ${e.toString()}');
       }

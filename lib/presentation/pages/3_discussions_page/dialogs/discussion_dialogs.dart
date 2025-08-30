@@ -4,8 +4,10 @@ import 'html_file_picker_dialog.dart';
 import 'move_discussion_dialog.dart'; // ==> IMPORT DIALOG BARU
 
 // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PEMINDAHAN <==
-Future<String?> showMoveDiscussionDialog(BuildContext context) async {
-  return await showDialog<String>(
+Future<Map<String, String?>?> showMoveDiscussionDialog(
+  BuildContext context,
+) async {
+  return await showDialog<Map<String, String?>?>(
     context: context,
     builder: (context) => const MoveDiscussionDialog(),
   );
