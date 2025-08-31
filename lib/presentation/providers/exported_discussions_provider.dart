@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/models/exported_discussion_model.dart';
 import '../../data/services/path_service.dart';
@@ -57,14 +59,13 @@ class ExportedDiscussionsProvider with ChangeNotifier {
 
       final Map<String, ExportedTopic> topicsMap = {};
 
+      // >> TAHAP 1: Proses semua file JSON untuk membangun struktur data
       for (final file in archive) {
-        // Proses hanya file JSON dari direktori RSpace
         if (file.isFile &&
             file.name.startsWith('RSpace/') &&
             file.name.endsWith('.json')) {
           final pathParts = file.name.split('/');
           if (pathParts.length == 3) {
-            // RSpace/TopicName/SubjectName.json
             final topicName = pathParts[1];
             final subjectName = path.basenameWithoutExtension(pathParts[2]);
 
@@ -88,8 +89,44 @@ class ExportedDiscussionsProvider with ChangeNotifier {
         }
       }
 
+      // >> TAHAP 2: Proses semua file HTML dan cocokkan dengan data yang ada
+      for (final file in archive) {
+        if (file.isFile &&
+            file.name.startsWith('PerpusKu/') &&
+            file.name.endsWith('.html')) {
+          final pathParts = file.name.split('/');
+          if (pathParts.length == 4) {
+            // PerpusKu/Topic/Subject/file.html
+            final topicName = pathParts[1];
+            final subjectName = pathParts[2];
+            final fileName = pathParts[3];
+
+            // Cari diskusi yang cocok di dalam struktur data kita
+            final topic = topicsMap[topicName];
+            if (topic != null) {
+              try {
+                final subject = topic.subjects.firstWhere(
+                  (s) => s.name == subjectName,
+                );
+                final discussion = subject.discussions.firstWhere(
+                  (d) =>
+                      d.filePath != null &&
+                      path.basename(d.filePath!) == fileName,
+                );
+
+                // Simpan konten HTML ke dalam field sementara
+                discussion.archivedHtmlContent = utf8.decode(
+                  file.content as List<int>,
+                );
+              } catch (e) {
+                // Abaikan jika tidak ada subjek atau diskusi yang cocok
+              }
+            }
+          }
+        }
+      }
+
       _exportedTopics = topicsMap.values.toList();
-      // Urutkan topik dan subjek berdasarkan abjad
       _exportedTopics.sort((a, b) => a.name.compareTo(b.name));
       for (var topic in _exportedTopics) {
         topic.subjects.sort((a, b) => a.name.compareTo(b.name));
@@ -99,6 +136,28 @@ class ExportedDiscussionsProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // >> BARU: Metode untuk membuka file HTML dari arsip
+  Future<void> openArchivedHtml(Discussion discussion) async {
+    if (discussion.archivedHtmlContent == null) {
+      throw Exception(
+        "Konten HTML untuk diskusi ini tidak ditemukan di dalam arsip.",
+      );
+    }
+
+    // Buat file temporer untuk menampilkan konten
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File(
+      path.join(tempDir.path, '${discussion.discussion}.html'),
+    );
+    await tempFile.writeAsString(discussion.archivedHtmlContent!);
+
+    // Buka file menggunakan OpenFile
+    final result = await OpenFile.open(tempFile.path);
+    if (result.type != ResultType.done) {
+      throw Exception("Tidak dapat membuka file: ${result.message}");
     }
   }
 }

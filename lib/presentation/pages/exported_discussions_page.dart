@@ -58,7 +58,7 @@ class _ExportedDiscussionsView extends StatelessWidget {
             if (provider.exportedTopics.isEmpty) {
               return const Center(
                 child: Padding(
-                  padding: EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: Text(
                     'File "Export-Finished-Discussions.zip" tidak ditemukan atau kosong.\nSilakan lakukan ekspor terlebih dahulu.',
                     textAlign: TextAlign.center,
@@ -101,15 +101,47 @@ class _ExportedDiscussionsView extends StatelessWidget {
                           child: Icon(Icons.class_outlined),
                         ),
                         children: subject.discussions.map((discussion) {
+                          // >> BARU: Cek apakah ada konten HTML
+                          final bool hasHtmlContent =
+                              discussion.archivedHtmlContent != null;
                           return ListTile(
-                            leading: const Padding(
-                              padding: EdgeInsets.only(left: 32.0),
-                              child: Icon(Icons.chat_bubble_outline, size: 20),
+                            leading: Padding(
+                              padding: const EdgeInsets.only(left: 32.0),
+                              // >> BARU: Ganti ikon berdasarkan ketersediaan file
+                              child: Icon(
+                                hasHtmlContent ? Icons.link : Icons.link_off,
+                                size: 20,
+                                color: hasHtmlContent
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey,
+                              ),
                             ),
                             title: Text(discussion.discussion),
                             subtitle: Text(
                               'Selesai pada: ${discussion.finish_date ?? 'N/A'}',
                             ),
+                            // >> BARU: Tambahkan aksi onTap
+                            onTap: hasHtmlContent
+                                ? () async {
+                                    try {
+                                      await provider.openArchivedHtml(
+                                        discussion,
+                                      );
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(e.toString()),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                : null,
+                            enabled: hasHtmlContent,
                           );
                         }).toList(),
                       );
