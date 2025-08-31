@@ -49,6 +49,43 @@ class _FinishedDiscussionsView extends StatelessWidget {
     }
   }
 
+  // >> BARU: Fungsi untuk menangani aksi ekspor
+  Future<void> _handleExport(BuildContext context) async {
+    final provider = Provider.of<FinishedDiscussionsProvider>(
+      context,
+      listen: false,
+    );
+    if (provider.isExporting) return;
+
+    if (provider.finishedDiscussions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada diskusi untuk diekspor.')),
+      );
+      return;
+    }
+
+    try {
+      final message = await provider.exportFinishedDiscussions();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengekspor: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<FinishedDiscussionsProvider>(context);
@@ -75,6 +112,25 @@ class _FinishedDiscussionsView extends StatelessWidget {
           : AppBar(
               title: const Text('Semua Diskusi Selesai'),
               actions: [
+                // >> BARU: Tombol Ekspor
+                if (provider.isExporting)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.archive_outlined),
+                    onPressed: () => _handleExport(context),
+                    tooltip: 'Ekspor Semua',
+                  ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () => provider.fetchFinishedDiscussions(),
