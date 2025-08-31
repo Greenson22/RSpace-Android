@@ -5,8 +5,9 @@ import '../../unlinked_discussions_page.dart';
 import '../../finished_discussions_page.dart';
 import '../../orphaned_files_page.dart';
 import '../../broken_links_page.dart';
-// ==> 1. IMPORT HALAMAN BARU DI SINI
 import '../../bulk_link_page.dart';
+// >> 1. IMPORT HALAMAN BARU
+import '../../exported_discussions_page.dart';
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {
@@ -55,7 +56,6 @@ class DataManagementDialog extends StatelessWidget {
     return SimpleDialog(
       title: const Text('Kelola & Perawatan Data'),
       children: <Widget>[
-        // ==> 2. TAMBAHKAN OPSI MENU BARU DI SINI
         _buildDialogOption(
           icon: Icons.auto_fix_high_outlined,
           title: 'Tautkan Diskusi Massal',
@@ -66,6 +66,21 @@ class DataManagementDialog extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const BulkLinkPage()),
+            );
+          },
+        ),
+        // >> 2. TAMBAHKAN OPSI MENU BARU DI SINI
+        _buildDialogOption(
+          icon: Icons.inventory_2_outlined,
+          title: 'Lihat Arsip Ekspor',
+          subtitle: 'Jelajahi konten diskusi selesai yang telah Anda ekspor.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ExportedDiscussionsPage(),
+              ),
             );
           },
         ),
@@ -85,8 +100,9 @@ class DataManagementDialog extends StatelessWidget {
         ),
         _buildDialogOption(
           icon: Icons.archive_outlined,
-          title: 'Diskusi Selesai',
-          subtitle: 'Lihat dan kelola semua diskusi yang sudah selesai.',
+          title: 'Diskusi Selesai (Aktif)',
+          subtitle:
+              'Lihat & ekspor diskusi selesai yang ada di aplikasi saat ini.',
           onTap: () {
             Navigator.pop(context);
             Navigator.push(
