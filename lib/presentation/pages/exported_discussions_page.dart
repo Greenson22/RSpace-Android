@@ -17,8 +17,35 @@ class ExportedDiscussionsPage extends StatelessWidget {
   }
 }
 
-class _ExportedDiscussionsView extends StatelessWidget {
+// >> UBAH MENJADI STATEFULWIDGET
+class _ExportedDiscussionsView extends StatefulWidget {
   const _ExportedDiscussionsView();
+
+  @override
+  State<_ExportedDiscussionsView> createState() =>
+      _ExportedDiscussionsViewState();
+}
+
+class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
+  // >> BARU: Tambahkan controller
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      Provider.of<ExportedDiscussionsProvider>(
+        context,
+        listen: false,
+      ).search(_searchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +82,12 @@ class _ExportedDiscussionsView extends StatelessWidget {
               );
             }
 
-            if (provider.exportedTopics.isEmpty) {
+            if (provider.zipFile == null || !provider.zipFile!.existsSync()) {
               return const Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(16.0),
                   child: Text(
-                    'File "Export-Finished-Discussions.zip" tidak ditemukan atau kosong.\nSilakan lakukan ekspor terlebih dahulu.',
+                    'File "Export-Finished-Discussions.zip" tidak ditemukan.\nSilakan lakukan ekspor terlebih dahulu.',
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -71,83 +98,125 @@ class _ExportedDiscussionsView extends StatelessWidget {
                 ? DateFormat('d MMM yyyy, HH:mm').format(provider.lastModified!)
                 : 'N/A';
 
-            return ListView(
+            return Column(
               children: [
+                // >> BARU: Tambahkan Search Bar
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Menampilkan data dari arsip yang terakhir diubah pada: $lastModified',
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Cari di dalam arsip...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      suffixIcon: provider.searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () => _searchController.clear(),
+                            )
+                          : null,
+                    ),
                   ),
                 ),
-                ...provider.exportedTopics.map((topic) {
-                  return ExpansionTile(
-                    key: PageStorageKey('topic_${topic.name}'),
-                    title: Text(
-                      topic.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+
+                if (provider.exportedTopics.isEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        provider.searchQuery.isNotEmpty
+                            ? 'Tidak ada hasil untuk "${provider.searchQuery}"'
+                            : 'Arsip ini kosong.',
                       ),
                     ),
-                    leading: const Icon(Icons.topic_outlined),
-                    children: topic.subjects.map((subject) {
-                      return ExpansionTile(
-                        key: PageStorageKey(
-                          'subject_${topic.name}_${subject.name}',
+                  )
+                else
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Text('Arsip terakhir diubah: $lastModified'),
                         ),
-                        title: Text(subject.name),
-                        leading: const Padding(
-                          padding: EdgeInsets.only(left: 16.0),
-                          child: Icon(Icons.class_outlined),
-                        ),
-                        children: subject.discussions.map((discussion) {
-                          // >> BARU: Cek apakah ada konten HTML
-                          final bool hasHtmlContent =
-                              discussion.archivedHtmlContent != null;
-                          return ListTile(
-                            leading: Padding(
-                              padding: const EdgeInsets.only(left: 32.0),
-                              // >> BARU: Ganti ikon berdasarkan ketersediaan file
-                              child: Icon(
-                                hasHtmlContent ? Icons.link : Icons.link_off,
-                                size: 20,
-                                color: hasHtmlContent
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.grey,
+                        ...provider.exportedTopics.map((topic) {
+                          // >> BARU: Buka otomatis jika hasil pencarian
+                          final bool isSearchActive =
+                              provider.searchQuery.isNotEmpty;
+                          return ExpansionTile(
+                            key: PageStorageKey('topic_${topic.name}'),
+                            initiallyExpanded: isSearchActive,
+                            title: Text(
+                              topic.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
                               ),
                             ),
-                            title: Text(discussion.discussion),
-                            subtitle: Text(
-                              'Selesai pada: ${discussion.finish_date ?? 'N/A'}',
-                            ),
-                            // >> BARU: Tambahkan aksi onTap
-                            onTap: hasHtmlContent
-                                ? () async {
-                                    try {
-                                      await provider.openArchivedHtml(
-                                        discussion,
-                                      );
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(e.toString()),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  }
-                                : null,
-                            enabled: hasHtmlContent,
+                            leading: const Icon(Icons.topic_outlined),
+                            children: topic.subjects.map((subject) {
+                              return ExpansionTile(
+                                key: PageStorageKey(
+                                  'subject_${topic.name}_${subject.name}',
+                                ),
+                                initiallyExpanded: isSearchActive,
+                                title: Text(subject.name),
+                                leading: const Padding(
+                                  padding: EdgeInsets.only(left: 16.0),
+                                  child: Icon(Icons.class_outlined),
+                                ),
+                                children: subject.discussions.map((discussion) {
+                                  final bool hasHtmlContent =
+                                      discussion.archivedHtmlContent != null;
+                                  return ListTile(
+                                    leading: Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 32.0,
+                                      ),
+                                      child: Icon(
+                                        hasHtmlContent
+                                            ? Icons.link
+                                            : Icons.link_off,
+                                        size: 20,
+                                        color: hasHtmlContent
+                                            ? Theme.of(context).primaryColor
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                    title: Text(discussion.discussion),
+                                    subtitle: Text(
+                                      'Selesai pada: ${discussion.finish_date ?? 'N/A'}',
+                                    ),
+                                    onTap: hasHtmlContent
+                                        ? () async {
+                                            try {
+                                              await provider.openArchivedHtml(
+                                                discussion,
+                                              );
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(e.toString()),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        : null,
+                                    enabled: hasHtmlContent,
+                                  );
+                                }).toList(),
+                              );
+                            }).toList(),
                           );
                         }).toList(),
-                      );
-                    }).toList(),
-                  );
-                }).toList(),
+                      ],
+                    ),
+                  ),
               ],
             );
           },

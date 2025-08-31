@@ -26,8 +26,12 @@ class ExportedDiscussionsProvider with ChangeNotifier {
   DateTime? _lastModified;
   DateTime? get lastModified => _lastModified;
 
-  List<ExportedTopic> _exportedTopics = [];
+  List<ExportedTopic> _allExportedTopics = []; // Simpan data asli
+  List<ExportedTopic> _exportedTopics = []; // Data yang akan ditampilkan
   List<ExportedTopic> get exportedTopics => _exportedTopics;
+
+  String _searchQuery = '';
+  String get searchQuery => _searchQuery;
 
   ExportedDiscussionsProvider() {
     loadExportedData();
@@ -47,6 +51,7 @@ class ExportedDiscussionsProvider with ChangeNotifier {
       _zipFile = File(zipFilePath);
 
       if (!await _zipFile!.exists()) {
+        _allExportedTopics = [];
         _exportedTopics = [];
         _lastModified = null;
         return;
@@ -59,7 +64,6 @@ class ExportedDiscussionsProvider with ChangeNotifier {
 
       final Map<String, ExportedTopic> topicsMap = {};
 
-      // >> TAHAP 1: Proses semua file JSON untuk membangun struktur data
       for (final file in archive) {
         if (file.isFile &&
             file.name.startsWith('RSpace/') &&
@@ -89,19 +93,16 @@ class ExportedDiscussionsProvider with ChangeNotifier {
         }
       }
 
-      // >> TAHAP 2: Proses semua file HTML dan cocokkan dengan data yang ada
       for (final file in archive) {
         if (file.isFile &&
             file.name.startsWith('PerpusKu/') &&
             file.name.endsWith('.html')) {
           final pathParts = file.name.split('/');
           if (pathParts.length == 4) {
-            // PerpusKu/Topic/Subject/file.html
             final topicName = pathParts[1];
             final subjectName = pathParts[2];
             final fileName = pathParts[3];
 
-            // Cari diskusi yang cocok di dalam struktur data kita
             final topic = topicsMap[topicName];
             if (topic != null) {
               try {
@@ -114,7 +115,6 @@ class ExportedDiscussionsProvider with ChangeNotifier {
                       path.basename(d.filePath!) == fileName,
                 );
 
-                // Simpan konten HTML ke dalam field sementara
                 discussion.archivedHtmlContent = utf8.decode(
                   file.content as List<int>,
                 );
@@ -126,11 +126,13 @@ class ExportedDiscussionsProvider with ChangeNotifier {
         }
       }
 
-      _exportedTopics = topicsMap.values.toList();
-      _exportedTopics.sort((a, b) => a.name.compareTo(b.name));
-      for (var topic in _exportedTopics) {
+      _allExportedTopics = topicsMap.values.toList();
+      _allExportedTopics.sort((a, b) => a.name.compareTo(b.name));
+      for (var topic in _allExportedTopics) {
         topic.subjects.sort((a, b) => a.name.compareTo(b.name));
       }
+
+      _filterExportedData(); // Terapkan filter awal (tanpa query)
     } catch (e) {
       _error = "Gagal memuat atau membaca file arsip: ${e.toString()}";
     } finally {
@@ -139,7 +141,59 @@ class ExportedDiscussionsProvider with ChangeNotifier {
     }
   }
 
-  // >> BARU: Metode untuk membuka file HTML dari arsip
+  // >> BARU: Metode untuk melakukan pencarian
+  void search(String query) {
+    _searchQuery = query.toLowerCase();
+    _filterExportedData();
+  }
+
+  // >> BARU: Metode untuk memfilter data
+  void _filterExportedData() {
+    if (_searchQuery.isEmpty) {
+      _exportedTopics = List.from(_allExportedTopics);
+    } else {
+      final List<ExportedTopic> filteredTopics = [];
+      for (final topic in _allExportedTopics) {
+        final List<ExportedSubject> filteredSubjects = [];
+        for (final subject in topic.subjects) {
+          final List<Discussion> filteredDiscussions = subject.discussions
+              .where((d) => d.discussion.toLowerCase().contains(_searchQuery))
+              .toList();
+
+          // Sertakan subjek jika nama subjek cocok ATAU ada diskusi yang cocok di dalamnya
+          if (subject.name.toLowerCase().contains(_searchQuery) ||
+              filteredDiscussions.isNotEmpty) {
+            filteredSubjects.add(
+              ExportedSubject(
+                name: subject.name,
+                discussions: filteredDiscussions.isNotEmpty
+                    ? filteredDiscussions
+                    : subject
+                          .discussions, // Tampilkan semua diskusi jika nama subjek cocok
+              ),
+            );
+          }
+        }
+
+        // Sertakan topik jika nama topik cocok ATAU ada subjek yang cocok di dalamnya
+        if (topic.name.toLowerCase().contains(_searchQuery) ||
+            filteredSubjects.isNotEmpty) {
+          filteredTopics.add(
+            ExportedTopic(
+              name: topic.name,
+              subjects: filteredSubjects.isNotEmpty
+                  ? filteredSubjects
+                  : topic
+                        .subjects, // Tampilkan semua subjek jika nama topik cocok
+            ),
+          );
+        }
+      }
+      _exportedTopics = filteredTopics;
+    }
+    notifyListeners();
+  }
+
   Future<void> openArchivedHtml(Discussion discussion) async {
     if (discussion.archivedHtmlContent == null) {
       throw Exception(
@@ -147,14 +201,12 @@ class ExportedDiscussionsProvider with ChangeNotifier {
       );
     }
 
-    // Buat file temporer untuk menampilkan konten
     final tempDir = await getTemporaryDirectory();
     final tempFile = File(
       path.join(tempDir.path, '${discussion.discussion}.html'),
     );
     await tempFile.writeAsString(discussion.archivedHtmlContent!);
 
-    // Buka file menggunakan OpenFile
     final result = await OpenFile.open(tempFile.path);
     if (result.type != ResultType.done) {
       throw Exception("Tidak dapat membuka file: ${result.message}");
