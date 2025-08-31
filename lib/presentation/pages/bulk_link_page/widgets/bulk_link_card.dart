@@ -10,6 +10,9 @@ class BulkLinkCard extends StatefulWidget {
   final VoidCallback onSkip;
   final ValueChanged<String> onLink;
   final ValueChanged<String> onSearch;
+  // >> BARU: Tambahkan properti untuk progres
+  final int currentDiscussionNumber;
+  final int totalDiscussions;
 
   const BulkLinkCard({
     super.key,
@@ -18,6 +21,8 @@ class BulkLinkCard extends StatefulWidget {
     required this.onSkip,
     required this.onLink,
     required this.onSearch,
+    required this.currentDiscussionNumber,
+    required this.totalDiscussions,
   });
 
   @override
@@ -63,8 +68,9 @@ class _BulkLinkCardState extends State<BulkLinkCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // >> BARU: Tampilkan progres di sini
                   Text(
-                    'Diskusi Saat Ini:',
+                    'Diskusi ${widget.currentDiscussionNumber} dari ${widget.totalDiscussions}',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   Text(

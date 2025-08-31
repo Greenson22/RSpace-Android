@@ -1,10 +1,10 @@
 // lib/presentation/providers/bulk_link_provider.dart
 
 import 'package:flutter/material.dart';
-import '../../data/models/topic_model.dart'; // Import model Topik
+import '../../data/models/topic_model.dart';
 import '../../data/models/unlinked_discussion_model.dart';
 import '../../data/models/link_suggestion_model.dart';
-import '../../data/services/topic_service.dart'; // Import service Topik
+import '../../data/services/topic_service.dart';
 import '../../data/services/unlinked_discussion_service.dart';
 import '../../data/services/smart_link_service.dart';
 import '../../data/services/discussion_service.dart';
@@ -17,16 +17,27 @@ class BulkLinkProvider with ChangeNotifier {
       UnlinkedDiscussionService();
   final SmartLinkService _smartLinkService = SmartLinkService();
   final DiscussionService _discussionService = DiscussionService();
-  final TopicService _topicService = TopicService(); // Tambahkan TopicService
+  final TopicService _topicService = TopicService();
 
   BulkLinkState _currentState = BulkLinkState.loading;
   BulkLinkState get currentState => _currentState;
 
-  List<Topic> _topics = []; // Untuk menyimpan daftar topik
+  List<Topic> _topics = [];
   List<Topic> get topics => _topics;
+
+  // >> BARU: Menyimpan jumlah diskusi per topik
+  Map<String, int> _unlinkedCounts = {};
+  Map<String, int> get unlinkedCounts => _unlinkedCounts;
+
+  int get totalUnlinkedCount =>
+      _unlinkedCounts.values.fold(0, (sum, count) => sum + count);
 
   List<UnlinkedDiscussion> _unlinkedDiscussions = [];
   int _currentIndex = 0;
+
+  // >> BARU: Properti untuk melacak progres
+  int get totalDiscussionsToProcess => _unlinkedDiscussions.length;
+  int get currentDiscussionNumber => _currentIndex + 1;
 
   UnlinkedDiscussion? get currentDiscussion =>
       _unlinkedDiscussions.isNotEmpty &&
@@ -39,14 +50,27 @@ class BulkLinkProvider with ChangeNotifier {
 
   List<Map<String, String>> _allFiles = [];
 
+  bool get isFinished => _currentState == BulkLinkState.finished;
+
   BulkLinkProvider() {
     _initialize();
   }
 
-  // Tahap 1: Inisialisasi, muat daftar topik
+  // Tahap 1: Inisialisasi, muat topik dan hitung jumlah diskusi
   Future<void> _initialize() async {
     _topics = await _topicService.getTopics();
     _allFiles = await _smartLinkService.getAllPerpuskuFiles();
+
+    // Hitung jumlah diskusi yang belum ditautkan untuk setiap topik
+    for (final topic in _topics) {
+      if (!topic.isHidden) {
+        final discussions = await _unlinkedService.fetchAllUnlinkedDiscussions(
+          topicName: topic.name,
+        );
+        _unlinkedCounts[topic.name] = discussions.length;
+      }
+    }
+
     _currentState = BulkLinkState.selectingTopic;
     notifyListeners();
   }
@@ -132,7 +156,7 @@ class BulkLinkProvider with ChangeNotifier {
           (fileData) => LinkSuggestion(
             title: fileData['title']!,
             relativePath: fileData['relativePath']!,
-            score: 0, // Score isn't relevant for manual search
+            score: 0,
           ),
         )
         .toList();
