@@ -11,17 +11,16 @@ import 'package:path_provider/path_provider.dart';
 import '../../data/models/finished_discussion_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/finished_discussion_service.dart';
-import '../../data/services/path_service.dart'; // Import PathService
+import '../../data/services/path_service.dart';
 
 class FinishedDiscussionsProvider with ChangeNotifier {
   final FinishedDiscussionService _service = FinishedDiscussionService();
   final DiscussionService _discussionService = DiscussionService();
-  final PathService _pathService = PathService(); // Tambahkan PathService
+  final PathService _pathService = PathService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  // >> BARU: State untuk proses ekspor
   bool _isExporting = false;
   bool get isExporting => _isExporting;
 
@@ -52,16 +51,18 @@ class FinishedDiscussionsProvider with ChangeNotifier {
     }
   }
 
-  // >> FUNGSI BARU UNTUK EKSPOR DISKUSI
+  // >> FUNGSI EKSPOR DIPERBAIKI DI SINI
   Future<String> exportFinishedDiscussions() async {
     _isExporting = true;
     notifyListeners();
 
-    Directory? tempDir;
+    // PERBAIKAN 1: Ganti variabel untuk menyimpan path subfolder, bukan folder /tmp
+    Directory? stagingDir;
     try {
-      // 1. Buat direktori sementara yang unik
-      tempDir = await getTemporaryDirectory();
-      final stagingDir = Directory(
+      // 1. Dapatkan direktori temporer sistem
+      final tempDir = await getTemporaryDirectory();
+      // Buat subfolder unik di dalamnya
+      stagingDir = Directory(
         path.join(
           tempDir.path,
           'export_${DateTime.now().millisecondsSinceEpoch}',
@@ -83,7 +84,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         'topics',
       );
 
-      // 2. Kelompokkan diskusi berdasarkan file JSON asalnya
+      // 2. Kelompokkan diskusi (logika ini tetap sama)
       final Map<String, List<FinishedDiscussion>> discussionsByFile = {};
       for (final finished in _finishedDiscussions) {
         if (discussionsByFile.containsKey(finished.subjectJsonPath)) {
@@ -93,7 +94,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         }
       }
 
-      // 3. Salin dan strukturkan file
+      // 3. Salin dan strukturkan file (logika ini tetap sama)
       for (final entry in discussionsByFile.entries) {
         final discussions = entry.value;
         if (discussions.isEmpty) continue;
@@ -102,19 +103,17 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         final topicName = first.topicName;
         final subjectName = first.subjectName;
 
-        // Struktur untuk RSpace (JSON)
         final rspaceTopicPath = path.join(rspaceDir.path, topicName);
         await Directory(rspaceTopicPath).create(recursive: true);
         final subjectJsonFile = File(
           path.join(rspaceTopicPath, '$subjectName.json'),
         );
         final jsonContent = {
-          'metadata': {}, // Anda bisa menambahkan metadata jika perlu
+          'metadata': {},
           'content': discussions.map((d) => d.discussion.toJson()).toList(),
         };
         await subjectJsonFile.writeAsString(jsonEncode(jsonContent));
 
-        // Struktur untuk PerpusKu (HTML)
         for (final discussion in discussions) {
           if (discussion.discussion.filePath != null &&
               discussion.discussion.filePath!.isNotEmpty) {
@@ -138,7 +137,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         }
       }
 
-      // 4. Minta pengguna memilih lokasi penyimpanan
+      // 4. Minta pengguna memilih lokasi penyimpanan (logika ini tetap sama)
       String? outputPath = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Pilih Lokasi untuk Menyimpan File ZIP',
       );
@@ -147,7 +146,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         return 'Ekspor dibatalkan oleh pengguna.';
       }
 
-      // 5. Buat file ZIP
+      // 5. Buat file ZIP (logika ini tetap sama)
       final timestamp = DateFormat('yyyy-MM-dd_HH-mm').format(DateTime.now());
       final zipFilePath = path.join(
         outputPath,
@@ -162,14 +161,16 @@ class FinishedDiscussionsProvider with ChangeNotifier {
     } catch (e) {
       rethrow;
     } finally {
-      // 6. Hapus direktori sementara
-      if (tempDir != null) {
-        await tempDir.delete(recursive: true);
+      // PERBAIKAN 2: Hapus 'stagingDir' yang spesifik, bukan 'tempDir' utama
+      if (stagingDir != null && await stagingDir.exists()) {
+        await stagingDir.delete(recursive: true);
       }
       _isExporting = false;
       notifyListeners();
     }
   }
+
+  // ... (sisa fungsi lainnya tidak berubah)
 
   void toggleSelection(FinishedDiscussion discussion) {
     if (_selectedDiscussions.contains(discussion)) {
