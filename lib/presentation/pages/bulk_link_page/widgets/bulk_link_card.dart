@@ -10,9 +10,10 @@ class BulkLinkCard extends StatefulWidget {
   final VoidCallback onSkip;
   final ValueChanged<String> onLink;
   final ValueChanged<String> onSearch;
-  // >> BARU: Tambahkan properti untuk progres
   final int currentDiscussionNumber;
   final int totalDiscussions;
+  // >> BARU: Callback untuk membuat file baru
+  final VoidCallback onCreateNew;
 
   const BulkLinkCard({
     super.key,
@@ -23,6 +24,7 @@ class BulkLinkCard extends StatefulWidget {
     required this.onSearch,
     required this.currentDiscussionNumber,
     required this.totalDiscussions,
+    required this.onCreateNew,
   });
 
   @override
@@ -56,6 +58,11 @@ class _BulkLinkCardState extends State<BulkLinkCard> {
 
   @override
   Widget build(BuildContext context) {
+    // >> BARU: Cek apakah subjek saat ini tertaut
+    final bool isSubjectLinked =
+        widget.discussion.subjectLinkedPath != null &&
+        widget.discussion.subjectLinkedPath!.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -68,7 +75,6 @@ class _BulkLinkCardState extends State<BulkLinkCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // >> BARU: Tampilkan progres di sini
                   Text(
                     'Diskusi ${widget.currentDiscussionNumber} dari ${widget.totalDiscussions}',
                     style: Theme.of(context).textTheme.titleSmall,
@@ -134,6 +140,21 @@ class _BulkLinkCardState extends State<BulkLinkCard> {
 
           // Action Buttons
           const SizedBox(height: 16),
+          // >> BARU: Tombol untuk membuat file baru
+          OutlinedButton.icon(
+            icon: const Icon(Icons.note_add_outlined),
+            label: const Text('Buat File HTML Baru'),
+            onPressed: isSubjectLinked ? widget.onCreateNew : null,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              side: BorderSide(
+                color: isSubjectLinked
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           ElevatedButton(
             onPressed: widget.onSkip,
             style: ElevatedButton.styleFrom(

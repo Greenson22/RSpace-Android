@@ -56,7 +56,6 @@ class _BulkLinkView extends StatelessWidget {
       case BulkLinkState.selectingTopic:
         return _TopicSelectionView(
           topics: provider.topics,
-          // >> BARU: Kirim data jumlah diskusi
           unlinkedCounts: provider.unlinkedCounts,
           totalUnlinkedCount: provider.totalUnlinkedCount,
           onTopicSelected: (topicName) {
@@ -72,9 +71,23 @@ class _BulkLinkView extends StatelessWidget {
           onLink: (relativePath) =>
               provider.linkCurrentDiscussion(relativePath),
           onSearch: (query) => provider.searchFiles(query),
-          // >> BARU: Kirim informasi progres
           currentDiscussionNumber: provider.currentDiscussionNumber,
           totalDiscussions: provider.totalDiscussionsToProcess,
+          // >> BARU: Sambungkan callback ke provider
+          onCreateNew: () async {
+            try {
+              await provider.createAndLinkDiscussion();
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
         );
 
       case BulkLinkState.finished:
@@ -103,10 +116,8 @@ class _BulkLinkView extends StatelessWidget {
   }
 }
 
-// Widget baru untuk tampilan pemilihan topik
 class _TopicSelectionView extends StatelessWidget {
   final List<Topic> topics;
-  // >> BARU: Terima data jumlah diskusi
   final Map<String, int> unlinkedCounts;
   final int totalUnlinkedCount;
   final Function(String?) onTopicSelected;
@@ -130,8 +141,6 @@ class _TopicSelectionView extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
-
-        // Opsi "Semua Topik"
         Card(
           child: ListTile(
             leading: const Icon(Icons.all_inclusive),
@@ -139,26 +148,21 @@ class _TopicSelectionView extends StatelessWidget {
               'Semua Topik',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            // >> BARU: Tampilkan jumlah total
             trailing: Chip(label: Text('$totalUnlinkedCount Diskusi')),
             onTap: () => onTopicSelected(null),
-            enabled: totalUnlinkedCount > 0, // Nonaktifkan jika tidak ada
+            enabled: totalUnlinkedCount > 0,
           ),
         ),
         const Divider(height: 24),
-
-        // Daftar Topik Spesifik
         ...topics.where((t) => !t.isHidden).map((topic) {
-          // >> BARU: Dapatkan jumlah untuk topik ini
           final count = unlinkedCounts[topic.name] ?? 0;
           return Card(
             child: ListTile(
               leading: Text(topic.icon, style: const TextStyle(fontSize: 24)),
               title: Text(topic.name),
-              // >> BARU: Tampilkan jumlah per topik
               trailing: Chip(label: Text('$count Diskusi')),
               onTap: () => onTopicSelected(topic.name),
-              enabled: count > 0, // Nonaktifkan jika tidak ada
+              enabled: count > 0,
             ),
           );
         }).toList(),

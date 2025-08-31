@@ -8,6 +8,7 @@ import '../../data/services/topic_service.dart';
 import '../../data/services/unlinked_discussion_service.dart';
 import '../../data/services/smart_link_service.dart';
 import '../../data/services/discussion_service.dart';
+import '../../data/services/path_service.dart'; // Import PathService
 
 // Enum untuk mengelola state halaman
 enum BulkLinkState { loading, selectingTopic, linking, finished }
@@ -18,6 +19,7 @@ class BulkLinkProvider with ChangeNotifier {
   final SmartLinkService _smartLinkService = SmartLinkService();
   final DiscussionService _discussionService = DiscussionService();
   final TopicService _topicService = TopicService();
+  final PathService _pathService = PathService(); // Tambahkan PathService
 
   BulkLinkState _currentState = BulkLinkState.loading;
   BulkLinkState get currentState => _currentState;
@@ -25,7 +27,6 @@ class BulkLinkProvider with ChangeNotifier {
   List<Topic> _topics = [];
   List<Topic> get topics => _topics;
 
-  // >> BARU: Menyimpan jumlah diskusi per topik
   Map<String, int> _unlinkedCounts = {};
   Map<String, int> get unlinkedCounts => _unlinkedCounts;
 
@@ -35,7 +36,6 @@ class BulkLinkProvider with ChangeNotifier {
   List<UnlinkedDiscussion> _unlinkedDiscussions = [];
   int _currentIndex = 0;
 
-  // >> BARU: Properti untuk melacak progres
   int get totalDiscussionsToProcess => _unlinkedDiscussions.length;
   int get currentDiscussionNumber => _currentIndex + 1;
 
@@ -56,12 +56,10 @@ class BulkLinkProvider with ChangeNotifier {
     _initialize();
   }
 
-  // Tahap 1: Inisialisasi, muat topik dan hitung jumlah diskusi
   Future<void> _initialize() async {
     _topics = await _topicService.getTopics();
     _allFiles = await _smartLinkService.getAllPerpuskuFiles();
 
-    // Hitung jumlah diskusi yang belum ditautkan untuk setiap topik
     for (final topic in _topics) {
       if (!topic.isHidden) {
         final discussions = await _unlinkedService.fetchAllUnlinkedDiscussions(
@@ -75,7 +73,6 @@ class BulkLinkProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Tahap 2: Mulai proses penautan setelah topik dipilih
   Future<void> startLinking({String? topicName}) async {
     _currentState = BulkLinkState.loading;
     notifyListeners();
@@ -117,10 +114,8 @@ class BulkLinkProvider with ChangeNotifier {
   Future<void> linkCurrentDiscussion(String relativePath) async {
     if (currentDiscussion == null) return;
 
-    // 1. Update the discussion object in memory
     currentDiscussion!.discussion.filePath = relativePath;
 
-    // 2. Save the updated discussion back to its JSON file
     final allDiscussionsInFile = await _discussionService.loadDiscussions(
       currentDiscussion!.subjectJsonPath,
     );
@@ -135,8 +130,30 @@ class BulkLinkProvider with ChangeNotifier {
       );
     }
 
-    // 3. Move to the next discussion
     nextDiscussion();
+  }
+
+  // >> FUNGSI BARU UNTUK MEMBUAT DAN MENAUTKAN FILE
+  Future<void> createAndLinkDiscussion() async {
+    if (currentDiscussion == null ||
+        currentDiscussion!.subjectLinkedPath == null) {
+      throw Exception(
+        "Subject dari diskusi ini tidak tertaut ke folder PerpusKu.",
+      );
+    }
+
+    // 1. Dapatkan path dasar PerpusKu
+    final perpuskuBasePath = await _pathService.perpuskuDataPath;
+
+    // 2. Panggil service untuk membuat file HTML baru
+    final newRelativePath = await _discussionService.createDiscussionFile(
+      perpuskuBasePath: perpuskuBasePath,
+      subjectLinkedPath: currentDiscussion!.subjectLinkedPath!,
+      discussionName: currentDiscussion!.discussion.discussion,
+    );
+
+    // 3. Panggil metode yang sudah ada untuk menautkan path baru ini
+    await linkCurrentDiscussion(newRelativePath);
   }
 
   void searchFiles(String query) {
