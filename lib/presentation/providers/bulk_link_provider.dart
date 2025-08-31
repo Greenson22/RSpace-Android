@@ -8,7 +8,9 @@ import '../../data/services/topic_service.dart';
 import '../../data/services/unlinked_discussion_service.dart';
 import '../../data/services/smart_link_service.dart';
 import '../../data/services/discussion_service.dart';
-import '../../data/services/path_service.dart'; // Import PathService
+import '../../data/services/path_service.dart';
+// ==> 1. TAMBAHKAN IMPORT UNTUK FUNGSI PATH
+import 'package:path/path.dart' as path;
 
 // Enum untuk mengelola state halaman
 enum BulkLinkState { loading, selectingTopic, linking, finished }
@@ -133,7 +135,7 @@ class BulkLinkProvider with ChangeNotifier {
     nextDiscussion();
   }
 
-  // >> FUNGSI BARU UNTUK MEMBUAT DAN MENAUTKAN FILE
+  // ==> 2. FUNGSI INI DIPERBAIKI
   Future<void> createAndLinkDiscussion() async {
     if (currentDiscussion == null ||
         currentDiscussion!.subjectLinkedPath == null) {
@@ -142,17 +144,25 @@ class BulkLinkProvider with ChangeNotifier {
       );
     }
 
-    // 1. Dapatkan path dasar PerpusKu
-    final perpuskuBasePath = await _pathService.perpuskuDataPath;
+    // Dapatkan path dasar data PerpusKu (e.g., .../Perpusku/data)
+    final perpuskuDataPath = await _pathService.perpuskuDataPath;
 
-    // 2. Panggil service untuk membuat file HTML baru
+    // **FIX**: Bentuk path yang benar menuju folder 'topics' di dalam struktur PerpusKu
+    final perpuskuTopicsPath = path.join(
+      perpuskuDataPath,
+      'file_contents',
+      'topics',
+    );
+
+    // Panggil service untuk membuat file HTML baru dengan base path yang sudah benar
     final newRelativePath = await _discussionService.createDiscussionFile(
-      perpuskuBasePath: perpuskuBasePath,
+      perpuskuBasePath:
+          perpuskuTopicsPath, // Gunakan path yang sudah diperbaiki
       subjectLinkedPath: currentDiscussion!.subjectLinkedPath!,
       discussionName: currentDiscussion!.discussion.discussion,
     );
 
-    // 3. Panggil metode yang sudah ada untuk menautkan path baru ini
+    // Panggil metode yang sudah ada untuk menautkan path baru ini
     await linkCurrentDiscussion(newRelativePath);
   }
 
