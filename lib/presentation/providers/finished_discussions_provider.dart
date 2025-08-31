@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import '../../data/models/discussion_model.dart';
@@ -51,9 +50,23 @@ class FinishedDiscussionsProvider with ChangeNotifier {
     }
   }
 
-  Future<String> exportFinishedDiscussions() async {
+  // >> FUNGSI EKSPOR DIPERBARUI DENGAN PARAMETER BARU
+  Future<String> exportFinishedDiscussions({
+    bool deleteAfterExport = false,
+  }) async {
     _isExporting = true;
     notifyListeners();
+
+    // Pilih diskusi yang akan diekspor: yang diseleksi, atau semua jika tidak ada seleksi.
+    final discussionsToExport = isSelectionMode
+        ? _selectedDiscussions.toList()
+        : _finishedDiscussions;
+
+    if (discussionsToExport.isEmpty) {
+      _isExporting = false;
+      notifyListeners();
+      return "Tidak ada diskusi yang dipilih untuk diekspor.";
+    }
 
     Directory? stagingDir;
     try {
@@ -77,10 +90,8 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         await extractFileToDisk(zipFilePath, stagingDir.path);
       }
 
-      final rspaceDir = Directory(path.join(stagingDir.path, 'RSpace_Export'));
-      final perpuskuDir = Directory(
-        path.join(stagingDir.path, 'PerpusKu_Export'),
-      );
+      final rspaceDir = Directory(path.join(stagingDir.path, 'RSpace'));
+      final perpuskuDir = Directory(path.join(stagingDir.path, 'PerpusKu'));
       if (!await rspaceDir.exists()) await rspaceDir.create();
       if (!await perpuskuDir.exists()) await perpuskuDir.create();
 
@@ -92,7 +103,8 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       );
 
       final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
-      for (final finished in _finishedDiscussions) {
+      for (final finished in discussionsToExport) {
+        // Gunakan discussionsToExport
         if (newDiscussionsByFile.containsKey(finished.subjectJsonPath)) {
           newDiscussionsByFile[finished.subjectJsonPath]!.add(finished);
         } else {
@@ -167,9 +179,17 @@ class FinishedDiscussionsProvider with ChangeNotifier {
 
       final encoder = ZipFileEncoder();
       encoder.create(zipFilePath);
-      // >> PERBAIKAN DI SINI: Tambahkan `includeDirName: false`
       await encoder.addDirectory(stagingDir, includeDirName: false);
       encoder.close();
+
+      // >> BARU: Hapus diskusi setelah ekspor jika diminta
+      if (deleteAfterExport) {
+        // Jika tidak ada yang diseleksi, artinya kita ekspor semua, maka seleksi semua dulu.
+        if (!isSelectionMode) {
+          selectAll();
+        }
+        await deleteSelected();
+      }
 
       return 'Ekspor berhasil diperbarui di: $outputPath';
     } catch (e) {

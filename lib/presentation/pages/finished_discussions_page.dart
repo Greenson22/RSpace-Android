@@ -49,7 +49,7 @@ class _FinishedDiscussionsView extends StatelessWidget {
     }
   }
 
-  // >> BARU: Fungsi untuk menangani aksi ekspor
+  // >> FUNGSI INI DIPERBARUI TOTAL
   Future<void> _handleExport(BuildContext context) async {
     final provider = Provider.of<FinishedDiscussionsProvider>(
       context,
@@ -57,31 +57,66 @@ class _FinishedDiscussionsView extends StatelessWidget {
     );
     if (provider.isExporting) return;
 
-    if (provider.finishedDiscussions.isEmpty) {
+    final discussionsToExport = provider.isSelectionMode
+        ? provider.selectedDiscussions.length
+        : provider.finishedDiscussions.length;
+
+    if (discussionsToExport == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tidak ada diskusi untuk diekspor.')),
       );
       return;
     }
 
-    try {
-      final message = await provider.exportFinishedDiscussions();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 5),
+    // Tampilkan dialog konfirmasi
+    final result = await showDialog<bool?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Ekspor'),
+        content: Text(
+          'Anda akan mengekspor $discussionsToExport diskusi. Setelah diekspor, apakah Anda ingin menghapus diskusi ini dari aplikasi?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null), // Batal
+            child: const Text('Batal'),
           ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengekspor: ${e.toString()}'),
-            backgroundColor: Colors.red,
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false), // Ekspor Saja
+            child: const Text('Ekspor Saja'),
           ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true), // Ekspor & Hapus
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Ekspor & Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    // Jika pengguna tidak membatalkan
+    if (result != null && context.mounted) {
+      try {
+        final message = await provider.exportFinishedDiscussions(
+          deleteAfterExport: result,
         );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengekspor: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -103,6 +138,12 @@ class _FinishedDiscussionsView extends StatelessWidget {
                   icon: const Icon(Icons.select_all),
                   onPressed: () => provider.selectAll(),
                 ),
+                // >> BARU: Tombol Ekspor di mode seleksi
+                IconButton(
+                  icon: const Icon(Icons.archive_outlined),
+                  onPressed: () => _handleExport(context),
+                  tooltip: 'Ekspor Pilihan',
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () => _confirmAndDelete(context),
@@ -112,7 +153,6 @@ class _FinishedDiscussionsView extends StatelessWidget {
           : AppBar(
               title: const Text('Semua Diskusi Selesai'),
               actions: [
-                // >> BARU: Tombol Ekspor
                 if (provider.isExporting)
                   const Padding(
                     padding: EdgeInsets.all(16.0),
