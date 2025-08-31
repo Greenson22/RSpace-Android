@@ -1,14 +1,13 @@
 // lib/presentation/providers/finished_discussions_provider.dart
 
-import 'dart:convert';
 import 'dart:io';
+import 'dart:convert';
 import 'package:archive/archive_io.dart';
-// Hapus import FilePicker karena tidak digunakan lagi
-// import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import '../../data/models/discussion_model.dart';
 import '../../data/models/finished_discussion_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/finished_discussion_service.dart';
@@ -58,6 +57,13 @@ class FinishedDiscussionsProvider with ChangeNotifier {
 
     Directory? stagingDir;
     try {
+      final outputPath = await _pathService.finishedDiscussionsExportPath;
+      final zipFilePath = path.join(
+        outputPath,
+        'Export-Finished-Discussions.zip',
+      );
+      final zipFile = File(zipFilePath);
+
       final tempDir = await getTemporaryDirectory();
       stagingDir = Directory(
         path.join(
@@ -67,12 +73,16 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       );
       await stagingDir.create(recursive: true);
 
+      if (await zipFile.exists()) {
+        await extractFileToDisk(zipFilePath, stagingDir.path);
+      }
+
       final rspaceDir = Directory(path.join(stagingDir.path, 'RSpace_Export'));
       final perpuskuDir = Directory(
         path.join(stagingDir.path, 'PerpusKu_Export'),
       );
-      await rspaceDir.create();
-      await perpuskuDir.create();
+      if (!await rspaceDir.exists()) await rspaceDir.create();
+      if (!await perpuskuDir.exists()) await perpuskuDir.create();
 
       final perpuskuBasePath = await _pathService.perpuskuDataPath;
       final perpuskuTopicsPath = path.join(
@@ -81,20 +91,20 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         'topics',
       );
 
-      final Map<String, List<FinishedDiscussion>> discussionsByFile = {};
+      final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
       for (final finished in _finishedDiscussions) {
-        if (discussionsByFile.containsKey(finished.subjectJsonPath)) {
-          discussionsByFile[finished.subjectJsonPath]!.add(finished);
+        if (newDiscussionsByFile.containsKey(finished.subjectJsonPath)) {
+          newDiscussionsByFile[finished.subjectJsonPath]!.add(finished);
         } else {
-          discussionsByFile[finished.subjectJsonPath] = [finished];
+          newDiscussionsByFile[finished.subjectJsonPath] = [finished];
         }
       }
 
-      for (final entry in discussionsByFile.entries) {
-        final discussions = entry.value;
-        if (discussions.isEmpty) continue;
+      for (final entry in newDiscussionsByFile.entries) {
+        final discussionsToAdd = entry.value;
+        if (discussionsToAdd.isEmpty) continue;
 
-        final first = discussions.first;
+        final first = discussionsToAdd.first;
         final topicName = first.topicName;
         final subjectName = first.subjectName;
 
@@ -103,13 +113,34 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         final subjectJsonFile = File(
           path.join(rspaceTopicPath, '$subjectName.json'),
         );
+
+        List<Discussion> existingDiscussions = [];
+        if (await subjectJsonFile.exists()) {
+          final jsonString = await subjectJsonFile.readAsString();
+          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+          existingDiscussions = (jsonData['content'] as List)
+              .map((item) => Discussion.fromJson(item))
+              .toList();
+        }
+
+        final existingDiscussionNames = existingDiscussions
+            .map((d) => d.discussion)
+            .toSet();
+        for (final discussionToAdd in discussionsToAdd) {
+          if (!existingDiscussionNames.contains(
+            discussionToAdd.discussion.discussion,
+          )) {
+            existingDiscussions.add(discussionToAdd.discussion);
+          }
+        }
+
         final jsonContent = {
           'metadata': {},
-          'content': discussions.map((d) => d.discussion.toJson()).toList(),
+          'content': existingDiscussions.map((d) => d.toJson()).toList(),
         };
         await subjectJsonFile.writeAsString(jsonEncode(jsonContent));
 
-        for (final discussion in discussions) {
+        for (final discussion in discussionsToAdd) {
           if (discussion.discussion.filePath != null &&
               discussion.discussion.filePath!.isNotEmpty) {
             final sourceFile = File(
@@ -126,26 +157,21 @@ class FinishedDiscussionsProvider with ChangeNotifier {
               final targetFile = File(
                 path.join(perpuskuSubjectPath, path.basename(sourceFile.path)),
               );
-              await sourceFile.copy(targetFile.path);
+              if (!await targetFile.exists()) {
+                await sourceFile.copy(targetFile.path);
+              }
             }
           }
         }
       }
 
-      // >> PERUBAHAN DI SINI: Gunakan path service, bukan file picker
-      final outputPath = await _pathService.finishedDiscussionsExportPath;
-
-      final timestamp = DateFormat('yyyy-MM-dd_HH-mm').format(DateTime.now());
-      final zipFilePath = path.join(
-        outputPath,
-        'Export-Finished-Discussions-$timestamp.zip',
-      );
       final encoder = ZipFileEncoder();
       encoder.create(zipFilePath);
-      await encoder.addDirectory(stagingDir);
+      // >> PERBAIKAN DI SINI: Tambahkan `includeDirName: false`
+      await encoder.addDirectory(stagingDir, includeDirName: false);
       encoder.close();
 
-      return 'Ekspor berhasil disimpan di: $outputPath';
+      return 'Ekspor berhasil diperbarui di: $outputPath';
     } catch (e) {
       rethrow;
     } finally {
