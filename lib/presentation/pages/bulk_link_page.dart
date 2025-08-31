@@ -61,6 +61,11 @@ class _BulkLinkView extends StatelessWidget {
           onTopicSelected: (topicName) {
             provider.startLinking(topicName: topicName);
           },
+          // >> BARU: Kirim state dan callback untuk checkbox
+          includeFinished: provider.includeFinished,
+          onIncludeFinishedChanged: (value) {
+            provider.toggleIncludeFinished(value);
+          },
         );
 
       case BulkLinkState.linking:
@@ -73,7 +78,6 @@ class _BulkLinkView extends StatelessWidget {
           onSearch: (query) => provider.searchFiles(query),
           currentDiscussionNumber: provider.currentDiscussionNumber,
           totalDiscussions: provider.totalDiscussionsToProcess,
-          // >> BARU: Sambungkan callback ke provider
           onCreateNew: () async {
             try {
               await provider.createAndLinkDiscussion();
@@ -116,17 +120,23 @@ class _BulkLinkView extends StatelessWidget {
   }
 }
 
+// Widget untuk tampilan pemilihan topik
 class _TopicSelectionView extends StatelessWidget {
   final List<Topic> topics;
   final Map<String, int> unlinkedCounts;
   final int totalUnlinkedCount;
   final Function(String?) onTopicSelected;
+  // >> BARU: Tambahkan properti untuk checkbox
+  final bool includeFinished;
+  final ValueChanged<bool> onIncludeFinishedChanged;
 
   const _TopicSelectionView({
     required this.topics,
     required this.unlinkedCounts,
     required this.totalUnlinkedCount,
     required this.onTopicSelected,
+    required this.includeFinished,
+    required this.onIncludeFinishedChanged,
   });
 
   @override
@@ -140,7 +150,23 @@ class _TopicSelectionView extends StatelessWidget {
           'Pilih topik spesifik untuk ditautkan, atau proses semua topik sekaligus.',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+
+        // >> BARU: Tambahkan CheckboxListTile di sini
+        CheckboxListTile(
+          title: const Text("Sertakan Diskusi Selesai (Finished)"),
+          value: includeFinished,
+          onChanged: (bool? value) {
+            if (value != null) {
+              onIncludeFinishedChanged(value);
+            }
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 8),
+
+        // Opsi "Semua Topik"
         Card(
           child: ListTile(
             leading: const Icon(Icons.all_inclusive),
@@ -154,6 +180,8 @@ class _TopicSelectionView extends StatelessWidget {
           ),
         ),
         const Divider(height: 24),
+
+        // Daftar Topik Spesifik
         ...topics.where((t) => !t.isHidden).map((topic) {
           final count = unlinkedCounts[topic.name] ?? 0;
           return Card(

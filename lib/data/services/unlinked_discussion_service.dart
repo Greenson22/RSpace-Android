@@ -24,27 +24,28 @@ class UnlinkedDiscussionService {
   ///
   /// [topicName] - Jika null, akan memindai semua topik. Jika diisi,
   /// hanya akan memindai topik dengan nama tersebut.
+  /// [includeFinished] - Jika true, akan menyertakan diskusi yang sudah selesai.
   Future<List<UnlinkedDiscussion>> fetchAllUnlinkedDiscussions({
     String? topicName,
+    bool includeFinished = false,
   }) async {
     final List<UnlinkedDiscussion> results = [];
     try {
       final allTopics = await _topicService.getTopics();
       final topicsPath = await _pathService.topicsPath;
 
-      // Filter topik jika topicName disediakan
       final topicsToScan = topicName != null
           ? allTopics.where((t) => t.name == topicName).toList()
           : allTopics;
 
       for (final topic in topicsToScan) {
-        if (topic.isHidden) continue; // Lewati topik yang disembunyikan
+        if (topic.isHidden) continue;
 
         final topicPath = path.join(topicsPath, topic.name);
         final subjects = await _subjectService.getSubjects(topicPath);
 
         for (final subject in subjects) {
-          if (subject.isHidden) continue; // Lewati subjek yang disembunyikan
+          if (subject.isHidden) continue;
 
           final subjectJsonPath = path.join(topicPath, '${subject.name}.json');
           final discussions = await _discussionService.loadDiscussions(
@@ -52,9 +53,16 @@ class UnlinkedDiscussionService {
           );
 
           for (final discussion in discussions) {
-            // Kondisi utama: belum selesai DAN path file kosong atau null
-            if (!discussion.finished &&
-                (discussion.filePath == null || discussion.filePath!.isEmpty)) {
+            // Kondisi utama: path file kosong atau null
+            bool needsLinking =
+                discussion.filePath == null || discussion.filePath!.isEmpty;
+
+            // Kondisi tambahan: status 'finished'
+            bool matchesFinishedStatus = includeFinished
+                ? true
+                : !discussion.finished;
+
+            if (needsLinking && matchesFinishedStatus) {
               results.add(
                 UnlinkedDiscussion(
                   discussion: discussion,
@@ -72,7 +80,6 @@ class UnlinkedDiscussionService {
       }
     } catch (e) {
       debugPrint("Error fetching unlinked discussions: $e");
-      // Lemparkan kembali error agar bisa ditangani oleh provider/UI
       rethrow;
     }
     return results;

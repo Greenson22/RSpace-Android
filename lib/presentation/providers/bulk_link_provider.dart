@@ -9,7 +9,6 @@ import '../../data/services/unlinked_discussion_service.dart';
 import '../../data/services/smart_link_service.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/path_service.dart';
-// ==> 1. TAMBAHKAN IMPORT UNTUK FUNGSI PATH
 import 'package:path/path.dart' as path;
 
 // Enum untuk mengelola state halaman
@@ -21,7 +20,7 @@ class BulkLinkProvider with ChangeNotifier {
   final SmartLinkService _smartLinkService = SmartLinkService();
   final DiscussionService _discussionService = DiscussionService();
   final TopicService _topicService = TopicService();
-  final PathService _pathService = PathService(); // Tambahkan PathService
+  final PathService _pathService = PathService();
 
   BulkLinkState _currentState = BulkLinkState.loading;
   BulkLinkState get currentState => _currentState;
@@ -41,6 +40,10 @@ class BulkLinkProvider with ChangeNotifier {
   int get totalDiscussionsToProcess => _unlinkedDiscussions.length;
   int get currentDiscussionNumber => _currentIndex + 1;
 
+  // State untuk filter status 'finished'
+  bool _includeFinished = false;
+  bool get includeFinished => _includeFinished;
+
   UnlinkedDiscussion? get currentDiscussion =>
       _unlinkedDiscussions.isNotEmpty &&
           _currentIndex < _unlinkedDiscussions.length
@@ -58,29 +61,49 @@ class BulkLinkProvider with ChangeNotifier {
     _initialize();
   }
 
+  // Tahap 1: Inisialisasi, muat topik dan hitung jumlah diskusi awal
   Future<void> _initialize() async {
     _topics = await _topicService.getTopics();
     _allFiles = await _smartLinkService.getAllPerpuskuFiles();
-
-    for (final topic in _topics) {
-      if (!topic.isHidden) {
-        final discussions = await _unlinkedService.fetchAllUnlinkedDiscussions(
-          topicName: topic.name,
-        );
-        _unlinkedCounts[topic.name] = discussions.length;
-      }
-    }
-
+    await _recalculateCounts(); // Hitung jumlah awal
     _currentState = BulkLinkState.selectingTopic;
     notifyListeners();
   }
 
+  // Metode baru untuk menghitung ulang jumlah berdasarkan filter
+  Future<void> _recalculateCounts() async {
+    _currentState = BulkLinkState.loading;
+    notifyListeners();
+
+    _unlinkedCounts.clear();
+    for (final topic in _topics) {
+      if (!topic.isHidden) {
+        final discussions = await _unlinkedService.fetchAllUnlinkedDiscussions(
+          topicName: topic.name,
+          includeFinished: _includeFinished, // Gunakan state filter
+        );
+        _unlinkedCounts[topic.name] = discussions.length;
+      }
+    }
+    _currentState = BulkLinkState.selectingTopic;
+    notifyListeners();
+  }
+
+  // Metode untuk mengubah filter dan memicu perhitungan ulang
+  void toggleIncludeFinished(bool value) {
+    if (_includeFinished == value) return;
+    _includeFinished = value;
+    _recalculateCounts();
+  }
+
+  // Tahap 2: Mulai proses penautan setelah topik dipilih
   Future<void> startLinking({String? topicName}) async {
     _currentState = BulkLinkState.loading;
     notifyListeners();
 
     _unlinkedDiscussions = await _unlinkedService.fetchAllUnlinkedDiscussions(
       topicName: topicName,
+      includeFinished: _includeFinished, // Gunakan state filter
     );
 
     if (_unlinkedDiscussions.isNotEmpty) {
@@ -135,7 +158,6 @@ class BulkLinkProvider with ChangeNotifier {
     nextDiscussion();
   }
 
-  // ==> 2. FUNGSI INI DIPERBAIKI
   Future<void> createAndLinkDiscussion() async {
     if (currentDiscussion == null ||
         currentDiscussion!.subjectLinkedPath == null) {
@@ -144,25 +166,19 @@ class BulkLinkProvider with ChangeNotifier {
       );
     }
 
-    // Dapatkan path dasar data PerpusKu (e.g., .../Perpusku/data)
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
-
-    // **FIX**: Bentuk path yang benar menuju folder 'topics' di dalam struktur PerpusKu
     final perpuskuTopicsPath = path.join(
       perpuskuDataPath,
       'file_contents',
       'topics',
     );
 
-    // Panggil service untuk membuat file HTML baru dengan base path yang sudah benar
     final newRelativePath = await _discussionService.createDiscussionFile(
-      perpuskuBasePath:
-          perpuskuTopicsPath, // Gunakan path yang sudah diperbaiki
+      perpuskuBasePath: perpuskuTopicsPath,
       subjectLinkedPath: currentDiscussion!.subjectLinkedPath!,
       discussionName: currentDiscussion!.discussion.discussion,
     );
 
-    // Panggil metode yang sudah ada untuk menautkan path baru ini
     await linkCurrentDiscussion(newRelativePath);
   }
 
