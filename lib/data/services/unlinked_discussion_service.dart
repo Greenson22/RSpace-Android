@@ -19,15 +19,25 @@ class UnlinkedDiscussionService {
   final SubjectService _subjectService = SubjectService();
   final DiscussionService _discussionService = DiscussionService();
 
-  /// Memindai semua topik dan subjek untuk menemukan diskusi yang belum
+  /// Memindai semua atau topik spesifik untuk menemukan diskusi yang belum
   /// memiliki tautan file (`filePath`).
-  Future<List<UnlinkedDiscussion>> fetchAllUnlinkedDiscussions() async {
+  ///
+  /// [topicName] - Jika null, akan memindai semua topik. Jika diisi,
+  /// hanya akan memindai topik dengan nama tersebut.
+  Future<List<UnlinkedDiscussion>> fetchAllUnlinkedDiscussions({
+    String? topicName,
+  }) async {
     final List<UnlinkedDiscussion> results = [];
     try {
-      final topics = await _topicService.getTopics();
+      final allTopics = await _topicService.getTopics();
       final topicsPath = await _pathService.topicsPath;
 
-      for (final topic in topics) {
+      // Filter topik jika topicName disediakan
+      final topicsToScan = topicName != null
+          ? allTopics.where((t) => t.name == topicName).toList()
+          : allTopics;
+
+      for (final topic in topicsToScan) {
         if (topic.isHidden) continue; // Lewati topik yang disembunyikan
 
         final topicPath = path.join(topicsPath, topic.name);

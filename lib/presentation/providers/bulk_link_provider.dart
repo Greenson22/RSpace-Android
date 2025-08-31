@@ -1,20 +1,29 @@
 // lib/presentation/providers/bulk_link_provider.dart
 
 import 'package:flutter/material.dart';
+import '../../data/models/topic_model.dart'; // Import model Topik
 import '../../data/models/unlinked_discussion_model.dart';
 import '../../data/models/link_suggestion_model.dart';
+import '../../data/services/topic_service.dart'; // Import service Topik
 import '../../data/services/unlinked_discussion_service.dart';
 import '../../data/services/smart_link_service.dart';
 import '../../data/services/discussion_service.dart';
+
+// Enum untuk mengelola state halaman
+enum BulkLinkState { loading, selectingTopic, linking, finished }
 
 class BulkLinkProvider with ChangeNotifier {
   final UnlinkedDiscussionService _unlinkedService =
       UnlinkedDiscussionService();
   final SmartLinkService _smartLinkService = SmartLinkService();
   final DiscussionService _discussionService = DiscussionService();
+  final TopicService _topicService = TopicService(); // Tambahkan TopicService
 
-  bool _isLoading = true;
-  bool get isLoading => _isLoading;
+  BulkLinkState _currentState = BulkLinkState.loading;
+  BulkLinkState get currentState => _currentState;
+
+  List<Topic> _topics = []; // Untuk menyimpan daftar topik
+  List<Topic> get topics => _topics;
 
   List<UnlinkedDiscussion> _unlinkedDiscussions = [];
   int _currentIndex = 0;
@@ -30,20 +39,33 @@ class BulkLinkProvider with ChangeNotifier {
 
   List<Map<String, String>> _allFiles = [];
 
-  bool get isFinished => !_isLoading && currentDiscussion == null;
-
   BulkLinkProvider() {
     _initialize();
   }
 
+  // Tahap 1: Inisialisasi, muat daftar topik
   Future<void> _initialize() async {
-    _unlinkedDiscussions = await _unlinkedService.fetchAllUnlinkedDiscussions();
+    _topics = await _topicService.getTopics();
     _allFiles = await _smartLinkService.getAllPerpuskuFiles();
-    _isLoading = false;
+    _currentState = BulkLinkState.selectingTopic;
+    notifyListeners();
+  }
+
+  // Tahap 2: Mulai proses penautan setelah topik dipilih
+  Future<void> startLinking({String? topicName}) async {
+    _currentState = BulkLinkState.loading;
+    notifyListeners();
+
+    _unlinkedDiscussions = await _unlinkedService.fetchAllUnlinkedDiscussions(
+      topicName: topicName,
+    );
 
     if (_unlinkedDiscussions.isNotEmpty) {
+      _currentIndex = 0;
+      _currentState = BulkLinkState.linking;
       await _findSuggestionsForCurrent();
     } else {
+      _currentState = BulkLinkState.finished;
       notifyListeners();
     }
   }
@@ -63,7 +85,7 @@ class BulkLinkProvider with ChangeNotifier {
       _currentIndex++;
       _findSuggestionsForCurrent();
     } else {
-      _currentIndex++; // Mark as finished
+      _currentState = BulkLinkState.finished;
       notifyListeners();
     }
   }
@@ -75,17 +97,14 @@ class BulkLinkProvider with ChangeNotifier {
     currentDiscussion!.discussion.filePath = relativePath;
 
     // 2. Save the updated discussion back to its JSON file
-    // First, load all discussions from that file
     final allDiscussionsInFile = await _discussionService.loadDiscussions(
       currentDiscussion!.subjectJsonPath,
     );
-    // Find the specific discussion by its name (or a more robust ID if you have one)
     final indexToUpdate = allDiscussionsInFile.indexWhere(
       (d) => d.discussion == currentDiscussion!.discussion.discussion,
     );
     if (indexToUpdate != -1) {
       allDiscussionsInFile[indexToUpdate] = currentDiscussion!.discussion;
-      // Save the entire list back
       await _discussionService.saveDiscussions(
         currentDiscussion!.subjectJsonPath,
         allDiscussionsInFile,
