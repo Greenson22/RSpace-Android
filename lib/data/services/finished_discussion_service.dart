@@ -6,22 +6,24 @@ import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart';
 import '../models/discussion_model.dart';
 import '../models/finished_discussion_model.dart';
+import '../models/topic_model.dart';
 import 'path_service.dart';
+import 'topic_service.dart';
 
 class FinishedDiscussionService {
   final PathService _pathService = PathService();
+  final TopicService _topicService = TopicService();
 
   Future<List<FinishedDiscussion>> getAllFinishedDiscussions() async {
     final List<FinishedDiscussion> finishedDiscussions = [];
     try {
       final topicsPath = await _pathService.topicsPath;
-      final topicsDir = Directory(topicsPath);
+      final topics = await _topicService.getTopics();
 
-      if (!await topicsDir.exists()) return [];
+      for (final topic in topics) {
+        final topicDir = Directory(path.join(topicsPath, topic.name));
+        if (!await topicDir.exists()) continue;
 
-      final topicEntities = topicsDir.listSync().whereType<Directory>();
-
-      for (final topicDir in topicEntities) {
         final subjectFiles = topicDir.listSync().whereType<File>().where(
           (file) =>
               file.path.endsWith('.json') &&
@@ -39,9 +41,11 @@ class FinishedDiscussionService {
             final discussion = Discussion.fromJson(item);
             if (discussion.finished) {
               finishedDiscussions.add(
+                // >> PERBAIKAN DI SINI: Tambahkan parameter 'topic' yang hilang
                 FinishedDiscussion(
                   discussion: discussion,
-                  topicName: path.basename(topicDir.path),
+                  topicName: topic.name,
+                  topic: topic, // <-- Ini yang ditambahkan
                   subjectName: path.basenameWithoutExtension(subjectFile.path),
                   subjectJsonPath: subjectFile.path,
                 ),

@@ -12,12 +12,13 @@ class ExportedDiscussionsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ExportedDiscussionsProvider(),
+      // Pastikan nama di sini sama dengan nama class di bawah (dengan _)
       child: const _ExportedDiscussionsView(),
     );
   }
 }
 
-// >> UBAH MENJADI STATEFULWIDGET
+// Ini adalah StatefulWidget yang kita buat untuk fitur search
 class _ExportedDiscussionsView extends StatefulWidget {
   const _ExportedDiscussionsView();
 
@@ -27,7 +28,6 @@ class _ExportedDiscussionsView extends StatefulWidget {
 }
 
 class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
-  // >> BARU: Tambahkan controller
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -100,7 +100,6 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
 
             return Column(
               children: [
-                // >> BARU: Tambahkan Search Bar
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
@@ -140,7 +139,6 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                           child: Text('Arsip terakhir diubah: $lastModified'),
                         ),
                         ...provider.exportedTopics.map((topic) {
-                          // >> BARU: Buka otomatis jika hasil pencarian
                           final bool isSearchActive =
                               provider.searchQuery.isNotEmpty;
                           return ExpansionTile(
@@ -153,7 +151,10 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                                 fontSize: 18,
                               ),
                             ),
-                            leading: const Icon(Icons.topic_outlined),
+                            leading: Text(
+                              topic.icon,
+                              style: const TextStyle(fontSize: 24),
+                            ),
                             children: topic.subjects.map((subject) {
                               return ExpansionTile(
                                 key: PageStorageKey(
@@ -161,9 +162,12 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                                 ),
                                 initiallyExpanded: isSearchActive,
                                 title: Text(subject.name),
-                                leading: const Padding(
-                                  padding: EdgeInsets.only(left: 16.0),
-                                  child: Icon(Icons.class_outlined),
+                                leading: Padding(
+                                  padding: const EdgeInsets.only(left: 16.0),
+                                  child: Text(
+                                    subject.icon,
+                                    style: const TextStyle(fontSize: 24),
+                                  ),
                                 ),
                                 children: subject.discussions.map((discussion) {
                                   final bool hasHtmlContent =

@@ -11,11 +11,14 @@ import '../../data/models/finished_discussion_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/finished_discussion_service.dart';
 import '../../data/services/path_service.dart';
+// >> BARU: Import SubjectService untuk membaca metadata
+import '../../data/services/subject_service.dart';
 
 class FinishedDiscussionsProvider with ChangeNotifier {
   final FinishedDiscussionService _service = FinishedDiscussionService();
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
+  final SubjectService _subjectService = SubjectService(); // >> BARU
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -50,14 +53,12 @@ class FinishedDiscussionsProvider with ChangeNotifier {
     }
   }
 
-  // >> FUNGSI EKSPOR DIPERBARUI DENGAN PARAMETER BARU
   Future<String> exportFinishedDiscussions({
     bool deleteAfterExport = false,
   }) async {
     _isExporting = true;
     notifyListeners();
 
-    // Pilih diskusi yang akan diekspor: yang diseleksi, atau semua jika tidak ada seleksi.
     final discussionsToExport = isSelectionMode
         ? _selectedDiscussions.toList()
         : _finishedDiscussions;
@@ -104,7 +105,6 @@ class FinishedDiscussionsProvider with ChangeNotifier {
 
       final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
       for (final finished in discussionsToExport) {
-        // Gunakan discussionsToExport
         if (newDiscussionsByFile.containsKey(finished.subjectJsonPath)) {
           newDiscussionsByFile[finished.subjectJsonPath]!.add(finished);
         } else {
@@ -127,9 +127,13 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         );
 
         List<Discussion> existingDiscussions = [];
+        // >> BARU: Simpan metadata yang ada
+        Map<String, dynamic> existingMetadata = {};
+
         if (await subjectJsonFile.exists()) {
           final jsonString = await subjectJsonFile.readAsString();
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+          existingMetadata = jsonData['metadata'] ?? {};
           existingDiscussions = (jsonData['content'] as List)
               .map((item) => Discussion.fromJson(item))
               .toList();
@@ -146,11 +150,26 @@ class FinishedDiscussionsProvider with ChangeNotifier {
           }
         }
 
+        // >> BARU: Dapatkan metadata ikon subjek dari file asli
+        final originalSubjectFile = File(entry.key);
+        final subjectMetadata = await _subjectService.getSubjectMetadata(
+          originalSubjectFile,
+        );
+        existingMetadata['icon'] =
+            subjectMetadata['icon']; // Tambahkan ikon ke metadata
+
         final jsonContent = {
-          'metadata': {},
+          'metadata': existingMetadata, // Simpan metadata yang diperbarui
           'content': existingDiscussions.map((d) => d.toJson()).toList(),
         };
         await subjectJsonFile.writeAsString(jsonEncode(jsonContent));
+
+        // >> BARU: Simpan juga topic_config.json
+        final topicConfigContent = first.topic.toConfigJson();
+        final topicConfigFile = File(
+          path.join(rspaceTopicPath, 'topic_config.json'),
+        );
+        await topicConfigFile.writeAsString(jsonEncode(topicConfigContent));
 
         for (final discussion in discussionsToAdd) {
           if (discussion.discussion.filePath != null &&
@@ -182,9 +201,7 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       await encoder.addDirectory(stagingDir, includeDirName: false);
       encoder.close();
 
-      // >> BARU: Hapus diskusi setelah ekspor jika diminta
       if (deleteAfterExport) {
-        // Jika tidak ada yang diseleksi, artinya kita ekspor semua, maka seleksi semua dulu.
         if (!isSelectionMode) {
           selectAll();
         }

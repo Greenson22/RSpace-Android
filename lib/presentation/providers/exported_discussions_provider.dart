@@ -26,8 +26,8 @@ class ExportedDiscussionsProvider with ChangeNotifier {
   DateTime? _lastModified;
   DateTime? get lastModified => _lastModified;
 
-  List<ExportedTopic> _allExportedTopics = []; // Simpan data asli
-  List<ExportedTopic> _exportedTopics = []; // Data yang akan ditampilkan
+  List<ExportedTopic> _allExportedTopics = [];
+  List<ExportedTopic> _exportedTopics = [];
   List<ExportedTopic> get exportedTopics => _exportedTopics;
 
   String _searchQuery = '';
@@ -63,11 +63,24 @@ class ExportedDiscussionsProvider with ChangeNotifier {
       final archive = ZipDecoder().decodeBytes(bytes);
 
       final Map<String, ExportedTopic> topicsMap = {};
+      final Map<String, String> topicIcons = {};
 
+      // >> TAHAP 1: Baca konfigurasi topik untuk mendapatkan ikonnya
+      for (final file in archive) {
+        if (file.isFile && file.name.endsWith('topic_config.json')) {
+          final topicName = path.dirname(file.name).split('/').last;
+          final content = utf8.decode(file.content as List<int>);
+          final jsonData = jsonDecode(content) as Map<String, dynamic>;
+          topicIcons[topicName] = jsonData['icon'] ?? '📁';
+        }
+      }
+
+      // >> TAHAP 2: Proses semua file JSON untuk membangun struktur data
       for (final file in archive) {
         if (file.isFile &&
             file.name.startsWith('RSpace/') &&
-            file.name.endsWith('.json')) {
+            file.name.endsWith('.json') &&
+            !file.name.endsWith('topic_config.json')) {
           final pathParts = file.name.split('/');
           if (pathParts.length == 3) {
             final topicName = pathParts[1];
@@ -75,24 +88,38 @@ class ExportedDiscussionsProvider with ChangeNotifier {
 
             final content = utf8.decode(file.content as List<int>);
             final jsonData = jsonDecode(content) as Map<String, dynamic>;
+
             final discussions = (jsonData['content'] as List)
                 .map((item) => Discussion.fromJson(item))
                 .toList();
 
+            // Dapatkan ikon subjek dari metadata
+            final subjectIcon =
+                (jsonData['metadata'] as Map<String, dynamic>?)?['icon'] ??
+                '📄';
+
             if (!topicsMap.containsKey(topicName)) {
               topicsMap[topicName] = ExportedTopic(
                 name: topicName,
+                icon:
+                    topicIcons[topicName] ??
+                    '📁', // Gunakan ikon yang sudah dibaca
                 subjects: [],
               );
             }
 
             topicsMap[topicName]!.subjects.add(
-              ExportedSubject(name: subjectName, discussions: discussions),
+              ExportedSubject(
+                name: subjectName,
+                icon: subjectIcon, // Tambahkan ikon subjek
+                discussions: discussions,
+              ),
             );
           }
         }
       }
 
+      // >> TAHAP 3: Proses semua file HTML dan cocokkan
       for (final file in archive) {
         if (file.isFile &&
             file.name.startsWith('PerpusKu/') &&
@@ -119,7 +146,7 @@ class ExportedDiscussionsProvider with ChangeNotifier {
                   file.content as List<int>,
                 );
               } catch (e) {
-                // Abaikan jika tidak ada subjek atau diskusi yang cocok
+                // Abaikan
               }
             }
           }
@@ -132,7 +159,7 @@ class ExportedDiscussionsProvider with ChangeNotifier {
         topic.subjects.sort((a, b) => a.name.compareTo(b.name));
       }
 
-      _filterExportedData(); // Terapkan filter awal (tanpa query)
+      _filterExportedData();
     } catch (e) {
       _error = "Gagal memuat atau membaca file arsip: ${e.toString()}";
     } finally {
@@ -141,13 +168,11 @@ class ExportedDiscussionsProvider with ChangeNotifier {
     }
   }
 
-  // >> BARU: Metode untuk melakukan pencarian
   void search(String query) {
     _searchQuery = query.toLowerCase();
     _filterExportedData();
   }
 
-  // >> BARU: Metode untuk memfilter data
   void _filterExportedData() {
     if (_searchQuery.isEmpty) {
       _exportedTopics = List.from(_allExportedTopics);
@@ -160,31 +185,29 @@ class ExportedDiscussionsProvider with ChangeNotifier {
               .where((d) => d.discussion.toLowerCase().contains(_searchQuery))
               .toList();
 
-          // Sertakan subjek jika nama subjek cocok ATAU ada diskusi yang cocok di dalamnya
           if (subject.name.toLowerCase().contains(_searchQuery) ||
               filteredDiscussions.isNotEmpty) {
             filteredSubjects.add(
               ExportedSubject(
                 name: subject.name,
+                icon: subject.icon,
                 discussions: filteredDiscussions.isNotEmpty
                     ? filteredDiscussions
-                    : subject
-                          .discussions, // Tampilkan semua diskusi jika nama subjek cocok
+                    : subject.discussions,
               ),
             );
           }
         }
 
-        // Sertakan topik jika nama topik cocok ATAU ada subjek yang cocok di dalamnya
         if (topic.name.toLowerCase().contains(_searchQuery) ||
             filteredSubjects.isNotEmpty) {
           filteredTopics.add(
             ExportedTopic(
               name: topic.name,
+              icon: topic.icon,
               subjects: filteredSubjects.isNotEmpty
                   ? filteredSubjects
-                  : topic
-                        .subjects, // Tampilkan semua subjek jika nama topik cocok
+                  : topic.subjects,
             ),
           );
         }

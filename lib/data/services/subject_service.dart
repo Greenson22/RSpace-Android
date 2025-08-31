@@ -8,7 +8,6 @@ import 'discussion_service.dart';
 import 'path_service.dart';
 import 'shared_preferences_service.dart';
 import '../../presentation/pages/3_discussions_page/utils/repetition_code_utils.dart';
-// ==> Tambahkan import ini untuk OpenFile
 import 'package:open_file/open_file.dart';
 
 class SubjectService {
@@ -39,9 +38,9 @@ class SubjectService {
     List<Subject> subjects = [];
     for (var file in files) {
       final name = path.basenameWithoutExtension(file.path);
-      final metadata = await _getSubjectMetadata(file);
+      // >> PERBAIKAN: Panggil metode publik
+      final metadata = await getSubjectMetadata(file);
 
-      // Logika baru untuk menghitung statistik diskusi
       final discussions = await _discussionService.loadDiscussions(file.path);
       final int discussionCount = discussions.length;
       final int finishedDiscussionCount = discussions
@@ -67,10 +66,7 @@ class SubjectService {
           date: relevantDiscussionInfo['date'],
           repetitionCode: relevantDiscussionInfo['code'],
           isHidden: metadata['isHidden'] as bool? ?? false,
-          // ## PERBAIKAN KRUSIAL ADA DI SINI ##
-          // Pastikan untuk membaca dan meneruskan 'linkedPath' dari metadata.
           linkedPath: metadata['linkedPath'] as String?,
-          // Mengisi data statistik ke model
           discussionCount: discussionCount,
           finishedDiscussionCount: finishedDiscussionCount,
           repetitionCodeCounts: repetitionCodeCounts,
@@ -249,7 +245,8 @@ class SubjectService {
     }
   }
 
-  Future<Map<String, dynamic>> _getSubjectMetadata(File subjectFile) async {
+  // >> PERUBAHAN DI SINI: Metode ini sekarang publik (tanpa garis bawah)
+  Future<Map<String, dynamic>> getSubjectMetadata(File subjectFile) async {
     try {
       if (!await subjectFile.exists()) {
         return {
@@ -351,7 +348,8 @@ class SubjectService {
     final file = File(filePath);
     if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
 
-    final metadata = await _getSubjectMetadata(file);
+    // >> PERBAIKAN: Panggil metode publik
+    final metadata = await getSubjectMetadata(file);
     final subject = Subject(
       name: subjectName,
       icon: newIcon,
@@ -371,7 +369,8 @@ class SubjectService {
     final file = File(filePath);
     if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
 
-    final metadata = await _getSubjectMetadata(file);
+    // >> PERBAIKAN: Panggil metode publik
+    final metadata = await getSubjectMetadata(file);
     final subject = Subject(
       name: subjectName,
       icon: metadata['icon'] as String? ?? _defaultIcon,
@@ -391,7 +390,8 @@ class SubjectService {
     final file = File(filePath);
     if (!await file.exists()) throw Exception('File subject tidak ditemukan.');
 
-    final metadata = await _getSubjectMetadata(file);
+    // >> PERBAIKAN: Panggil metode publik
+    final metadata = await getSubjectMetadata(file);
     final subject = Subject(
       name: subjectName,
       icon: metadata['icon'] as String? ?? _defaultIcon,
@@ -440,7 +440,6 @@ class SubjectService {
     }
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
   Future<void> openSubjectIndexFile(String subjectLinkedPath) async {
     try {
       final pathService = PathService();
@@ -460,7 +459,6 @@ class SubjectService {
         );
       }
 
-      // Logika untuk membuka file editor (mirip dengan di DiscussionProvider)
       if (Platform.isLinux) {
         final editor =
             Platform.environment['EDITOR'] ?? Platform.environment['VISUAL'];
