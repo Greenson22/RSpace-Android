@@ -3,7 +3,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive_io.dart';
-import 'package:file_picker/file_picker.dart';
+// Hapus import FilePicker karena tidak digunakan lagi
+// import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
@@ -51,17 +52,13 @@ class FinishedDiscussionsProvider with ChangeNotifier {
     }
   }
 
-  // >> FUNGSI EKSPOR DIPERBAIKI DI SINI
   Future<String> exportFinishedDiscussions() async {
     _isExporting = true;
     notifyListeners();
 
-    // PERBAIKAN 1: Ganti variabel untuk menyimpan path subfolder, bukan folder /tmp
     Directory? stagingDir;
     try {
-      // 1. Dapatkan direktori temporer sistem
       final tempDir = await getTemporaryDirectory();
-      // Buat subfolder unik di dalamnya
       stagingDir = Directory(
         path.join(
           tempDir.path,
@@ -84,7 +81,6 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         'topics',
       );
 
-      // 2. Kelompokkan diskusi (logika ini tetap sama)
       final Map<String, List<FinishedDiscussion>> discussionsByFile = {};
       for (final finished in _finishedDiscussions) {
         if (discussionsByFile.containsKey(finished.subjectJsonPath)) {
@@ -94,7 +90,6 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         }
       }
 
-      // 3. Salin dan strukturkan file (logika ini tetap sama)
       for (final entry in discussionsByFile.entries) {
         final discussions = entry.value;
         if (discussions.isEmpty) continue;
@@ -137,16 +132,9 @@ class FinishedDiscussionsProvider with ChangeNotifier {
         }
       }
 
-      // 4. Minta pengguna memilih lokasi penyimpanan (logika ini tetap sama)
-      String? outputPath = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Pilih Lokasi untuk Menyimpan File ZIP',
-      );
+      // >> PERUBAHAN DI SINI: Gunakan path service, bukan file picker
+      final outputPath = await _pathService.finishedDiscussionsExportPath;
 
-      if (outputPath == null) {
-        return 'Ekspor dibatalkan oleh pengguna.';
-      }
-
-      // 5. Buat file ZIP (logika ini tetap sama)
       final timestamp = DateFormat('yyyy-MM-dd_HH-mm').format(DateTime.now());
       final zipFilePath = path.join(
         outputPath,
@@ -157,11 +145,10 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       await encoder.addDirectory(stagingDir);
       encoder.close();
 
-      return 'Ekspor berhasil disimpan di: $zipFilePath';
+      return 'Ekspor berhasil disimpan di: $outputPath';
     } catch (e) {
       rethrow;
     } finally {
-      // PERBAIKAN 2: Hapus 'stagingDir' yang spesifik, bukan 'tempDir' utama
       if (stagingDir != null && await stagingDir.exists()) {
         await stagingDir.delete(recursive: true);
       }
@@ -169,8 +156,6 @@ class FinishedDiscussionsProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // ... (sisa fungsi lainnya tidak berubah)
 
   void toggleSelection(FinishedDiscussion discussion) {
     if (_selectedDiscussions.contains(discussion)) {

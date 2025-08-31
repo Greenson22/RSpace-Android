@@ -9,6 +9,31 @@ import 'shared_preferences_service.dart';
 class PathService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
+  // >> BARU: Getter untuk path dasar aplikasi (induk dari RSpace_data)
+  Future<String> get _appBasePath async {
+    String? customPath = await _prefsService.loadCustomStoragePath();
+    if (customPath != null && customPath.isNotEmpty) {
+      return customPath;
+    }
+
+    Directory? baseDir;
+    if (Platform.isAndroid) {
+      Directory? externalDir = await getExternalStorageDirectory();
+      if (externalDir == null) {
+        throw Exception(
+          "Tidak dapat menemukan direktori penyimpanan eksternal.",
+        );
+      }
+      final rootDir = Directory(
+        path.join(externalDir.path, '..', '..', '..', '..'),
+      );
+      baseDir = Directory(path.join(rootDir.path, 'Download'));
+    } else {
+      baseDir = await getApplicationDocumentsDirectory();
+    }
+    return path.join(baseDir.path, 'RSpace_App');
+  }
+
   // Path ini untuk DATA APLIKASI UTAMA
   Future<String> get _baseDataPath async {
     if (Platform.isAndroid) {
@@ -56,9 +81,17 @@ class PathService {
 
   // DIUBAH: Path ini KHUSUS untuk FOLDER BACKUP
   Future<String?> get _baseBackupPath async {
-    // DIHAPUS: Blok 'if (kDebugMode)' dihapus agar selalu memuat path dari preferensi.
-    // Sekarang, path yang Anda pilih di UI akan selalu digunakan.
     return await _prefsService.loadCustomBackupPath();
+  }
+
+  // >> BARU: Path untuk folder ekspor diskusi selesai
+  Future<String> get finishedDiscussionsExportPath async {
+    final basePath = await _appBasePath;
+    final exportDir = Directory(path.join(basePath, 'finish_discussions'));
+    if (!await exportDir.exists()) {
+      await exportDir.create(recursive: true);
+    }
+    return exportDir.path;
   }
 
   Future<String> get rspaceBackupPath async {
@@ -91,7 +124,6 @@ class PathService {
       path.join(await contentsPath, 'topics');
   Future<String> get myTasksPath async =>
       path.join(await contentsPath, 'my_tasks.json');
-  // ==> PATH BARU DITAMBAHKAN DI SINI <==
   Future<String> get timeLogPath async =>
       path.join(await contentsPath, 'time_log.json');
   Future<String> get logTaskPresetsPath async =>
@@ -104,13 +136,10 @@ class PathService {
       path.join(await contentsPath, 'countdown_timers.json');
 
   Future<String> get perpuskuDataPath async {
-    // DIHAPUS: Blok 'if (kDebugMode)' dihapus agar selalu memuat path dari preferensi.
-    // Sekarang, path sumber data PerpusKu yang Anda pilih akan selalu digunakan untuk backup.
     String? customPath = await _prefsService.loadPerpuskuDataPath();
     if (customPath != null && customPath.isNotEmpty) {
       return customPath;
     }
-    // Ini adalah path default jika Anda tidak mengatur path kustom.
     return path.join(await _baseDataPath, 'perpusku_data');
   }
 
