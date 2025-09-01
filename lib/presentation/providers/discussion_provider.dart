@@ -689,11 +689,17 @@ $htmlContent
     await _saveDiscussions();
   }
 
-  void addPoint(Discussion discussion, String text) {
+  void addPoint(
+    Discussion discussion,
+    String text, {
+    bool inheritRepetitionCode = false,
+  }) {
     final newPoint = Point(
       pointText: text,
-      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-      repetitionCode: 'R0D',
+      date: inheritRepetitionCode && discussion.date != null
+          ? discussion.date!
+          : DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      repetitionCode: inheritRepetitionCode ? discussion.repetitionCode : 'R0D',
     );
     discussion.points.add(newPoint);
     _filterAndSortDiscussions();
