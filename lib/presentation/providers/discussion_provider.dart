@@ -1,69 +1,61 @@
 // lib/presentation/providers/discussion_provider.dart
 
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart' show parse;
 import 'package:intl/intl.dart';
-import 'package:mime/mime.dart';
-import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import '../../data/models/discussion_model.dart';
 import '../../data/services/discussion_service.dart';
 import '../../data/services/path_service.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../pages/3_discussions_page/utils/repetition_code_utils.dart';
+import 'mixins/discussion_actions_mixin.dart';
+import 'mixins/discussion_filter_sort_mixin.dart';
 
-class DiscussionProvider with ChangeNotifier {
-  final DiscussionService _discussionService = DiscussionService();
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
-  final PathService _pathService = PathService();
+class DiscussionProvider
+    with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {
+  @override
+  final DiscussionService discussionService = DiscussionService();
+  @override
+  final SharedPreferencesService prefsService = SharedPreferencesService();
+  @override
+  final PathService pathService = PathService();
 
   final String _jsonFilePath;
-  // ==> TAMBAHKAN PROPERTI BARU UNTUK MENYIMPAN LINKEDPATH DARI SUBJECT SUMBER <==
+  @override
   final String? sourceSubjectLinkedPath;
 
   DiscussionProvider(this._jsonFilePath, {this.sourceSubjectLinkedPath}) {
     loadInitialData();
   }
 
-  // ... (properti lain tetap sama) ...
+  // CORE STATE
   bool _isLoading = true;
+  @override
   bool get isLoading => _isLoading;
 
   List<Discussion> _allDiscussions = [];
+  @override
   List<Discussion> get allDiscussions => _allDiscussions;
-
-  List<Discussion> _filteredDiscussions = [];
-  List<Discussion> get filteredDiscussions => _filteredDiscussions;
-
-  String _searchQuery = '';
-  set searchQuery(String value) {
-    _searchQuery = value;
-    _filterAndSortDiscussions();
+  @override
+  set allDiscussions(List<Discussion> value) {
+    _allDiscussions = value;
   }
 
-  String? _activeFilterType;
-  String? get activeFilterType => _activeFilterType;
-
-  String? _selectedRepetitionCode;
-  DateTimeRange? _selectedDateRange;
-
-  String _sortType = 'date';
-  String get sortType => _sortType;
-
-  bool _sortAscending = true;
-  bool get sortAscending => _sortAscending;
-
-  bool _showFinishedDiscussions = false;
-  bool get showFinishedDiscussions => _showFinishedDiscussions;
+  List<Discussion> _filteredDiscussions = [];
+  @override
+  List<Discussion> get filteredDiscussions => _filteredDiscussions;
+  @override
+  set filteredDiscussions(List<Discussion> value) {
+    _filteredDiscussions = value;
+  }
 
   final Set<Discussion> _selectedDiscussions = {};
+  @override
   Set<Discussion> get selectedDiscussions => _selectedDiscussions;
-  bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
 
-  final List<String> repetitionCodes = kRepetitionCodes;
+  // GETTERS
+  bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
 
   int get totalDiscussionCount => _allDiscussions.length;
 
@@ -79,584 +71,31 @@ class DiscussionProvider with ChangeNotifier {
     return counts;
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL UNTUK MENANGANI PEMINDAHAN FILE & LOGGING <==
-  Future<String> moveSelectedDiscussions(
-    String targetSubjectJsonPath,
-    String? targetSubjectLinkedPath,
-  ) async {
-    final log = StringBuffer();
-    final discussionsToMove = _selectedDiscussions.toList();
-    final perpuskuBasePath = await getPerpuskuHtmlBasePath();
-
-    log.writeln('${discussionsToMove.length} item akan dipindahkan:');
-    log.writeln('--------------------');
-
-    for (final discussion in discussionsToMove) {
-      log.writeln('Memindahkan diskusi: "${discussion.discussion}"');
-
-      // Cek apakah diskusi memiliki file yang tertaut
-      if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
-        // Cek apakah subject sumber dan tujuan memiliki linkedPath
-        if (sourceSubjectLinkedPath != null &&
-            targetSubjectLinkedPath != null) {
-          try {
-            final newRelativePath = await _discussionService.moveDiscussionFile(
-              perpuskuBasePath: perpuskuBasePath,
-              sourceDiscussionFilePath: discussion.filePath!,
-              targetSubjectLinkedPath: targetSubjectLinkedPath,
-            );
-
-            if (newRelativePath != null) {
-              log.writeln(
-                '  > Berhasil memindahkan file HTML ke "$targetSubjectLinkedPath".',
-              );
-              // Perbarui filePath di objek discussion SEBELUM disimpan
-              discussion.filePath = newRelativePath;
-            }
-          } catch (e) {
-            log.writeln('  > GAGAL memindahkan file HTML: $e');
-            // Lanjutkan proses meskipun file gagal dipindah
-          }
-        } else {
-          log.writeln(
-            '  > File HTML tidak dipindahkan (subject sumber atau tujuan tidak tertaut).',
-          );
-        }
-      }
-    }
-
-    try {
-      // Tambahkan semua diskusi (yang filePath-nya mungkin sudah diupdate) ke file tujuan
-      await _discussionService.addDiscussions(
-        targetSubjectJsonPath,
-        discussionsToMove,
-      );
-      log.writeln('--------------------');
-      log.writeln(
-        'Berhasil memindahkan data ${discussionsToMove.length} diskusi.',
-      );
-
-      // Hapus semua diskusi dari file sumber
-      _allDiscussions.removeWhere((d) => _selectedDiscussions.contains(d));
-      _selectedDiscussions.clear();
-      _filterAndSortDiscussions(); // Panggil sebelum save
-      await _saveDiscussions();
-    } catch (e) {
-      log.writeln('--------------------');
-      log.writeln('GAGAL memindahkan data diskusi: $e');
-      rethrow;
-    }
-
-    return log.toString();
-  }
-
-  // ... (sisa kode DiscussionProvider tidak ada yang berubah, salin saja semuanya) ...
-  void toggleSelection(Discussion discussion) {
-    if (_selectedDiscussions.contains(discussion)) {
-      _selectedDiscussions.remove(discussion);
-    } else {
-      _selectedDiscussions.add(discussion);
-    }
-    notifyListeners();
-  }
-
-  void selectAllFiltered() {
-    _selectedDiscussions.addAll(_filteredDiscussions);
-    notifyListeners();
-  }
-
-  void clearSelection() {
-    _selectedDiscussions.clear();
-    notifyListeners();
-  }
-
+  // INITIALIZATION & DATA HANDLING
   Future<void> loadInitialData() async {
-    await _loadPreferences();
-    await _loadDiscussions();
+    await loadPreferences();
+    await loadDiscussions();
   }
 
-  Future<void> _loadPreferences() async {
-    final sortPrefs = await _prefsService.loadSortPreferences();
-    _sortType = sortPrefs['sortType'];
-    _sortAscending = sortPrefs['sortAscending'];
-
-    final filterPrefs = await _prefsService.loadFilterPreference();
-    _activeFilterType = filterPrefs['filterType'];
-
-    // ## PERBAIKAN DIMULAI DI SINI ##
-    if (_activeFilterType == 'date_today_and_before') {
-      // Jika filter spesial ditemukan, buat rentang tanggal dinamis
-      _activeFilterType = 'date'; // Secara internal, ini tetap filter tanggal
-      final now = DateTime.now();
-      _selectedDateRange = DateTimeRange(
-        start: DateTime(2000),
-        end: DateTime(now.year, now.month, now.day),
-      );
-    } else if (_activeFilterType == 'code') {
-      _selectedRepetitionCode = filterPrefs['filterValue'];
-    } else if (_activeFilterType == 'date' &&
-        filterPrefs['filterValue'] != null) {
-      // Ini menangani rentang tanggal statis (dari 'Pilih Rentang Tanggal')
-      final dates = filterPrefs['filterValue']!.split('/');
-      _selectedDateRange = DateTimeRange(
-        start: DateTime.parse(dates[0]),
-        end: DateTime.parse(dates[1]),
-      );
-    }
-    // ## PERBAIKAN SELESAI ##
-
-    notifyListeners();
-  }
-
-  Future<void> _loadDiscussions() async {
+  Future<void> loadDiscussions() async {
     _isLoading = true;
     notifyListeners();
     try {
-      _allDiscussions = await _discussionService.loadDiscussions(_jsonFilePath);
-      _filterAndSortDiscussions();
+      _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
+      filterAndSortDiscussions();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _saveDiscussions() async {
-    await _discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
+  @override
+  Future<void> saveDiscussions() async {
+    await discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
-  Future<void> moveDiscussion(
-    Discussion discussion,
-    String targetSubjectPath,
-  ) async {
-    try {
-      await _discussionService.addDiscussion(targetSubjectPath, discussion);
-      deleteDiscussion(discussion);
-    } catch (e) {
-      debugPrint("Error moving discussion: $e");
-      rethrow;
-    }
-  }
-
-  Map<String, String?> _getEffectiveDiscussionInfoForSorting(
-    Discussion discussion,
-  ) {
-    if (discussion.finished) {
-      return {'date': discussion.finish_date, 'code': 'Finish'};
-    }
-
-    final visiblePoints = discussion.points
-        .where((point) => !point.finished && doesPointMatchFilter(point))
-        .toList();
-
-    if (visiblePoints.isNotEmpty) {
-      int minCodeIndex = 999;
-      for (var point in visiblePoints) {
-        final codeIndex = getRepetitionCodeIndex(point.repetitionCode);
-        if (codeIndex < minCodeIndex) {
-          minCodeIndex = codeIndex;
-        }
-      }
-
-      final lowestCodePoints = visiblePoints
-          .where(
-            (point) =>
-                getRepetitionCodeIndex(point.repetitionCode) == minCodeIndex,
-          )
-          .toList();
-
-      lowestCodePoints.sort((a, b) {
-        final dateA = DateTime.tryParse(a.date);
-        final dateB = DateTime.tryParse(b.date);
-        if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1;
-        if (dateB == null) return -1;
-        return dateA.compareTo(dateB);
-      });
-
-      if (lowestCodePoints.isNotEmpty) {
-        final relevantPoint = lowestCodePoints.first;
-        return {
-          'date': relevantPoint.date,
-          'code': relevantPoint.repetitionCode,
-        };
-      }
-    }
-
-    return {
-      'date': discussion.effectiveDate,
-      'code': discussion.effectiveRepetitionCode,
-    };
-  }
-
-  void _filterAndSortDiscussions() {
-    final query = _searchQuery.toLowerCase();
-
-    final activeDiscussions = _allDiscussions
-        .where((d) => !d.finished)
-        .toList();
-    final finishedDiscussions = _allDiscussions
-        .where((d) => d.finished)
-        .toList();
-
-    List<Discussion> filteredActiveDiscussions = activeDiscussions.where((
-      discussion,
-    ) {
-      final matchesSearchQuery = discussion.discussion.toLowerCase().contains(
-        query,
-      );
-      if (!matchesSearchQuery) return false;
-
-      bool matchesFilter = true;
-      final effectiveInfo = _getEffectiveDiscussionInfoForSorting(discussion);
-      final effectiveDate = effectiveInfo['date'];
-      final effectiveCode = effectiveInfo['code'];
-
-      if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
-        matchesFilter = effectiveCode == _selectedRepetitionCode;
-      } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
-        try {
-          if (effectiveDate == null) return false;
-          final discussionDate = DateTime.parse(effectiveDate);
-          final normalizedDiscussionDate = DateTime(
-            discussionDate.year,
-            discussionDate.month,
-            discussionDate.day,
-          );
-          final startDate = _selectedDateRange!.start;
-          final endDate = _selectedDateRange!.end;
-          matchesFilter =
-              !normalizedDiscussionDate.isBefore(startDate) &&
-              !normalizedDiscussionDate.isAfter(endDate);
-        } catch (e) {
-          matchesFilter = false;
-        }
-      }
-      return matchesFilter;
-    }).toList();
-
-    filteredActiveDiscussions.sort((a, b) {
-      final infoA = _getEffectiveDiscussionInfoForSorting(a);
-      final infoB = _getEffectiveDiscussionInfoForSorting(b);
-      int result;
-      switch (_sortType) {
-        case 'name':
-          result = a.discussion.toLowerCase().compareTo(
-            b.discussion.toLowerCase(),
-          );
-          break;
-        case 'code':
-          final codeA = infoA['code'] ?? '';
-          final codeB = infoB['code'] ?? '';
-          result = getRepetitionCodeIndex(
-            codeA,
-          ).compareTo(getRepetitionCodeIndex(codeB));
-          break;
-        default: // date
-          final dateA = infoA['date'];
-          final dateB = infoB['date'];
-          if (dateA == null && dateB == null) {
-            result = 0;
-          } else if (dateA == null) {
-            result = 1;
-          } else if (dateB == null) {
-            result = -1;
-          } else {
-            result = DateTime.parse(dateA).compareTo(DateTime.parse(dateB));
-          }
-          break;
-      }
-      return result;
-    });
-
-    if (!_sortAscending) {
-      filteredActiveDiscussions = filteredActiveDiscussions.reversed.toList();
-    }
-
-    _filteredDiscussions = filteredActiveDiscussions;
-
-    if (_activeFilterType == null ||
-        (_showFinishedDiscussions && _activeFilterType != 'code')) {
-      final filteredFinished = finishedDiscussions
-          .where((d) => d.discussion.toLowerCase().contains(query))
-          .toList();
-      _filteredDiscussions.addAll(filteredFinished);
-    }
-
-    if (_activeFilterType == 'code' && _selectedRepetitionCode == 'Finish') {
-      _filteredDiscussions = finishedDiscussions
-          .where((d) => d.discussion.toLowerCase().contains(query))
-          .toList();
-    }
-
-    notifyListeners();
-  }
-
-  bool doesPointMatchFilter(Point point) {
-    if (point.finished) return false;
-    if (_activeFilterType == null) {
-      return true;
-    }
-    if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
-      return point.repetitionCode == _selectedRepetitionCode;
-    } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
-      try {
-        final pointDate = DateTime.parse(point.date);
-        final normalizedPointDate = DateTime(
-          pointDate.year,
-          pointDate.month,
-          pointDate.day,
-        );
-        final startDate = _selectedDateRange!.start;
-        final endDate = _selectedDateRange!.end;
-        return !normalizedPointDate.isBefore(startDate) &&
-            !normalizedPointDate.isAfter(endDate);
-      } catch (e) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  Future<String> getPerpuskuHtmlBasePath() async {
-    final perpuskuPath = await _pathService.perpuskuDataPath;
-    return path.join(perpuskuPath, 'file_contents', 'topics');
-  }
-
-  Future<void> writeHtmlToFile(String relativePath, String htmlContent) async {
-    try {
-      final basePath = await getPerpuskuHtmlBasePath();
-      final fullPath = path.join(basePath, relativePath);
-      final file = File(fullPath);
-
-      if (!await file.exists()) {
-        throw Exception("File target tidak ditemukan untuk ditulis.");
-      }
-
-      final fullHtml =
-          '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-$htmlContent
-</body>
-</html>
-''';
-      await file.writeAsString(fullHtml);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> updateDiscussionFilePath(
-    Discussion discussion,
-    String filePath,
-  ) async {
-    discussion.filePath = filePath;
-    _filterAndSortDiscussions();
-    await _saveDiscussions();
-  }
-
-  Future<void> removeDiscussionFilePath(Discussion discussion) async {
-    discussion.filePath = null;
-    _filterAndSortDiscussions();
-    await _saveDiscussions();
-  }
-
-  Future<void> openDiscussionFile(Discussion discussion) async {
-    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
-      throw Exception('Tidak ada path file yang ditentukan.');
-    }
-
-    try {
-      final perpuskuPath = await _pathService.perpuskuDataPath;
-      final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-      final contentFilePath = path.join(basePath, discussion.filePath!);
-
-      final subjectDirPath = path.dirname(contentFilePath);
-      final indexFilePath = path.join(subjectDirPath, 'index.html');
-
-      final contentFile = File(contentFilePath);
-      final indexFile = File(indexFilePath);
-
-      if (!await contentFile.exists()) {
-        throw Exception('File konten tidak ditemukan: $contentFilePath');
-      }
-      if (!await indexFile.exists()) {
-        throw Exception('File index.html tidak ditemukan di: $subjectDirPath');
-      }
-
-      final contentHtml = await contentFile.readAsString();
-      final indexHtml = await indexFile.readAsString();
-
-      final indexDocument = parse(indexHtml);
-      final mainContainer = indexDocument.querySelector('#main-container');
-
-      if (mainContainer == null) {
-        throw Exception(
-          'Elemen dengan id="main-container" tidak ditemukan di index.html',
-        );
-      }
-
-      final contentDocument = parse(contentHtml);
-      final images = contentDocument.querySelectorAll('img');
-
-      for (var img in images) {
-        final src = img.attributes['src'];
-        if (src != null &&
-            !src.startsWith('http') &&
-            !src.startsWith('data:')) {
-          final imagePath = path.join(subjectDirPath, src);
-          final imageFile = File(imagePath);
-          if (await imageFile.exists()) {
-            final imageBytes = await imageFile.readAsBytes();
-            final base64Image = base64Encode(imageBytes);
-            final mimeType = lookupMimeType(imagePath) ?? 'image/png';
-            img.attributes['src'] = 'data:$mimeType;base64,$base64Image';
-          }
-        }
-      }
-
-      mainContainer.innerHtml = contentDocument.body?.innerHtml ?? '';
-
-      final tempDir = await getTemporaryDirectory();
-      final tempFileName = '${DateTime.now().millisecondsSinceEpoch}.html';
-      final tempFile = File(path.join(tempDir.path, tempFileName));
-      await tempFile.writeAsString(indexDocument.outerHtml);
-
-      final result = await OpenFile.open(tempFile.path);
-
-      if (result.type != ResultType.done) {
-        throw Exception('Tidak dapat membuka file: ${result.message}');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> editDiscussionFile(Discussion discussion) async {
-    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
-      throw Exception('Tidak ada path file yang ditentukan untuk diedit.');
-    }
-
-    try {
-      final perpuskuPath = await _pathService.perpuskuDataPath;
-      final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-      final contentFilePath = path.join(basePath, discussion.filePath!);
-
-      final contentFile = File(contentFilePath);
-      if (!await contentFile.exists()) {
-        throw Exception('File konten tidak ditemukan: $contentFilePath');
-      }
-
-      if (Platform.isLinux) {
-        final editor =
-            Platform.environment['EDITOR'] ?? Platform.environment['VISUAL'];
-        ProcessResult result;
-
-        if (editor != null && editor.isNotEmpty) {
-          result = await Process.run(editor, [
-            contentFile.path,
-          ], runInShell: true);
-          if (result.exitCode == 0) return;
-        }
-
-        const commonEditors = ['gedit', 'kate', 'mousepad', 'code'];
-        for (final ed in commonEditors) {
-          result = await Process.run('which', [ed]);
-          if (result.exitCode == 0) {
-            result = await Process.run(ed, [
-              contentFile.path,
-            ], runInShell: true);
-            if (result.exitCode == 0) return;
-          }
-        }
-
-        result = await Process.run('xdg-open', [contentFile.path]);
-        if (result.exitCode != 0) {
-          throw Exception(
-            'Gagal membuka file dengan semua metode: ${result.stderr}',
-          );
-        }
-      } else {
-        final result = await OpenFile.open(contentFile.path);
-        if (result.type != ResultType.done) {
-          throw Exception('Gagal membuka file untuk diedit: ${result.message}');
-        }
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> createAndLinkHtmlFile(
-    Discussion discussion,
-    String subjectLinkedPath,
-  ) async {
-    final newRelativePath = await _discussionService.createDiscussionFile(
-      perpuskuBasePath: await getPerpuskuHtmlBasePath(),
-      subjectLinkedPath: subjectLinkedPath,
-      discussionName: discussion.discussion,
-    );
-
-    discussion.filePath = newRelativePath;
-    _filterAndSortDiscussions();
-    await _saveDiscussions();
-  }
-
-  void incrementRepetitionCode(dynamic item) {
-    if (item is Discussion) {
-      final currentCode = item.repetitionCode;
-      final currentIndex = getRepetitionCodeIndex(currentCode);
-      if (currentIndex < repetitionCodes.length - 1) {
-        final newCode = repetitionCodes[currentIndex + 1];
-        updateDiscussionCode(item, newCode);
-      }
-    } else if (item is Point) {
-      final currentCode = item.repetitionCode;
-      final currentIndex = getRepetitionCodeIndex(currentCode);
-      if (currentIndex < repetitionCodes.length - 1) {
-        final newCode = repetitionCodes[currentIndex + 1];
-        updatePointCode(item, newCode);
-      }
-    }
-  }
-
-  void toggleShowFinished() {
-    _showFinishedDiscussions = !_showFinishedDiscussions;
-    _filterAndSortDiscussions();
-  }
-
-  // ==> FUNGSI INI DIPERBARUI TOTAL <==
-  Future<void> deleteDiscussion(Discussion discussion) async {
-    // 1. Simpan path file yang akan dihapus sebelum objeknya hilang
-    final pathToDelete = discussion.filePath;
-
-    // 2. Hapus diskusi dari daftar di memori untuk memperbarui UI
-    _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
-    _filterAndSortDiscussions(); // Ini akan memanggil notifyListeners()
-
-    try {
-      // 3. Simpan daftar diskusi yang sudah diperbarui ke file JSON
-      await _saveDiscussions();
-
-      // 4. Setelah data JSON berhasil disimpan, baru hapus file fisiknya
-      if (pathToDelete != null) {
-        await _discussionService.deleteLinkedFile(pathToDelete);
-      }
-    } catch (e) {
-      // Jika terjadi error, muat ulang data dari disk untuk membatalkan perubahan di UI
-      debugPrint("Error during discussion deletion process: $e");
-      await loadInitialData();
-      // Lemparkan kembali error agar UI bisa menampilkan pesan
-      rethrow;
-    }
-  }
-
+  // BASIC CRUD (Create, Read, Update, Delete)
+  @override
   Future<void> addDiscussion(
     String name, {
     bool createHtmlFile = false,
@@ -670,7 +109,7 @@ $htmlContent
         );
       }
       final perpuskuBasePath = await getPerpuskuHtmlBasePath();
-      newFilePath = await _discussionService.createDiscussionFile(
+      newFilePath = await discussionService.createDiscussionFile(
         perpuskuBasePath: perpuskuBasePath,
         subjectLinkedPath: subjectLinkedPath,
         discussionName: name,
@@ -685,10 +124,11 @@ $htmlContent
       filePath: newFilePath,
     );
     _allDiscussions.add(newDiscussion);
-    _filterAndSortDiscussions();
-    await _saveDiscussions();
+    filterAndSortDiscussions();
+    await saveDiscussions();
   }
 
+  @override
   void addPoint(
     Discussion discussion,
     String text, {
@@ -702,190 +142,37 @@ $htmlContent
       repetitionCode: inheritRepetitionCode ? discussion.repetitionCode : 'R0D',
     );
     discussion.points.add(newPoint);
-    _filterAndSortDiscussions();
-    _saveDiscussions();
+    filterAndSortDiscussions();
+    saveDiscussions();
   }
 
+  @override
+  Future<void> deleteDiscussion(Discussion discussion) async {
+    final pathToDelete = discussion.filePath;
+    _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
+    filterAndSortDiscussions();
+
+    try {
+      await saveDiscussions();
+      if (pathToDelete != null) {
+        await discussionService.deleteLinkedFile(pathToDelete);
+      }
+    } catch (e) {
+      debugPrint("Error during discussion deletion process: $e");
+      await loadInitialData();
+      rethrow;
+    }
+  }
+
+  @override
   void deletePoint(Discussion discussion, Point point) {
     discussion.points.removeWhere((p) => p.hashCode == point.hashCode);
-    _filterAndSortDiscussions();
-    _saveDiscussions();
+    filterAndSortDiscussions();
+    saveDiscussions();
   }
 
-  void updateDiscussionDate(Discussion discussion, DateTime newDate) {
-    discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
-    if (discussion.finished) {
-      discussion.finished = false;
-      discussion.finish_date = null;
-      if (discussion.repetitionCode == 'Finish') {
-        discussion.repetitionCode = 'R0D';
-      }
-    }
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void updateDiscussionCode(Discussion discussion, String newCode) {
-    discussion.repetitionCode = newCode;
-    if (newCode != 'Finish') {
-      discussion.date = getNewDateForRepetitionCode(newCode);
-      if (discussion.finished) {
-        discussion.finished = false;
-        discussion.finish_date = null;
-      }
-    } else {
-      markAsFinished(discussion);
-    }
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void renameDiscussion(Discussion discussion, String newName) {
-    discussion.discussion = newName;
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void markAsFinished(Discussion discussion) {
-    discussion.finished = true;
-    discussion.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void reactivateDiscussion(Discussion discussion) {
-    discussion.finished = false;
-    discussion.finish_date = null;
-    discussion.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    discussion.repetitionCode = 'R0D';
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void updatePointDate(Point point, DateTime newDate) {
-    point.date = DateFormat('yyyy-MM-dd').format(newDate);
-    if (point.finished) {
-      point.finished = false;
-      point.finish_date = null;
-      if (point.repetitionCode == 'Finish') {
-        point.repetitionCode = 'R0D';
-      }
-    }
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void updatePointCode(Point point, String newCode) {
-    point.repetitionCode = newCode;
-    if (newCode != 'Finish') {
-      point.date = getNewDateForRepetitionCode(newCode);
-      if (point.finished) {
-        point.finished = false;
-        point.finish_date = null;
-      }
-    } else {
-      markPointAsFinished(point);
-    }
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void markPointAsFinished(Point point) {
-    point.finished = true;
-    point.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-    Discussion? parentDiscussion;
-    for (final discussion in _allDiscussions) {
-      if (discussion.points.contains(point)) {
-        parentDiscussion = discussion;
-        break;
-      }
-    }
-
-    if (parentDiscussion != null) {
-      final allPointsFinished = parentDiscussion.points.every(
-        (p) => p.finished,
-      );
-      if (parentDiscussion.points.isNotEmpty && allPointsFinished) {
-        markAsFinished(parentDiscussion);
-      }
-    }
-
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void reactivatePoint(Point point) {
-    point.finished = false;
-    point.finish_date = null;
-    point.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    point.repetitionCode = 'R0D';
-
-    Discussion? parentDiscussion;
-    for (final discussion in _allDiscussions) {
-      if (discussion.points.contains(point)) {
-        parentDiscussion = discussion;
-        break;
-      }
-    }
-
-    if (parentDiscussion != null && parentDiscussion.finished) {
-      reactivateDiscussion(parentDiscussion);
-    }
-
-    _filterAndSortDiscussions();
-    _saveDiscussions();
-  }
-
-  void renamePoint(Point point, String newName) {
-    point.pointText = newName;
+  @override
+  void internalNotifyListeners() {
     notifyListeners();
-    _saveDiscussions();
-  }
-
-  void applySort(String sortType, bool sortAscending) {
-    _sortType = sortType;
-    _sortAscending = sortAscending;
-    _prefsService.saveSortPreferences(_sortType, _sortAscending);
-    _filterAndSortDiscussions();
-  }
-
-  void applyCodeFilter(String code) {
-    _activeFilterType = 'code';
-    _selectedRepetitionCode = code;
-    _selectedDateRange = null;
-    _prefsService.saveFilterPreference('code', code);
-    _filterAndSortDiscussions();
-  }
-
-  void applyDateFilter(DateTimeRange range) {
-    _activeFilterType = 'date';
-    _selectedDateRange = range;
-    _selectedRepetitionCode = null;
-    final dateRangeString =
-        '${range.start.toIso8601String()}/${range.end.toIso8601String()}';
-    _prefsService.saveFilterPreference('date', dateRangeString);
-    _filterAndSortDiscussions();
-  }
-
-  void applyTodayAndBeforeFilter() {
-    _activeFilterType = 'date';
-    final now = DateTime.now();
-    _selectedDateRange = DateTimeRange(
-      start: DateTime(2000),
-      end: DateTime(now.year, now.month, now.day),
-    );
-    _selectedRepetitionCode = null;
-    _prefsService.saveFilterPreference('date_today_and_before', null);
-    _filterAndSortDiscussions();
-  }
-
-  void clearFilters() {
-    _activeFilterType = null;
-    _selectedRepetitionCode = null;
-    _selectedDateRange = null;
-    _showFinishedDiscussions = false;
-    _prefsService.saveFilterPreference(null, null);
-    _filterAndSortDiscussions();
   }
 }

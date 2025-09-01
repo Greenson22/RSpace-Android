@@ -5,7 +5,7 @@ import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
-import '../dialogs/smart_link_dialog.dart'; // ==> IMPORT DIALOG BARU
+import '../dialogs/smart_link_dialog.dart';
 import '../utils/repetition_code_utils.dart';
 import 'discussion_subtitle.dart';
 import 'point_tile.dart';
@@ -17,7 +17,7 @@ class DiscussionCard extends StatelessWidget {
   final bool isFocused;
   final Map<int, bool> arePointsVisible;
   final Function(int) onToggleVisibility;
-  final String subjectName; // ==> TAMBAHKAN INI
+  final String subjectName;
   final String? subjectLinkedPath;
 
   const DiscussionCard({
@@ -27,7 +27,7 @@ class DiscussionCard extends StatelessWidget {
     this.isFocused = false,
     required this.arePointsVisible,
     required this.onToggleVisibility,
-    required this.subjectName, // ==> TAMBAHKAN INI
+    required this.subjectName,
     this.subjectLinkedPath,
   });
 
@@ -91,11 +91,9 @@ class DiscussionCard extends StatelessWidget {
     BuildContext context,
     DiscussionProvider provider,
   ) async {
-    // Jika belum dalam mode seleksi, aktifkan dan pilih item ini
     if (!provider.isSelectionMode) {
       provider.toggleSelection(discussion);
     }
-    // Tampilkan dialog pemindahan
     final targetInfo = await showMoveDiscussionDialog(context);
     if (targetInfo != null && context.mounted) {
       try {
@@ -145,7 +143,6 @@ class DiscussionCard extends StatelessWidget {
   }
 
   void _addPoint(BuildContext context, DiscussionProvider provider) {
-    // Diubah untuk memanggil dialog baru dan mengirimkan pilihan pengguna
     showAddPointDialog(
       context: context,
       title: 'Tambah Poin Baru',
@@ -157,17 +154,14 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
     showDeleteDiscussionConfirmationDialog(
       context: context,
       discussionName: discussion.discussion,
       hasLinkedFile:
           discussion.filePath != null && discussion.filePath!.isNotEmpty,
-      // Jadikan onDelete sebuah fungsi async
       onDelete: () async {
         try {
-          // Panggil dan tunggu proses penghapusan selesai
           await provider.deleteDiscussion(discussion);
           if (context.mounted) {
             _showSnackBar(
@@ -259,9 +253,7 @@ class DiscussionCard extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG <==
   void _findSmartLink(BuildContext context, DiscussionProvider provider) async {
-    // Dapatkan TopicName dari route
     final subjectsPage = context.findAncestorWidgetOfExactType<SubjectsPage>();
     final topicName = subjectsPage?.topicName ?? 'Unknown';
 
@@ -272,8 +264,7 @@ class DiscussionCard extends StatelessWidget {
         child: SmartLinkDialog(
           discussion: discussion,
           topicName: topicName,
-          subjectName:
-              subjectName, // Anda perlu menambahkan subjectName ke DiscussionCard
+          subjectName: subjectName,
         ),
       ),
     );
@@ -431,7 +422,7 @@ class DiscussionCard extends StatelessWidget {
                         _deleteDiscussion(context, provider);
                       }
                       if (value == 'smart_link') {
-                        _findSmartLink(context, provider); // ==> PANGGIL FUNGSI
+                        _findSmartLink(context, provider);
                       }
                     },
                     itemBuilder: (BuildContext context) {
@@ -580,7 +571,6 @@ class DiscussionCard extends StatelessWidget {
                                     ),
                                   ),
                                 ] else ...[
-                                  // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
                                   const PopupMenuItem<String>(
                                     value: 'smart_link',
                                     child: Row(

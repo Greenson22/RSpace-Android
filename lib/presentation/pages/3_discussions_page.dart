@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../providers/discussion_provider.dart';
+import '../providers/discussion_provider.dart'; // Pastikan path ini benar
 import '3_discussions_page/dialogs/discussion_dialogs.dart';
 import '3_discussions_page/widgets/discussion_card.dart';
 import '3_discussions_page/widgets/discussion_stats_header.dart';
@@ -56,9 +56,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
-  // ==> FUNGSI DIPERBARUI UNTUK MENANGANI RETURN VALUE BARU DARI DIALOG <==
   void _moveSelectedDiscussions(DiscussionProvider provider) async {
-    // Tipe data yang diharapkan sekarang adalah Map.
     final targetInfo = await showMoveDiscussionDialog(context);
 
     if (targetInfo != null && mounted) {
@@ -66,13 +64,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         final String targetJsonPath = targetInfo['jsonPath']!;
         final String? targetLinkedPath = targetInfo['linkedPath'];
 
-        // Panggil provider dengan parameter yang sudah disesuaikan.
         final String logMessage = await provider.moveSelectedDiscussions(
           targetJsonPath,
           targetLinkedPath,
         );
 
-        // Tampilkan log yang detail di SnackBar yang bisa menampilkan banyak baris.
         _showSnackBar(logMessage, isLong: true);
       } catch (e) {
         _showSnackBar(
@@ -83,7 +79,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     }
   }
 
-  // ==> FUNGSI _showSnackBar DIPERBARUI UNTUK MENAMPILKAN LOG PANJANG <==
   void _showSnackBar(
     String message, {
     bool isError = false,
@@ -94,7 +89,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: isError ? Colors.red : null,
-        // Durasi lebih lama untuk pesan log yang panjang
         duration: isLong
             ? const Duration(seconds: 10)
             : const Duration(seconds: 4),
@@ -110,19 +104,16 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // ... (sisa kode _DiscussionsPageState tidak berubah, salin saja) ...
-
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
-      // ## Penanganan Tombol Saat Mode Seleksi ##
       if (provider.isSelectionMode) {
         if (event.logicalKey == LogicalKeyboardKey.escape ||
             event.logicalKey == LogicalKeyboardKey.backspace) {
           provider.clearSelection();
         }
-        return; // Hentikan penanganan tombol lain saat mode seleksi
+        return;
       }
 
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
@@ -374,7 +365,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   isFocused: _isKeyboardActive && index == _focusedIndex,
                   arePointsVisible: _arePointsVisible,
                   onToggleVisibility: _togglePointsVisibility,
-                  subjectName: widget.subjectName, // ==> TAMBAHKAN INI
+                  subjectName: widget.subjectName,
                   subjectLinkedPath: widget.linkedPath,
                 );
               },
@@ -436,7 +427,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
           arePointsVisible: _arePointsVisible,
           onToggleVisibility: _togglePointsVisibility,
-          subjectName: widget.subjectName, // ==> TAMBAHKAN INI
+          subjectName: widget.subjectName,
           subjectLinkedPath: widget.linkedPath,
         );
       },
