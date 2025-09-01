@@ -2,14 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
-import '../../../../presentation/providers/discussion_provider.dart';
+import '../../../providers/discussion_provider.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
-import '../utils/repetition_code_utils.dart';
-import 'discussion_subtitle.dart';
-import 'point_tile.dart';
-import '../../2_subjects_page.dart'; // Impor untuk mendapatkan TopicName
+import 'discussion_point_list.dart';
+import 'discussion_tile.dart';
+import '../../2_subjects_page.dart';
 
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;
@@ -31,58 +30,73 @@ class DiscussionCard extends StatelessWidget {
     this.subjectLinkedPath,
   });
 
-  void _createHtmlFileForDiscussion(
-    BuildContext context,
-    DiscussionProvider provider,
-    String subjectLinkedPath,
-  ) async {
-    final confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Buat File HTML?'),
-            content: Text(
-              'Ini akan membuat file .html baru di dalam folder subject yang tertaut dan menautkannya ke diskusi "${discussion.discussion}".',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Buat & Tautkan'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    if (confirmed && context.mounted) {
-      try {
-        await provider.createAndLinkHtmlFile(discussion, subjectLinkedPath);
-        _showSnackBar(context, 'File HTML berhasil dibuat dan ditautkan.');
-      } catch (e) {
-        _showSnackBar(context, 'Gagal membuat file: ${e.toString()}');
-      }
-    }
-  }
-
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
-  void _renameDiscussion(BuildContext context, DiscussionProvider provider) {
-    showTextInputDialog(
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<DiscussionProvider>(context, listen: false);
+    final theme = Theme.of(context);
+    final isSelected = provider.selectedDiscussions.contains(discussion);
+
+    return Card(
+      color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
+      ),
+      child: Column(
+        children: [
+          DiscussionTile(
+            discussion: discussion,
+            isSelected: isSelected,
+            arePointsVisible: arePointsVisible[index] ?? false,
+            subjectLinkedPath: subjectLinkedPath,
+            onToggleVisibility: () => onToggleVisibility(index),
+            onAddPoint: () => _addPoint(context, provider),
+            onMove: () => _moveDiscussion(context, provider),
+            onRename: () => _renameDiscussion(context, provider),
+            onDateChange: () => _changeDiscussionDate(context, provider),
+            onCodeChange: () => _changeDiscussionCode(context, provider),
+            onCreateFile: () => _createHtmlFileForDiscussion(
+              context,
+              provider,
+              subjectLinkedPath!,
+            ),
+            onSetFilePath: () => _setFilePath(context, provider),
+            onGenerateHtml: () => _generateHtml(context),
+            onEditFile: () => _editFile(context, provider),
+            onRemoveFilePath: () => _removeFilePath(context, provider),
+            onSmartLink: () => _findSmartLink(context, provider),
+            onFinish: () => _markAsFinished(context, provider),
+            onReactivate: () => _reactivateDiscussion(context, provider),
+            onDelete: () => _deleteDiscussion(context, provider),
+          ),
+          if (discussion.points.isNotEmpty)
+            Visibility(
+              visible: arePointsVisible[index] ?? false,
+              child: DiscussionPointList(discussion: discussion),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- PRIVATE HELPER METHODS FOR ACTIONS ---
+
+  void _addPoint(BuildContext context, DiscussionProvider provider) {
+    showAddPointDialog(
       context: context,
-      title: 'Ubah Nama Diskusi',
-      label: 'Nama Baru',
-      initialValue: discussion.discussion,
-      onSave: (newName) {
-        provider.renameDiscussion(discussion, newName);
-        _showSnackBar(context, 'Nama diskusi berhasil diubah.');
+      title: 'Tambah Poin Baru',
+      label: 'Teks Poin',
+      onSave: (text, inheritCode) {
+        provider.addPoint(discussion, text, inheritRepetitionCode: inheritCode);
+        _showSnackBar(context, 'Poin berhasil ditambahkan.');
       },
     );
   }
@@ -97,18 +111,28 @@ class DiscussionCard extends StatelessWidget {
     final targetInfo = await showMoveDiscussionDialog(context);
     if (targetInfo != null && context.mounted) {
       try {
-        final String targetJsonPath = targetInfo['jsonPath']!;
-        final String? targetLinkedPath = targetInfo['linkedPath'];
-
-        final String logMessage = await provider.moveSelectedDiscussions(
-          targetJsonPath,
-          targetLinkedPath,
+        final log = await provider.moveSelectedDiscussions(
+          targetInfo['jsonPath']!,
+          targetInfo['linkedPath'],
         );
-        _showSnackBar(context, logMessage);
+        _showSnackBar(context, log);
       } catch (e) {
-        _showSnackBar(context, 'Gagal memindahkan diskusi: ${e.toString()}');
+        _showSnackBar(context, 'Gagal memindahkan: ${e.toString()}');
       }
     }
+  }
+
+  void _renameDiscussion(BuildContext context, DiscussionProvider provider) {
+    showTextInputDialog(
+      context: context,
+      title: 'Ubah Nama Diskusi',
+      label: 'Nama Baru',
+      initialValue: discussion.discussion,
+      onSave: (newName) {
+        provider.renameDiscussion(discussion, newName);
+        _showSnackBar(context, 'Nama diskusi berhasil diubah.');
+      },
+    );
   }
 
   void _changeDiscussionDate(
@@ -142,53 +166,41 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  void _addPoint(BuildContext context, DiscussionProvider provider) {
-    showAddPointDialog(
-      context: context,
-      title: 'Tambah Poin Baru',
-      label: 'Teks Poin',
-      onSave: (text, inheritCode) {
-        provider.addPoint(discussion, text, inheritRepetitionCode: inheritCode);
-        _showSnackBar(context, 'Poin berhasil ditambahkan.');
-      },
-    );
-  }
-
-  void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
-    showDeleteDiscussionConfirmationDialog(
-      context: context,
-      discussionName: discussion.discussion,
-      hasLinkedFile:
-          discussion.filePath != null && discussion.filePath!.isNotEmpty,
-      onDelete: () async {
-        try {
-          await provider.deleteDiscussion(discussion);
-          if (context.mounted) {
-            _showSnackBar(
-              context,
-              'Diskusi "${discussion.discussion}" berhasil dihapus.',
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            _showSnackBar(context, "Gagal menghapus: ${e.toString()}");
-          }
-        }
-      },
-    );
-  }
-
-  void _markAsFinished(BuildContext context, DiscussionProvider provider) {
-    provider.markAsFinished(discussion);
-    _showSnackBar(context, 'Diskusi ditandai selesai.');
-  }
-
-  void _reactivateDiscussion(
+  void _createHtmlFileForDiscussion(
     BuildContext context,
     DiscussionProvider provider,
-  ) {
-    provider.reactivateDiscussion(discussion);
-    _showSnackBar(context, 'Diskusi diaktifkan kembali.');
+    String subjectLinkedPath,
+  ) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Buat File HTML?'),
+            content: Text(
+              'Ini akan membuat file .html baru dan menautkannya ke diskusi "${discussion.discussion}".',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Buat & Tautkan'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmed && context.mounted) {
+      try {
+        await provider.createAndLinkHtmlFile(discussion, subjectLinkedPath);
+        _showSnackBar(context, 'File HTML berhasil dibuat dan ditautkan.');
+      } catch (e) {
+        _showSnackBar(context, 'Gagal membuat file: ${e.toString()}');
+      }
+    }
   }
 
   void _setFilePath(BuildContext context, DiscussionProvider provider) async {
@@ -199,40 +211,12 @@ class DiscussionCard extends StatelessWidget {
         basePath,
         initialPath: subjectLinkedPath,
       );
-
       if (newPath != null) {
         provider.updateDiscussionFilePath(discussion, newPath);
         _showSnackBar(context, 'Path file berhasil disimpan.');
       }
     } catch (e) {
-      _showSnackBar(context, 'Gagal membuka pemilih file: ${e.toString()}');
-    }
-  }
-
-  void _removeFilePath(
-    BuildContext context,
-    DiscussionProvider provider,
-  ) async {
-    final confirmed = await showRemoveFilePathConfirmationDialog(context);
-    if (confirmed) {
-      provider.removeDiscussionFilePath(discussion);
-      _showSnackBar(context, 'Path file berhasil dihapus.');
-    }
-  }
-
-  void _openFile(BuildContext context, DiscussionProvider provider) async {
-    try {
-      await provider.openDiscussionFile(discussion);
-    } catch (e) {
-      _showSnackBar(context, e.toString());
-    }
-  }
-
-  void _editFile(BuildContext context, DiscussionProvider provider) async {
-    try {
-      await provider.editDiscussionFile(discussion);
-    } catch (e) {
-      _showSnackBar(context, e.toString());
+      _showSnackBar(context, 'Gagal: ${e.toString()}');
     }
   }
 
@@ -247,16 +231,33 @@ class DiscussionCard extends StatelessWidget {
         ),
       ),
     );
-
     if (success == true && context.mounted) {
       _showSnackBar(context, 'Konten HTML berhasil dibuat!');
+    }
+  }
+
+  void _editFile(BuildContext context, DiscussionProvider provider) async {
+    try {
+      await provider.editDiscussionFile(discussion);
+    } catch (e) {
+      _showSnackBar(context, e.toString());
+    }
+  }
+
+  void _removeFilePath(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) async {
+    final confirmed = await showRemoveFilePathConfirmationDialog(context);
+    if (confirmed) {
+      provider.removeDiscussionFilePath(discussion);
+      _showSnackBar(context, 'Path file berhasil dihapus.');
     }
   }
 
   void _findSmartLink(BuildContext context, DiscussionProvider provider) async {
     final subjectsPage = context.findAncestorWidgetOfExactType<SubjectsPage>();
     final topicName = subjectsPage?.topicName ?? 'Unknown';
-
     final success = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => ChangeNotifierProvider.value(
@@ -273,408 +274,38 @@ class DiscussionCard extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<DiscussionProvider>(context, listen: false);
-    final theme = Theme.of(context);
-    bool arePointsVisibleForThisCard = arePointsVisible[index] ?? false;
-    final bool isFinished = discussion.finished;
-    final bool isSelected = provider.selectedDiscussions.contains(discussion);
-    final iconColor = isFinished
-        ? Colors.green
-        : (isSelected ? theme.primaryColor : Colors.blue);
-    final bool hasFile =
-        discussion.filePath != null && discussion.filePath!.isNotEmpty;
-    IconData iconData = isFinished
-        ? Icons.check_circle
-        : (hasFile ? Icons.link : Icons.chat_bubble_outline);
-    if (isSelected) {
-      iconData = Icons.check_circle;
-    }
+  void _markAsFinished(BuildContext context, DiscussionProvider provider) {
+    provider.markAsFinished(discussion);
+    _showSnackBar(context, 'Diskusi ditandai selesai.');
+  }
 
-    final allPoints = List<Point>.from(discussion.points);
-    final sortType = provider.sortType;
-    final sortAscending = provider.sortAscending;
+  void _reactivateDiscussion(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) {
+    provider.reactivateDiscussion(discussion);
+    _showSnackBar(context, 'Diskusi diaktifkan kembali.');
+  }
 
-    Comparator<Point> comparator;
-    switch (sortType) {
-      case 'name':
-        comparator = (a, b) =>
-            a.pointText.toLowerCase().compareTo(b.pointText.toLowerCase());
-        break;
-      case 'code':
-        comparator = (a, b) => getRepetitionCodeIndex(
-          a.repetitionCode,
-        ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
-        break;
-      default: // date
-        comparator = (a, b) {
-          final dateA = DateTime.tryParse(a.date);
-          final dateB = DateTime.tryParse(b.date);
-          if (dateA == null && dateB == null) return 0;
-          if (dateA == null) return sortAscending ? 1 : -1;
-          if (dateB == null) return sortAscending ? -1 : 1;
-          return dateA.compareTo(dateB);
-        };
-        break;
-    }
-
-    allPoints.sort(comparator);
-    if (!sortAscending) {
-      final reversed = allPoints.reversed.toList();
-      allPoints.clear();
-      allPoints.addAll(reversed);
-    }
-
-    final normalPoints = allPoints
-        .where((p) => !p.finished && p.repetitionCode != 'R0D')
-        .toList();
-    final r0dPoints = allPoints
-        .where((p) => !p.finished && p.repetitionCode == 'R0D')
-        .toList();
-    final finishedPoints = allPoints.where((p) => p.finished).toList();
-
-    final sortedPoints = [...normalPoints, ...r0dPoints, ...finishedPoints];
-
-    return Card(
-      color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        side: isFocused
-            ? BorderSide(color: theme.primaryColor, width: 2.5)
-            : BorderSide.none,
-      ),
-      child: Column(
-        children: [
-          ListTile(
-            onTap: () {
-              if (provider.isSelectionMode) {
-                provider.toggleSelection(discussion);
-              } else {
-                onToggleVisibility(index);
-              }
-            },
-            onLongPress: () {
-              provider.toggleSelection(discussion);
-            },
-            leading: IconButton(
-              icon: Icon(iconData, color: iconColor, size: 24),
-              onPressed: hasFile ? () => _openFile(context, provider) : null,
-              tooltip: hasFile ? 'Buka File' : null,
-            ),
-            title: Text(
-              discussion.discussion,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                decoration: isFinished ? TextDecoration.lineThrough : null,
-                fontSize: 16,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: DiscussionSubtitle(discussion: discussion),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!provider.isSelectionMode)
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'add_point') {
-                        _addPoint(context, provider);
-                      }
-                      if (value == 'rename') {
-                        _renameDiscussion(context, provider);
-                      }
-                      if (value == 'move') {
-                        _moveDiscussion(context, provider);
-                      }
-                      if (value == 'edit_date') {
-                        _changeDiscussionDate(context, provider);
-                      }
-                      if (value == 'edit_code') {
-                        _changeDiscussionCode(context, provider);
-                      }
-                      if (value == 'create_file') {
-                        _createHtmlFileForDiscussion(
-                          context,
-                          provider,
-                          subjectLinkedPath!,
-                        );
-                      }
-                      if (value == 'set_file_path') {
-                        _setFilePath(context, provider);
-                      }
-                      if (value == 'generate_html') {
-                        _generateHtml(context);
-                      }
-                      if (value == 'edit_file_path') {
-                        _editFile(context, provider);
-                      }
-                      if (value == 'remove_file_path') {
-                        _removeFilePath(context, provider);
-                      }
-                      if (value == 'finish') {
-                        _markAsFinished(context, provider);
-                      }
-                      if (value == 'reactivate') {
-                        _reactivateDiscussion(context, provider);
-                      }
-                      if (value == 'delete') {
-                        _deleteDiscussion(context, provider);
-                      }
-                      if (value == 'smart_link') {
-                        _findSmartLink(context, provider);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) {
-                      return <PopupMenuEntry<String>>[
-                        if (!isFinished)
-                          const PopupMenuItem<String>(
-                            value: 'add_point',
-                            child: Row(
-                              children: [
-                                Icon(Icons.add_comment_outlined),
-                                SizedBox(width: 8),
-                                Text('Tambah Poin'),
-                              ],
-                            ),
-                          ),
-                        const PopupMenuItem<String>(
-                          value: 'move',
-                          child: Row(
-                            children: [
-                              Icon(Icons.move_up_outlined),
-                              SizedBox(width: 8),
-                              Text('Pindahkan'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<String>(
-                          enabled: false,
-                          padding: EdgeInsets.zero,
-                          child: SubmenuButton(
-                            menuChildren: <PopupMenuEntry<String>>[
-                              const PopupMenuItem<String>(
-                                value: 'rename',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.drive_file_rename_outline),
-                                    SizedBox(width: 8),
-                                    Text('Ubah Nama'),
-                                  ],
-                                ),
-                              ),
-                              if (!discussion.points.isNotEmpty) ...[
-                                const PopupMenuItem<String>(
-                                  value: 'edit_date',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.calendar_today_outlined),
-                                      SizedBox(width: 8),
-                                      Text('Ubah Tanggal'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'edit_code',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.code),
-                                      SizedBox(width: 8),
-                                      Text('Ubah Kode Repetisi'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                            child: const Row(
-                              children: [
-                                Icon(Icons.edit_outlined),
-                                SizedBox(width: 8),
-                                Text('Edit'),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (!isFinished)
-                          PopupMenuItem<String>(
-                            enabled: false,
-                            padding: EdgeInsets.zero,
-                            child: SubmenuButton(
-                              menuChildren: <PopupMenuEntry<String>>[
-                                if (subjectLinkedPath != null && !hasFile)
-                                  const PopupMenuItem<String>(
-                                    value: 'create_file',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.note_add_outlined),
-                                        SizedBox(width: 8),
-                                        Text('Buat File HTML Baru'),
-                                      ],
-                                    ),
-                                  ),
-                                PopupMenuItem<String>(
-                                  value: 'set_file_path',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        hasFile
-                                            ? Icons.folder_open_outlined
-                                            : Icons.create_new_folder_outlined,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        hasFile
-                                            ? 'Ubah Path File'
-                                            : 'Set Path File',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (hasFile) ...[
-                                  const PopupMenuItem<String>(
-                                    value: 'generate_html',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.auto_awesome_outlined),
-                                        SizedBox(width: 8),
-                                        Text('Generate Konten (AI)'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'edit_file_path',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.edit_document),
-                                        SizedBox(width: 8),
-                                        Text('Edit File Konten'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  const PopupMenuItem<String>(
-                                    value: 'remove_file_path',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.link_off,
-                                          color: Colors.orange,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Hapus Path File',
-                                          style: TextStyle(
-                                            color: Colors.orange,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ] else ...[
-                                  const PopupMenuItem<String>(
-                                    value: 'smart_link',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.auto_awesome_outlined,
-                                          color: Colors.amber,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text('Cari Tautan Cerdas'),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.description_outlined),
-                                  SizedBox(width: 8),
-                                  Text('File'),
-                                ],
-                              ),
-                            ),
-                          ),
-                        const PopupMenuDivider(),
-                        if (isFinished)
-                          const PopupMenuItem<String>(
-                            value: 'reactivate',
-                            child: Row(
-                              children: [
-                                Icon(Icons.replay),
-                                SizedBox(width: 8),
-                                Text('Aktifkan Lagi'),
-                              ],
-                            ),
-                          )
-                        else
-                          const PopupMenuItem<String>(
-                            value: 'finish',
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle_outline),
-                                SizedBox(width: 8),
-                                Text('Tandai Selesai'),
-                              ],
-                            ),
-                          ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ];
-                    },
-                  ),
-                if (discussion.points.isNotEmpty && !provider.isSelectionMode)
-                  IconButton(
-                    icon: Icon(
-                      arePointsVisibleForThisCard
-                          ? Icons.expand_less
-                          : Icons.expand_more,
-                    ),
-                    onPressed: () => onToggleVisibility(index),
-                  ),
-              ],
-            ),
-          ),
-          if (discussion.points.isNotEmpty)
-            Visibility(
-              visible: arePointsVisibleForThisCard,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 8.0, 16.0, 8.0),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < sortedPoints.length; i++) ...[
-                      PointTile(
-                        discussion: discussion,
-                        point: sortedPoints[i],
-                        isActive: provider.doesPointMatchFilter(
-                          sortedPoints[i],
-                        ),
-                      ),
-                      if (i < sortedPoints.length - 1)
-                        Divider(
-                          color:
-                              Theme.of(context).brightness == Brightness.light
-                              ? Theme.of(context).primaryColor.withOpacity(0.3)
-                              : null,
-                        ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+  void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
+    showDeleteDiscussionConfirmationDialog(
+      context: context,
+      discussionName: discussion.discussion,
+      hasLinkedFile:
+          discussion.filePath != null && discussion.filePath!.isNotEmpty,
+      onDelete: () async {
+        try {
+          await provider.deleteDiscussion(discussion);
+          if (context.mounted)
+            _showSnackBar(
+              context,
+              'Diskusi "${discussion.discussion}" berhasil dihapus.',
+            );
+        } catch (e) {
+          if (context.mounted)
+            _showSnackBar(context, "Gagal menghapus: ${e.toString()}");
+        }
+      },
     );
   }
 }
