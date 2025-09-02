@@ -20,6 +20,65 @@ class GeminiService {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK SARAN IKON DENGAN GEMINI <==
+  Future<List<String>> suggestIcon({required String name}) async {
+    final apiKey = await _getActiveApiKey();
+    final model =
+        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    final prompt =
+        '''
+Berikan 5 rekomendasi emoji unicode yang paling relevan untuk item bernama "$name".
+Aturan Jawaban:
+1. HANYA kembalikan dalam format array JSON.
+2. Setiap elemen dalam array HARUS berupa string emoji.
+3. Jangan sertakan penjelasan atau teks lain di luar array JSON.
+
+Contoh Jawaban:
+["💡", "📚", "⚙️", "❤️", "⭐"]
+''';
+
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+          'generationConfig': {'responseMimeType': 'application/json'},
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final textResponse =
+            body['candidates'][0]['content']['parts'][0]['text'];
+        final List<dynamic> jsonResponse = jsonDecode(textResponse);
+        return List<String>.from(jsonResponse);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody['error']?['message'] ?? response.body;
+        throw Exception(
+          'Gagal mendapatkan respons: ${response.statusCode}\nError: $errorMessage',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // ==> FUNGSI BARU UNTUK MENCARI TAUTAN CERDAS DENGAN GEMINI
   Future<List<LinkSuggestion>> findSmartLinks({
     required Discussion discussion,

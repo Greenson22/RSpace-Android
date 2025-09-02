@@ -211,10 +211,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _changeIcon(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showIconPickerDialog(
       context: context,
+      name: subject.name, // Kirim nama subject
       onIconSelected: (newIcon) async {
         try {
           await provider.updateSubjectIcon(subject.name, newIcon);

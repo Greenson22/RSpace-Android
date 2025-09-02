@@ -198,10 +198,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _changeIcon(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showIconPickerDialog(
       context: context,
+      name: topic.name, // Kirim nama topik
       onIconSelected: (newIcon) async {
         try {
           await provider.updateTopicIcon(topic.name, newIcon);
