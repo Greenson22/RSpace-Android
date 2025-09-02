@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/discussion_model.dart';
 import '../../../../presentation/providers/discussion_provider.dart';
-// Impor widget menu yang baru
 import '../../../widgets/point_edit_popup_menu.dart';
 import '../../../widgets/linkify_text.dart';
-import '../dialogs/discussion_dialogs.dart';
+import '../dialogs/discussion_dialogs.dart'; // Impor file barrel
 import '../utils/repetition_code_utils.dart';
 
 class PointTile extends StatelessWidget {
@@ -22,7 +21,6 @@ class PointTile extends StatelessWidget {
     this.isActive = true,
   });
 
-  // ... (semua fungsi helper di sini tetap sama) ...
   void _showSnackBar(BuildContext context, String message) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -174,7 +172,6 @@ class PointTile extends StatelessWidget {
                 ],
               ),
             ),
-      // ==> PERUBAHAN DI SINI <==
       trailing: PointEditPopupMenu(
         isFinished: isFinished,
         onDateChange: () => _changePointDate(context, provider),

@@ -296,14 +296,16 @@ class DiscussionCard extends StatelessWidget {
       onDelete: () async {
         try {
           await provider.deleteDiscussion(discussion);
-          if (context.mounted)
+          if (context.mounted) {
             _showSnackBar(
               context,
               'Diskusi "${discussion.discussion}" berhasil dihapus.',
             );
+          }
         } catch (e) {
-          if (context.mounted)
+          if (context.mounted) {
             _showSnackBar(context, "Gagal menghapus: ${e.toString()}");
+          }
         }
       },
     );

@@ -4,11 +4,28 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import 'package:provider/provider.dart';
 import '../../../../data/services/shared_preferences_service.dart';
-import '../../../providers/discussion_provider.dart';
-import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
 
+// Fungsi helper untuk menampilkan dialog
+Future<String?> showHtmlFilePicker(
+  BuildContext context,
+  String basePath, {
+  String? initialPath,
+}) async {
+  final result = await showDialog<String>(
+    context: context,
+    builder: (context) =>
+        HtmlFilePickerDialog(basePath: basePath, initialPath: initialPath),
+  );
+
+  // Jika hasilnya adalah 'RELOAD_WITH_NEW_PATH', panggil dialog lagi
+  if (result == 'RELOAD_WITH_NEW_PATH') {
+    return showHtmlFilePicker(context, basePath, initialPath: initialPath);
+  }
+  return result;
+}
+
+// Widget dialog itu sendiri
 enum _PickerViewState { topics, subjects, files }
 
 class HtmlFilePickerDialog extends StatefulWidget {
@@ -63,7 +80,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         final fullInitialPath = path.join(widget.basePath, widget.initialPath!);
         final parts = path.split(fullInitialPath);
 
-        // Asumsi path relatif adalah 'topic/subject'
         if (parts.length > 2) {
           final subjectDirName = parts[parts.length - 1];
           final topicDirName = parts[parts.length - 2];

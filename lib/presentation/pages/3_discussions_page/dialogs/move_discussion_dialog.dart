@@ -8,7 +8,17 @@ import '../../../../data/services/path_service.dart';
 import '../../../../data/services/subject_service.dart';
 import '../../../../data/services/topic_service.dart';
 
-// ==> Tipe data yang dikembalikan diubah menjadi Map
+/// Menampilkan dialog untuk memilih tujuan pemindahan diskusi.
+/// Mengembalikan Map berisi 'jsonPath' dan 'linkedPath' jika berhasil.
+Future<Map<String, String?>?> showMoveDiscussionDialog(
+  BuildContext context,
+) async {
+  return await showDialog<Map<String, String?>?>(
+    context: context,
+    builder: (context) => const MoveDiscussionDialog(),
+  );
+}
+
 class MoveDiscussionDialog extends StatefulWidget {
   const MoveDiscussionDialog({super.key});
 
@@ -37,11 +47,13 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
     setState(() => _isLoading = true);
     try {
       final topics = await _topicService.getTopics();
+      if (!mounted) return;
       setState(() {
         _topics = topics.where((t) => !t.isHidden).toList();
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       // Handle error
     }
@@ -51,11 +63,13 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
     setState(() => _isLoading = true);
     try {
       final subjects = await _subjectService.getSubjects(topicPath);
+      if (!mounted) return;
       setState(() {
         _subjects = subjects.where((s) => !s.isHidden).toList();
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       // Handle error
     }
@@ -93,22 +107,17 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                     );
                   } else {
                     final subject = _subjects[index];
-                    // ==> PERUBAHAN DIMULAI DI SINI <==
-
-                    // Cek apakah subject tujuan memiliki tautan ke PerpusKu.
                     final bool isLinked =
                         subject.linkedPath != null &&
                         subject.linkedPath!.isNotEmpty;
 
                     return ListTile(
-                      enabled:
-                          isLinked, // Membuat ListTile bisa diklik atau tidak.
+                      enabled: isLinked,
                       leading: Text(
                         subject.icon,
                         style: const TextStyle(fontSize: 24),
                       ),
                       title: Text(subject.name),
-                      // Tampilkan ikon 'link_off' jika tidak tertaut.
                       trailing: !isLinked
                           ? const Icon(Icons.link_off, color: Colors.grey)
                           : null,
@@ -124,9 +133,8 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                               };
                               Navigator.of(context).pop(result);
                             }
-                          : null, // Nonaktifkan onTap jika tidak tertaut.
+                          : null,
                     );
-                    // ==> PERUBAHAN SELESAI DI SINI <==
                   }
                 },
               ),
