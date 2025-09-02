@@ -454,9 +454,18 @@ class SubjectService {
       final indexFile = File(indexFilePath);
 
       if (!await indexFile.exists()) {
-        throw Exception(
-          'File index.html tidak ditemukan di dalam folder subject ini.',
-        );
+        await indexFile.create(recursive: true);
+        await indexFile.writeAsString('''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="main-container"></div>
+</body>
+</html>''');
       }
 
       if (Platform.isLinux) {
