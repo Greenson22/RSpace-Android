@@ -228,19 +228,15 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
-    final isChristmas = Provider.of<ThemeProvider>(
-      context,
-      listen: false,
-    ).isChristmasTheme;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        backgroundColor: isChristmas ? Colors.transparent : null,
+        backgroundColor: null,
         appBar: AppBar(
-          backgroundColor: isChristmas ? Colors.black.withOpacity(0.2) : null,
-          elevation: isChristmas ? 0 : null,
+          backgroundColor: null,
+          elevation: null,
           title: topicProvider.isReorderModeEnabled
               ? const Text('Urutkan Topik')
               : (_isSearching

@@ -255,7 +255,6 @@ class _DashboardPageState extends State<DashboardPage> {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final backgroundImagePath = themeProvider.backgroundImagePath;
-        final isChristmas = themeProvider.isChristmasTheme;
         final bool showFlo = themeProvider.showFloatingCharacter;
 
         return RawKeyboardListener(
@@ -275,7 +274,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   )
                 : null,
             child: Scaffold(
-              backgroundColor: backgroundImagePath != null || isChristmas
+              backgroundColor: backgroundImagePath != null
                   ? Colors.transparent
                   : null,
               appBar: AppBar(
@@ -283,12 +282,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   'Dashboard',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                backgroundColor: backgroundImagePath != null || isChristmas
+                backgroundColor: backgroundImagePath != null
                     ? Colors.black.withOpacity(0.2)
                     : null,
-                elevation: backgroundImagePath != null || isChristmas
-                    ? 0
-                    : null,
+                elevation: backgroundImagePath != null ? 0 : null,
                 actions: [
                   // ==> AKSI UTAMA TETAP DI LUAR <==
                   IconButton(
