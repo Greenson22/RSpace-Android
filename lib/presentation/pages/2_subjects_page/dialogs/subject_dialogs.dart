@@ -2,12 +2,16 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/data/services/path_service.dart';
-import 'package:file_picker/file_picker.dart'; // Impor file_picker
 
-// ==> DIALOG BARU UNTUK MEMILIH ATAU MEMBUAT FOLDER PERPUSKU <==
+// Impor dialog ikon terpusat yang sudah kita buat.
+import '../../../widgets/icon_picker_dialog.dart';
+
+// Ekspor dialog ikon agar bisa diimpor dari file ini.
+export '../../../widgets/icon_picker_dialog.dart';
+
+// Dialog untuk menautkan atau membuat folder baru di PerpusKu
 Future<String?> showLinkOrCreatePerpuskuDialog({
   required BuildContext context,
   required String forSubjectName,
@@ -83,6 +87,7 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
   );
 }
 
+// Widget internal untuk membuat folder baru
 class _CreatePerpuskuSubjectDialog extends StatefulWidget {
   final String basePath;
   final String suggestedName;
@@ -99,10 +104,8 @@ class _CreatePerpuskuSubjectDialog extends StatefulWidget {
 
 class _CreatePerpuskuSubjectDialogState
     extends State<_CreatePerpuskuSubjectDialog> {
-  // ==> PERUBAHAN 1: Tambahkan controller dan form key <==
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _folderNameController;
-
   String _selectedTopic = '';
   List<Directory> _topics = [];
   bool _isLoading = true;
@@ -110,12 +113,10 @@ class _CreatePerpuskuSubjectDialogState
   @override
   void initState() {
     super.initState();
-    // ==> PERUBAHAN 2: Inisialisasi controller <==
     _folderNameController = TextEditingController(text: widget.suggestedName);
     _loadTopics();
   }
 
-  // ==> PERUBAHAN 3: Jangan lupa dispose controller <==
   @override
   void dispose() {
     _folderNameController.dispose();
@@ -134,7 +135,6 @@ class _CreatePerpuskuSubjectDialogState
   }
 
   Future<void> _createFolderAndPop() async {
-    // ==> PERUBAHAN 4: Tambahkan validasi form <==
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -150,12 +150,11 @@ class _CreatePerpuskuSubjectDialogState
     }
 
     try {
-      // ==> PERUBAHAN 5: Gunakan teks dari controller <==
       final newFolderName = _folderNameController.text.trim();
       final newSubjectPath = path.join(
         widget.basePath,
         _selectedTopic,
-        newFolderName, // Diganti dari widget.suggestedName
+        newFolderName,
       );
       final newDir = Directory(newSubjectPath);
       if (await newDir.exists()) {
@@ -165,7 +164,6 @@ class _CreatePerpuskuSubjectDialogState
       }
       await newDir.create(recursive: true);
 
-      // Buat file metadata.json kosong
       final metadataFile = File(path.join(newDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode({"content": []}));
 
@@ -185,7 +183,6 @@ class _CreatePerpuskuSubjectDialogState
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Buat Folder Subjek Baru'),
-      // ==> PERUBAHAN 6: Bungkus konten dengan Form <==
       content: Form(
         key: _formKey,
         child: _isLoading
@@ -194,7 +191,6 @@ class _CreatePerpuskuSubjectDialogState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ==> PERUBAHAN 7: Ganti Text menjadi TextFormField <==
                   TextFormField(
                     controller: _folderNameController,
                     decoration: const InputDecoration(
@@ -205,8 +201,6 @@ class _CreatePerpuskuSubjectDialogState
                       if (value == null || value.trim().isEmpty) {
                         return 'Nama folder tidak boleh kosong.';
                       }
-                      // Anda bisa menambahkan validasi lain di sini,
-                      // misalnya melarang karakter ilegal untuk nama folder.
                       return null;
                     },
                   ),
@@ -227,7 +221,6 @@ class _CreatePerpuskuSubjectDialogState
                         setState(() => _selectedTopic = value);
                       }
                     },
-                    // Tambahkan validasi untuk dropdown jika perlu
                     validator: (value) => value == null || value.isEmpty
                         ? 'Silakan pilih topik.'
                         : null,
@@ -249,48 +242,7 @@ class _CreatePerpuskuSubjectDialogState
   }
 }
 
-// Sisa kode dari file asli...
-// (Kelas _PerpuskuPathPicker, showIconPickerDialog, showSubjectTextInputDialog, showDeleteConfirmationDialog, etc.)
-// ... Letakkan semua fungsi lain yang sudah ada di sini ...
-
-Future<void> showSubjectTextInputDialog({
-  required BuildContext context,
-  required String title,
-  required String label,
-  String initialValue = '',
-  required Function(String) onSave,
-}) async {
-  final controller = TextEditingController(text: initialValue);
-  return showDialog<void>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: label),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                onSave(controller.text);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+// Widget internal untuk memilih path yang sudah ada
 class _PerpuskuPathPicker extends StatefulWidget {
   final String basePath;
   const _PerpuskuPathPicker({required this.basePath});
@@ -340,7 +292,6 @@ class _PerpuskuPathPickerState extends State<_PerpuskuPathPicker> {
       });
       _loadItems();
     } else {
-      // Saat subjek dipilih, kembalikan path relatif
       final relativePath = path.relative(item.path, from: widget.basePath);
       Navigator.of(context).pop(relativePath);
     }
@@ -394,107 +345,46 @@ class _PerpuskuPathPickerState extends State<_PerpuskuPathPicker> {
   }
 }
 
-Future<void> showIconPickerDialog({
+// Dialog untuk input teks
+Future<void> showSubjectTextInputDialog({
   required BuildContext context,
-  required Function(String) onIconSelected,
+  required String title,
+  required String label,
+  String initialValue = '',
+  required Function(String) onSave,
 }) async {
-  Future<Map<String, List<String>>> loadIcons() async {
-    final String response = await rootBundle.loadString('assets/icons.json');
-    final data = await json.decode(response) as Map<String, dynamic>;
-    return data.map((key, value) {
-      return MapEntry(key, List<String>.from(value as List));
-    });
-  }
-
+  final controller = TextEditingController(text: initialValue);
   return showDialog<void>(
     context: context,
     builder: (context) {
-      return FutureBuilder<Map<String, List<String>>>(
-        future: loadIcons(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return AlertDialog(
-              title: const Text('Error'),
-              content: const Text('Gagal memuat ikon.'),
-              actions: [
-                TextButton(
-                  child: const Text('Tutup'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            );
-          }
-
-          final iconCategories = snapshot.data!;
-
-          return AlertDialog(
-            title: const Text('Pilih Ikon Baru'),
-            content: DefaultTabController(
-              length: iconCategories.length,
-              child: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TabBar(
-                      isScrollable: true,
-                      tabs: iconCategories.keys
-                          .map((title) => Tab(text: title))
-                          .toList(),
-                    ),
-                    Expanded(
-                      child: TabBarView(
-                        children: iconCategories.entries.map((entry) {
-                          final icons = entry.value;
-                          return GridView.builder(
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 5,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
-                            itemCount: icons.length,
-                            itemBuilder: (context, index) {
-                              final iconSymbol = icons[index];
-                              return InkWell(
-                                onTap: () {
-                                  onIconSelected(iconSymbol);
-                                  Navigator.pop(context);
-                                },
-                                borderRadius: BorderRadius.circular(24),
-                                child: Center(
-                                  child: Text(
-                                    iconSymbol,
-                                    style: const TextStyle(fontSize: 32),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Batal'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          );
-        },
+      return AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: label),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                onSave(controller.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
       );
     },
   );
 }
 
+// Dialog konfirmasi hapus
 Future<void> showDeleteConfirmationDialog({
   required BuildContext context,
   required String subjectName,
@@ -516,6 +406,7 @@ Future<void> showDeleteConfirmationDialog({
               onDelete();
               Navigator.pop(context);
             },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Hapus'),
           ),
         ],
