@@ -9,6 +9,8 @@ class SettingsService {
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
   static const String _showFloatingCharacterKey = 'show_floating_character';
+  // ==> KUNCI BARU UNTUK TEMA NATAL <==
+  static const String _christmasThemeKey = 'christmas_theme_preference';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -18,6 +20,18 @@ class SettingsService {
   Future<bool> loadThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_themeKey) ?? false;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN TEMA NATAL <==
+  Future<void> saveChristmasThemePreference(bool isChristmas) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_christmasThemeKey, isChristmas);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT TEMA NATAL <==
+  Future<bool> loadChristmasThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_christmasThemeKey) ?? false;
   }
 
   Future<void> savePrimaryColor(int colorValue) async {
