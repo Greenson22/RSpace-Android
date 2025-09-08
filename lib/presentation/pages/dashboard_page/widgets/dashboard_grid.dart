@@ -1,5 +1,6 @@
 // lib/presentation/pages/dashboard_page/widgets/dashboard_grid.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../theme/app_theme.dart';
@@ -50,6 +51,10 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
+    ),
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
     if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(
@@ -125,6 +130,11 @@ class DashboardGrid extends StatelessWidget {
             'icon': Icons.lightbulb_outline,
             'label': 'Pusat Umpan Balik',
             'colors': AppTheme.gradientColors6,
+          },
+          {
+            'icon': Icons.library_books_outlined,
+            'label': 'Pustaka Prompt',
+            'colors': AppTheme.gradientColors7,
           },
           {
             'icon': Icons.folder_open_rounded,
