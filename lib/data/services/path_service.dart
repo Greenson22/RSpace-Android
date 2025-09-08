@@ -132,6 +132,9 @@ class PathService {
   Future<String> get feedbackPath async =>
       path.join(await contentsPath, 'feedback.json');
 
+  Future<String> get promptLibraryPath async =>
+      path.join(await _baseDataPath, 'prompt_library');
+
   Future<String> get countdownTimersPath async =>
       path.join(await contentsPath, 'countdown_timers.json');
 
