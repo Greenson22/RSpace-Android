@@ -5,9 +5,9 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import '../../features/content_management/domain/models/discussion_model.dart';
-import '../../data/services/path_service.dart';
-import '../../data/services/flo_intelligence_service.dart'; // Import otak Flo
+import '../../../content_management/domain/models/discussion_model.dart';
+import '../../../../data/services/path_service.dart';
+import '../../infrastructure/flo_intelligence_service.dart'; // Import otak Flo
 
 class FloatingCharacter extends StatefulWidget {
   final bool isVisible;

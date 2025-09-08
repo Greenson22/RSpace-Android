@@ -15,7 +15,7 @@ import '../../features/content_management/application/topic_provider.dart';
 import '../../features/backup_management/application/sync_provider.dart'; // Pastikan SyncProvider diimpor
 import '../../core/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
-import 'chat_page.dart';
+import '../../features/ai_assistant/presentation/pages/chat_page.dart';
 import 'dashboard_page/widgets/dashboard_grid.dart';
 import 'dashboard_page/widgets/dashboard_header.dart';
 import 'dashboard_page/dialogs/theme_settings_dialog.dart';

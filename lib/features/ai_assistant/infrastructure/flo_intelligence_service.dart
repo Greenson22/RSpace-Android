@@ -5,10 +5,10 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import '../../features/content_management/domain/models/discussion_model.dart';
-import '../models/my_task_model.dart';
-import '../models/time_log_model.dart';
-import 'path_service.dart';
+import '../../content_management/domain/models/discussion_model.dart';
+import '../../../data/models/my_task_model.dart';
+import '../../../data/models/time_log_model.dart';
+import '../../../data/services/path_service.dart';
 
 // Kelas ini bertindak sebagai "otak" atau ANN simulasi untuk Flo.
 class FloIntelligenceService {

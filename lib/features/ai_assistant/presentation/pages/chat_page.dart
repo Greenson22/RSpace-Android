@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart'; // Import package baru
 import 'package:provider/provider.dart';
-import '../../data/models/chat_message_model.dart';
-import '../providers/chat_provider.dart';
+import '../../domain/models/chat_message_model.dart';
+import '../../application/chat_provider.dart';
 
 class ChatPage extends StatelessWidget {
   const ChatPage({super.key});

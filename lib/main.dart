@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/presentation/pages/dashboard_page.dart';
-import 'package:my_aplication/presentation/providers/chat_provider.dart';
+import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
@@ -20,7 +20,7 @@ import 'features/prompt_library/application/prompt_provider.dart';
 import 'presentation/pages/my_tasks_page.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'package:my_aplication/features/backup_management/application/sync_provider.dart';
-import 'presentation/widgets/floating_character_widget.dart';
+import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'presentation/providers/feedback_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

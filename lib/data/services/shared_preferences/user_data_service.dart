@@ -1,6 +1,6 @@
 // lib/data/services/shared_preferences/user_data_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/chat_message_model.dart';
+import '../../../features/ai_assistant/domain/models/chat_message_model.dart';
 
 class UserDataService {
   static const String _geminiChatHistory = 'gemini_chat_history';

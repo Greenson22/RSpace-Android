@@ -2,7 +2,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/api_key_model.dart';
 import '../../data/models/prompt_model.dart';
-import '../../data/models/chat_message_model.dart';
+import '../../features/ai_assistant/domain/models/chat_message_model.dart';
 import '../../data/services/shared_preferences/settings_service.dart';
 import '../../data/services/shared_preferences/path_service.dart';
 import '../../data/services/shared_preferences/gemini_service.dart';
