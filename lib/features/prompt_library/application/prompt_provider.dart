@@ -30,6 +30,22 @@ class PromptProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addCategory(String categoryName) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _promptService.createCategory(categoryName);
+      // Panggil kembali loadCategories untuk refresh list
+      await loadCategories();
+    } catch (e) {
+      // Lemparkan kembali error agar bisa ditangani di UI
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> selectCategory(String category) async {
     _selectedCategory = category;
     _isLoading = true;

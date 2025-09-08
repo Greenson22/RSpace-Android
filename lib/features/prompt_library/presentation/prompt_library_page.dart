@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../application/prompt_provider.dart';
+import 'widgets/prompt_dialogs.dart';
 
 class PromptLibraryPage extends StatelessWidget {
   const PromptLibraryPage({super.key});
@@ -42,7 +43,12 @@ class _PromptLibraryView extends StatelessWidget {
           : _buildPromptList(context, provider),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Implementasi logika untuk menambah kategori/prompt baru
+          if (provider.selectedCategory == null) {
+            // Jika di halaman kategori, panggil dialog tambah kategori
+            showAddCategoryDialog(context);
+          } else {
+            // TODO: Implementasi dialog untuk menambah prompt baru
+          }
         },
         tooltip: provider.selectedCategory == null
             ? 'Tambah Kategori'
@@ -59,13 +65,14 @@ class _PromptLibraryView extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
-            'Pustaka Prompt masih kosong.\nBuat folder baru di dalam direktori "RSpace_data/data/prompt_library" untuk memulai.',
+            'Pustaka Prompt masih kosong.\nTekan tombol + untuk membuat kategori baru.',
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80), // Padding untuk FAB
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
@@ -86,13 +93,14 @@ class _PromptLibraryView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            'Tidak ada file prompt .json di dalam kategori "${provider.selectedCategory}".',
+            'Tidak ada file prompt .json di dalam kategori "${provider.selectedCategory}".\nTekan tombol + untuk menambahkan prompt baru.',
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80), // Padding untuk FAB
       itemCount: provider.prompts.length,
       itemBuilder: (context, index) {
         final prompt = provider.prompts[index];

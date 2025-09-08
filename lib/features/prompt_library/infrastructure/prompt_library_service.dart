@@ -19,6 +19,20 @@ class PromptLibraryService {
     return directory;
   }
 
+  Future<void> createCategory(String categoryName) async {
+    final libraryDir = await _getLibraryDirectory();
+    final newCategoryDir = Directory(path.join(libraryDir.path, categoryName));
+
+    if (await newCategoryDir.exists()) {
+      throw Exception('Kategori dengan nama "$categoryName" sudah ada.');
+    }
+    try {
+      await newCategoryDir.create();
+    } catch (e) {
+      throw Exception('Gagal membuat kategori: $e');
+    }
+  }
+
   Future<List<String>> getCategories() async {
     final libraryDir = await _getLibraryDirectory();
     final entities = libraryDir.listSync();
