@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:my_aplication/data/models/my_task_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/my_task_provider.dart';
-import '../providers/theme_provider.dart';
+import '../../features/settings/application/theme_provider.dart';
 import 'my_tasks_page/dialogs/category_dialogs.dart';
 import 'my_tasks_page/dialogs/task_dialogs.dart';
 import 'my_tasks_page/widgets/category_card.dart';

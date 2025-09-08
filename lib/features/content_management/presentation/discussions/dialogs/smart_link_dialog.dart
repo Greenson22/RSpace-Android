@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../../../data/models/link_suggestion_model.dart';
-import '../../../../../data/services/gemini_service.dart'; // ==> IMPORT GEMINI SERVICE
+import '../../../../settings/application/services/gemini_service.dart'; // ==> IMPORT GEMINI SERVICE
 import '../../../../../data/services/smart_link_service.dart';
 import '../../../application/discussion_provider.dart';
 

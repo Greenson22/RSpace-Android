@@ -1,9 +1,9 @@
 // lib/data/services/shared_preferences_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/models/api_key_model.dart';
-import '../../data/models/prompt_model.dart';
+import '../../features/settings/domain/models/api_key_model.dart';
+import '../../features/settings/domain/models/prompt_model.dart';
 import '../../features/ai_assistant/domain/models/chat_message_model.dart';
-import '../../data/services/shared_preferences/settings_service.dart';
+import '../../features/settings/application/services/settings_service.dart';
 import '../../data/services/shared_preferences/path_service.dart';
 import '../../data/services/shared_preferences/gemini_service.dart';
 import '../../data/services/shared_preferences/user_data_service.dart';

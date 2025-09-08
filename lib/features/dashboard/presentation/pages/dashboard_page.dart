@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import '../../../../data/services/ad_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../presentation/providers/statistics_provider.dart';
-import '../../../../presentation/providers/theme_provider.dart';
+import '../../../settings/application/theme_provider.dart';
 import '../../../content_management/application/topic_provider.dart';
 import '../../../backup_management/application/sync_provider.dart'; // Pastikan SyncProvider diimpor
 import '../../../../core/utils/scaffold_messenger_utils.dart';
@@ -18,9 +18,9 @@ import '../../../../presentation/pages/about_page.dart';
 import '../../../ai_assistant/presentation/pages/chat_page.dart';
 import '../widgets/dashboard_grid.dart';
 import '../widgets/dashboard_header.dart';
-import '../dialogs/theme_settings_dialog.dart';
-import '../dialogs/gemini_api_key_dialog.dart';
-import '../dialogs/gemini_prompt_dialog.dart';
+import '../../../settings/presentation/dialogs/theme_settings_dialog.dart';
+import '../../../settings/presentation/dialogs/gemini_api_key_dialog.dart';
+import '../../../settings/presentation/dialogs/gemini_prompt_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});

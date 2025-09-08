@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../data/services/gemini_service.dart';
+import '../../features/settings/application/services/gemini_service.dart';
 
 // Fungsi utama sekarang memanggil widget dialog
 Future<void> showIconPickerDialog({

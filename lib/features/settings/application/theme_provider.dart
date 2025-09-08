@@ -1,8 +1,8 @@
 // lib/presentation/providers/theme_provider.dart
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../../core/services/storage_service.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/theme/app_theme.dart';
 
 class ThemeProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();

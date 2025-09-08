@@ -1,7 +1,7 @@
 // lib/presentation/pages/3_discussions_page/dialogs/generate_html_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../../data/services/gemini_service.dart';
+import '../../../../settings/application/services/gemini_service.dart';
 import '../../../application/discussion_provider.dart';
 
 class GenerateHtmlDialog extends StatefulWidget {

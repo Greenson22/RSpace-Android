@@ -1,7 +1,7 @@
 // lib/presentation/pages/dashboard_page/dialogs/gemini_prompt_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../data/models/prompt_model.dart';
+import '../../domain/models/prompt_model.dart';
 import '../../../../core/services/storage_service.dart';
 
 // Kelas helper untuk data model

@@ -1,11 +1,11 @@
 // lib/data/services/gemini_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/api_key_model.dart';
+import '../../domain/models/api_key_model.dart';
 // ==> IMPORT MODEL BARU
-import '../../features/content_management/domain/models/discussion_model.dart';
-import '../models/link_suggestion_model.dart';
-import '../../core/services/storage_service.dart';
+import '../../../content_management/domain/models/discussion_model.dart';
+import '../../../../data/models/link_suggestion_model.dart';
+import '../../../../core/services/storage_service.dart';
 
 class GeminiService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
-import '../../../../presentation/providers/theme_provider.dart';
+import '../../../settings/application/theme_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
 import '../../../../presentation/pages/my_tasks_page.dart';

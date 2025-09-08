@@ -18,7 +18,7 @@ import 'package:my_aplication/presentation/providers/countdown_provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'features/prompt_library/application/prompt_provider.dart';
 import 'presentation/pages/my_tasks_page.dart';
-import 'presentation/providers/theme_provider.dart';
+import 'features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/backup_management/application/sync_provider.dart';
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'features/feedback/application/feedback_provider.dart';
