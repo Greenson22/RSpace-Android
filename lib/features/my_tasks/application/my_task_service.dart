@@ -1,8 +1,8 @@
 // lib/data/services/my_task_service.dart
 import 'dart:convert';
 import 'dart:io';
-import '../models/my_task_model.dart';
-import 'path_service.dart';
+import '../domain/models/my_task_model.dart';
+import '../../../data/services/path_service.dart';
 
 class MyTaskService {
   final PathService _pathService = PathService();

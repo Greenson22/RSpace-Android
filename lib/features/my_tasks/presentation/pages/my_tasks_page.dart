@@ -2,13 +2,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_aplication/data/models/my_task_model.dart';
+import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
 import 'package:provider/provider.dart';
-import '../providers/my_task_provider.dart';
-import '../../features/settings/application/theme_provider.dart';
-import 'my_tasks_page/dialogs/category_dialogs.dart';
-import 'my_tasks_page/dialogs/task_dialogs.dart';
-import 'my_tasks_page/widgets/category_card.dart';
+import '../../application/my_task_provider.dart';
+import '../../../settings/application/theme_provider.dart';
+import '../dialogs/category_dialogs.dart';
+import '../dialogs/task_dialogs.dart';
+import '../widgets/category_card.dart';
 
 class MyTasksPage extends StatefulWidget {
   const MyTasksPage({super.key});

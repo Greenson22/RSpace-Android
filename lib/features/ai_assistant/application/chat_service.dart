@@ -1,11 +1,11 @@
 // lib/data/services/chat_service.dart
 import 'package:intl/intl.dart';
 import '../domain/models/chat_message_model.dart';
-import '../../../data/models/my_task_model.dart';
+import '../../my_tasks/domain/models/my_task_model.dart';
 import '../../../data/models/time_log_model.dart';
 import '../../content_management/domain/services/discussion_service.dart';
 import '../../settings/application/services/gemini_service.dart';
-import '../../../data/services/my_task_service.dart';
+import '../../my_tasks/application/my_task_service.dart';
 import '../../../data/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../../data/services/time_log_service.dart';

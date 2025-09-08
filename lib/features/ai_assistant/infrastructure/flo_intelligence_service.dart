@@ -6,7 +6,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../../content_management/domain/models/discussion_model.dart';
-import '../../../data/models/my_task_model.dart';
+import '../../my_tasks/domain/models/my_task_model.dart';
 import '../../../data/models/time_log_model.dart';
 import '../../../data/services/path_service.dart';
 

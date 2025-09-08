@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
-import '../../../../presentation/pages/my_tasks_page.dart';
+import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../backup_management/presentation/pages/backup_management_page.dart';
 import '../../../file_management/presentation/pages/file_list_page.dart';

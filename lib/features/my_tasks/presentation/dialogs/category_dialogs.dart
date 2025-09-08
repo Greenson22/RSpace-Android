@@ -1,9 +1,9 @@
 // lib/presentation/pages/my_tasks_page/dialogs/category_dialogs.dart
 import 'package:flutter/material.dart';
-import 'package:my_aplication/data/models/my_task_model.dart';
-import 'package:my_aplication/presentation/providers/my_task_provider.dart';
+import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
+import 'package:my_aplication/features/my_tasks/application/my_task_provider.dart';
 import 'package:provider/provider.dart';
-import '../../../../features/content_management/presentation/topics/dialogs/topic_dialogs.dart';
+import '../../../content_management/presentation/topics/dialogs/topic_dialogs.dart';
 
 void showAddCategoryDialog(BuildContext context) {
   final provider = Provider.of<MyTaskProvider>(context, listen: false);

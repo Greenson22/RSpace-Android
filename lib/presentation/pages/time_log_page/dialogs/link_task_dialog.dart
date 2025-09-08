@@ -1,7 +1,7 @@
 // lib/presentation/pages/time_log_page/dialogs/link_task_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/data/models/time_log_model.dart';
-import 'package:my_aplication/presentation/providers/my_task_provider.dart';
+import 'package:my_aplication/features/my_tasks/application/my_task_provider.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
 

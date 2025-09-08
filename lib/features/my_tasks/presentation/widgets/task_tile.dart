@@ -1,7 +1,7 @@
 // lib/presentation/pages/my_tasks_page/widgets/task_tile.dart
 import 'package:flutter/material.dart';
-import 'package:my_aplication/data/models/my_task_model.dart';
-import 'package:my_aplication/presentation/providers/my_task_provider.dart';
+import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
+import 'package:my_aplication/features/my_tasks/application/my_task_provider.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/task_dialogs.dart';
 

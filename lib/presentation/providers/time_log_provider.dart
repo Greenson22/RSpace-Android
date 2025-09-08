@@ -6,8 +6,8 @@ import '../../data/models/log_task_preset_model.dart';
 import '../../data/models/time_log_model.dart';
 import '../../data/services/time_log_service.dart';
 // ==> 1. IMPORT SERVICE DAN MODEL MY TASK
-import '../../data/services/my_task_service.dart';
-import '../../data/models/my_task_model.dart';
+import '../../features/my_tasks/application/my_task_service.dart';
+import '../../features/my_tasks/domain/models/my_task_model.dart';
 
 class TimeLogProvider with ChangeNotifier {
   final TimeLogService _timeLogService = TimeLogService();
