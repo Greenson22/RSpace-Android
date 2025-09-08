@@ -7,7 +7,7 @@ import '../../../link_maintenance/presentation/pages/orphaned_files_page.dart';
 import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
 import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
 // >> 1. IMPORT HALAMAN BARU
-import '../../../../presentation/pages/exported_discussions_page.dart';
+import '../../../exported_discussions_archive/presentation/pages/exported_discussions_page.dart';
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {
