@@ -1,11 +1,11 @@
 // lib/presentation/pages/dashboard_page/dialogs/data_management_dialog.dart
 
 import 'package:flutter/material.dart';
-import '../../../../presentation/pages/unlinked_discussions_page.dart';
+import '../../../link_maintenance/presentation/pages/unlinked_discussions_page.dart';
 import '../../../../presentation/pages/finished_discussions_page.dart';
-import '../../../../presentation/pages/orphaned_files_page.dart';
-import '../../../../presentation/pages/broken_links_page.dart';
-import '../../../../presentation/pages/bulk_link_page.dart';
+import '../../../link_maintenance/presentation/pages/orphaned_files_page.dart';
+import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
+import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
 // >> 1. IMPORT HALAMAN BARU
 import '../../../../presentation/pages/exported_discussions_page.dart';
 

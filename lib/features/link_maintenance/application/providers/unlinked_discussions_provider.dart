@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import '../../data/models/unlinked_discussion_model.dart';
-import '../../features/content_management/domain/services/discussion_service.dart';
-import '../../data/services/path_service.dart';
-import '../../features/content_management/domain/services/subject_service.dart';
-import '../../features/content_management/domain/services/topic_service.dart';
+import '../../domain/models/unlinked_discussion_model.dart';
+import '../../../content_management/domain/services/discussion_service.dart';
+import '../../../../data/services/path_service.dart';
+import '../../../content_management/domain/services/subject_service.dart';
+import '../../../content_management/domain/services/topic_service.dart';
 
 class UnlinkedDiscussionsProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();

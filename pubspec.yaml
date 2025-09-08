@@ -58,6 +58,8 @@ dependencies:
   google_mobile_ads: ^6.0.0
   numberpicker: ^2.1.2
 
+  uuid: any
+  mime: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,8 +1,8 @@
 // lib/presentation/providers/broken_link_provider.dart
 
 import 'package:flutter/material.dart';
-import '../../data/models/broken_link_model.dart';
-import '../../data/services/broken_link_service.dart';
+import '../../domain/models/broken_link_model.dart';
+import '../services/broken_link_service.dart';
 
 class BrokenLinkProvider with ChangeNotifier {
   final BrokenLinkService _service = BrokenLinkService();

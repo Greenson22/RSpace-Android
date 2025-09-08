@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../features/content_management/domain/models/topic_model.dart';
-import '../providers/bulk_link_provider.dart';
-import 'bulk_link_page/widgets/bulk_link_card.dart';
+import '../../../content_management/domain/models/topic_model.dart';
+import '../../application/providers/bulk_link_provider.dart';
+import '../widgets/bulk_link_card.dart';
 
 class BulkLinkPage extends StatelessWidget {
   const BulkLinkPage({super.key});

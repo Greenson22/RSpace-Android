@@ -1,8 +1,8 @@
 // lib/presentation/providers/orphaned_file_provider.dart
 
 import 'package:flutter/material.dart';
-import '../../data/models/orphaned_file_model.dart';
-import '../../data/services/orphaned_file_service.dart';
+import '../../domain/models/orphaned_file_model.dart';
+import '../services/orphaned_file_service.dart';
 
 class OrphanedFileProvider with ChangeNotifier {
   final OrphanedFileService _service = OrphanedFileService();
