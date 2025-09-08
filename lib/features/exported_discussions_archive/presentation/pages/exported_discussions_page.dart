@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/exported_discussions_provider.dart';
+import '../../application/exported_discussions_provider.dart';
 
 class ExportedDiscussionsPage extends StatelessWidget {
   const ExportedDiscussionsPage({super.key});
