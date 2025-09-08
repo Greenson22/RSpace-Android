@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../domain/models/unlinked_discussion_model.dart';
-import '../../../../data/models/link_suggestion_model.dart';
+import '../../domain/models/link_suggestion_model.dart';
 
 class BulkLinkCard extends StatefulWidget {
   final UnlinkedDiscussion discussion;

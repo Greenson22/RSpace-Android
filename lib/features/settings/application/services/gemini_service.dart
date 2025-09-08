@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../domain/models/api_key_model.dart';
 // ==> IMPORT MODEL BARU
 import '../../../content_management/domain/models/discussion_model.dart';
-import '../../../../data/models/link_suggestion_model.dart';
+import '../../../link_maintenance/domain/models/link_suggestion_model.dart';
 import '../../../../core/services/storage_service.dart';
 
 class GeminiService {

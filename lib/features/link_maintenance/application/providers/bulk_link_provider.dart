@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import '../../../content_management/domain/models/topic_model.dart';
 import '../../domain/models/unlinked_discussion_model.dart';
-import '../../../../data/models/link_suggestion_model.dart';
+import '../../domain/models/link_suggestion_model.dart';
 import '../../../content_management/domain/services/topic_service.dart';
 import '../services/unlinked_discussion_service.dart';
-import '../../../../data/services/smart_link_service.dart';
+import '../services/smart_link_service.dart';
 import '../../../content_management/domain/services/discussion_service.dart';
 import '../../../../data/services/path_service.dart';
 import 'package:path/path.dart' as path;

@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
-import '../../features/content_management/domain/models/discussion_model.dart';
-import '../models/link_suggestion_model.dart';
-import 'path_service.dart';
+import '../../../content_management/domain/models/discussion_model.dart';
+import '../../domain/models/link_suggestion_model.dart';
+import '../../../../data/services/path_service.dart';
 
 class SmartLinkService {
   final PathService _pathService = PathService();

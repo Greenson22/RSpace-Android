@@ -4,9 +4,9 @@ import 'dart:math'; // Import for max function
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
-import '../../../../../data/models/link_suggestion_model.dart';
+import '../../../../link_maintenance/domain/models/link_suggestion_model.dart';
 import '../../../../settings/application/services/gemini_service.dart'; // ==> IMPORT GEMINI SERVICE
-import '../../../../../data/services/smart_link_service.dart';
+import '../../../../link_maintenance/application/services/smart_link_service.dart';
 import '../../../application/discussion_provider.dart';
 
 // ==> TAMBAHKAN ENUM UNTUK MODE PENCARIAN
