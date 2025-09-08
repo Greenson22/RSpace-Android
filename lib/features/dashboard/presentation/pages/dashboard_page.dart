@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
-import '../../../../data/services/ad_service.dart';
+import '../../../../infrastructure/ads/ad_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../statistics/application/statistics_provider.dart';
 import '../../../settings/application/theme_provider.dart';

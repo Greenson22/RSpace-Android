@@ -2,7 +2,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../../data/services/ad_service.dart';
+import '../../infrastructure/ads/ad_service.dart';
 
 class AdBannerWidget extends StatefulWidget {
   const AdBannerWidget({super.key});
