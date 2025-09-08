@@ -1,7 +1,6 @@
 // lib/presentation/pages/time_hub_page.dart
 import 'package:flutter/material.dart';
 import 'time_log_page.dart';
-import 'countdown_page.dart';
 
 class TimeHubPage extends StatelessWidget {
   const TimeHubPage({super.key});
@@ -21,17 +20,6 @@ class TimeHubPage extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const TimeLogPage()),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildMenuCard(
-            context,
-            icon: Icons.hourglass_bottom_outlined,
-            title: 'Hitung Mundur',
-            subtitle: 'Atur dan jalankan beberapa timer hitung mundur.',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CountdownPage()),
             ),
           ),
         ],
