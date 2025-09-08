@@ -8,7 +8,7 @@ import 'package:path/path.dart' as path;
 import '../../content_management/domain/models/discussion_model.dart';
 import '../../my_tasks/domain/models/my_task_model.dart';
 import '../../time_management/domain/models/time_log_model.dart';
-import '../../../core/services/dua/path_service.dart';
+import '../../../core/services/path_service.dart';
 
 // Kelas ini bertindak sebagai "otak" atau ANN simulasi untuk Flo.
 class FloIntelligenceService {

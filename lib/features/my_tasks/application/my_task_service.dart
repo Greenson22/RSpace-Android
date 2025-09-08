@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import '../domain/models/my_task_model.dart';
-import '../../../core/services/dua/path_service.dart';
+import '../../../core/services/path_service.dart';
 
 class MyTaskService {
   final PathService _pathService = PathService();

@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../domain/models/link_suggestion_model.dart';
-import '../../../../core/services/dua/path_service.dart';
+import '../../../../core/services/path_service.dart';
 
 class SmartLinkService {
   final PathService _pathService = PathService();

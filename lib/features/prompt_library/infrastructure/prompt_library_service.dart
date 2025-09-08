@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
-import '../../../core/services/dua/path_service.dart';
+import '../../../core/services/path_service.dart';
 import '../domain/models/prompt_concept_model.dart';
 
 class PromptLibraryService {

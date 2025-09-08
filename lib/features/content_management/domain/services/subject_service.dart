@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
 import '../models/subject_model.dart';
 import 'discussion_service.dart';
-import '../../../../core/services/dua/path_service.dart';
+import '../../../../core/services/path_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:open_file/open_file.dart';

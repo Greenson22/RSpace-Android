@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
-import '../../../../core/services/dua/path_service.dart';
+import '../../../../core/services/path_service.dart';
 
 class DiscussionService {
   // ... (fungsi moveDiscussionFile, loadDiscussions, addDiscussion, dll. tetap sama) ...

@@ -11,7 +11,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
-import '../../../../core/services/dua/path_service.dart';
+import '../../../../core/services/path_service.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {

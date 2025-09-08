@@ -9,7 +9,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import '../../content_management/domain/models/discussion_model.dart';
 import '../domain/models/exported_discussion_model.dart';
-import '../../../core/services/dua/path_service.dart';
+import '../../../core/services/path_service.dart';
 
 class ExportedDiscussionsProvider with ChangeNotifier {
   final PathService _pathService = PathService();
