@@ -9,8 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
-import '../../data/models/file_model.dart';
-import '../../core/services/storage_service.dart';
+import '../domain/models/file_model.dart';
+import '../../../core/services/storage_service.dart';
 
 class FileProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();

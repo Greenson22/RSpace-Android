@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/file_provider.dart';
-import '../../core/utils/scaffold_messenger_utils.dart';
+import '../../application/file_provider.dart';
+import '../../../../core/utils/scaffold_messenger_utils.dart';
 
-import 'file_list_page/layouts/desktop_layout.dart';
-import 'file_list_page/layouts/mobile_layout.dart';
+import '../layouts/desktop_layout.dart';
+import '../layouts/mobile_layout.dart';
 
 class FileListPage extends StatelessWidget {
   const FileListPage({super.key});
