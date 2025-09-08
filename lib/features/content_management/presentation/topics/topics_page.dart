@@ -14,7 +14,7 @@ import 'dialogs/topic_dialogs.dart';
 import 'widgets/topic_grid_tile.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../presentation/widgets/ad_banner_widget.dart'; // Impor widget iklan
+import '../../../../core/widgets/ad_banner_widget.dart'; // Impor widget iklan
 
 class TopicsPage extends StatelessWidget {
   const TopicsPage({super.key});

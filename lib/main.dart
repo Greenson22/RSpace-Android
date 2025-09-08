@@ -9,7 +9,7 @@ import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
-import 'package:my_aplication/presentation/widgets/snow_widget.dart';
+import 'package:my_aplication/core/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';

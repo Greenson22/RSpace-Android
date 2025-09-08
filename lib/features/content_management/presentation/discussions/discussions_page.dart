@@ -7,7 +7,7 @@ import '../../application/discussion_provider.dart'; // Pastikan path ini benar
 import 'dialogs/discussion_dialogs.dart';
 import 'widgets/discussion_card.dart';
 import 'widgets/discussion_stats_header.dart';
-import '../../../../presentation/widgets/ad_banner_widget.dart';
+import '../../../../core/widgets/ad_banner_widget.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;

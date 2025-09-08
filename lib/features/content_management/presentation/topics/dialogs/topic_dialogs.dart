@@ -1,7 +1,7 @@
 // lib/presentation/pages/1_topics_page/dialogs/topic_dialogs.dart
 import 'package:flutter/material.dart';
 // Ekspor dialog ikon agar bisa diimpor dari file ini saja.
-export '../../../../../presentation/widgets/icon_picker_dialog.dart';
+export '../../../../../core/widgets/icon_picker_dialog.dart';
 
 /// Menampilkan dialog untuk input teks (menambah/mengubah nama topik).
 Future<void> showTopicTextInputDialog({

@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:my_aplication/data/services/path_service.dart';
 
 // Ekspor dialog ikon agar bisa diimpor dari file ini.
-export '../../../../../presentation/widgets/icon_picker_dialog.dart';
+export '../../../../../core/widgets/icon_picker_dialog.dart';
 
 // Dialog untuk menautkan atau membuat folder baru di PerpusKu
 Future<String?> showLinkOrCreatePerpuskuDialog({
