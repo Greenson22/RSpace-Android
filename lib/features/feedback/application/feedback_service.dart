@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import '../domain/models/feedback_model.dart';
-import '../../../data/services/path_service.dart';
+import '../../../core/services/dua/path_service.dart';
 
 class FeedbackService {
   final PathService _pathService = PathService();

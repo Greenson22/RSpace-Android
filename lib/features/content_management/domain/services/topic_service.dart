@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import '../models/topic_model.dart';
-import '../../../../data/services/path_service.dart';
+import '../../../../core/services/dua/path_service.dart';
 
 class TopicService {
   final PathService _pathService = PathService();

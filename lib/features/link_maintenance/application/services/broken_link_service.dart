@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import '../../domain/models/broken_link_model.dart';
-import '../../../../data/services/path_service.dart';
+import '../../../../core/services/dua/path_service.dart';
 import '../../../content_management/domain/services/subject_service.dart';
 import '../../../content_management/domain/services/topic_service.dart';
 import '../../../content_management/domain/services/discussion_service.dart';

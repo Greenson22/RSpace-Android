@@ -10,7 +10,7 @@ import '../../content_management/domain/models/discussion_model.dart';
 import '../domain/models/finished_discussion_model.dart';
 import '../../content_management/domain/services/discussion_service.dart';
 import 'finished_discussion_service.dart';
-import '../../../data/services/path_service.dart';
+import '../../../core/services/dua/path_service.dart';
 // >> BARU: Import SubjectService untuk membaca metadata
 import '../../content_management/domain/services/subject_service.dart';
 

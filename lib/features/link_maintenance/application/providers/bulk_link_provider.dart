@@ -8,7 +8,7 @@ import '../../../content_management/domain/services/topic_service.dart';
 import '../services/unlinked_discussion_service.dart';
 import '../services/smart_link_service.dart';
 import '../../../content_management/domain/services/discussion_service.dart';
-import '../../../../data/services/path_service.dart';
+import '../../../../core/services/dua/path_service.dart';
 import 'package:path/path.dart' as path;
 
 // Enum untuk mengelola state halaman

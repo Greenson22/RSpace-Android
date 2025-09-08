@@ -6,7 +6,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../../../content_management/domain/models/discussion_model.dart';
-import '../../../../data/services/path_service.dart';
+import '../../../../core/services/dua/path_service.dart';
 import '../../infrastructure/flo_intelligence_service.dart'; // Import otak Flo
 
 class FloatingCharacter extends StatefulWidget {

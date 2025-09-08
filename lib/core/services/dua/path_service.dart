@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../core/services/storage_service.dart';
+import '../storage_service.dart';
 
 class PathService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();

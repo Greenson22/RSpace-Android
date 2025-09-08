@@ -6,7 +6,7 @@ import '../../time_management/domain/models/time_log_model.dart';
 import '../../content_management/domain/services/discussion_service.dart';
 import '../../settings/application/services/gemini_service.dart';
 import '../../my_tasks/application/my_task_service.dart';
-import '../../../data/services/path_service.dart';
+import '../../../core/services/dua/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
