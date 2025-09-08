@@ -1,8 +1,8 @@
 // lib/presentation/widgets/edit_popup_menu.dart
 import 'package:flutter/material.dart';
-import 'popup_menu_items/discussion_menu_items.dart';
-import 'popup_menu_items/file_menu_items.dart';
-import 'popup_menu_items/lifecycle_menu_items.dart';
+import '../../../../../presentation/widgets/popup_menu_items/discussion_menu_items.dart';
+import '../../../../../presentation/widgets/popup_menu_items/file_menu_items.dart';
+import '../../../../../presentation/widgets/popup_menu_items/lifecycle_menu_items.dart';
 
 class EditPopupMenu extends StatelessWidget {
   final VoidCallback onAddPoint;
