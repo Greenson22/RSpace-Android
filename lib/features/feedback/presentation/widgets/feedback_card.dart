@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../../data/models/feedback_model.dart';
-import '../../../providers/feedback_provider.dart';
+import '../../domain/models/feedback_model.dart';
+import '../../application/feedback_provider.dart';
 import '../dialogs/feedback_dialogs.dart';
 
 class FeedbackCard extends StatelessWidget {

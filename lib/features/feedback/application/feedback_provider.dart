@@ -1,7 +1,7 @@
 // lib/presentation/providers/feedback_provider.dart
 import 'package:flutter/material.dart';
-import '../../data/models/feedback_model.dart';
-import '../../data/services/feedback_service.dart';
+import '../domain/models/feedback_model.dart';
+import 'feedback_service.dart';
 
 class FeedbackProvider with ChangeNotifier {
   final FeedbackService _feedbackService = FeedbackService();

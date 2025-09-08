@@ -1,10 +1,10 @@
 // lib/presentation/pages/feedback_center_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/feedback_model.dart';
-import '../providers/feedback_provider.dart';
-import 'feedback_center_page/dialogs/feedback_dialogs.dart';
-import 'feedback_center_page/widgets/feedback_card.dart';
+import '../../domain/models/feedback_model.dart';
+import '../../application/feedback_provider.dart';
+import '../dialogs/feedback_dialogs.dart';
+import '../widgets/feedback_card.dart';
 
 class FeedbackCenterPage extends StatelessWidget {
   const FeedbackCenterPage({super.key});

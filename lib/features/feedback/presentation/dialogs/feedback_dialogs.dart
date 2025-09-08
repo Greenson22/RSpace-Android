@@ -1,7 +1,7 @@
 // lib/presentation/pages/feedback_center_page/dialogs/feedback_dialogs.dart
 import 'package:flutter/material.dart';
-import '../../../../data/models/feedback_model.dart';
-import '../../../providers/feedback_provider.dart';
+import '../../domain/models/feedback_model.dart';
+import '../../application/feedback_provider.dart';
 
 // Dialog untuk menambah atau mengedit item
 Future<void> showAddEditFeedbackDialog(
