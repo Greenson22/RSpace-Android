@@ -2,15 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/theme_provider.dart';
+import '../../../../presentation/providers/theme_provider.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../features/content_management/presentation/topics/topics_page.dart';
-import '../../my_tasks_page.dart';
-import '../../statistics_page.dart';
-import '../../../../features/backup_management/presentation/pages/backup_management_page.dart';
-import '../../file_list_page.dart';
-import '../../feedback_center_page.dart';
-import '../../time_hub_page.dart';
+import '../../../content_management/presentation/topics/topics_page.dart';
+import '../../../../presentation/pages/my_tasks_page.dart';
+import '../../../../presentation/pages/statistics_page.dart';
+import '../../../backup_management/presentation/pages/backup_management_page.dart';
+import '../../../../presentation/pages/file_list_page.dart';
+import '../../../../presentation/pages/feedback_center_page.dart';
+import '../../../../presentation/pages/time_hub_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 

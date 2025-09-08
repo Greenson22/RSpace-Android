@@ -7,20 +7,20 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
-import '../../data/services/ad_service.dart';
-import '../../core/services/storage_service.dart';
-import '../providers/statistics_provider.dart';
-import '../providers/theme_provider.dart';
-import '../../features/content_management/application/topic_provider.dart';
-import '../../features/backup_management/application/sync_provider.dart'; // Pastikan SyncProvider diimpor
-import '../../core/utils/scaffold_messenger_utils.dart';
-import 'about_page.dart';
-import '../../features/ai_assistant/presentation/pages/chat_page.dart';
-import 'dashboard_page/widgets/dashboard_grid.dart';
-import 'dashboard_page/widgets/dashboard_header.dart';
-import 'dashboard_page/dialogs/theme_settings_dialog.dart';
-import 'dashboard_page/dialogs/gemini_api_key_dialog.dart';
-import 'dashboard_page/dialogs/gemini_prompt_dialog.dart';
+import '../../../../data/services/ad_service.dart';
+import '../../../../core/services/storage_service.dart';
+import '../../../../presentation/providers/statistics_provider.dart';
+import '../../../../presentation/providers/theme_provider.dart';
+import '../../../content_management/application/topic_provider.dart';
+import '../../../backup_management/application/sync_provider.dart'; // Pastikan SyncProvider diimpor
+import '../../../../core/utils/scaffold_messenger_utils.dart';
+import '../../../../presentation/pages/about_page.dart';
+import '../../../ai_assistant/presentation/pages/chat_page.dart';
+import '../widgets/dashboard_grid.dart';
+import '../widgets/dashboard_header.dart';
+import '../dialogs/theme_settings_dialog.dart';
+import '../dialogs/gemini_api_key_dialog.dart';
+import '../dialogs/gemini_prompt_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});

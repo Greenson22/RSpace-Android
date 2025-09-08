@@ -1,13 +1,13 @@
 // lib/presentation/pages/dashboard_page/dialogs/data_management_dialog.dart
 
 import 'package:flutter/material.dart';
-import '../../unlinked_discussions_page.dart';
-import '../../finished_discussions_page.dart';
-import '../../orphaned_files_page.dart';
-import '../../broken_links_page.dart';
-import '../../bulk_link_page.dart';
+import '../../../../presentation/pages/unlinked_discussions_page.dart';
+import '../../../../presentation/pages/finished_discussions_page.dart';
+import '../../../../presentation/pages/orphaned_files_page.dart';
+import '../../../../presentation/pages/broken_links_page.dart';
+import '../../../../presentation/pages/bulk_link_page.dart';
 // >> 1. IMPORT HALAMAN BARU
-import '../../exported_discussions_page.dart';
+import '../../../../presentation/pages/exported_discussions_page.dart';
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {

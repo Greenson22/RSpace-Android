@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:my_aplication/presentation/pages/dashboard_page.dart';
+import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
