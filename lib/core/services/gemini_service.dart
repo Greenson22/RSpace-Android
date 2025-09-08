@@ -1,8 +1,8 @@
 // lib/data/services/shared_preferences/gemini_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import '../../../features/settings/domain/models/api_key_model.dart';
-import '../../../features/settings/domain/models/prompt_model.dart';
+import '../../features/settings/domain/models/api_key_model.dart';
+import '../../features/settings/domain/models/prompt_model.dart';
 
 class GeminiService {
   static const String _geminiApiKey_old = 'gemini_api_key';
