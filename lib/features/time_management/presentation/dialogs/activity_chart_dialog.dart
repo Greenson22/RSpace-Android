@@ -1,7 +1,7 @@
 // lib/presentation/pages/time_log_page/dialogs/activity_chart_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../data/models/time_log_model.dart';
+import '../../domain/models/time_log_model.dart';
 import '../widgets/daily_activity_chart.dart';
 
 /// Enum untuk mengelola tipe filter yang aktif.

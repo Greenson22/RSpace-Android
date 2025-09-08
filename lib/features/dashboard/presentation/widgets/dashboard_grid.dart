@@ -10,7 +10,7 @@ import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../backup_management/presentation/pages/backup_management_page.dart';
 import '../../../file_management/presentation/pages/file_list_page.dart';
 import '../../../feedback/presentation/pages/feedback_center_page.dart';
-import '../../../../presentation/pages/time_hub_page.dart';
+import '../../../time_management/presentation/pages/time_hub_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 

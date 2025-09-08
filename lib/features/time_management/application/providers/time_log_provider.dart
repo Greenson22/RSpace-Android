@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/log_task_preset_model.dart';
-import '../../data/models/time_log_model.dart';
-import '../../data/services/time_log_service.dart';
+import '../../domain/models/log_task_preset_model.dart';
+import '../../domain/models/time_log_model.dart';
+import '../services/time_log_service.dart';
 // ==> 1. IMPORT SERVICE DAN MODEL MY TASK
-import '../../features/my_tasks/application/my_task_service.dart';
-import '../../features/my_tasks/domain/models/my_task_model.dart';
+import '../../../my_tasks/application/my_task_service.dart';
+import '../../../my_tasks/domain/models/my_task_model.dart';
 
 class TimeLogProvider with ChangeNotifier {
   final TimeLogService _timeLogService = TimeLogService();

@@ -1,12 +1,12 @@
 // lib/presentation/pages/countdown_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/countdown_provider.dart';
-import 'countdown_page/dialogs/add_countdown_dialog.dart';
-import '../../data/models/countdown_model.dart';
+import '../../application/providers/countdown_provider.dart';
+import '../dialogs/add_countdown_dialog.dart';
+import '../../domain/models/countdown_model.dart';
 // Import baru untuk dialog konfirmasi
-import 'countdown_page/dialogs/countdown_dialogs.dart';
-import 'countdown_page/dialogs/edit_countdown_dialog.dart';
+import '../dialogs/countdown_dialogs.dart';
+import '../dialogs/edit_countdown_dialog.dart';
 
 class CountdownPage extends StatelessWidget {
   const CountdownPage({super.key});

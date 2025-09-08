@@ -2,7 +2,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../data/models/time_log_model.dart';
+import '../../domain/models/time_log_model.dart';
 
 class DailyActivityChart extends StatefulWidget {
   final List<TimeLogEntry> logs;

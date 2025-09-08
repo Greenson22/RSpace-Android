@@ -2,13 +2,13 @@
 import 'package:intl/intl.dart';
 import '../domain/models/chat_message_model.dart';
 import '../../my_tasks/domain/models/my_task_model.dart';
-import '../../../data/models/time_log_model.dart';
+import '../../time_management/domain/models/time_log_model.dart';
 import '../../content_management/domain/services/discussion_service.dart';
 import '../../settings/application/services/gemini_service.dart';
 import '../../my_tasks/application/my_task_service.dart';
 import '../../../data/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
-import '../../../data/services/time_log_service.dart';
+import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart'; // Import material for DateUtils

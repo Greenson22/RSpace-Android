@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_aplication/data/models/log_task_preset_model.dart';
-import 'package:my_aplication/data/models/time_log_model.dart';
-import 'package:my_aplication/presentation/providers/time_log_provider.dart';
+import 'package:my_aplication/features/time_management/domain/models/log_task_preset_model.dart';
+import 'package:my_aplication/features/time_management/domain/models/time_log_model.dart';
+import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
 
 // FUNGSI BARU UNTUK KONFIRMASI PENGHAPUSAN

@@ -3,9 +3,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart'; // Ditambahkan untuk DateUtils
-import '../models/log_task_preset_model.dart';
-import '../models/time_log_model.dart';
-import 'path_service.dart';
+import '../../domain/models/log_task_preset_model.dart';
+import '../../domain/models/time_log_model.dart';
+import '../../../../data/services/path_service.dart';
 
 class TimeLogService {
   final PathService _pathService = PathService();
@@ -31,7 +31,9 @@ class TimeLogService {
     }
 
     final todayDate = DateUtils.dateOnly(DateTime.now());
-    final hasTodayLog = logs.any((log) => DateUtils.isSameDay(log.date, todayDate));
+    final hasTodayLog = logs.any(
+      (log) => DateUtils.isSameDay(log.date, todayDate),
+    );
 
     // Jika log untuk hari ini BELUM ADA dan sudah ada log sebelumnya
     if (!hasTodayLog && logs.isNotEmpty) {
@@ -46,7 +48,10 @@ class TimeLogService {
         );
       }).toList();
 
-      final newTodayLog = TimeLogEntry(date: todayDate, tasks: newTasksForToday);
+      final newTodayLog = TimeLogEntry(
+        date: todayDate,
+        tasks: newTasksForToday,
+      );
       logs.insert(0, newTodayLog); // Tambahkan log hari ini ke paling atas
       needsSave = true;
 
@@ -71,12 +76,15 @@ class TimeLogService {
   }
 
   // Fungsi save privat tanpa notifyListeners
-  Future<void> _saveTimeLogsWithoutNotify(File file, List<TimeLogEntry> logs) async {
+  Future<void> _saveTimeLogsWithoutNotify(
+    File file,
+    List<TimeLogEntry> logs,
+  ) async {
     final listJson = logs.map((log) => log.toJson()).toList();
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(listJson));
   }
-  
+
   // Fungsi save publik yang digunakan oleh provider
   Future<void> saveTimeLogs(List<TimeLogEntry> logs) async {
     final filePath = await _pathService.timeLogPath;

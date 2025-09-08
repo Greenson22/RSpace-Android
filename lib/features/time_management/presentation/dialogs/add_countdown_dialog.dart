@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/countdown_provider.dart';
+import '../../application/providers/countdown_provider.dart';
 
 void showAddCountdownDialog(BuildContext context) {
   showDialog(

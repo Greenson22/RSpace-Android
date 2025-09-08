@@ -1,8 +1,8 @@
 // lib/presentation/pages/time_log_page/layouts/mobile_layout.dart
 import 'package:flutter/material.dart';
-import 'package:my_aplication/presentation/pages/time_log_page/dialogs/daily_log_card.dart';
+import 'package:my_aplication/features/time_management/presentation/dialogs/daily_log_card.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/time_log_provider.dart';
+import '../../application/providers/time_log_provider.dart';
 
 class MobileLayout extends StatelessWidget {
   final DateTimeRange? selectedDateRange;

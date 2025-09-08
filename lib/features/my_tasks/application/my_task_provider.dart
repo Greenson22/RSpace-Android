@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import '../domain/models/my_task_model.dart';
 import 'my_task_service.dart';
 // ==> 1. IMPORT SERVICE DAN MODEL DARI TIME LOG
-import '../../../data/services/time_log_service.dart';
-import '../../../data/models/time_log_model.dart';
+import '../../time_management/application/services/time_log_service.dart';
+import '../../time_management/domain/models/time_log_model.dart';
 
 class MyTaskProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();

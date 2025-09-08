@@ -7,14 +7,14 @@ import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_pa
 import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
-import 'package:my_aplication/presentation/providers/time_log_provider.dart';
+import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
 import 'package:my_aplication/presentation/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
 import 'package:my_aplication/presentation/providers/finished_discussions_provider.dart';
-import 'package:my_aplication/presentation/providers/countdown_provider.dart';
+import 'package:my_aplication/features/time_management/application/providers/countdown_provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'features/prompt_library/application/prompt_provider.dart';
 import 'features/my_tasks/presentation/pages/my_tasks_page.dart';

@@ -1,12 +1,12 @@
 // lib/presentation/pages/time_log_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/presentation/providers/time_log_provider.dart';
+import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
-import 'time_log_page/dialogs/activity_chart_dialog.dart';
-import 'time_log_page/dialogs/task_log_dialogs.dart';
-import 'time_log_page/layouts/desktop_layout.dart';
-import 'time_log_page/layouts/mobile_layout.dart';
+import '../dialogs/activity_chart_dialog.dart';
+import '../dialogs/task_log_dialogs.dart';
+import '../layouts/desktop_layout.dart';
+import '../layouts/mobile_layout.dart';
 
 class TimeLogPage extends StatefulWidget {
   const TimeLogPage({super.key});

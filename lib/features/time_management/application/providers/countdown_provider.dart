@@ -1,8 +1,8 @@
 // lib/presentation/providers/countdown_provider.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../data/models/countdown_model.dart';
-import '../../data/services/countdown_service.dart';
+import '../../domain/models/countdown_model.dart';
+import '../services/countdown_service.dart';
 
 class CountdownProvider with ChangeNotifier {
   final CountdownService _service = CountdownService();

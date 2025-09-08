@@ -1,8 +1,8 @@
 // lib/data/services/countdown_service.dart
 import 'dart:convert';
 import 'dart:io';
-import '../models/countdown_model.dart';
-import 'path_service.dart';
+import '../../domain/models/countdown_model.dart';
+import '../../../../data/services/path_service.dart';
 
 class CountdownService {
   final PathService _pathService = PathService();

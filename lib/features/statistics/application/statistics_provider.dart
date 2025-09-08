@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../domain/models/statistics_model.dart';
-import '../../../data/models/time_log_model.dart';
+import '../../time_management/domain/models/time_log_model.dart';
 import '../../content_management/domain/services/discussion_service.dart';
 import '../../my_tasks/application/my_task_service.dart';
 import '../../../data/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
-import '../../../data/services/time_log_service.dart';
+import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
 
 class StatisticsProvider with ChangeNotifier {

@@ -1,11 +1,11 @@
 // lib/presentation/pages/time_log_page/widgets/daily_log_card.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_aplication/presentation/pages/time_log_page/widgets/task_log_tile.dart';
+import 'package:my_aplication/features/time_management/presentation/widgets/task_log_tile.dart';
 import 'package:provider/provider.dart';
-import '../../../../data/models/time_log_model.dart';
-import '../../../providers/time_log_provider.dart';
-import '../dialogs/task_log_dialogs.dart';
+import '../../domain/models/time_log_model.dart';
+import '../../application/providers/time_log_provider.dart';
+import 'task_log_dialogs.dart';
 
 class DailyLogCard extends StatelessWidget {
   final TimeLogEntry? log;
