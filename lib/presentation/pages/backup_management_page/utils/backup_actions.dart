@@ -4,8 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/backup_provider.dart';
-import '../../../providers/topic_provider.dart';
-import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
+import '../../../../features/content_management/application/topic_provider.dart';
+import '../../../../core/utils/scaffold_messenger_utils.dart';
 import 'backup_dialogs.dart';
 import 'package:path/path.dart' as path;
 

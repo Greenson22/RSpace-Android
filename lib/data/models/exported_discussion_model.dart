@@ -1,6 +1,6 @@
 // lib/data/models/exported_discussion_model.dart
 
-import 'discussion_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
 
 class ExportedSubject {
   final String name;

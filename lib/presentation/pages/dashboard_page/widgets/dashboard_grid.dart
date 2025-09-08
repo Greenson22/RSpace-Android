@@ -4,7 +4,7 @@ import 'package:my_aplication/features/prompt_library/presentation/prompt_librar
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../theme/app_theme.dart';
-import '../../1_topics_page.dart';
+import '../../../../features/content_management/presentation/topics/topics_page.dart';
 import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';
 import '../../backup_management_page.dart';

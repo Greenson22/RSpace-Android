@@ -5,7 +5,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import '../models/discussion_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
 import '../models/my_task_model.dart';
 import '../models/time_log_model.dart';
 import 'path_service.dart';

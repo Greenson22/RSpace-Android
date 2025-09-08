@@ -5,13 +5,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import '../models/broken_link_model.dart';
-import '../models/discussion_model.dart';
-import '../models/subject_model.dart';
-import '../models/topic_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
+import '../../features/content_management/domain/models/subject_model.dart';
+import '../../features/content_management/domain/models/topic_model.dart';
 import 'path_service.dart';
-import 'subject_service.dart';
-import 'topic_service.dart';
-import 'discussion_service.dart';
+import '../../features/content_management/domain/services/subject_service.dart';
+import '../../features/content_management/domain/services/topic_service.dart';
+import '../../features/content_management/domain/services/discussion_service.dart';
 
 class BrokenLinkService {
   final PathService _pathService = PathService();

@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:share_plus/share_plus.dart';
-import '../../1_topics_page/utils/scaffold_messenger_utils.dart';
+import '../../../../core/utils/scaffold_messenger_utils.dart';
 
 String formatBytes(int bytes, int decimals) {
   if (bytes <= 0) return "0 B";

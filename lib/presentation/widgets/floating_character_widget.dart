@@ -5,7 +5,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import '../../data/models/discussion_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
 import '../../data/services/path_service.dart';
 import '../../data/services/flo_intelligence_service.dart'; // Import otak Flo
 

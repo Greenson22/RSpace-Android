@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/broken_link_model.dart';
 import '../providers/broken_link_provider.dart';
-import '../providers/discussion_provider.dart';
-import '../providers/subject_provider.dart';
-import '../providers/topic_provider.dart';
-import '2_subjects_page.dart';
-import '3_discussions_page.dart';
+import '../../features/content_management/application/discussion_provider.dart';
+import '../../features/content_management/application/subject_provider.dart';
+import '../../features/content_management/application/topic_provider.dart';
+import '../../features/content_management/presentation/subjects/subjects_page.dart';
+import '../../features/content_management/presentation/discussions/discussions_page.dart';
 import 'package:path/path.dart' as path;
 
 class BrokenLinksPage extends StatelessWidget {

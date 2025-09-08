@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import '../../data/models/discussion_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
 import '../../data/models/exported_discussion_model.dart';
 import '../../data/services/path_service.dart';
 

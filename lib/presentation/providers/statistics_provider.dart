@@ -3,15 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
-import '../../data/models/discussion_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
 import '../../data/models/statistics_model.dart';
 import '../../data/models/time_log_model.dart';
-import '../../data/services/discussion_service.dart';
+import '../../features/content_management/domain/services/discussion_service.dart';
 import '../../data/services/my_task_service.dart';
 import '../../data/services/path_service.dart';
-import '../../data/services/subject_service.dart';
+import '../../features/content_management/domain/services/subject_service.dart';
 import '../../data/services/time_log_service.dart';
-import '../../data/services/topic_service.dart';
+import '../../features/content_management/domain/services/topic_service.dart';
 
 class StatisticsProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();

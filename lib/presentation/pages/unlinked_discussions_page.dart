@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/discussion_provider.dart';
+import '../../features/content_management/application/discussion_provider.dart';
 import '../providers/unlinked_discussions_provider.dart';
-import '3_discussions_page.dart';
+import '../../features/content_management/presentation/discussions/discussions_page.dart';
 
 class UnlinkedDiscussionsPage extends StatelessWidget {
   const UnlinkedDiscussionsPage({super.key});

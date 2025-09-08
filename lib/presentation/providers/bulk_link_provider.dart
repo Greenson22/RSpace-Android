@@ -1,13 +1,13 @@
 // lib/presentation/providers/bulk_link_provider.dart
 
 import 'package:flutter/material.dart';
-import '../../data/models/topic_model.dart';
+import '../../features/content_management/domain/models/topic_model.dart';
 import '../../data/models/unlinked_discussion_model.dart';
 import '../../data/models/link_suggestion_model.dart';
-import '../../data/services/topic_service.dart';
+import '../../features/content_management/domain/services/topic_service.dart';
 import '../../data/services/unlinked_discussion_service.dart';
 import '../../data/services/smart_link_service.dart';
-import '../../data/services/discussion_service.dart';
+import '../../features/content_management/domain/services/discussion_service.dart';
 import '../../data/services/path_service.dart';
 import 'package:path/path.dart' as path;
 

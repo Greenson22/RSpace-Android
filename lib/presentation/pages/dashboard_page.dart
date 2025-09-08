@@ -11,9 +11,9 @@ import '../../data/services/ad_service.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/topic_provider.dart';
+import '../../features/content_management/application/topic_provider.dart';
 import '../providers/sync_provider.dart'; // Pastikan SyncProvider diimpor
-import '1_topics_page/utils/scaffold_messenger_utils.dart';
+import '../../core/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'chat_page.dart';
 import 'dashboard_page/widgets/dashboard_grid.dart';

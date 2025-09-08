@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/api_key_model.dart';
 // ==> IMPORT MODEL BARU
-import '../models/discussion_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
 import '../models/link_suggestion_model.dart';
 import 'shared_preferences_service.dart';
 

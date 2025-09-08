@@ -8,7 +8,7 @@ import 'package:my_aplication/presentation/providers/chat_provider.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
 import 'package:my_aplication/presentation/providers/statistics_provider.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
-import 'package:my_aplication/presentation/providers/topic_provider.dart';
+import 'package:my_aplication/features/content_management/application/topic_provider.dart';
 import 'package:my_aplication/presentation/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/presentation/providers/unlinked_discussions_provider.dart';

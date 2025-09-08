@@ -1,8 +1,8 @@
 // lib/data/models/broken_link_model.dart
 
-import 'discussion_model.dart';
-import 'subject_model.dart';
-import 'topic_model.dart';
+import '../../features/content_management/domain/models/discussion_model.dart';
+import '../../features/content_management/domain/models/subject_model.dart';
+import '../../features/content_management/domain/models/topic_model.dart';
 
 class BrokenLink {
   final Discussion discussion;
