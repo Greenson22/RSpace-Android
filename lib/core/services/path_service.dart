@@ -1,16 +1,79 @@
 // lib/data/services/path_service.dart
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PathService {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // Kunci SharedPreferences dipindahkan ke sini
+  static const String _customStoragePathKey = 'custom_storage_path';
+  static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
+  static const String _customBackupPathKey = 'custom_backup_path';
+  static const String _customBackupPathKeyDebug = 'custom_backup_path_debug';
+  static const String _customDownloadPathKey = 'custom_download_path';
+  static const String _customDownloadPathKeyDebug =
+      'custom_download_path_debug';
+  static const String _perpuskuDataPathKey = 'perpusku_data_path';
+  static const String _perpuskuDataPathKeyDebug = 'perpusku_data_path_debug';
 
-  // >> BARU: Getter untuk path dasar aplikasi (induk dari RSpace_data)
+  // Metode dari path_service_2.dart digabungkan ke sini
+  Future<void> saveCustomStoragePath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
+    await prefs.setString(key, path);
+  }
+
+  Future<String?> loadCustomStoragePath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
+    return prefs.getString(key);
+  }
+
+  Future<void> saveCustomBackupPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode ? _customBackupPathKeyDebug : _customBackupPathKey;
+    await prefs.setString(key, path);
+  }
+
+  Future<String?> loadCustomBackupPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode ? _customBackupPathKeyDebug : _customBackupPathKey;
+    return prefs.getString(key);
+  }
+
+  Future<void> saveCustomDownloadPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode
+        ? _customDownloadPathKeyDebug
+        : _customDownloadPathKey;
+    await prefs.setString(key, path);
+  }
+
+  Future<String?> loadCustomDownloadPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode
+        ? _customDownloadPathKeyDebug
+        : _customDownloadPathKey;
+    return prefs.getString(key);
+  }
+
+  Future<void> savePerpuskuDataPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode ? _perpuskuDataPathKeyDebug : _perpuskuDataPathKey;
+    await prefs.setString(key, path);
+  }
+
+  Future<String?> loadPerpuskuDataPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = kDebugMode ? _perpuskuDataPathKeyDebug : _perpuskuDataPathKey;
+    return prefs.getString(key);
+  }
+
+  // Metode asli dari path_service.dart disesuaikan untuk menggunakan metode di atas
   Future<String> get _appBasePath async {
-    String? customPath = await _prefsService.loadCustomStoragePath();
+    String? customPath = await loadCustomStoragePath();
     if (customPath != null && customPath.isNotEmpty) {
       return customPath;
     }
@@ -33,7 +96,6 @@ class PathService {
     return path.join(baseDir.path, 'RSpace_App');
   }
 
-  // Path ini untuk DATA APLIKASI UTAMA
   Future<String> get _baseDataPath async {
     if (Platform.isAndroid) {
       if (!await Permission.manageExternalStorage.request().isGranted) {
@@ -43,7 +105,7 @@ class PathService {
       }
     }
 
-    String? customPath = await _prefsService.loadCustomStoragePath();
+    String? customPath = await loadCustomStoragePath();
 
     if (customPath != null && customPath.isNotEmpty) {
       final dataDir = Directory(path.join(customPath, 'RSpace_data', 'data'));
@@ -78,12 +140,10 @@ class PathService {
     return defaultAppDir.path;
   }
 
-  // DIUBAH: Path ini KHUSUS untuk FOLDER BACKUP
   Future<String?> get _baseBackupPath async {
-    return await _prefsService.loadCustomBackupPath();
+    return await loadCustomBackupPath();
   }
 
-  // >> BARU: Path untuk folder ekspor diskusi selesai
   Future<String> get finishedDiscussionsExportPath async {
     final basePath = await _appBasePath;
     final exportDir = Directory(path.join(basePath, 'finish_discussions'));
@@ -138,7 +198,7 @@ class PathService {
       path.join(await contentsPath, 'countdown_timers.json');
 
   Future<String> get perpuskuDataPath async {
-    String? customPath = await _prefsService.loadPerpuskuDataPath();
+    String? customPath = await loadPerpuskuDataPath();
     if (customPath != null && customPath.isNotEmpty) {
       return customPath;
     }
