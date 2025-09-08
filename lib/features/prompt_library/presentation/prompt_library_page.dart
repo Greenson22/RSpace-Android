@@ -9,7 +9,6 @@ class PromptLibraryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Provider kini berada di dalam direktori fitur
     return ChangeNotifierProvider(
       create: (_) => PromptProvider(),
       child: const _PromptLibraryView(),
@@ -27,7 +26,6 @@ class _PromptLibraryView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(provider.selectedCategory ?? 'Pustaka Prompt'),
-        // Tampilkan tombol kembali jika sedang melihat daftar prompt
         leading: provider.selectedCategory != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -37,17 +35,15 @@ class _PromptLibraryView extends StatelessWidget {
       ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          // Tampilkan daftar kategori atau daftar prompt berdasarkan state
           : provider.selectedCategory == null
           ? _buildCategoryList(context, provider)
           : _buildPromptList(context, provider),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (provider.selectedCategory == null) {
-            // Jika di halaman kategori, panggil dialog tambah kategori
             showAddCategoryDialog(context);
           } else {
-            // TODO: Implementasi dialog untuk menambah prompt baru
+            showAddPromptDialog(context);
           }
         },
         tooltip: provider.selectedCategory == null
@@ -58,7 +54,6 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // Widget untuk menampilkan daftar kategori (folder)
   Widget _buildCategoryList(BuildContext context, PromptProvider provider) {
     if (provider.categories.isEmpty) {
       return const Center(
@@ -72,7 +67,7 @@ class _PromptLibraryView extends StatelessWidget {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80), // Padding untuk FAB
+      padding: const EdgeInsets.only(bottom: 80),
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
@@ -86,7 +81,6 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // Widget untuk menampilkan daftar konsep prompt (file .json)
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
     if (provider.prompts.isEmpty) {
       return Center(
@@ -100,7 +94,7 @@ class _PromptLibraryView extends StatelessWidget {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80), // Padding untuk FAB
+      padding: const EdgeInsets.only(bottom: 80),
       itemCount: provider.prompts.length,
       itemBuilder: (context, index) {
         final prompt = provider.prompts[index];

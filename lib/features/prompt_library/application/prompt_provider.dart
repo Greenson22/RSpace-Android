@@ -35,10 +35,26 @@ class PromptProvider with ChangeNotifier {
     notifyListeners();
     try {
       await _promptService.createCategory(categoryName);
-      // Panggil kembali loadCategories untuk refresh list
       await loadCategories();
     } catch (e) {
-      // Lemparkan kembali error agar bisa ditangani di UI
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> addPrompt(String category, PromptConcept prompt) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      // Buat nama file dari judul utama
+      final fileName =
+          '${prompt.judulUtama.replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '').replaceAll(' ', '_').toLowerCase()}.json';
+      await _promptService.savePromptConcept(category, fileName, prompt);
+      // Muat ulang prompt untuk kategori yang dipilih
+      await selectCategory(category);
+    } catch (e) {
       rethrow;
     } finally {
       _isLoading = false;
