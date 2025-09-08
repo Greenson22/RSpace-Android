@@ -9,66 +9,83 @@ class DraggableFab extends StatefulWidget {
 }
 
 class _DraggableFabState extends State<DraggableFab> {
-  // Atur posisi awal FAB di pojok kanan bawah
-  late Offset _position;
-  bool _isPositionInitialized = false;
+  // Variabel untuk menyimpan posisi FAB.
+  // Dibuat nullable agar kita tahu kapan harus menginisialisasinya.
+  Offset? _position;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Inisialisasi posisi berdasarkan ukuran layar
-    // Ini dilakukan di sini agar kita memiliki akses ke context
-    if (!_isPositionInitialized) {
-      final screenSize = MediaQuery.of(context).size;
-      final padding = MediaQuery.of(context).padding;
-      setState(() {
-        _position = Offset(
-          screenSize.width - 56 - 20, // 56 (lebar FAB) + 20 (padding)
-          screenSize.height -
-              56 -
-              padding.bottom -
-              20, // 56 (tinggi FAB) + padding bawah + 20 (padding)
-        );
-        _isPositionInitialized = true;
+  // Fungsi untuk memeriksa dan mengoreksi posisi FAB jika berada di luar batas.
+  // Ini akan dipanggil setiap kali ukuran layar berubah.
+  void _correctPosition(Size screenSize) {
+    if (_position == null) return;
+
+    final padding = MediaQuery.of(context).padding;
+    const fabSize = 56.0; // Ukuran standar FloatingActionButton
+
+    // Hitung posisi baru yang valid
+    final double correctedX = _position!.dx.clamp(
+      padding.left,
+      screenSize.width - fabSize - padding.right,
+    );
+    final double correctedY = _position!.dy.clamp(
+      padding.top,
+      screenSize.height - fabSize - padding.bottom,
+    );
+
+    final correctedPosition = Offset(correctedX, correctedY);
+
+    // Jika posisi saat ini tidak sama dengan posisi yang dikoreksi,
+    // update state agar FAB pindah ke posisi yang benar.
+    if (_position != correctedPosition) {
+      // Menggunakan addPostFrameCallback untuk menghindari error "setState() called during build".
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _position = correctedPosition;
+          });
+        }
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Jika posisi belum diinisialisasi, tampilkan container kosong
-    if (!_isPositionInitialized) {
-      return const SizedBox.shrink();
-    }
-
     final screenSize = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
+    const fabSize = 56.0;
+
+    // Inisialisasi posisi awal di pojok kanan bawah jika belum ada.
+    _position ??= Offset(
+      screenSize.width - fabSize - 20.0,
+      screenSize.height - fabSize - padding.bottom - 20.0,
+    );
+
+    // Panggil fungsi koreksi setiap kali widget di-build ulang (termasuk saat resize).
+    _correctPosition(screenSize);
 
     return Positioned(
-      left: _position.dx,
-      top: _position.dy,
+      left: _position!.dx,
+      top: _position!.dy,
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
-            // Update posisi berdasarkan pergerakan jari
-            _position += details.delta;
+            // Update posisi berdasarkan pergerakan jari.
+            _position = _position! + details.delta;
 
-            // Batasi posisi agar tidak keluar dari area aman layar
+            // Batasi juga posisi saat sedang digeser.
             _position = Offset(
-              _position.dx.clamp(
+              _position!.dx.clamp(
                 padding.left,
-                screenSize.width - 56 - padding.right,
+                screenSize.width - fabSize - padding.right,
               ),
-              _position.dy.clamp(
+              _position!.dy.clamp(
                 padding.top,
-                screenSize.height - 56 - padding.bottom,
+                screenSize.height - fabSize - padding.bottom,
               ),
             );
           });
         },
         child: FloatingActionButton(
           onPressed: () {
-            // TODO: Tambahkan fungsi yang Anda inginkan di sini
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Tombol FAB Cepat diklik!')),
             );
