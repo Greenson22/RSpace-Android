@@ -1,7 +1,7 @@
 // lib/data/models/finished_discussion_model.dart
 
-import '../../features/content_management/domain/models/discussion_model.dart';
-import '../../features/content_management/domain/models/topic_model.dart'; // >> 1. IMPORT MODEL TOPIK
+import '../../../content_management/domain/models/discussion_model.dart';
+import '../../../content_management/domain/models/topic_model.dart'; // >> 1. IMPORT MODEL TOPIK
 
 class FinishedDiscussion {
   final Discussion discussion;

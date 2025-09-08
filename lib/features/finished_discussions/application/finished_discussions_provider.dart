@@ -6,13 +6,13 @@ import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import '../../features/content_management/domain/models/discussion_model.dart';
-import '../../data/models/finished_discussion_model.dart';
-import '../../features/content_management/domain/services/discussion_service.dart';
-import '../../data/services/finished_discussion_service.dart';
-import '../../data/services/path_service.dart';
+import '../../content_management/domain/models/discussion_model.dart';
+import '../domain/models/finished_discussion_model.dart';
+import '../../content_management/domain/services/discussion_service.dart';
+import 'finished_discussion_service.dart';
+import '../../../data/services/path_service.dart';
 // >> BARU: Import SubjectService untuk membaca metadata
-import '../../features/content_management/domain/services/subject_service.dart';
+import '../../content_management/domain/services/subject_service.dart';
 
 class FinishedDiscussionsProvider with ChangeNotifier {
   final FinishedDiscussionService _service = FinishedDiscussionService();

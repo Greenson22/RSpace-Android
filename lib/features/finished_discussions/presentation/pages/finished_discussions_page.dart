@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/finished_discussions_provider.dart';
+import '../../application/finished_discussions_provider.dart';
 
 class FinishedDiscussionsPage extends StatelessWidget {
   const FinishedDiscussionsPage({super.key});
