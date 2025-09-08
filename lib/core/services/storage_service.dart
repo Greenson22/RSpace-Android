@@ -5,7 +5,7 @@ import '../../features/settings/domain/models/prompt_model.dart';
 import '../../features/ai_assistant/domain/models/chat_message_model.dart';
 import '../../features/settings/application/services/settings_service.dart';
 import 'path_service.dart';
-import 'gemini_service.dart';
+import 'gemini_storage_service.dart';
 import 'user_data_service.dart';
 
 class SharedPreferencesService {
