@@ -10,11 +10,11 @@ import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../backup_management/presentation/pages/backup_management_page.dart';
 import '../../../file_management/presentation/pages/file_list_page.dart';
 import '../../../feedback/presentation/pages/feedback_center_page.dart';
-import '../../../time_management/presentation/pages/time_hub_page.dart';
+// Import diubah dari TimeHubPage ke TimeLogPage
+import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 
-// ==> FUNGSI INI DIPERBARUI <==
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
   required VoidCallback onShowStorageDialog,
@@ -29,9 +29,10 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
     ),
+    // Navigasi diubah untuk langsung ke TimeLogPage
     () => Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const TimeHubPage()),
+      MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
     () => Navigator.push(
       context,
@@ -41,7 +42,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
-    // ==> PANGGIL FUNGSI UNTUK MENAMPILKAN DIALOG
     () => showDataManagementDialog(context),
     () => Navigator.push(
       context,
@@ -88,7 +88,6 @@ class DashboardGrid extends StatelessWidget {
           crossAxisCount = 2;
         }
 
-        // ==> LIST DATA INI DIPERBARUI <==
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -100,9 +99,10 @@ class DashboardGrid extends StatelessWidget {
             'label': 'My Tasks',
             'colors': AppTheme.gradientColors2,
           },
+          // Ikon dan label diubah
           {
-            'icon': Icons.watch_later_outlined,
-            'label': 'Waktu',
+            'icon': Icons.timer_outlined,
+            'label': 'Jurnal Aktivitas',
             'colors': AppTheme.gradientColors3,
           },
           {
@@ -115,7 +115,6 @@ class DashboardGrid extends StatelessWidget {
             'label': 'File Online',
             'colors': AppTheme.gradientColors4,
           },
-          // ==> TOMBOL BARU DITAMBAHKAN DI SINI
           {
             'icon': Icons.construction_outlined,
             'label': 'Kelola Data',
