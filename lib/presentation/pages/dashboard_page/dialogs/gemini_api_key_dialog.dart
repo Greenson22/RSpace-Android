@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../data/models/api_key_model.dart';
-import '../../../../data/services/shared_preferences_service.dart';
+import '../../../../core/services/storage_service.dart';
 
 void showGeminiApiKeyDialog(BuildContext context) {
   showDialog(

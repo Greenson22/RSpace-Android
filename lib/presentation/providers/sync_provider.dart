@@ -7,7 +7,7 @@ import 'package:archive/archive_io.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../data/services/path_service.dart';
-import '../../data/services/shared_preferences_service.dart';
+import '../../core/services/storage_service.dart';
 
 class SyncProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();

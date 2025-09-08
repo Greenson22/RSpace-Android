@@ -1,12 +1,12 @@
 // lib/data/services/shared_preferences_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/api_key_model.dart';
-import '../models/prompt_model.dart';
-import '../models/chat_message_model.dart';
-import 'shared_preferences/settings_service.dart';
-import 'shared_preferences/path_service.dart';
-import 'shared_preferences/gemini_service.dart';
-import 'shared_preferences/user_data_service.dart';
+import '../../data/models/api_key_model.dart';
+import '../../data/models/prompt_model.dart';
+import '../../data/models/chat_message_model.dart';
+import '../../data/services/shared_preferences/settings_service.dart';
+import '../../data/services/shared_preferences/path_service.dart';
+import '../../data/services/shared_preferences/gemini_service.dart';
+import '../../data/services/shared_preferences/user_data_service.dart';
 
 class SharedPreferencesService {
   final SettingsService _settingsService = SettingsService();

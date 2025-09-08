@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import '../../../../../presentation/widgets/point_edit_popup_menu.dart';
-import '../../../../../presentation/widgets/linkify_text.dart';
+import '../../../../../core/widgets/linkify_text.dart';
 import '../dialogs/discussion_dialogs.dart'; // Impor file barrel
 import '../utils/repetition_code_utils.dart';
 

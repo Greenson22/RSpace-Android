@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../data/models/prompt_model.dart';
-import '../../../../data/services/shared_preferences_service.dart';
+import '../../../../core/services/storage_service.dart';
 
 // Kelas helper untuk data model
 class GeminiModelInfo {

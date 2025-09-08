@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../domain/models/discussion_model.dart';
 import '../domain/services/discussion_service.dart';
 import '../../../data/services/path_service.dart';
-import '../../../data/services/shared_preferences_service.dart';
+import '../../../core/services/storage_service.dart';
 import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
 

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../theme/app_theme.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Menampilkan dialog pengaturan tema yang terpusat.
 void showThemeSettingsDialog(BuildContext context) {

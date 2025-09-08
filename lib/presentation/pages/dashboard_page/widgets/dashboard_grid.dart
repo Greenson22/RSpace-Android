@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../theme/app_theme.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../features/content_management/presentation/topics/topics_page.dart';
 import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';

@@ -5,7 +5,7 @@ import '../models/api_key_model.dart';
 // ==> IMPORT MODEL BARU
 import '../../features/content_management/domain/models/discussion_model.dart';
 import '../models/link_suggestion_model.dart';
-import 'shared_preferences_service.dart';
+import '../../core/services/storage_service.dart';
 
 class GeminiService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
