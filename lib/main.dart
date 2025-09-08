@@ -13,7 +13,7 @@ import 'package:my_aplication/presentation/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
-import 'package:my_aplication/presentation/providers/finished_discussions_provider.dart';
+import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
 import 'package:my_aplication/features/time_management/application/providers/countdown_provider.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'features/prompt_library/application/prompt_provider.dart';

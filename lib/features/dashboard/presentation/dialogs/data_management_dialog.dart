@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../link_maintenance/presentation/pages/unlinked_discussions_page.dart';
-import '../../../../presentation/pages/finished_discussions_page.dart';
+import '../../../finished_discussions/presentation/pages/finished_discussions_page.dart';
 import '../../../link_maintenance/presentation/pages/orphaned_files_page.dart';
 import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
 import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
