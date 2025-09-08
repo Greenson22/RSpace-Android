@@ -1,6 +1,6 @@
 // lib/presentation/pages/statistics_page/widgets/per_topic_section.dart
 import 'package:flutter/material.dart';
-import '../../../../data/models/statistics_model.dart';
+import '../../domain/models/statistics_model.dart';
 
 class PerTopicSection extends StatelessWidget {
   final List<TopicStatistics> perTopicStats;

@@ -9,7 +9,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/services/ad_service.dart';
 import '../../../../core/services/storage_service.dart';
-import '../../../../presentation/providers/statistics_provider.dart';
+import '../../../statistics/application/statistics_provider.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../content_management/application/topic_provider.dart';
 import '../../../backup_management/application/sync_provider.dart'; // Pastikan SyncProvider diimpor

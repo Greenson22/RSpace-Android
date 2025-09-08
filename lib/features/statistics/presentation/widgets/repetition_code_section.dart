@@ -1,6 +1,6 @@
 // lib/presentation/pages/statistics_page/widgets/repetition_code_section.dart
 import 'package:flutter/material.dart';
-import '../../../../features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
+import '../../../content_management/presentation/discussions/utils/repetition_code_utils.dart';
 
 class RepetitionCodeSection extends StatelessWidget {
   final Map<String, int> counts;

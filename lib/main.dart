@@ -6,7 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/presentation/providers/debug_provider.dart';
-import 'package:my_aplication/presentation/providers/statistics_provider.dart';
+import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:my_aplication/presentation/providers/time_log_provider.dart';
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
 import 'package:my_aplication/presentation/widgets/snow_widget.dart';

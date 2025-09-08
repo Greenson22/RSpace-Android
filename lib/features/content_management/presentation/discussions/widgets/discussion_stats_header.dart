@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
-import '../../../../../presentation/pages/statistics_page/widgets/repetition_code_section.dart';
+import '../../../../statistics/presentation/widgets/repetition_code_section.dart';
 
 class DiscussionStatsHeader extends StatelessWidget {
   const DiscussionStatsHeader({super.key});

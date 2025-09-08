@@ -3,12 +3,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_aplication/data/models/statistics_model.dart';
+import 'package:my_aplication/features/statistics/domain/models/statistics_model.dart';
 import 'package:provider/provider.dart';
-import '../providers/statistics_provider.dart';
-import 'statistics_page/widgets/per_topic_section.dart';
-import 'statistics_page/widgets/repetition_code_section.dart';
-import 'statistics_page/widgets/summary_card.dart';
+import '../../application/statistics_provider.dart';
+import '../widgets/per_topic_section.dart';
+import '../widgets/repetition_code_section.dart';
+import '../widgets/summary_card.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
