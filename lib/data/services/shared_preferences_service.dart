@@ -1,7 +1,5 @@
 // lib/data/services/shared_preferences_service.dart
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import '../models/api_key_model.dart';
 import '../models/prompt_model.dart';
 import '../models/chat_message_model.dart';

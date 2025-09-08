@@ -12,7 +12,6 @@ import 'package:path_provider/path_provider.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../data/services/path_service.dart';
-import '../discussion_provider.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {

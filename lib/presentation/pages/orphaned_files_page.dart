@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../providers/orphaned_file_provider.dart';
-import '../../data/models/orphaned_file_model.dart';
 
 class OrphanedFilesPage extends StatelessWidget {
   const OrphanedFilesPage({super.key});

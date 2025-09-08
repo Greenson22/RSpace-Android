@@ -6,7 +6,6 @@ import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart';
 import '../../features/content_management/domain/models/discussion_model.dart';
 import '../models/finished_discussion_model.dart';
-import '../../features/content_management/domain/models/topic_model.dart';
 import 'path_service.dart';
 import '../../features/content_management/domain/services/topic_service.dart';
 

@@ -121,7 +121,7 @@ class DiscussionSubtitle extends StatelessWidget {
     }
 
     final dateText = displayDate ?? 'N/A';
-    final codeText = displayCode ?? 'N/A';
+    final codeText = displayCode;
     Color dateColor = Colors.grey;
 
     if (displayDate != null) {

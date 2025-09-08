@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../domain/models/topic_model.dart';
 import '../../application/subject_provider.dart';
-import '../../../../presentation/providers/theme_provider.dart';
 import '../../application/topic_provider.dart';
 import '../subjects/subjects_page.dart';
 import 'dialogs/topic_dialogs.dart';

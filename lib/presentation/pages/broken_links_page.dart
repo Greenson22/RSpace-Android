@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/broken_link_model.dart';
 import '../providers/broken_link_provider.dart';
 import '../../features/content_management/application/discussion_provider.dart';
 import '../../features/content_management/application/subject_provider.dart';

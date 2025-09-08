@@ -1,14 +1,11 @@
 // lib/presentation/providers/discussion_provider.dart
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as path;
 import '../domain/models/discussion_model.dart';
 import '../domain/services/discussion_service.dart';
 import '../../../data/services/path_service.dart';
 import '../../../data/services/shared_preferences_service.dart';
-import '../presentation/discussions/utils/repetition_code_utils.dart';
 import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
 
@@ -31,7 +28,6 @@ class DiscussionProvider
 
   // CORE STATE
   bool _isLoading = true;
-  @override
   bool get isLoading => _isLoading;
 
   List<Discussion> _allDiscussions = [];
@@ -95,7 +91,6 @@ class DiscussionProvider
   }
 
   // BASIC CRUD (Create, Read, Update, Delete)
-  @override
   Future<void> addDiscussion(
     String name, {
     bool createHtmlFile = false,
@@ -128,7 +123,6 @@ class DiscussionProvider
     await saveDiscussions();
   }
 
-  @override
   void addPoint(
     Discussion discussion,
     String text, {
@@ -146,7 +140,6 @@ class DiscussionProvider
     saveDiscussions();
   }
 
-  @override
   Future<void> deleteDiscussion(Discussion discussion) async {
     final pathToDelete = discussion.filePath;
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
@@ -164,7 +157,6 @@ class DiscussionProvider
     }
   }
 
-  @override
   void deletePoint(Discussion discussion, Point point) {
     discussion.points.removeWhere((p) => p.hashCode == point.hashCode);
     filterAndSortDiscussions();

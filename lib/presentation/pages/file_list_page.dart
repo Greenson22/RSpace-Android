@@ -1,17 +1,10 @@
 // lib/presentation/pages/file_list_page.dart
 
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/presentation/pages/backup_management_page/utils/backup_actions.dart';
-import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as path;
 import '../providers/file_provider.dart';
-import '../../data/models/file_model.dart';
 import '../../core/utils/scaffold_messenger_utils.dart';
-import 'backup_management_page/utils/file_utils.dart';
+
 import 'file_list_page/layouts/desktop_layout.dart';
 import 'file_list_page/layouts/mobile_layout.dart';
 

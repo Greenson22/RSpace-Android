@@ -94,7 +94,7 @@ Future<void> showAddEditFeedbackDialog(
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
                     if (isEditing) {
-                      item!.title = _title.trim();
+                      item.title = _title.trim();
                       item.description = _description.trim();
                       item.type = _type;
                       provider.updateItem(item);
