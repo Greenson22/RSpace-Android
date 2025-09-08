@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
-import '../../data/services/path_service.dart';
-import '../../core/services/storage_service.dart';
+import '../../../data/services/path_service.dart';
+import '../../../core/services/storage_service.dart';
 import 'package:http/http.dart' as http;
 
 class BackupProvider with ChangeNotifier {

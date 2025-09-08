@@ -1,7 +1,7 @@
 // lib/presentation/pages/backup_management_page/layouts/mobile_layout.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/backup_provider.dart';
+import '../../application/backup_provider.dart';
 import '../widgets/backup_section.dart';
 import '../widgets/path_info_card.dart';
 import '../widgets/perpusku_path_card.dart';

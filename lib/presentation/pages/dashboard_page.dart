@@ -12,7 +12,7 @@ import '../../core/services/storage_service.dart';
 import '../providers/statistics_provider.dart';
 import '../providers/theme_provider.dart';
 import '../../features/content_management/application/topic_provider.dart';
-import '../providers/sync_provider.dart'; // Pastikan SyncProvider diimpor
+import '../../features/backup_management/application/sync_provider.dart'; // Pastikan SyncProvider diimpor
 import '../../core/utils/scaffold_messenger_utils.dart';
 import 'about_page.dart';
 import 'chat_page.dart';

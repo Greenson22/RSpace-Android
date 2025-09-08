@@ -1,12 +1,12 @@
-// lib/presentation/pages/backup_management_page/widgets/path_info_card.dart
+// lib/presentation/pages/backup_management_page/widgets/perpusku_path_card.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/backup_provider.dart';
+import '../../application/backup_provider.dart';
 import '../utils/backup_actions.dart';
 
-class PathInfoCard extends StatelessWidget {
-  const PathInfoCard({super.key});
+class PerpuskuPathCard extends StatelessWidget {
+  const PerpuskuPathCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +17,15 @@ class PathInfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Folder Tujuan Backup',
+              'Folder Sumber Data PerpusKu',
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pilih folder yang berisi data PerpusKu yang ingin Anda backup. Folder yang harus dipilih adalah "PerpusKu/data".',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
             Consumer<BackupProvider>(
@@ -28,11 +33,12 @@ class PathInfoCard extends StatelessWidget {
                 // ==> PERUBAHAN DI SINI <==
                 final theme = Theme.of(context);
                 final String displayText =
-                    provider.backupPath ?? 'Folder belum ditentukan.';
+                    provider.perpuskuDataPath ?? 'Menggunakan folder default.';
                 final TextStyle? textStyle = theme.textTheme.bodyMedium
                     ?.copyWith(
                       color: theme.colorScheme.primary,
-                      fontWeight: kDebugMode && provider.backupPath != null
+                      fontWeight:
+                          kDebugMode && provider.perpuskuDataPath != null
                           ? FontWeight.bold
                           : null,
                     );
@@ -45,8 +51,8 @@ class PathInfoCard extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.folder_open),
-                label: const Text('Ubah Folder Tujuan'),
-                onPressed: () => selectBackupFolder(context),
+                label: const Text('Ubah Folder Sumber Data'),
+                onPressed: () => selectPerpuskuDataFolder(context),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),

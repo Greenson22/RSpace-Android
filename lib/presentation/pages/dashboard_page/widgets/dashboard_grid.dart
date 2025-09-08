@@ -7,7 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../features/content_management/presentation/topics/topics_page.dart';
 import '../../my_tasks_page.dart';
 import '../../statistics_page.dart';
-import '../../backup_management_page.dart';
+import '../../../../features/backup_management/presentation/pages/backup_management_page.dart';
 import '../../file_list_page.dart';
 import '../../feedback_center_page.dart';
 import '../../time_hub_page.dart';

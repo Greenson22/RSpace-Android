@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../providers/backup_provider.dart';
-import 'backup_management_page/layouts/desktop_layout.dart';
-import 'backup_management_page/layouts/mobile_layout.dart';
-import 'backup_management_page/utils/backup_dialogs.dart';
+import '../../application/backup_provider.dart';
+import '../layouts/desktop_layout.dart';
+import '../layouts/mobile_layout.dart';
+import '../utils/backup_dialogs.dart';
 
 class BackupManagementPage extends StatefulWidget {
   const BackupManagementPage({super.key});

@@ -2,9 +2,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_aplication/presentation/pages/backup_management_page/utils/backup_actions.dart';
+import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/backup_provider.dart';
+import '../../application/backup_provider.dart';
 import '../utils/backup_dialogs.dart';
 import '../utils/file_utils.dart';
 import 'package:path/path.dart' as path;
