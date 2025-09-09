@@ -36,6 +36,17 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Fungsi baru untuk mengurutkan subject
+  Future<void> reorderSubjects(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = topic.subjects.removeAt(oldIndex);
+    topic.subjects.insert(newIndex, item);
+    await save();
+    notifyListeners();
+  }
+
   Future<void> reorderSubMateri(
     ProgressSubject subject,
     int oldIndex,
@@ -50,7 +61,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk memindahkan ke paling bawah
   Future<void> moveSubMateriToBottom(
     ProgressSubject subject,
     SubMateri subMateri,
