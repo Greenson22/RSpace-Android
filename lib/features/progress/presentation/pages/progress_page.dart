@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../application/progress_provider.dart';
 import 'progress_detail_page.dart';
 import '../../application/progress_detail_provider.dart';
+import '../widgets/progress_topic_grid_tile.dart'; // Import widget baru
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
@@ -25,27 +26,55 @@ class _ProgressView extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context);
 
+    // Fungsi untuk menentukan jumlah kolom berdasarkan lebar layar
+    int _getCrossAxisCount(double screenWidth) {
+      if (screenWidth > 1200) return 5;
+      if (screenWidth > 900) return 4;
+      if (screenWidth > 600) return 3;
+      return 2;
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Progress Belajar')),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : provider.topics.isEmpty
-          ? const Center(child: Text('Belum ada topik progress.'))
-          : ListView.builder(
-              itemCount: provider.topics.length,
-              itemBuilder: (context, index) {
-                final topic = provider.topics[index];
-                return ListTile(
-                  title: Text(topic.topics),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChangeNotifierProvider(
-                          create: (_) => ProgressDetailProvider(topic),
-                          child: ProgressDetailPage(),
-                        ),
-                      ),
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Belum ada topik progress.\nTekan tombol + untuk memulai.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          // Ganti ListView dengan GridView
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return GridView.builder(
+                  padding: const EdgeInsets.all(12.0),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _getCrossAxisCount(constraints.maxWidth),
+                    crossAxisSpacing: 12.0,
+                    mainAxisSpacing: 12.0,
+                    childAspectRatio: 1.1,
+                  ),
+                  itemCount: provider.topics.length,
+                  itemBuilder: (context, index) {
+                    final topic = provider.topics[index];
+                    return ProgressTopicGridTile(
+                      topic: topic,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChangeNotifierProvider(
+                              create: (_) => ProgressDetailProvider(topic),
+                              child: ProgressDetailPage(),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
