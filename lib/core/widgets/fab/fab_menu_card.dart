@@ -1,5 +1,5 @@
 // lib/core/widgets/fab/fab_menu_card.dart
-import 'dart:io'; // ==> DITAMBAHKAN
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_aplication/features/backup_management/presentation/pages/backup_management_page.dart';
@@ -33,7 +33,6 @@ class _FabMenuCardState extends State<FabMenuCard> {
   @override
   void initState() {
     super.initState();
-    // ==> PERUBAHAN DI SINI: Hanya muat iklan di platform yang didukung <==
     if (Platform.isAndroid || Platform.isIOS) {
       _loadRewardedAd();
     }
@@ -76,8 +75,9 @@ class _FabMenuCardState extends State<FabMenuCard> {
     );
   }
 
-  Future<void> _grantReward() async {
-    const int rewardAmount = 10;
+  // ==> PERUBAHAN DI SINI: FUNGSI MENERIMA PARAMETER JUMLAH <==
+  Future<void> _grantReward(num amount) async {
+    final int rewardAmount = amount.toInt(); // Konversi ke integer
     final prefs = SharedPreferencesService();
     final currentNeurons = await prefs.loadNeurons();
     await prefs.saveNeurons(currentNeurons + rewardAmount);
@@ -98,8 +98,9 @@ class _FabMenuCardState extends State<FabMenuCard> {
     if (_rewardedAd != null) {
       widget.closeMenu();
       _rewardedAd!.show(
+        // ==> PERUBAHAN DI SINI: MENGIRIM JUMLAH REWARD DARI ADMOB <==
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-          _grantReward();
+          _grantReward(reward.amount);
         },
       );
     } else if (_isAdLoading) {
@@ -203,7 +204,6 @@ class _FabMenuCardState extends State<FabMenuCard> {
                 dense: true,
                 onTap: () => _navigateToPage(context, const StatisticsPage()),
               ),
-              // ==> PERUBAHAN DI SINI: TAMBAHKAN KONDISI PLATFORM <==
               if (Platform.isAndroid || Platform.isIOS)
                 ListTile(
                   leading: Icon(

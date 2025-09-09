@@ -24,14 +24,15 @@ class AdService {
     return '';
   }
 
-  // ==> ID BARU UNTUK REWARDED AD <==
   static String get rewardedAdUnitId {
     if (kReleaseMode) {
       // Ganti dengan ID unit iklan rewarded produksi Anda
       if (Platform.isAndroid) {
-        return 'ca-app-pub-5320800343545863/4844365851';
+        // ==> ID ANDA TELAH DITERAPKAN DI SINI <==
+        return 'ca-app-pub-5320800343545863/7888481612';
       } else if (Platform.isIOS) {
-        return 'ca-app-pub-5320800343545863/4844365851';
+        // ==> GANTI JUGA JIKA ANDA PUNYA VERSI IOS <==
+        return 'ca-app-pub-5320800343545863/7888481612';
       }
     }
     // ID pengujian dari AdMob
@@ -67,7 +68,6 @@ class AdService {
     return ad;
   }
 
-  // ==> FUNGSI BARU UNTUK MEMUAT REWARDED AD <==
   static void loadRewardedAd({
     required Function(RewardedAd) onAdLoaded,
     required Function(LoadAdError) onAdFailedToLoad,
