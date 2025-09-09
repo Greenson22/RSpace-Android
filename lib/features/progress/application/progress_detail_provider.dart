@@ -34,7 +34,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk mengubah ketiga warna sekaligus
   Future<void> updateSubjectColors(
     ProgressSubject subject, {
     Color? backgroundColor,
@@ -44,6 +43,16 @@ class ProgressDetailProvider with ChangeNotifier {
     subject.backgroundColor = backgroundColor?.value;
     subject.textColor = textColor?.value;
     subject.progressBarColor = progressBarColor?.value;
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk mengubah ikon
+  Future<void> updateSubjectIcon(
+    ProgressSubject subject,
+    String newIcon,
+  ) async {
+    subject.icon = newIcon;
     await save();
     notifyListeners();
   }

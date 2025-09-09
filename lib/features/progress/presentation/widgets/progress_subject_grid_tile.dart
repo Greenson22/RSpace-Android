@@ -19,6 +19,12 @@ class ProgressSubjectGridTile extends StatelessWidget {
     required this.onColorEdit,
   });
 
+  Color _getAdaptiveTextColor(Color backgroundColor) {
+    return backgroundColor.computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
+  }
+
   double _getProgressValue() {
     if (subject.subMateri.isEmpty) {
       switch (subject.progress) {
@@ -36,27 +42,17 @@ class ProgressSubjectGridTile extends StatelessWidget {
     return finishedCount / subject.subMateri.length;
   }
 
-  // Helper untuk menentukan warna teks default yang kontras
-  Color _getAdaptiveTextColor(Color backgroundColor) {
-    return backgroundColor.computeLuminance() > 0.5
-        ? Colors.black87
-        : Colors.white;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Tentukan warna dengan nilai default
     final backgroundColor = subject.backgroundColor != null
         ? Color(subject.backgroundColor!)
         : theme.cardColor;
 
     final textColor = subject.textColor != null
         ? Color(subject.textColor!)
-        : _getAdaptiveTextColor(
-            backgroundColor,
-          ); // Teks adaptif jika tidak di-set
+        : _getAdaptiveTextColor(backgroundColor);
 
     final progressBarColor = subject.progressBarColor != null
         ? Color(subject.progressBarColor!)
@@ -71,7 +67,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-      color: backgroundColor, // Gunakan warna latar belakang
+      color: backgroundColor,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -82,12 +78,18 @@ class ProgressSubjectGridTile extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Tampilkan ikon di sini
+                  Text(
+                    subject.icon,
+                    style: TextStyle(fontSize: 24, color: textColor),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       subject.namaMateri,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: textColor, // Gunakan warna teks
+                        color: textColor,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -144,7 +146,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progressValue,
                   backgroundColor: progressBarColor.withOpacity(0.2),
-                  color: progressBarColor, // Gunakan warna progress bar
+                  color: progressBarColor,
                   minHeight: 8,
                 ),
               ),

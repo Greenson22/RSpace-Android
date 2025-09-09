@@ -22,10 +22,10 @@ class ProgressSubject {
   String namaMateri;
   String progress;
   List<SubMateri> subMateri;
-  // Ganti 'color' dengan tiga properti warna baru
   int? backgroundColor;
   int? textColor;
   int? progressBarColor;
+  String icon; // Properti baru untuk ikon
 
   ProgressSubject({
     required this.namaMateri,
@@ -34,6 +34,7 @@ class ProgressSubject {
     this.backgroundColor,
     this.textColor,
     this.progressBarColor,
+    this.icon = '📚', // Nilai default
   });
 
   factory ProgressSubject.fromJson(Map<String, dynamic> json) {
@@ -46,10 +47,10 @@ class ProgressSubject {
       namaMateri: json['nama_materi'] as String,
       progress: json['progress'] as String,
       subMateri: subMateri,
-      // Baca tiga warna dari JSON
       backgroundColor: json['backgroundColor'] as int?,
       textColor: json['textColor'] as int?,
       progressBarColor: json['progressBarColor'] as int?,
+      icon: json['icon'] as String? ?? '📚', // Baca ikon dari JSON
     );
   }
 
@@ -58,10 +59,10 @@ class ProgressSubject {
       'nama_materi': namaMateri,
       'progress': progress,
       'sub_materi': subMateri.map((e) => e.toJson()).toList(),
-      // Simpan tiga warna ke JSON
       'backgroundColor': backgroundColor,
       'textColor': textColor,
       'progressBarColor': progressBarColor,
+      'icon': icon, // Simpan ikon ke JSON
     };
   }
 }

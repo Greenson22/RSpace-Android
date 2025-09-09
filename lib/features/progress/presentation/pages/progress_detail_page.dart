@@ -1,13 +1,15 @@
 // lib/features/progress/presentation/pages/progress_detail_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
 // Import dialog dan widget baru
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
+// Import color picker
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class ProgressDetailPage extends StatelessWidget {
   @override
@@ -184,7 +186,6 @@ class ProgressDetailPage extends StatelessWidget {
   }
 }
 
-// Helper class untuk palet warna
 class _ColorPalette {
   final String name;
   final Color background;
@@ -213,7 +214,6 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
   late Color pickerBarColor;
   bool _isInitialized = false;
 
-  // ==> BUAT DAFTAR PALET WARNA DI SINI <==
   final List<_ColorPalette> _palettes = [
     _ColorPalette(
       name: "Biru Laut",
@@ -329,7 +329,29 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ==> TAMBAHKAN BAGIAN PALET WARNA DI SINI <==
+            // ==> TAMBAHKAN TOMBOL UBAH IKON DI SINI
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Text(
+                widget.subject.icon,
+                style: const TextStyle(fontSize: 24),
+              ),
+              title: const Text('Ubah Ikon'),
+              trailing: const Icon(Icons.edit),
+              onTap: () {
+                // Panggil dialog ikon yang sudah ada
+                showIconPickerDialog(
+                  context: context,
+                  name: widget.subject.namaMateri,
+                  onIconSelected: (newIcon) {
+                    provider.updateSubjectIcon(widget.subject, newIcon);
+                    // Tutup dialog ubah tampilan setelah memilih ikon
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+            const Divider(height: 24),
             Text(
               'Pilih Palet Cepat',
               style: Theme.of(context).textTheme.titleSmall,
