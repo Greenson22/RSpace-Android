@@ -21,7 +21,7 @@ import 'features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/backup_management/application/sync_provider.dart';
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'features/feedback/application/feedback_provider.dart';
-import 'core/widgets/draggable_fab_widget.dart';
+import 'core/widgets/draggable_fab_view.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -144,7 +144,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     child: FloatingCharacter(isVisible: true),
                   ),
                 // ==> GUNAKAN KONDISI UNTUK MENAMPILKAN FAB
-                if (showQuickFab) const DraggableFab(),
+                if (showQuickFab) const DraggableFabView(),
               ],
             );
           },
