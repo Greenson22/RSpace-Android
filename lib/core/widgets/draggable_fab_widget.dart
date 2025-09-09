@@ -48,7 +48,6 @@ class _DraggableFabState extends State<DraggableFab> {
       width: 220,
       child: Card(
         elevation: 8.0,
-        // Hapus margin bawah karena posisi diatur oleh Stack
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -104,8 +103,10 @@ class _DraggableFabState extends State<DraggableFab> {
 
     _correctPosition(screenSize, fabSize);
 
-    // Tentukan apakah FAB berada di sisi kiri layar
     final bool isFabOnLeft = _position!.dx < (screenSize.width / 2);
+
+    // ==> 1. TENTUKAN DURASI ANIMASI <==
+    const animationDuration = Duration(milliseconds: 200);
 
     return Transform.translate(
       offset: _position!,
@@ -127,12 +128,10 @@ class _DraggableFabState extends State<DraggableFab> {
               );
             });
           },
-          // ==> PERUBAHAN UTAMA: Gunakan Stack, bukan Column <==
           child: Stack(
-            clipBehavior: Clip.none, // Izinkan menu tampil di luar batas Stack
+            clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              // Widget FAB, ini akan menjadi pusat dari Stack
               SizedBox(
                 width: fabSize,
                 height: fabSize,
@@ -152,24 +151,31 @@ class _DraggableFabState extends State<DraggableFab> {
                 ),
               ),
 
-              // Tampilkan menu secara kondisional
-              if (_isMenuOpen)
-                // Gunakan Positioned untuk menempatkan menu di kiri atau kanan FAB
-                Positioned(
-                  // Jika FAB di kiri, tampilkan menu di kanan. Jika FAB di kanan, tampilkan di kiri.
-                  left: isFabOnLeft ? fabSize + 12.0 : null,
-                  right: !isFabOnLeft ? fabSize + 12.0 : null,
-                  // Posisikan menu di tengah secara vertikal relatif terhadap FAB
-                  top: fabSize / 2,
-                  // Gunakan Transform untuk menyesuaikan titik pivot menu
+              // ==> 2. GANTI Positioned MENJADI AnimatedPositioned <==
+              // Widget ini akan secara otomatis menganimasikan perubahan posisi.
+              AnimatedPositioned(
+                duration: animationDuration,
+                // Jika menu tertutup, posisikan di tengah FAB (agar efek muncul dari tengah)
+                // Jika menu terbuka, posisikan di samping FAB
+                left: isFabOnLeft
+                    ? (_isMenuOpen ? fabSize + 12.0 : fabSize / 2)
+                    : null,
+                right: !isFabOnLeft
+                    ? (_isMenuOpen ? fabSize + 12.0 : fabSize / 2)
+                    : null,
+                top: fabSize / 2,
+                // ==> 3. BUNGKUS MENU DENGAN AnimatedOpacity <==
+                // Widget ini akan menganimasikan efek fade in dan fade out.
+                child: AnimatedOpacity(
+                  duration: animationDuration,
+                  // Jika menu terbuka, opacity 1 (terlihat). Jika tertutup, opacity 0 (hilang).
+                  opacity: _isMenuOpen ? 1.0 : 0.0,
                   child: Transform.translate(
-                    offset: const Offset(
-                      0,
-                      -55,
-                    ), // Sesuaikan agar tengah menu sejajar tengah FAB
+                    offset: const Offset(0, -55),
                     child: _buildPopupMenu(),
                   ),
                 ),
+              ),
             ],
           ),
         ),
