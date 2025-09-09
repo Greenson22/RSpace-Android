@@ -14,6 +14,7 @@ import '../../../feedback/presentation/pages/feedback_center_page.dart';
 import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
+import '../../../progress/presentation/pages/progress_page.dart'; // Import halaman baru
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -37,6 +38,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
+    ),
+    // ==> PERBAIKAN: Pindahkan aksi Progress ke posisi yang benar
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProgressPage()),
     ),
     () => Navigator.push(
       context,
@@ -109,6 +115,13 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Lihat progres & data',
             'colors': AppTheme.gradientColors5,
           },
+          // ==> PERBAIKAN: Pastikan urutan item visual sama dengan aksi
+          {
+            'icon': Icons.show_chart, // Ikon untuk Progress
+            'label': 'Progress', // Label untuk Progress
+            'subtitle': 'Lihat progress belajar', // Subtitle untuk Progress
+            'colors': AppTheme.gradientColors9, // Warna untuk Progress
+          },
           {
             'icon': Icons.cloud_outlined,
             'label': 'File Online',
@@ -151,9 +164,9 @@ class DashboardGrid extends StatelessWidget {
             .where((item) => item['label'] != 'Penyimpanan' || !isPathSet)
             .toList();
 
-        final quickAccessItems = itemData.take(4).toList();
-        final listItems = itemData.skip(4).toList();
-        final quickAccessCrossAxisCount = screenWidth < 450 ? 2 : 4;
+        final quickAccessItems = itemData.take(5).toList(); // Ambil 5 item
+        final listItems = itemData.skip(5).toList(); // Lewati 5 item
+        final quickAccessCrossAxisCount = screenWidth < 450 ? 2 : 5;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,7 +208,8 @@ class DashboardGrid extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = listItems[index];
-                final overallIndex = index + 4;
+                final overallIndex =
+                    index + 5; // Sesuaikan dengan jumlah quick access
                 return DashboardItem(
                   icon: item['icon'],
                   label: item['label'],

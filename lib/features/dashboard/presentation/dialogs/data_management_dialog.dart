@@ -8,6 +8,7 @@ import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
 import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
 // >> 1. IMPORT HALAMAN BARU
 import '../../../exported_discussions_archive/presentation/pages/exported_discussions_page.dart';
+import '../../../progress/presentation/pages/progress_page.dart'; // Import halaman baru
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {
@@ -81,6 +82,18 @@ class DataManagementDialog extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const ExportedDiscussionsPage(),
               ),
+            );
+          },
+        ),
+        _buildDialogOption(
+          icon: Icons.show_chart,
+          title: 'Progress',
+          subtitle: 'Lihat progress belajar Anda.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProgressPage()),
             );
           },
         ),
