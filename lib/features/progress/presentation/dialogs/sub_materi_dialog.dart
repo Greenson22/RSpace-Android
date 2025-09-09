@@ -188,6 +188,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
             ),
           ),
           titlePadding: EdgeInsets.zero,
+          contentPadding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 24.0),
           content: SizedBox(
             width: double.maxFinite,
             child: currentSubject.subMateri.isEmpty
@@ -198,12 +199,15 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     itemCount: currentSubject.subMateri.length,
                     itemBuilder: (context, index) {
                       final sub = currentSubject.subMateri[index];
-                      return ListTile(
+                      return Card(
                         key: ValueKey(sub.namaMateri),
-                        title: Text(sub.namaMateri),
-                        leading: ReorderableDragStartListener(
-                          index: index,
-                          child: const Icon(Icons.drag_handle),
+                        margin: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: ListTile(
+                          title: Text(sub.namaMateri),
+                          leading: ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(Icons.drag_handle),
+                          ),
                         ),
                       );
                     },
@@ -220,73 +224,81 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     itemCount: currentSubject.subMateri.length,
                     itemBuilder: (context, index) {
                       final sub = currentSubject.subMateri[index];
-                      return ListTile(
-                        title: Text(sub.namaMateri),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Chip(
-                              label: Text(
-                                sub.progress,
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              backgroundColor: _getProgressColor(sub.progress),
+                      final progressColor = _getProgressColor(sub.progress);
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 6.0),
+                        elevation: 2.0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.circle,
+                            color: progressColor,
+                            size: 12.0,
+                          ),
+                          title: Text(sub.namaMateri),
+                          // ==> TAMBAHKAN SUBTITLE DI SINI <==
+                          subtitle: Text(
+                            sub.progress,
+                            style: TextStyle(
+                              color: progressColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
-                            PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  _showEditSubMateriDialog(context, sub);
-                                } else if (value == 'delete') {
-                                  _showDeleteConfirmDialog(context, sub);
-                                } else if (value == 'move_bottom') {
-                                  // Aksi baru
-                                  provider.moveSubMateriToBottom(
-                                    currentSubject,
-                                    sub,
-                                  );
-                                } else {
-                                  provider.updateSubMateriProgress(
-                                    currentSubject,
-                                    sub,
-                                    value,
-                                  );
-                                }
-                              },
-                              itemBuilder: (BuildContext context) =>
-                                  <PopupMenuEntry<String>>[
-                                    const PopupMenuItem<String>(
-                                      value: 'selesai',
-                                      child: Text('Ubah ke Selesai'),
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _showEditSubMateriDialog(context, sub);
+                              } else if (value == 'delete') {
+                                _showDeleteConfirmDialog(context, sub);
+                              } else if (value == 'move_bottom') {
+                                provider.moveSubMateriToBottom(
+                                  currentSubject,
+                                  sub,
+                                );
+                              } else {
+                                provider.updateSubMateriProgress(
+                                  currentSubject,
+                                  sub,
+                                  value,
+                                );
+                              }
+                            },
+                            itemBuilder: (BuildContext context) =>
+                                <PopupMenuEntry<String>>[
+                                  const PopupMenuItem<String>(
+                                    value: 'selesai',
+                                    child: Text('Ubah ke Selesai'),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'sementara',
+                                    child: Text('Ubah ke Sementara'),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'belum',
+                                    child: Text('Ubah ke Belum'),
+                                  ),
+                                  const PopupMenuDivider(),
+                                  const PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Text('Edit Nama'),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'move_bottom',
+                                    child: Text('Pindahkan ke Paling Bawah'),
+                                  ),
+                                  const PopupMenuDivider(),
+                                  const PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Text(
+                                      'Hapus',
+                                      style: TextStyle(color: Colors.red),
                                     ),
-                                    const PopupMenuItem<String>(
-                                      value: 'sementara',
-                                      child: Text('Ubah ke Sementara'),
-                                    ),
-                                    const PopupMenuItem<String>(
-                                      value: 'belum',
-                                      child: Text('Ubah ke Belum'),
-                                    ),
-                                    const PopupMenuDivider(),
-                                    const PopupMenuItem<String>(
-                                      value: 'edit',
-                                      child: Text('Edit Nama'),
-                                    ),
-                                    // ==> TAMBAHKAN ITEM MENU BARU DI SINI
-                                    const PopupMenuItem<String>(
-                                      value: 'move_bottom',
-                                      child: Text('Pindahkan ke Paling Bawah'),
-                                    ),
-                                    const PopupMenuDivider(),
-                                    const PopupMenuItem<String>(
-                                      value: 'delete',
-                                      child: Text(
-                                        'Hapus',
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                    ),
-                                  ],
-                            ),
-                          ],
+                                  ),
+                                ],
+                          ),
                         ),
                       );
                     },
