@@ -14,7 +14,7 @@ import '../../../feedback/presentation/pages/feedback_center_page.dart';
 import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
-import '../../../progress/presentation/pages/progress_page.dart'; // Import halaman baru
+import '../../../progress/presentation/pages/progress_page.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -22,6 +22,7 @@ List<VoidCallback> buildDashboardActions(
   required bool isPathSet,
 }) {
   final List<VoidCallback?> actions = [
+    // ==> PERBAIKAN: Sesuaikan urutan aksi agar cocok dengan urutan visual
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
@@ -30,7 +31,10 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
     ),
-    // Navigasi diubah untuk langsung ke TimeLogPage
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProgressPage()),
+    ),
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
@@ -38,11 +42,6 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
-    ),
-    // ==> PERBAIKAN: Pindahkan aksi Progress ke posisi yang benar
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ProgressPage()),
     ),
     () => Navigator.push(
       context,
@@ -91,6 +90,7 @@ class DashboardGrid extends StatelessWidget {
         } else {}
 
         final List<Map<String, dynamic>> allItemData = [
+          // ==> PERBAIKAN: Sesuaikan urutan item visual
           {
             'icon': Icons.topic_outlined,
             'label': 'Topics',
@@ -104,6 +104,12 @@ class DashboardGrid extends StatelessWidget {
             'colors': AppTheme.gradientColors2,
           },
           {
+            'icon': Icons.show_chart,
+            'label': 'Progress',
+            'subtitle': 'Lihat progress belajar',
+            'colors': AppTheme.gradientColors9,
+          },
+          {
             'icon': Icons.timer_outlined,
             'label': 'Jurnal',
             'subtitle': 'Catat & lihat aktivitas',
@@ -114,13 +120,6 @@ class DashboardGrid extends StatelessWidget {
             'label': 'Statistik',
             'subtitle': 'Lihat progres & data',
             'colors': AppTheme.gradientColors5,
-          },
-          // ==> PERBAIKAN: Pastikan urutan item visual sama dengan aksi
-          {
-            'icon': Icons.show_chart, // Ikon untuk Progress
-            'label': 'Progress', // Label untuk Progress
-            'subtitle': 'Lihat progress belajar', // Subtitle untuk Progress
-            'colors': AppTheme.gradientColors9, // Warna untuk Progress
           },
           {
             'icon': Icons.cloud_outlined,
@@ -164,8 +163,8 @@ class DashboardGrid extends StatelessWidget {
             .where((item) => item['label'] != 'Penyimpanan' || !isPathSet)
             .toList();
 
-        final quickAccessItems = itemData.take(5).toList(); // Ambil 5 item
-        final listItems = itemData.skip(5).toList(); // Lewati 5 item
+        final quickAccessItems = itemData.take(5).toList();
+        final listItems = itemData.skip(5).toList();
         final quickAccessCrossAxisCount = screenWidth < 450 ? 2 : 5;
 
         return Column(
@@ -208,8 +207,7 @@ class DashboardGrid extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = listItems[index];
-                final overallIndex =
-                    index + 5; // Sesuaikan dengan jumlah quick access
+                final overallIndex = index + 5;
                 return DashboardItem(
                   icon: item['icon'],
                   label: item['label'],
