@@ -17,6 +17,7 @@ import '../../../features/content_management/application/subject_provider.dart';
 import '../../../features/my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../features/content_management/domain/models/topic_model.dart';
 import '../../../main.dart';
+import 'package:my_aplication/features/progress/presentation/pages/progress_page.dart'; // Import halaman Progress
 
 class FabMenuCard extends StatefulWidget {
   final VoidCallback closeMenu;
@@ -76,9 +77,8 @@ class _FabMenuCardState extends State<FabMenuCard> {
     );
   }
 
-  // ==> PERUBAHAN DI SINI: FUNGSI MENERIMA PARAMETER JUMLAH <==
   Future<void> _grantReward(num amount) async {
-    final int rewardAmount = amount.toInt(); // Konversi ke integer
+    final int rewardAmount = amount.toInt();
     final prefs = SharedPreferencesService();
     final currentNeurons = await prefs.loadNeurons();
     await prefs.saveNeurons(currentNeurons + rewardAmount);
@@ -99,7 +99,6 @@ class _FabMenuCardState extends State<FabMenuCard> {
     if (_rewardedAd != null) {
       widget.closeMenu();
       _rewardedAd!.show(
-        // ==> PERUBAHAN DI SINI: MENGIRIM JUMLAH REWARD DARI ADMOB <==
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
           _grantReward(reward.amount);
         },
@@ -210,6 +209,13 @@ class _FabMenuCardState extends State<FabMenuCard> {
                 title: showText ? const Text('Statistik') : null,
                 dense: true,
                 onTap: () => _navigateToPage(context, const StatisticsPage()),
+              ),
+              // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+              ListTile(
+                leading: const Icon(Icons.show_chart),
+                title: showText ? const Text('Progress') : null,
+                dense: true,
+                onTap: () => _navigateToPage(context, const ProgressPage()),
               ),
               if (Platform.isAndroid || Platform.isIOS)
                 ListTile(
