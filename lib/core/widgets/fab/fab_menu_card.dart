@@ -1,4 +1,5 @@
 // lib/core/widgets/fab/fab_menu_card.dart
+import 'dart:io'; // ==> DITAMBAHKAN
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_aplication/features/backup_management/presentation/pages/backup_management_page.dart';
@@ -16,7 +17,6 @@ import '../../../features/my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../features/content_management/domain/models/topic_model.dart';
 import '../../../main.dart';
 
-// ==> UBAH MENJADI STATEFUL WIDGET <==
 class FabMenuCard extends StatefulWidget {
   final VoidCallback closeMenu;
 
@@ -33,7 +33,10 @@ class _FabMenuCardState extends State<FabMenuCard> {
   @override
   void initState() {
     super.initState();
-    _loadRewardedAd();
+    // ==> PERUBAHAN DI SINI: Hanya muat iklan di platform yang didukung <==
+    if (Platform.isAndroid || Platform.isIOS) {
+      _loadRewardedAd();
+    }
   }
 
   void _loadRewardedAd() {
@@ -63,7 +66,7 @@ class _FabMenuCardState extends State<FabMenuCard> {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _rewardedAd = null;
-        _loadRewardedAd(); // Muat iklan baru setelah yang lama ditutup
+        _loadRewardedAd();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
@@ -112,7 +115,7 @@ class _FabMenuCardState extends State<FabMenuCard> {
           backgroundColor: Colors.red,
         ),
       );
-      _loadRewardedAd(); // Coba muat ulang jika gagal
+      _loadRewardedAd();
     }
   }
 
@@ -200,24 +203,25 @@ class _FabMenuCardState extends State<FabMenuCard> {
                 dense: true,
                 onTap: () => _navigateToPage(context, const StatisticsPage()),
               ),
-              // ==> ITEM MENU BARU UNTUK REWARDED AD <==
-              ListTile(
-                leading: Icon(
-                  Icons.video_camera_front_outlined,
-                  color: Colors.deepPurple,
+              // ==> PERUBAHAN DI SINI: TAMBAHKAN KONDISI PLATFORM <==
+              if (Platform.isAndroid || Platform.isIOS)
+                ListTile(
+                  leading: Icon(
+                    Icons.video_camera_front_outlined,
+                    color: Colors.deepPurple,
+                  ),
+                  title: showText
+                      ? Text(
+                          'Dapatkan Neurons',
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                  dense: true,
+                  onTap: _showAd,
                 ),
-                title: showText
-                    ? Text(
-                        'Dapatkan Neurons',
-                        style: TextStyle(
-                          color: Colors.deepPurple,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
-                dense: true,
-                onTap: _showAd,
-              ),
               ListTile(
                 leading: const Icon(Icons.cloud_outlined),
                 title: showText ? const Text('File Online') : null,
