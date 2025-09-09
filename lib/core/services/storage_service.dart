@@ -1,4 +1,4 @@
-// lib/data/services/shared_preferences_service.dart
+// lib/core/services/storage_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/settings/domain/models/api_key_model.dart';
 import '../../features/settings/domain/models/prompt_model.dart';
@@ -38,6 +38,11 @@ class SharedPreferencesService {
       _settingsService.saveShowFloPreference(showFlo);
   Future<bool> loadShowFloPreference() =>
       _settingsService.loadShowFloPreference();
+  // ==> TAMBAHKAN DUA FUNGSI INI
+  Future<void> saveShowQuickFabPreference(bool show) =>
+      _settingsService.saveShowQuickFabPreference(show);
+  Future<bool> loadShowQuickFabPreference() =>
+      _settingsService.loadShowQuickFabPreference();
 
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>

@@ -1,4 +1,4 @@
-// lib/presentation/providers/theme_provider.dart
+// lib/features/settings/application/theme_provider.dart
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../core/services/storage_service.dart';
@@ -28,6 +28,10 @@ class ThemeProvider with ChangeNotifier {
   // State untuk Flo
   bool _showFloatingCharacter = true;
   bool get showFloatingCharacter => _showFloatingCharacter;
+
+  // ==> 1. TAMBAHKAN STATE BARU UNTUK FAB
+  bool _showQuickFab = true;
+  bool get showQuickFab => _showQuickFab;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -80,6 +84,15 @@ class ThemeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENGELOLA FAB
+  void toggleQuickFab(bool show) async {
+    if (_showQuickFab != show) {
+      _showQuickFab = show;
+      await _prefsService.saveShowQuickFabPreference(_showQuickFab);
+      notifyListeners();
+    }
+  }
+
   Future<void> setBackgroundImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -122,6 +135,9 @@ class ThemeProvider with ChangeNotifier {
     _dashboardItemScale = await _prefsService.loadDashboardItemScale();
 
     _showFloatingCharacter = await _prefsService.loadShowFloPreference();
+
+    // ==> 3. MUAT PENGATURAN FAB SAAT APLIKASI DIMULAI
+    _showQuickFab = await _prefsService.loadShowQuickFabPreference();
 
     notifyListeners();
   }

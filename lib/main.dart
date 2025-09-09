@@ -21,8 +21,6 @@ import 'features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/backup_management/application/sync_provider.dart';
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'features/feedback/application/feedback_provider.dart';
-
-// ==> 1. IMPORT WIDGET BARU ANDA
 import 'core/widgets/draggable_fab_widget.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -74,10 +72,6 @@ void main() async {
   );
 }
 
-// ===================================================================
-// == PERUBAHAN DIMULAI DI SINI: MyApp diubah menjadi StatefulWidget ==
-// ===================================================================
-
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -86,21 +80,17 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  // Kunci unik untuk MaterialApp. Mengubah kunci ini akan membangun ulang
-  // seluruh widget tree di bawahnya, efektif me-reload semua provider.
   Key _appKey = UniqueKey();
   DateTime _lastKnownDay = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    // Daftarkan observer untuk mendengarkan perubahan siklus hidup aplikasi.
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    // Hapus observer saat widget tidak lagi digunakan.
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -108,14 +98,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Cek hanya saat aplikasi kembali aktif (resume).
     if (state == AppLifecycleState.resumed) {
       final now = DateTime.now();
-      // Bandingkan hanya tanggal, bulan, dan tahun (abaikan waktu).
       if (now.year != _lastKnownDay.year ||
           now.month != _lastKnownDay.month ||
           now.day != _lastKnownDay.day) {
-        // Jika hari telah berganti, update state untuk memicu reload.
         setState(() {
           _appKey = UniqueKey();
           _lastKnownDay = now;
@@ -130,9 +117,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       builder: (context, themeProvider, child) {
         final isChristmas = themeProvider.isChristmasTheme;
         final bool showFlo = themeProvider.showFloatingCharacter;
+        // ==> AMBIL STATE BARU DARI PROVIDER
+        final bool showQuickFab = themeProvider.showQuickFab;
 
         return MaterialApp(
-          // Gunakan kunci yang sudah kita siapkan.
           key: _appKey,
           navigatorKey: navigatorKey,
           title: 'RSpace',
@@ -155,8 +143,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   const IgnorePointer(
                     child: FloatingCharacter(isVisible: true),
                   ),
-                // ==> 2. TAMBAHKAN WIDGET FAB DI SINI <==
-                const DraggableFab(),
+                // ==> GUNAKAN KONDISI UNTUK MENAMPILKAN FAB
+                if (showQuickFab) const DraggableFab(),
               ],
             );
           },

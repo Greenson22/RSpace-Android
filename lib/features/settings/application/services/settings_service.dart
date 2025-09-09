@@ -1,4 +1,4 @@
-// lib/data/services/shared_preferences/settings_service.dart
+// lib/features/settings/application/services/settings_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsService {
@@ -10,6 +10,8 @@ class SettingsService {
   static const String _showFloatingCharacterKey = 'show_floating_character';
   // ==> KUNCI BARU UNTUK TEMA NATAL <==
   static const String _christmasThemeKey = 'christmas_theme_preference';
+  // ==> KUNCI BARU UNTUK FAB CEPAT <==
+  static const String _showQuickFabKey = 'show_quick_fab';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -31,6 +33,18 @@ class SettingsService {
   Future<bool> loadChristmasThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_christmasThemeKey) ?? false;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN VISIBILITAS FAB <==
+  Future<void> saveShowQuickFabPreference(bool show) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showQuickFabKey, show);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT VISIBILITAS FAB <==
+  Future<bool> loadShowQuickFabPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_showQuickFabKey) ?? true; // Defaultnya tampil
   }
 
   Future<void> savePrimaryColor(int colorValue) async {

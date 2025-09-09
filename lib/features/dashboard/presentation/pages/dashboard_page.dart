@@ -1,4 +1,4 @@
-// lib/presentation/pages/dashboard_page.dart
+// lib/features/dashboard/presentation/pages/dashboard_page.dart
 
 import 'dart:async';
 import 'dart:io';
@@ -21,6 +21,9 @@ import '../widgets/dashboard_header.dart';
 import '../../../settings/presentation/dialogs/theme_settings_dialog.dart';
 import '../../../settings/presentation/dialogs/gemini_api_key_dialog.dart';
 import '../../../settings/presentation/dialogs/gemini_prompt_dialog.dart';
+
+// ==> 1. IMPORT DIALOG BARU
+import '../../../settings/presentation/dialogs/quick_fab_settings_dialog.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -324,6 +327,10 @@ class _DashboardPageState extends State<DashboardPage> {
                           MaterialPageRoute(builder: (_) => const AboutPage()),
                         );
                       }
+                      // ==> 2. TAMBAHKAN KONDISI BARU
+                      else if (value == 'quick_fab_settings') {
+                        showQuickFabSettingsDialog(context);
+                      }
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
@@ -356,6 +363,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                 title: Text('Ubah Penyimpanan Utama'),
                               ),
                             ),
+                          // ==> 3. TAMBAHKAN ITEM MENU BARU
+                          const PopupMenuItem<String>(
+                            value: 'quick_fab_settings',
+                            child: ListTile(
+                              leading: Icon(Icons.touch_app_outlined),
+                              title: Text('Pengaturan Tombol Cepat'),
+                            ),
+                          ),
                           PopupMenuItem<String>(
                             value: 'toggle_flo',
                             child: ListTile(
