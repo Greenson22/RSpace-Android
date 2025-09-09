@@ -16,8 +16,6 @@ class DraggableFab extends StatefulWidget {
 class _DraggableFabState extends State<DraggableFab> {
   Offset? _position;
   final GlobalKey _fabKey = GlobalKey();
-
-  // 1. Tambahkan variabel state untuk melacak status menu
   bool _isMenuOpen = false;
 
   void _correctPosition(Size screenSize, double fabSize) {
@@ -43,64 +41,53 @@ class _DraggableFabState extends State<DraggableFab> {
     }
   }
 
-  void _showNavigationMenu() {
-    // 2. Cek apakah menu sudah terbuka. Jika ya, jangan lakukan apa-apa.
-    if (_isMenuOpen) return;
+  Widget _buildPopupMenu() {
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return const SizedBox.shrink();
 
-    // 3. Set status menjadi terbuka sebelum menampilkan menu
-    setState(() {
-      _isMenuOpen = true;
-    });
-
-    final BuildContext navigatorContext = navigatorKey.currentContext!;
-    final RenderBox renderBox =
-        _fabKey.currentContext!.findRenderObject() as RenderBox;
-    final size = renderBox.size;
-    final position = renderBox.localToGlobal(Offset.zero);
-
-    showMenu<String>(
-      context: navigatorContext,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy - size.height - 90,
-        position.dx + size.width,
-        position.dy,
+    // ==> PERBAIKAN DI SINI <==
+    // Bungkus Card dengan SizedBox untuk memberikan lebar yang pasti.
+    return SizedBox(
+      width: 220, // Lebar menu
+      child: Card(
+        elevation: 8.0,
+        margin: const EdgeInsets.only(bottom: 12.0),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () {
+                setState(() => _isMenuOpen = false); // Tutup menu
+                navigator.push(
+                  MaterialPageRoute(builder: (_) => const TopicsPage()),
+                );
+              },
+              child: const ListTile(
+                leading: Icon(Icons.topic_outlined),
+                title: Text('Buka Topics'),
+                dense: true,
+              ),
+            ),
+            const Divider(height: 1),
+            InkWell(
+              onTap: () {
+                setState(() => _isMenuOpen = false); // Tutup menu
+                navigator.push(
+                  MaterialPageRoute(builder: (_) => const MyTasksPage()),
+                );
+              },
+              child: const ListTile(
+                leading: Icon(Icons.task_alt_outlined),
+                title: Text('Buka My Tasks'),
+                dense: true,
+              ),
+            ),
+          ],
+        ),
       ),
-      items: [
-        const PopupMenuItem<String>(
-          value: 'topics',
-          child: ListTile(
-            leading: Icon(Icons.topic_outlined),
-            title: Text('Buka Topics'),
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'my_tasks',
-          child: ListTile(
-            leading: Icon(Icons.task_alt_outlined),
-            title: Text('Buka My Tasks'),
-          ),
-        ),
-      ],
-      elevation: 8.0,
-    ).then((String? value) {
-      // 4. Set status menjadi tertutup SETELAH menu ditutup (baik memilih item atau tidak)
-      setState(() {
-        _isMenuOpen = false;
-      });
-
-      if (value == null) return;
-
-      if (value == 'topics') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const TopicsPage()),
-        );
-      } else if (value == 'my_tasks') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const MyTasksPage()),
-        );
-      }
-    });
+    );
   }
 
   @override
@@ -119,9 +106,8 @@ class _DraggableFabState extends State<DraggableFab> {
 
     _correctPosition(screenSize, fabSize);
 
-    return Positioned(
-      left: _position!.dx,
-      top: _position!.dy,
+    return Transform.translate(
+      offset: _position!,
       child: Opacity(
         opacity: themeProvider.quickFabOverallOpacity,
         child: GestureDetector(
@@ -140,20 +126,31 @@ class _DraggableFabState extends State<DraggableFab> {
               );
             });
           },
-          child: SizedBox(
-            width: fabSize,
-            height: fabSize,
-            child: FloatingActionButton(
-              key: _fabKey,
-              onPressed: _showNavigationMenu,
-              backgroundColor: theme.colorScheme.secondary.withOpacity(
-                themeProvider.quickFabBgOpacity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (_isMenuOpen) _buildPopupMenu(),
+              SizedBox(
+                width: fabSize,
+                height: fabSize,
+                child: FloatingActionButton(
+                  key: _fabKey,
+                  onPressed: () {
+                    setState(() {
+                      _isMenuOpen = !_isMenuOpen;
+                    });
+                  },
+                  backgroundColor: theme.colorScheme.secondary.withOpacity(
+                    themeProvider.quickFabBgOpacity,
+                  ),
+                  child: Text(
+                    themeProvider.quickFabIcon,
+                    style: TextStyle(fontSize: iconSize),
+                  ),
+                ),
               ),
-              child: Text(
-                themeProvider.quickFabIcon,
-                style: TextStyle(fontSize: iconSize),
-              ),
-            ),
+            ],
           ),
         ),
       ),
