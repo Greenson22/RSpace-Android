@@ -79,6 +79,38 @@ class _DraggableFabState extends State<DraggableFab> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // PERUBAHAN: Navigasi Cepat dipindahkan ke atas
+              Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  leading: const Icon(Icons.topic_outlined),
+                  title: const Text('Navigasi Cepat ke Topik'),
+                  dense: true,
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  childrenPadding: const EdgeInsets.only(left: 16),
+                  children: topics.map((topic) {
+                    return ListTile(
+                      dense: true,
+                      leading: Padding(
+                        padding: const EdgeInsets.only(left: 16.0),
+                        child: Text(
+                          topic.icon,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                      title: Text(topic.name),
+                      onTap: () {
+                        setState(() => _isMenuOpen = false);
+                        _navigateToSubjectsPage(context, topic);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              const Divider(height: 1),
+
               // Menu Navigasi Utama
               InkWell(
                 onTap: () {
@@ -143,38 +175,6 @@ class _DraggableFabState extends State<DraggableFab> {
                   leading: Icon(Icons.construction_outlined),
                   title: Text('Buka Kelola Data'),
                   dense: true,
-                ),
-              ),
-              const Divider(height: 1),
-
-              // Submenu untuk Navigasi Cepat
-              Theme(
-                data: Theme.of(
-                  context,
-                ).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  leading: const Icon(Icons.topic_outlined),
-                  title: const Text('Navigasi Cepat ke Topik'),
-                  dense: true,
-                  tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  childrenPadding: const EdgeInsets.only(left: 16),
-                  children: topics.map((topic) {
-                    return ListTile(
-                      dense: true,
-                      leading: Padding(
-                        padding: const EdgeInsets.only(left: 16.0),
-                        child: Text(
-                          topic.icon,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                      title: Text(topic.name),
-                      onTap: () {
-                        setState(() => _isMenuOpen = false);
-                        _navigateToSubjectsPage(context, topic);
-                      },
-                    );
-                  }).toList(),
                 ),
               ),
             ],
