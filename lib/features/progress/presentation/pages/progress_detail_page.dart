@@ -201,7 +201,6 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
   late Color pickerBarColor;
   bool _isInitialized = false;
 
-  // ==> PERBAIKAN: Gunakan nama parameter yang benar sesuai definisi class
   final List<ColorPalette> _defaultPalettes = [
     ColorPalette(
       name: "Biru Laut",
@@ -386,6 +385,7 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
                   spacing: 8.0,
                   runSpacing: 8.0,
                   children: allPalettes.map((palette) {
+                    final isCustom = provider.customPalettes.contains(palette);
                     return InkWell(
                       onTap: () {
                         setState(() {
@@ -396,6 +396,37 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
                           pickerBarColor = Color(palette.progressBarColor);
                         });
                       },
+                      // ==> TAMBAHKAN onLongPress DI SINI
+                      onLongPress: isCustom
+                          ? () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Hapus Palet Kustom'),
+                                  content: Text(
+                                    'Anda yakin ingin menghapus palet "${palette.name}"?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(dialogContext),
+                                      child: const Text('Batal'),
+                                    ),
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        provider.deleteCustomPalette(palette);
+                                        Navigator.pop(dialogContext);
+                                      },
+                                      child: const Text('Hapus'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          : null, // Hanya aktifkan untuk palet kustom
                       child: Tooltip(
                         message: palette.name,
                         child: Container(

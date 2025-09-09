@@ -27,6 +27,11 @@ class ProgressService {
 
     final List<ProgressTopic> topics = [];
     for (final file in files) {
+      // ==> PERBAIKAN: Tambahkan kondisi untuk mengabaikan file palet
+      if (path.basename(file.path) == 'custom_palettes.json') {
+        continue; // Lewati file ini dan lanjutkan ke file berikutnya
+      }
+
       final jsonString = await file.readAsString();
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
       topics.add(ProgressTopic.fromJson(jsonData));
@@ -47,7 +52,6 @@ class ProgressService {
     await saveTopic(newTopic);
   }
 
-  // Fungsi baru untuk menghapus file topic
   Future<void> deleteTopic(ProgressTopic topic) async {
     final dirPath = await _progressPath;
     final fileName = '${topic.topics.replaceAll(' ', '_').toLowerCase()}.json';

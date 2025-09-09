@@ -1,34 +1,38 @@
 // lib/features/progress/application/progress_detail_provider.dart
 
 import 'package:flutter/material.dart';
-import '../domain/models/color_palette_model.dart'; // Import model baru
+import '../domain/models/color_palette_model.dart';
 import '../domain/models/progress_subject_model.dart';
 import '../domain/models/progress_topic_model.dart';
-import 'palette_service.dart'; // Import service baru
+import 'palette_service.dart';
 import 'progress_service.dart';
 
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
-  final PaletteService _paletteService =
-      PaletteService(); // Instance service baru
+  final PaletteService _paletteService = PaletteService();
   ProgressTopic topic;
 
-  List<ColorPalette> _customPalettes = []; // State baru
-  List<ColorPalette> get customPalettes => _customPalettes; // Getter
+  List<ColorPalette> _customPalettes = [];
+  List<ColorPalette> get customPalettes => _customPalettes;
 
   ProgressDetailProvider(this.topic) {
-    _loadCustomPalettes(); // Panggil saat inisialisasi
+    _loadCustomPalettes();
   }
 
-  // Method baru untuk memuat palet
   Future<void> _loadCustomPalettes() async {
     _customPalettes = await _paletteService.loadPalettes();
     notifyListeners();
   }
 
-  // Method baru untuk menyimpan palet
   Future<void> saveNewPalette(ColorPalette palette) async {
     _customPalettes.add(palette);
+    await _paletteService.savePalettes(_customPalettes);
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk menghapus palet kustom
+  Future<void> deleteCustomPalette(ColorPalette palette) async {
+    _customPalettes.removeWhere((p) => p.name == palette.name);
     await _paletteService.savePalettes(_customPalettes);
     notifyListeners();
   }
