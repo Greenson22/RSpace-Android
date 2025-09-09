@@ -69,6 +69,7 @@ class ThemeProvider with ChangeNotifier {
     }
     if (isChristmas != null && _isChristmasTheme != isChristmas) {
       _isChristmasTheme = isChristmas;
+      _prefsService.saveChristmasThemePreference(_isChristmasTheme);
       needsNotify = true;
     }
     if (color != null && _primaryColor != color) {
@@ -168,6 +169,8 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> _loadTheme() async {
     _darkTheme = await _prefsService.loadThemePreference();
+    _isChristmasTheme = await _prefsService
+        .loadChristmasThemePreference(); // DITAMBAHKAN
     final colorValue = await _prefsService.loadPrimaryColor();
     if (colorValue != null) {
       _primaryColor = Color(colorValue);

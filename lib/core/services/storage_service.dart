@@ -18,6 +18,11 @@ class SharedPreferencesService {
   Future<void> saveThemePreference(bool isDarkMode) =>
       _settingsService.saveThemePreference(isDarkMode);
   Future<bool> loadThemePreference() => _settingsService.loadThemePreference();
+  // DITAMBAHKAN
+  Future<void> saveChristmasThemePreference(bool isChristmas) =>
+      _settingsService.saveChristmasThemePreference(isChristmas);
+  Future<bool> loadChristmasThemePreference() =>
+      _settingsService.loadChristmasThemePreference();
   Future<void> savePrimaryColor(int colorValue) =>
       _settingsService.savePrimaryColor(colorValue);
   Future<int?> loadPrimaryColor() => _settingsService.loadPrimaryColor();

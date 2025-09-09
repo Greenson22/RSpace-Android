@@ -8,7 +8,8 @@ class SettingsService {
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
   static const String _showFloatingCharacterKey = 'show_floating_character';
-  static const String _christmasThemeKey = 'christmas_theme_preference';
+  static const String _christmasThemeKey =
+      'christmas_theme_preference'; // DITAMBAHKAN
   static const String _showQuickFabKey = 'show_quick_fab';
   static const String _quickFabIconKey = 'quick_fab_icon';
   static const String _quickFabBgOpacityKey = 'quick_fab_bg_opacity';
@@ -27,11 +28,13 @@ class SettingsService {
     return prefs.getBool(_themeKey) ?? false;
   }
 
+  // DITAMBAHKAN: Fungsi untuk menyimpan preferensi tema Natal
   Future<void> saveChristmasThemePreference(bool isChristmas) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_christmasThemeKey, isChristmas);
   }
 
+  // DITAMBAHKAN: Fungsi untuk memuat preferensi tema Natal
   Future<bool> loadChristmasThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_christmasThemeKey) ?? false;
