@@ -21,9 +21,11 @@ class QuickFabSettingsDialog extends StatefulWidget {
 
 class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
   late bool _showQuickFab;
-  // ==> 1. TAMBAHKAN STATE & CONTROLLER UNTUK IKON
   late String _quickFabIcon;
   late TextEditingController _iconController;
+  // ==> 1. TAMBAHKAN STATE LOKAL UNTUK SLIDER
+  late double _bgOpacity;
+  late double _overallOpacity;
 
   final List<String> _iconSuggestions = ['➕', '📝', '⚡', '💡', '💬', '⭐'];
 
@@ -32,9 +34,11 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
     super.initState();
     final provider = Provider.of<ThemeProvider>(context, listen: false);
     _showQuickFab = provider.showQuickFab;
-    // ==> 2. INISIALISASI STATE & CONTROLLER
     _quickFabIcon = provider.quickFabIcon;
     _iconController = TextEditingController(text: _quickFabIcon);
+    // ==> 2. INISIALISASI STATE SLIDER
+    _bgOpacity = provider.quickFabBgOpacity;
+    _overallOpacity = provider.quickFabOverallOpacity;
   }
 
   @override
@@ -45,12 +49,14 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
 
   void _handleSaveChanges() {
     final provider = Provider.of<ThemeProvider>(context, listen: false);
-    // ==> 3. PANGGIL METODE BARU UNTUK MENYIMPAN SEMUA PENGATURAN
+    // ==> 3. KIRIM SEMUA NILAI BARU KE PROVIDER
     provider.updateQuickFabSettings(
       show: _showQuickFab,
       icon: _iconController.text.trim().isNotEmpty
           ? _iconController.text.trim()
           : '➕',
+      bgOpacity: _bgOpacity,
+      overallOpacity: _overallOpacity,
     );
     Navigator.of(context).pop();
   }
@@ -77,7 +83,6 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
               },
             ),
             const Divider(height: 24),
-            // ==> 4. TAMBAHKAN UI UNTUK MENGGANTI IKON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: TextFormField(
@@ -104,6 +109,39 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
                   );
                 }).toList(),
               ),
+            ),
+            const Divider(height: 24),
+            // ==> 4. TAMBAHKAN UI SLIDER
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Transparansi Latar (${(_bgOpacity * 100).toInt()}%)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Slider(
+              value: _bgOpacity,
+              min: 0.0,
+              max: 1.0,
+              onChanged: (value) {
+                setState(() => _bgOpacity = value);
+              },
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Transparansi Keseluruhan (${(_overallOpacity * 100).toInt()}%)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Slider(
+              value: _overallOpacity,
+              min: 0.0,
+              max: 1.0,
+              onChanged: (value) {
+                setState(() => _overallOpacity = value);
+              },
             ),
           ],
         ),

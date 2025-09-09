@@ -32,10 +32,13 @@ class ThemeProvider with ChangeNotifier {
   // State untuk FAB Cepat
   bool _showQuickFab = true;
   bool get showQuickFab => _showQuickFab;
-
-  // ==> 1. TAMBAHKAN STATE BARU UNTUK IKON FAB
   String _quickFabIcon = '➕';
   String get quickFabIcon => _quickFabIcon;
+  // ==> 1. TAMBAHKAN STATE BARU UNTUK OPASITAS
+  double _quickFabBgOpacity = 1.0;
+  double get quickFabBgOpacity => _quickFabBgOpacity;
+  double _quickFabOverallOpacity = 1.0;
+  double get quickFabOverallOpacity => _quickFabOverallOpacity;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -88,8 +91,13 @@ class ThemeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> 2. BUAT FUNGSI BARU UNTUK MENGUPDATE PENGATURAN FAB
-  Future<void> updateQuickFabSettings({bool? show, String? icon}) async {
+  // ==> 2. PERBARUI FUNGSI INI UNTUK MENYIMPAN SEMUA PENGATURAN FAB
+  Future<void> updateQuickFabSettings({
+    bool? show,
+    String? icon,
+    double? bgOpacity,
+    double? overallOpacity,
+  }) async {
     bool needsNotify = false;
     if (show != null && _showQuickFab != show) {
       _showQuickFab = show;
@@ -99,6 +107,16 @@ class ThemeProvider with ChangeNotifier {
     if (icon != null && _quickFabIcon != icon) {
       _quickFabIcon = icon;
       await _prefsService.saveShowQuickFabIconPreference(_quickFabIcon);
+      needsNotify = true;
+    }
+    if (bgOpacity != null && _quickFabBgOpacity != bgOpacity) {
+      _quickFabBgOpacity = bgOpacity;
+      await _prefsService.saveQuickFabBgOpacity(_quickFabBgOpacity);
+      needsNotify = true;
+    }
+    if (overallOpacity != null && _quickFabOverallOpacity != overallOpacity) {
+      _quickFabOverallOpacity = overallOpacity;
+      await _prefsService.saveQuickFabOverallOpacity(_quickFabOverallOpacity);
       needsNotify = true;
     }
     if (needsNotify) {
@@ -151,8 +169,11 @@ class ThemeProvider with ChangeNotifier {
 
     _showQuickFab = await _prefsService.loadShowQuickFabPreference();
 
-    // ==> 3. MUAT IKON FAB SAAT APLIKASI DIMULAI
     _quickFabIcon = await _prefsService.loadShowQuickFabIconPreference();
+
+    // ==> 3. MUAT PENGATURAN OPASITAS
+    _quickFabBgOpacity = await _prefsService.loadQuickFabBgOpacity();
+    _quickFabOverallOpacity = await _prefsService.loadQuickFabOverallOpacity();
 
     notifyListeners();
   }

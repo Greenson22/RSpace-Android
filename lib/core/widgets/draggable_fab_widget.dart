@@ -43,8 +43,8 @@ class _DraggableFabState extends State<DraggableFab> {
 
   @override
   Widget build(BuildContext context) {
-    // ==> 1. KONSUMSI THEMEPROVIDER
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
     const fabSize = 56.0;
@@ -56,35 +56,42 @@ class _DraggableFabState extends State<DraggableFab> {
 
     _correctPosition(screenSize);
 
-    return Positioned(
-      left: _position!.dx,
-      top: _position!.dy,
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() {
-            _position = _position! + details.delta;
-            _position = Offset(
-              _position!.dx.clamp(
-                padding.left,
-                screenSize.width - fabSize - padding.right,
-              ),
-              _position!.dy.clamp(
-                padding.top,
-                screenSize.height - fabSize - padding.bottom,
-              ),
-            );
-          });
-        },
-        child: FloatingActionButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Tombol FAB Cepat diklik!')),
-            );
+    // ==> 1. BUNGKUS DENGAN WIDGET OPACITY
+    return Opacity(
+      opacity: themeProvider.quickFabOverallOpacity,
+      child: Positioned(
+        left: _position!.dx,
+        top: _position!.dy,
+        child: GestureDetector(
+          onPanUpdate: (details) {
+            setState(() {
+              _position = _position! + details.delta;
+              _position = Offset(
+                _position!.dx.clamp(
+                  padding.left,
+                  screenSize.width - fabSize - padding.right,
+                ),
+                _position!.dy.clamp(
+                  padding.top,
+                  screenSize.height - fabSize - padding.bottom,
+                ),
+              );
+            });
           },
-          // ==> 2. GUNAKAN IKON DARI PROVIDER
-          child: Text(
-            themeProvider.quickFabIcon,
-            style: const TextStyle(fontSize: 24),
+          child: FloatingActionButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tombol FAB Cepat diklik!')),
+              );
+            },
+            // ==> 2. ATUR WARNA LATAR BELAKANG DENGAN OPASITAS
+            backgroundColor: theme.colorScheme.secondary.withOpacity(
+              themeProvider.quickFabBgOpacity,
+            ),
+            child: Text(
+              themeProvider.quickFabIcon,
+              style: const TextStyle(fontSize: 24),
+            ),
           ),
         ),
       ),

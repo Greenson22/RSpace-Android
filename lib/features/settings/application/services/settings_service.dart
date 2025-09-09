@@ -10,8 +10,10 @@ class SettingsService {
   static const String _showFloatingCharacterKey = 'show_floating_character';
   static const String _christmasThemeKey = 'christmas_theme_preference';
   static const String _showQuickFabKey = 'show_quick_fab';
-  // ==> 1. TAMBAHKAN KUNCI BARU UNTUK IKON FAB
   static const String _quickFabIconKey = 'quick_fab_icon';
+  // ==> 1. TAMBAHKAN KUNCI BARU UNTUK OPASITAS
+  static const String _quickFabBgOpacityKey = 'quick_fab_bg_opacity';
+  static const String _quickFabOverallOpacityKey = 'quick_fab_overall_opacity';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -43,17 +45,36 @@ class SettingsService {
     return prefs.getBool(_showQuickFabKey) ?? true; // Defaultnya tampil
   }
 
-  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENYIMPAN IKON
   Future<void> saveShowQuickFabIconPreference(String icon) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_quickFabIconKey, icon);
   }
 
-  // ==> 3. TAMBAHKAN FUNGSI BARU UNTUK MEMUAT IKON
   Future<String> loadShowQuickFabIconPreference() async {
     final prefs = await SharedPreferences.getInstance();
     // Default ikon adalah '➕'
     return prefs.getString(_quickFabIconKey) ?? '➕';
+  }
+
+  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENYIMPAN & MEMUAT OPASITAS
+  Future<void> saveQuickFabBgOpacity(double opacity) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_quickFabBgOpacityKey, opacity);
+  }
+
+  Future<double> loadQuickFabBgOpacity() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_quickFabBgOpacityKey) ?? 1.0; // Default 100%
+  }
+
+  Future<void> saveQuickFabOverallOpacity(double opacity) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_quickFabOverallOpacityKey, opacity);
+  }
+
+  Future<double> loadQuickFabOverallOpacity() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_quickFabOverallOpacityKey) ?? 1.0; // Default 100%
   }
 
   Future<void> savePrimaryColor(int colorValue) async {
