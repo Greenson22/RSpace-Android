@@ -5,9 +5,7 @@ import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
 
-// Fungsi untuk menampilkan dialog
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
-  // Gunakan Provider.value untuk meneruskan provider yang sudah ada ke dialog
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
@@ -27,6 +25,8 @@ class SubMateriDialog extends StatefulWidget {
 }
 
 class _SubMateriDialogState extends State<SubMateriDialog> {
+  bool _isReorderMode = false;
+
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -35,7 +35,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      // Penting: Gunakan context dari builder agar tidak konflik
       builder: (dialogContext) => AlertDialog(
         title: const Text('Tambah Sub-Materi Baru'),
         content: TextField(
@@ -51,7 +50,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
-                // Panggil provider untuk menambahkan, lalu tutup dialog input
                 provider.addSubMateri(widget.subject, controller.text);
                 Navigator.pop(dialogContext);
               }
@@ -149,14 +147,13 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           orElse: () => widget.subject,
         );
 
-        // ==> PERBAIKAN: Ganti .color menjadi .backgroundColor
         final subjectColor = currentSubject.backgroundColor != null
             ? Color(currentSubject.backgroundColor!)
             : Theme.of(context).primaryColor;
 
         return AlertDialog(
           title: Container(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
             decoration: BoxDecoration(
               color: subjectColor,
               borderRadius: const BorderRadius.only(
@@ -164,9 +161,30 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                 topRight: Radius.circular(28.0),
               ),
             ),
-            child: Text(
-              currentSubject.namaMateri,
-              style: const TextStyle(color: Colors.white),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    currentSubject.namaMateri,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isReorderMode ? Icons.check : Icons.sort,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isReorderMode = !_isReorderMode;
+                    });
+                  },
+                  tooltip: _isReorderMode
+                      ? 'Selesai Mengurutkan'
+                      : 'Urutkan Daftar',
+                ),
+              ],
             ),
           ),
           titlePadding: EdgeInsets.zero,
@@ -174,6 +192,29 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
             width: double.maxFinite,
             child: currentSubject.subMateri.isEmpty
                 ? const Center(child: Text('Belum ada sub-materi.'))
+                : _isReorderMode
+                ? ReorderableListView.builder(
+                    shrinkWrap: true,
+                    itemCount: currentSubject.subMateri.length,
+                    itemBuilder: (context, index) {
+                      final sub = currentSubject.subMateri[index];
+                      return ListTile(
+                        key: ValueKey(sub.namaMateri),
+                        title: Text(sub.namaMateri),
+                        leading: ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle),
+                        ),
+                      );
+                    },
+                    onReorder: (oldIndex, newIndex) {
+                      provider.reorderSubMateri(
+                        currentSubject,
+                        oldIndex,
+                        newIndex,
+                      );
+                    },
+                  )
                 : ListView.builder(
                     shrinkWrap: true,
                     itemCount: currentSubject.subMateri.length,
@@ -197,6 +238,12 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                   _showEditSubMateriDialog(context, sub);
                                 } else if (value == 'delete') {
                                   _showDeleteConfirmDialog(context, sub);
+                                } else if (value == 'move_bottom') {
+                                  // Aksi baru
+                                  provider.moveSubMateriToBottom(
+                                    currentSubject,
+                                    sub,
+                                  );
                                 } else {
                                   provider.updateSubMateriProgress(
                                     currentSubject,
@@ -224,6 +271,12 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                       value: 'edit',
                                       child: Text('Edit Nama'),
                                     ),
+                                    // ==> TAMBAHKAN ITEM MENU BARU DI SINI
+                                    const PopupMenuItem<String>(
+                                      value: 'move_bottom',
+                                      child: Text('Pindahkan ke Paling Bawah'),
+                                    ),
+                                    const PopupMenuDivider(),
                                     const PopupMenuItem<String>(
                                       value: 'delete',
                                       child: Text(

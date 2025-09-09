@@ -30,10 +30,34 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk menghapus palet kustom
   Future<void> deleteCustomPalette(ColorPalette palette) async {
     _customPalettes.removeWhere((p) => p.name == palette.name);
     await _paletteService.savePalettes(_customPalettes);
+    notifyListeners();
+  }
+
+  Future<void> reorderSubMateri(
+    ProgressSubject subject,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = subject.subMateri.removeAt(oldIndex);
+    subject.subMateri.insert(newIndex, item);
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk memindahkan ke paling bawah
+  Future<void> moveSubMateriToBottom(
+    ProgressSubject subject,
+    SubMateri subMateri,
+  ) async {
+    subject.subMateri.remove(subMateri);
+    subject.subMateri.add(subMateri);
+    await save();
     notifyListeners();
   }
 
