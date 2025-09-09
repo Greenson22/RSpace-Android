@@ -1,9 +1,13 @@
 // lib/core/widgets/draggable_fab_widget.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/subjects_page.dart';
 import 'package:provider/provider.dart';
+import 'package:path/path.dart' as path;
 import '../../features/settings/application/theme_provider.dart';
-import '../../features/content_management/presentation/topics/topics_page.dart';
+import '../../features/content_management/application/topic_provider.dart';
+import '../../features/content_management/application/subject_provider.dart';
 import '../../features/my_tasks/presentation/pages/my_tasks_page.dart';
+import '../../features/content_management/domain/models/topic_model.dart';
 import '../../main.dart';
 
 class DraggableFab extends StatefulWidget {
@@ -38,48 +42,87 @@ class _DraggableFabState extends State<DraggableFab> {
     }
   }
 
+  void _navigateToSubjectsPage(BuildContext context, Topic topic) {
+    final topicProvider = Provider.of<TopicProvider>(context, listen: false);
+    topicProvider.getTopicsPath().then((topicsPath) {
+      final folderPath = path.join(topicsPath, topic.name);
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => ChangeNotifierProvider(
+            create: (_) => SubjectProvider(folderPath),
+            child: SubjectsPage(topicName: topic.name),
+          ),
+        ),
+      );
+    });
+  }
+
   Widget _buildPopupMenu() {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return const SizedBox.shrink();
 
+    final topicProvider = Provider.of<TopicProvider>(context, listen: false);
+    final topics = topicProvider.allTopics.where((t) => !t.isHidden).toList();
+
     return SizedBox(
-      width: 220,
+      width: 250,
       child: Card(
         elevation: 8.0,
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: () {
-                setState(() => _isMenuOpen = false);
-                navigator.push(
-                  MaterialPageRoute(builder: (_) => const TopicsPage()),
-                );
-              },
-              child: const ListTile(
-                leading: Icon(Icons.topic_outlined),
-                title: Text('Buka Topics'),
-                dense: true,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Menu utama
+              InkWell(
+                onTap: () {
+                  setState(() => _isMenuOpen = false);
+                  navigator.push(
+                    MaterialPageRoute(builder: (_) => const MyTasksPage()),
+                  );
+                },
+                child: const ListTile(
+                  leading: Icon(Icons.task_alt_outlined),
+                  title: Text('Buka My Tasks'),
+                  dense: true,
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            InkWell(
-              onTap: () {
-                setState(() => _isMenuOpen = false);
-                navigator.push(
-                  MaterialPageRoute(builder: (_) => const MyTasksPage()),
-                );
-              },
-              child: const ListTile(
-                leading: Icon(Icons.task_alt_outlined),
-                title: Text('Buka My Tasks'),
-                dense: true,
+              const Divider(height: 1),
+
+              // PERBAIKAN: Menggunakan ExpansionTile yang stabil
+              Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  leading: const Icon(Icons.topic_outlined),
+                  title: const Text('Navigasi Cepat ke Topik'),
+                  dense: true,
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  childrenPadding: const EdgeInsets.only(left: 16),
+                  children: topics.map((topic) {
+                    return ListTile(
+                      dense: true,
+                      leading: Padding(
+                        padding: const EdgeInsets.only(left: 16.0),
+                        child: Text(
+                          topic.icon,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                      title: Text(topic.name),
+                      onTap: () {
+                        setState(() => _isMenuOpen = false);
+                        _navigateToSubjectsPage(context, topic);
+                      },
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -94,7 +137,6 @@ class _DraggableFabState extends State<DraggableFab> {
     final fabSize = themeProvider.quickFabSize;
     final iconSize = fabSize * 0.5;
 
-    // Memastikan posisi FAB selalu berada di dalam layar
     final double correctedX = _position.dx.clamp(
       padding.left,
       screenSize.width - fabSize - padding.right,
@@ -113,14 +155,11 @@ class _DraggableFabState extends State<DraggableFab> {
       });
     }
 
-    // Menentukan posisi menu berdasarkan posisi FAB saat menu dibuka
     final bool isFabOnLeft = _menuOpenPosition.dx < (screenSize.width / 2);
     const animationDuration = Duration(milliseconds: 200);
 
-    // Widget utama diubah menjadi Stack untuk memisahkan FAB dan Menu
     return Stack(
       children: [
-        // Menu navigasi yang diposisikan secara absolut
         AnimatedPositioned(
           duration: animationDuration,
           left: isFabOnLeft
@@ -133,7 +172,6 @@ class _DraggableFabState extends State<DraggableFab> {
                     ? screenSize.width - _menuOpenPosition.dx - fabSize - 12.0
                     : screenSize.width - _menuOpenPosition.dx - fabSize / 2)
               : null,
-          // Sesuaikan posisi vertikal menu agar sejajar dengan tengah FAB
           top: _menuOpenPosition.dy + (fabSize / 2) - 55,
           child: AnimatedOpacity(
             duration: animationDuration,
@@ -144,8 +182,6 @@ class _DraggableFabState extends State<DraggableFab> {
             ),
           ),
         ),
-
-        // FAB yang dapat digeser
         Positioned(
           left: _position.dx,
           top: _position.dy,
@@ -164,7 +200,6 @@ class _DraggableFabState extends State<DraggableFab> {
                   onPressed: () {
                     setState(() {
                       _isMenuOpen = !_isMenuOpen;
-                      // Simpan posisi FAB saat ini jika menu dibuka
                       if (_isMenuOpen) {
                         _menuOpenPosition = _position;
                       }
