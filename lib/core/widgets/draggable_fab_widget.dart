@@ -1,6 +1,10 @@
 // lib/core/widgets/draggable_fab_widget.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/backup_management/presentation/pages/backup_management_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/subjects_page.dart';
+import 'package:my_aplication/features/dashboard/presentation/dialogs/data_management_dialog.dart';
+import 'package:my_aplication/features/file_management/presentation/pages/file_list_page.dart';
+import 'package:my_aplication/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../features/settings/application/theme_provider.dart';
@@ -75,7 +79,7 @@ class _DraggableFabState extends State<DraggableFab> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Menu utama
+              // Menu Navigasi Utama
               InkWell(
                 onTap: () {
                   setState(() => _isMenuOpen = false);
@@ -89,9 +93,61 @@ class _DraggableFabState extends State<DraggableFab> {
                   dense: true,
                 ),
               ),
+              InkWell(
+                onTap: () {
+                  setState(() => _isMenuOpen = false);
+                  navigator.push(
+                    MaterialPageRoute(builder: (_) => const StatisticsPage()),
+                  );
+                },
+                child: const ListTile(
+                  leading: Icon(Icons.pie_chart_outline_rounded),
+                  title: Text('Buka Statistik'),
+                  dense: true,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  setState(() => _isMenuOpen = false);
+                  navigator.push(
+                    MaterialPageRoute(builder: (_) => const FileListPage()),
+                  );
+                },
+                child: const ListTile(
+                  leading: Icon(Icons.cloud_outlined),
+                  title: Text('Buka File Online'),
+                  dense: true,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  setState(() => _isMenuOpen = false);
+                  navigator.push(
+                    MaterialPageRoute(
+                      builder: (_) => const BackupManagementPage(),
+                    ),
+                  );
+                },
+                child: const ListTile(
+                  leading: Icon(Icons.settings_backup_restore_rounded),
+                  title: Text('Buka Manajemen Backup'),
+                  dense: true,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  setState(() => _isMenuOpen = false);
+                  showDataManagementDialog(context);
+                },
+                child: const ListTile(
+                  leading: Icon(Icons.construction_outlined),
+                  title: Text('Buka Kelola Data'),
+                  dense: true,
+                ),
+              ),
               const Divider(height: 1),
 
-              // PERBAIKAN: Menggunakan ExpansionTile yang stabil
+              // Submenu untuk Navigasi Cepat
               Theme(
                 data: Theme.of(
                   context,
