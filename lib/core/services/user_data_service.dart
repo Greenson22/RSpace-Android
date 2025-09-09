@@ -10,6 +10,20 @@ class UserDataService {
   static const String _filterValueKey = 'filter_value';
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
+  // ==> KUNCI BARU UNTUK MENYIMPAN NEURONS <==
+  static const String _neuronsKey = 'user_neurons_count';
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN NEURONS <==
+  Future<void> saveNeurons(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_neuronsKey, count);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT NEURONS <==
+  Future<int> loadNeurons() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_neuronsKey) ?? 0; // Default 0
+  }
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();

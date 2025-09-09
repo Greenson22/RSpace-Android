@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
+import '../../../../../core/services/storage_service.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 
@@ -16,6 +17,24 @@ class DiscussionSubtitle extends StatelessWidget {
     required this.discussion,
     this.isCompact = false, // Nilai default
   });
+
+  // ==> FUNGSI BARU UNTUK MENAMBAHKAN NEURONS <==
+  Future<void> _addNeurons(BuildContext context, int amount) async {
+    final prefs = SharedPreferencesService();
+    final currentNeurons = await prefs.loadNeurons();
+    await prefs.saveNeurons(currentNeurons + amount);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '🎉 Kamu mendapatkan +$amount Neurons!',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.deepPurple,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,6 +198,11 @@ class DiscussionSubtitle extends StatelessWidget {
                               nextCode: nextCode,
                             );
                         if (confirmed) {
+                          // ==> TAMBAHKAN NEURONS DI SINI <==
+                          _addNeurons(
+                            context,
+                            5,
+                          ); // Beri 5 neuron setiap kali naik level
                           provider.incrementRepetitionCode(discussion);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

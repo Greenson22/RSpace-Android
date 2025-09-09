@@ -14,6 +14,10 @@ class SharedPreferencesService {
   final GeminiService _geminiService = GeminiService();
   final UserDataService _userDataService = UserDataService();
 
+  // ==> TAMBAHKAN DUA BARIS INI <==
+  Future<void> saveNeurons(int count) => _userDataService.saveNeurons(count);
+  Future<int> loadNeurons() => _userDataService.loadNeurons();
+
   // Metode untuk Pengaturan
   Future<void> saveThemePreference(bool isDarkMode) =>
       _settingsService.saveThemePreference(isDarkMode);

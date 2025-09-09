@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/features/time_management/presentation/pages/time_log_page.dart';
 import '../../../../core/services/path_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
 import '../../../time_management/application/services/time_log_service.dart';
@@ -22,6 +23,8 @@ class _HeaderStats {
   final Duration timeLoggedToday;
   final int totalDiscussions;
   final int finishedDiscussions;
+  // ==> TAMBAHKAN PROPERTI NEURONS <==
+  final int neurons;
 
   _HeaderStats({
     this.pendingTasks = 0,
@@ -29,6 +32,8 @@ class _HeaderStats {
     this.timeLoggedToday = Duration.zero,
     this.totalDiscussions = 0,
     this.finishedDiscussions = 0,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    this.neurons = 0,
   });
 }
 
@@ -41,6 +46,8 @@ class DashboardHeader extends StatefulWidget {
 
 class _DashboardHeaderState extends State<DashboardHeader> {
   final PathService _pathService = PathService();
+  // ==> PINDAHKAN KE SINI AGAR BISA DIAKSES DI SEMUA FUNGSI <==
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   late Future<_HeaderStats> _statsFuture;
 
   @override
@@ -63,6 +70,8 @@ class _DashboardHeaderState extends State<DashboardHeader> {
       _getPendingTaskCount(),
       _getDiscussionStats(), // Menggabungkan dua
       _getTimeLoggedToday(),
+      // ==> MUAT JUMLAH NEURONS DARI PENYIMPANAN <==
+      _prefsService.loadNeurons(),
     ]);
     final discussionStats = results[1] as Map<String, int>;
     return _HeaderStats(
@@ -71,6 +80,8 @@ class _DashboardHeaderState extends State<DashboardHeader> {
       totalDiscussions: discussionStats['total'] ?? 0,
       finishedDiscussions: discussionStats['finished'] ?? 0,
       timeLoggedToday: results[2] as Duration,
+      // ==> MASUKKAN HASIL KE DALAM OBJEK STATS <==
+      neurons: results[3] as int,
     );
   }
 
@@ -173,17 +184,61 @@ class _DashboardHeaderState extends State<DashboardHeader> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _getGreeting(),
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          // ==> BARIS BARU UNTUK MENAMPILKAN GREETING DAN NEURONS <==
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getGreeting(),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat(
+                      'EEEE, d MMMM yyyy',
+                      'id_ID',
+                    ).format(DateTime.now()),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              // ==> WIDGET UNTUK MENAMPILKAN JUMLAH NEURONS <==
+              FutureBuilder<_HeaderStats>(
+                future: _statsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  final neurons = snapshot.data?.neurons ?? 0;
+                  return Chip(
+                    avatar: const Icon(
+                      Icons.psychology_outlined,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      neurons.toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    backgroundColor: Colors.deepPurple,
+                  );
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now()),
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+
           const Divider(height: 24),
           FutureBuilder<_HeaderStats>(
             future: _statsFuture,
