@@ -30,18 +30,16 @@ class ProgressTopicGridTile extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           children: [
-            // Konten utama yang akan berada di tengah
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment:
-                    CrossAxisAlignment.stretch, // Agar teks center
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     topic.icon,
                     style: TextStyle(
-                      fontSize: 40, // Perbesar ukuran ikon
+                      fontSize: 40,
                       color: theme.textTheme.bodyLarge?.color,
                     ),
                     textAlign: TextAlign.center,
@@ -59,7 +57,6 @@ class ProgressTopicGridTile extends StatelessWidget {
                 ],
               ),
             ),
-            // Tombol menu di pojok kanan atas
             Positioned(
               top: 4,
               right: 4,
@@ -77,22 +74,35 @@ class ProgressTopicGridTile extends StatelessWidget {
                       onIconChange();
                     }
                   },
+                  // ==> PERBAIKAN DI SINI <==
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
                           value: 'edit',
-                          child: Text('Edit Nama'),
+                          child: ListTile(
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Edit Nama'),
+                          ),
                         ),
                         const PopupMenuItem<String>(
                           value: 'icon',
-                          child: Text('Ubah Ikon'),
+                          child: ListTile(
+                            leading: Icon(Icons.emoji_emotions_outlined),
+                            title: Text('Ubah Ikon'),
+                          ),
                         ),
                         const PopupMenuDivider(),
                         const PopupMenuItem<String>(
                           value: 'delete',
-                          child: Text(
-                            'Hapus',
-                            style: TextStyle(color: Colors.red),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            title: Text(
+                              'Hapus',
+                              style: TextStyle(color: Colors.red),
+                            ),
                           ),
                         ),
                       ],

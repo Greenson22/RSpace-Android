@@ -78,7 +78,6 @@ class ProgressSubjectGridTile extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tampilkan ikon di sini
                   Text(
                     subject.icon,
                     style: TextStyle(fontSize: 24, color: textColor),
@@ -110,22 +109,35 @@ class ProgressSubjectGridTile extends StatelessWidget {
                           onColorEdit();
                         }
                       },
+                      // ==> PERBAIKAN DI SINI <==
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
                             const PopupMenuItem<String>(
                               value: 'edit',
-                              child: Text('Edit Nama'),
+                              child: ListTile(
+                                leading: Icon(Icons.edit_outlined),
+                                title: Text('Edit Nama'),
+                              ),
                             ),
                             const PopupMenuItem<String>(
                               value: 'color',
-                              child: Text('Ubah Tampilan'),
+                              child: ListTile(
+                                leading: Icon(Icons.palette_outlined),
+                                title: Text('Ubah Tampilan'),
+                              ),
                             ),
                             const PopupMenuDivider(),
                             const PopupMenuItem<String>(
                               value: 'delete',
-                              child: Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
+                              child: ListTile(
+                                leading: Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
+                                title: Text(
+                                  'Hapus',
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ),
                             ),
                           ],

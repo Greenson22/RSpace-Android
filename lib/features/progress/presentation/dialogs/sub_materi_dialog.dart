@@ -238,7 +238,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                             size: 12.0,
                           ),
                           title: Text(sub.namaMateri),
-                          // ==> TAMBAHKAN SUBTITLE DI SINI <==
                           subtitle: Text(
                             sub.progress,
                             style: TextStyle(
@@ -266,35 +265,69 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                 );
                               }
                             },
+                            // ==> PERBAIKAN DI SINI <==
                             itemBuilder: (BuildContext context) =>
                                 <PopupMenuEntry<String>>[
                                   const PopupMenuItem<String>(
                                     value: 'selesai',
-                                    child: Text('Ubah ke Selesai'),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.check_circle_outline,
+                                        color: Colors.green,
+                                      ),
+                                      title: Text('Selesai'),
+                                    ),
                                   ),
                                   const PopupMenuItem<String>(
                                     value: 'sementara',
-                                    child: Text('Ubah ke Sementara'),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.hourglass_bottom_outlined,
+                                        color: Colors.orange,
+                                      ),
+                                      title: Text('Sementara'),
+                                    ),
                                   ),
                                   const PopupMenuItem<String>(
                                     value: 'belum',
-                                    child: Text('Ubah ke Belum'),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.circle_outlined,
+                                        color: Colors.grey,
+                                      ),
+                                      title: Text('Belum'),
+                                    ),
                                   ),
                                   const PopupMenuDivider(),
                                   const PopupMenuItem<String>(
                                     value: 'edit',
-                                    child: Text('Edit Nama'),
+                                    child: ListTile(
+                                      leading: Icon(Icons.edit_outlined),
+                                      title: Text('Edit Nama'),
+                                    ),
                                   ),
                                   const PopupMenuItem<String>(
                                     value: 'move_bottom',
-                                    child: Text('Pindahkan ke Paling Bawah'),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons
+                                            .keyboard_double_arrow_down_outlined,
+                                      ),
+                                      title: Text('Pindahkan ke Bawah'),
+                                    ),
                                   ),
                                   const PopupMenuDivider(),
                                   const PopupMenuItem<String>(
                                     value: 'delete',
-                                    child: Text(
-                                      'Hapus',
-                                      style: TextStyle(color: Colors.red),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                      ),
+                                      title: Text(
+                                        'Hapus',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
                                     ),
                                   ),
                                 ],
