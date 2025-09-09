@@ -16,7 +16,6 @@ import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
 
-// Data model untuk menampung statistik header
 class _HeaderStats {
   final int pendingTasks;
   final int dueDiscussions;
@@ -42,7 +41,9 @@ class DashboardHeader extends StatefulWidget {
   State<DashboardHeader> createState() => _DashboardHeaderState();
 }
 
-class _DashboardHeaderState extends State<DashboardHeader> {
+// ==> TAMBAHKAN WidgetsBindingObserver <==
+class _DashboardHeaderState extends State<DashboardHeader>
+    with WidgetsBindingObserver {
   final PathService _pathService = PathService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   late Future<_HeaderStats> _statsFuture;
@@ -51,6 +52,29 @@ class _DashboardHeaderState extends State<DashboardHeader> {
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
+    // ==> DAFTARKAN OBSERVER <==
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // ==> TAMBAHKAN dispose UNTUK MELEPAS OBSERVER <==
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ==> TAMBAHKAN FUNGSI INI UNTUK MENDETEKSI PERUBAHAN <==
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Jika pengguna kembali ke aplikasi, muat ulang statistik
+    if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        setState(() {
+          _statsFuture = _loadHeaderStats();
+        });
+      }
+    }
   }
 
   String _getGreeting() {
@@ -217,9 +241,8 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                       Icons.psychology_outlined,
                       color: Colors.white,
                     ),
-                    // ==> PERUBAHAN DI SINI: MENAMBAHKAN TEKS "Neurons" <==
                     label: Text(
-                      '$neurons Neurons', // Tambahkan teks "Neurons"
+                      '$neurons Neurons',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

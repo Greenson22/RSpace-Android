@@ -1,11 +1,14 @@
 // lib/core/widgets/fab/fab_menu_card.dart
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_aplication/features/backup_management/presentation/pages/backup_management_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/subjects_page.dart';
 import 'package:my_aplication/features/file_management/presentation/pages/file_list_page.dart';
 import 'package:my_aplication/features/statistics/presentation/pages/statistics_page.dart';
+import 'package:my_aplication/infrastructure/ads/ad_service.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
+import '../../../../core/services/storage_service.dart';
 import '../../../features/settings/application/theme_provider.dart';
 import '../../../features/content_management/application/topic_provider.dart';
 import '../../../features/content_management/application/subject_provider.dart';
@@ -13,13 +16,108 @@ import '../../../features/my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../features/content_management/domain/models/topic_model.dart';
 import '../../../main.dart';
 
-class FabMenuCard extends StatelessWidget {
+// ==> UBAH MENJADI STATEFUL WIDGET <==
+class FabMenuCard extends StatefulWidget {
   final VoidCallback closeMenu;
 
   const FabMenuCard({super.key, required this.closeMenu});
 
+  @override
+  State<FabMenuCard> createState() => _FabMenuCardState();
+}
+
+class _FabMenuCardState extends State<FabMenuCard> {
+  RewardedAd? _rewardedAd;
+  bool _isAdLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRewardedAd();
+  }
+
+  void _loadRewardedAd() {
+    setState(() {
+      _isAdLoading = true;
+    });
+    AdService.loadRewardedAd(
+      onAdLoaded: (ad) {
+        _rewardedAd = ad;
+        _setAdCallbacks();
+        setState(() {
+          _isAdLoading = false;
+        });
+      },
+      onAdFailedToLoad: (error) {
+        _rewardedAd = null;
+        setState(() {
+          _isAdLoading = false;
+        });
+        print('Failed to load a rewarded ad: ${error.message}');
+      },
+    );
+  }
+
+  void _setAdCallbacks() {
+    _rewardedAd?.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _rewardedAd = null;
+        _loadRewardedAd(); // Muat iklan baru setelah yang lama ditutup
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _rewardedAd = null;
+        _loadRewardedAd();
+      },
+    );
+  }
+
+  Future<void> _grantReward() async {
+    const int rewardAmount = 10;
+    final prefs = SharedPreferencesService();
+    final currentNeurons = await prefs.loadNeurons();
+    await prefs.saveNeurons(currentNeurons + rewardAmount);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '🎉 Selamat! Kamu mendapatkan +$rewardAmount Neurons!',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: Colors.deepPurple,
+        ),
+      );
+    }
+  }
+
+  void _showAd() {
+    if (_rewardedAd != null) {
+      widget.closeMenu();
+      _rewardedAd!.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+          _grantReward();
+        },
+      );
+    } else if (_isAdLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Iklan sedang dimuat, coba sesaat lagi...'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memuat iklan. Coba lagi nanti.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      _loadRewardedAd(); // Coba muat ulang jika gagal
+    }
+  }
+
   void _navigateToPage(BuildContext context, Widget page) {
-    closeMenu();
+    widget.closeMenu();
     navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => page));
   }
 
@@ -27,7 +125,7 @@ class FabMenuCard extends StatelessWidget {
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     topicProvider.getTopicsPath().then((topicsPath) {
       final folderPath = path.join(topicsPath, topic.name);
-      closeMenu();
+      widget.closeMenu();
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (context) => ChangeNotifierProvider(
@@ -58,14 +156,12 @@ class FabMenuCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Navigasi Cepat
               Theme(
                 data: Theme.of(
                   context,
                 ).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   leading: const Icon(Icons.topic_outlined),
-                  // PERBAIKAN: Mengganti `null` dengan widget kosong yang valid
                   title: showText
                       ? const Text('Navigasi Cepat')
                       : const SizedBox.shrink(),
@@ -92,8 +188,6 @@ class FabMenuCard extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
-
-              // Menu Navigasi Utama
               ListTile(
                 leading: const Icon(Icons.task_alt_outlined),
                 title: showText ? const Text('My Tasks') : null,
@@ -105,6 +199,24 @@ class FabMenuCard extends StatelessWidget {
                 title: showText ? const Text('Statistik') : null,
                 dense: true,
                 onTap: () => _navigateToPage(context, const StatisticsPage()),
+              ),
+              // ==> ITEM MENU BARU UNTUK REWARDED AD <==
+              ListTile(
+                leading: Icon(
+                  Icons.video_camera_front_outlined,
+                  color: Colors.deepPurple,
+                ),
+                title: showText
+                    ? Text(
+                        'Dapatkan Neurons',
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+                dense: true,
+                onTap: _showAd,
               ),
               ListTile(
                 leading: const Icon(Icons.cloud_outlined),

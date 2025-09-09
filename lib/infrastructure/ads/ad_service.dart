@@ -24,6 +24,25 @@ class AdService {
     return '';
   }
 
+  // ==> ID BARU UNTUK REWARDED AD <==
+  static String get rewardedAdUnitId {
+    if (kReleaseMode) {
+      // Ganti dengan ID unit iklan rewarded produksi Anda
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-5320800343545863/4844365851';
+      } else if (Platform.isIOS) {
+        return 'ca-app-pub-5320800343545863/4844365851';
+      }
+    }
+    // ID pengujian dari AdMob
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-3940256099942544/5224354917';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-3940256099942544/1712485313';
+    }
+    return '';
+  }
+
   // Fungsi untuk membuat dan memuat banner ad
   static BannerAd createBannerAd({VoidCallback? onAdLoaded}) {
     BannerAd ad = BannerAd(
@@ -46,5 +65,20 @@ class AdService {
       ),
     );
     return ad;
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMUAT REWARDED AD <==
+  static void loadRewardedAd({
+    required Function(RewardedAd) onAdLoaded,
+    required Function(LoadAdError) onAdFailedToLoad,
+  }) {
+    RewardedAd.load(
+      adUnitId: rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: onAdLoaded,
+        onAdFailedToLoad: onAdFailedToLoad,
+      ),
+    );
   }
 }
