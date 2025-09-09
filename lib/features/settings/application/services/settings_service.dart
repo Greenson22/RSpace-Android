@@ -8,10 +8,10 @@ class SettingsService {
   static const String _backgroundImageKey = 'background_image_path';
   static const String _dashboardItemScaleKey = 'dashboard_item_scale';
   static const String _showFloatingCharacterKey = 'show_floating_character';
-  // ==> KUNCI BARU UNTUK TEMA NATAL <==
   static const String _christmasThemeKey = 'christmas_theme_preference';
-  // ==> KUNCI BARU UNTUK FAB CEPAT <==
   static const String _showQuickFabKey = 'show_quick_fab';
+  // ==> 1. TAMBAHKAN KUNCI BARU UNTUK IKON FAB
+  static const String _quickFabIconKey = 'quick_fab_icon';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -23,28 +23,37 @@ class SettingsService {
     return prefs.getBool(_themeKey) ?? false;
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN TEMA NATAL <==
   Future<void> saveChristmasThemePreference(bool isChristmas) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_christmasThemeKey, isChristmas);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMUAT TEMA NATAL <==
   Future<bool> loadChristmasThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_christmasThemeKey) ?? false;
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN VISIBILITAS FAB <==
   Future<void> saveShowQuickFabPreference(bool show) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showQuickFabKey, show);
   }
 
-  // ==> FUNGSI BARU UNTUK MEMUAT VISIBILITAS FAB <==
   Future<bool> loadShowQuickFabPreference() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_showQuickFabKey) ?? true; // Defaultnya tampil
+  }
+
+  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENYIMPAN IKON
+  Future<void> saveShowQuickFabIconPreference(String icon) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_quickFabIconKey, icon);
+  }
+
+  // ==> 3. TAMBAHKAN FUNGSI BARU UNTUK MEMUAT IKON
+  Future<String> loadShowQuickFabIconPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Default ikon adalah '➕'
+    return prefs.getString(_quickFabIconKey) ?? '➕';
   }
 
   Future<void> savePrimaryColor(int colorValue) async {

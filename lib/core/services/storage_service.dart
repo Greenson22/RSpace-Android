@@ -38,11 +38,15 @@ class SharedPreferencesService {
       _settingsService.saveShowFloPreference(showFlo);
   Future<bool> loadShowFloPreference() =>
       _settingsService.loadShowFloPreference();
-  // ==> TAMBAHKAN DUA FUNGSI INI
   Future<void> saveShowQuickFabPreference(bool show) =>
       _settingsService.saveShowQuickFabPreference(show);
   Future<bool> loadShowQuickFabPreference() =>
       _settingsService.loadShowQuickFabPreference();
+  // ==> TAMBAHKAN DUA FUNGSI INI
+  Future<void> saveShowQuickFabIconPreference(String icon) =>
+      _settingsService.saveShowQuickFabIconPreference(icon);
+  Future<String> loadShowQuickFabIconPreference() =>
+      _settingsService.loadShowQuickFabIconPreference();
 
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>

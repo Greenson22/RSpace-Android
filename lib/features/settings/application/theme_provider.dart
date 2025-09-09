@@ -29,9 +29,13 @@ class ThemeProvider with ChangeNotifier {
   bool _showFloatingCharacter = true;
   bool get showFloatingCharacter => _showFloatingCharacter;
 
-  // ==> 1. TAMBAHKAN STATE BARU UNTUK FAB
+  // State untuk FAB Cepat
   bool _showQuickFab = true;
   bool get showQuickFab => _showQuickFab;
+
+  // ==> 1. TAMBAHKAN STATE BARU UNTUK IKON FAB
+  String _quickFabIcon = '➕';
+  String get quickFabIcon => _quickFabIcon;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -84,11 +88,20 @@ class ThemeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENGELOLA FAB
-  void toggleQuickFab(bool show) async {
-    if (_showQuickFab != show) {
+  // ==> 2. BUAT FUNGSI BARU UNTUK MENGUPDATE PENGATURAN FAB
+  Future<void> updateQuickFabSettings({bool? show, String? icon}) async {
+    bool needsNotify = false;
+    if (show != null && _showQuickFab != show) {
       _showQuickFab = show;
       await _prefsService.saveShowQuickFabPreference(_showQuickFab);
+      needsNotify = true;
+    }
+    if (icon != null && _quickFabIcon != icon) {
+      _quickFabIcon = icon;
+      await _prefsService.saveShowQuickFabIconPreference(_quickFabIcon);
+      needsNotify = true;
+    }
+    if (needsNotify) {
       notifyListeners();
     }
   }
@@ -136,8 +149,10 @@ class ThemeProvider with ChangeNotifier {
 
     _showFloatingCharacter = await _prefsService.loadShowFloPreference();
 
-    // ==> 3. MUAT PENGATURAN FAB SAAT APLIKASI DIMULAI
     _showQuickFab = await _prefsService.loadShowQuickFabPreference();
+
+    // ==> 3. MUAT IKON FAB SAAT APLIKASI DIMULAI
+    _quickFabIcon = await _prefsService.loadShowQuickFabIconPreference();
 
     notifyListeners();
   }
