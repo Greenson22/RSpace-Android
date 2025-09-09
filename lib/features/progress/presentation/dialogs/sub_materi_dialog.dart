@@ -63,7 +63,72 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // Helper untuk mendapatkan warna berdasarkan status progress
+  // Dialog baru untuk mengedit nama
+  void _showEditSubMateriDialog(BuildContext context, SubMateri subMateri) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    final controller = TextEditingController(text: subMateri.namaMateri);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ubah Nama Sub-Materi'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Nama Baru'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                provider.editSubMateri(subMateri, controller.text);
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Dialog baru untuk konfirmasi hapus
+  void _showDeleteConfirmDialog(BuildContext context, SubMateri subMateri) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text(
+          'Anda yakin ingin menghapus sub-materi "${subMateri.namaMateri}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              provider.deleteSubMateri(widget.subject, subMateri);
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getProgressColor(String progress) {
     switch (progress) {
       case 'selesai':
@@ -79,10 +144,8 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan Consumer di sini agar list di dalam dialog ikut ter-update
     return Consumer<ProgressDetailProvider>(
       builder: (context, provider, child) {
-        // Cari subject yang relevan dari provider untuk mendapatkan data terbaru
         final currentSubject = provider.topic.subjects.firstWhere(
           (s) => s.namaMateri == widget.subject.namaMateri,
           orElse: () => widget.subject,
@@ -101,37 +164,59 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                       final sub = currentSubject.subMateri[index];
                       return ListTile(
                         title: Text(sub.namaMateri),
-                        // Ganti trailing dengan PopupMenuButton
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (String newProgress) {
-                            provider.updateSubMateriProgress(
-                              currentSubject,
-                              sub,
-                              newProgress,
-                            );
-                          },
-                          itemBuilder: (BuildContext context) =>
-                              <PopupMenuEntry<String>>[
-                                const PopupMenuItem<String>(
-                                  value: 'selesai',
-                                  child: Text('Selesai'),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'sementara',
-                                  child: Text('Sementara'),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'belum',
-                                  child: Text('Belum'),
-                                ),
-                              ],
-                          child: Chip(
-                            label: Text(
-                              sub.progress,
-                              style: const TextStyle(color: Colors.white),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Chip(
+                              label: Text(
+                                sub.progress,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              backgroundColor: _getProgressColor(sub.progress),
                             ),
-                            backgroundColor: _getProgressColor(sub.progress),
-                          ),
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _showEditSubMateriDialog(context, sub);
+                                } else if (value == 'delete') {
+                                  _showDeleteConfirmDialog(context, sub);
+                                } else {
+                                  provider.updateSubMateriProgress(
+                                    currentSubject,
+                                    sub,
+                                    value,
+                                  );
+                                }
+                              },
+                              itemBuilder: (BuildContext context) =>
+                                  <PopupMenuEntry<String>>[
+                                    const PopupMenuItem<String>(
+                                      value: 'selesai',
+                                      child: Text('Ubah ke Selesai'),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'sementara',
+                                      child: Text('Ubah ke Sementara'),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'belum',
+                                      child: Text('Ubah ke Belum'),
+                                    ),
+                                    const PopupMenuDivider(),
+                                    const PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Text('Edit Nama'),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Text(
+                                        'Hapus',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                            ),
+                          ],
                         ),
                       );
                     },

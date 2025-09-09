@@ -25,28 +25,45 @@ class ProgressDetailProvider with ChangeNotifier {
   Future<void> addSubMateri(ProgressSubject subject, String name) async {
     final newSubMateri = SubMateri(namaMateri: name, progress: "belum");
     subject.subMateri.add(newSubMateri);
-    _updateParentSubjectProgress(subject); // Update parent progress
+    _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();
   }
 
-  // Fungsi baru untuk mengubah progress sub-materi
   Future<void> updateSubMateriProgress(
     ProgressSubject subject,
     SubMateri subMateri,
     String newProgress,
   ) async {
     subMateri.progress = newProgress;
-    _updateParentSubjectProgress(subject); // Panggil fungsi update parent
+    _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();
   }
 
-  // Fungsi helper untuk secara otomatis mengupdate progress materi induk
+  // Fungsi baru untuk mengedit nama sub-materi
+  Future<void> editSubMateri(SubMateri subMateri, String newName) async {
+    subMateri.namaMateri = newName;
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk menghapus sub-materi
+  Future<void> deleteSubMateri(
+    ProgressSubject subject,
+    SubMateri subMateri,
+  ) async {
+    subject.subMateri.remove(subMateri);
+    _updateParentSubjectProgress(
+      subject,
+    ); // Update progress parent setelah hapus
+    await save();
+    notifyListeners();
+  }
+
   void _updateParentSubjectProgress(ProgressSubject subject) {
     if (subject.subMateri.isEmpty) {
-      // Jika tidak ada sub-materi, statusnya tetap seperti semula atau bisa direset
-      // subject.progress = "belum"; // Opsional
+      subject.progress = "belum";
       return;
     }
 
@@ -74,7 +91,6 @@ class ProgressDetailProvider with ChangeNotifier {
       return;
     }
 
-    // Jika semua sub-materi "belum"
     subject.progress = 'belum';
   }
 
