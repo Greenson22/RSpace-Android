@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/backup_management/presentation/pages/backup_management_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/subjects_page.dart';
-import 'package:my_aplication/features/dashboard/presentation/dialogs/data_management_dialog.dart';
 import 'package:my_aplication/features/file_management/presentation/pages/file_list_page.dart';
 import 'package:my_aplication/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:provider/provider.dart';
@@ -110,15 +109,7 @@ class FabMenuCard extends StatelessWidget {
                 onTap: () =>
                     _navigateToPage(context, const BackupManagementPage()),
               ),
-              ListTile(
-                leading: const Icon(Icons.construction_outlined),
-                title: const Text('Buka Kelola Data'),
-                dense: true,
-                onTap: () {
-                  closeMenu();
-                  showDataManagementDialog(context);
-                },
-              ),
+              // ListTile untuk "Buka Kelola Data" telah dihapus dari sini
             ],
           ),
         ),
