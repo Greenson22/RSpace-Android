@@ -11,7 +11,6 @@ class ProgressDetailProvider with ChangeNotifier {
 
   ProgressDetailProvider(this.topic);
 
-  // Fungsi baru untuk menambahkan subject
   Future<void> addSubject(String name) async {
     final newSubject = ProgressSubject(
       namaMateri: name,
@@ -19,6 +18,17 @@ class ProgressDetailProvider with ChangeNotifier {
       subMateri: [],
     );
     topic.subjects.add(newSubject);
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk menambahkan sub-materi
+  Future<void> addSubMateri(ProgressSubject subject, String name) async {
+    final newSubMateri = SubMateri(
+      namaMateri: name,
+      progress: "belum", // Default progress
+    );
+    subject.subMateri.add(newSubMateri);
     await save(); // Simpan perubahan ke file JSON
     notifyListeners(); // Beri tahu UI untuk update
   }
