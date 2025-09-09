@@ -8,7 +8,7 @@ class ProgressTopicGridTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onIconChange; // Callback baru
+  final VoidCallback onIconChange;
 
   const ProgressTopicGridTile({
     super.key,
@@ -16,7 +16,7 @@ class ProgressTopicGridTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
-    required this.onIconChange, // Tambahkan di konstruktor
+    required this.onIconChange,
   });
 
   @override
@@ -28,73 +28,78 @@ class ProgressTopicGridTile extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          children: [
+            // Konten utama yang akan berada di tengah
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment:
+                    CrossAxisAlignment.stretch, // Agar teks center
                 children: [
-                  // Tampilkan ikon dari model
                   Text(
                     topic.icon,
                     style: TextStyle(
-                      fontSize: 32,
+                      fontSize: 40, // Perbesar ukuran ikon
                       color: theme.textTheme.bodyLarge?.color,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: PopupMenuButton<String>(
-                      iconSize: 18,
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          onEdit();
-                        } else if (value == 'delete') {
-                          onDelete();
-                        } else if (value == 'icon') {
-                          // Aksi baru
-                          onIconChange();
-                        }
-                      },
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<String>>[
-                            const PopupMenuItem<String>(
-                              value: 'edit',
-                              child: Text('Edit Nama'),
-                            ),
-                            // Tambahkan item menu baru
-                            const PopupMenuItem<String>(
-                              value: 'icon',
-                              child: Text('Ubah Ikon'),
-                            ),
-                            const PopupMenuDivider(),
-                            const PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
+                  const SizedBox(height: 12),
+                  Text(
+                    topic.topics,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-              const Spacer(),
-              Text(
-                topic.topics,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+            ),
+            // Tombol menu di pojok kanan atas
+            Positioned(
+              top: 4,
+              right: 4,
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: PopupMenuButton<String>(
+                  iconSize: 18,
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit();
+                    } else if (value == 'delete') {
+                      onDelete();
+                    } else if (value == 'icon') {
+                      onIconChange();
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Text('Edit Nama'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'icon',
+                          child: Text('Ubah Ikon'),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Text(
+                            'Hapus',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
