@@ -1,4 +1,4 @@
-// lib/data/services/path_service.dart
+// lib/core/services/path_service.dart
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
@@ -196,6 +196,10 @@ class PathService {
 
   Future<String> get countdownTimersPath async =>
       path.join(await contentsPath, 'countdown_timers.json');
+
+  // ==> TAMBAHKAN PATH BARU UNTUK FILE PROFIL PENGGUNA
+  Future<String> get userProfilePath async =>
+      path.join(await _baseDataPath, 'user_profile.dat');
 
   Future<String> get perpuskuDataPath async {
     String? customPath = await loadPerpuskuDataPath();
