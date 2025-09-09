@@ -46,4 +46,14 @@ class ProgressService {
     final newTopic = ProgressTopic(topics: topicName, subjects: []);
     await saveTopic(newTopic);
   }
+
+  // Fungsi baru untuk menghapus file topic
+  Future<void> deleteTopic(ProgressTopic topic) async {
+    final dirPath = await _progressPath;
+    final fileName = '${topic.topics.replaceAll(' ', '_').toLowerCase()}.json';
+    final file = File(path.join(dirPath, fileName));
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
 }

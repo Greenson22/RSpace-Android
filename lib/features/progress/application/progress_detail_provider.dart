@@ -22,6 +22,20 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Fungsi baru untuk mengedit nama subject
+  Future<void> editSubject(ProgressSubject subject, String newName) async {
+    subject.namaMateri = newName;
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk menghapus subject
+  Future<void> deleteSubject(ProgressSubject subject) async {
+    topic.subjects.remove(subject);
+    await save();
+    notifyListeners();
+  }
+
   Future<void> addSubMateri(ProgressSubject subject, String name) async {
     final newSubMateri = SubMateri(namaMateri: name, progress: "belum");
     subject.subMateri.add(newSubMateri);
@@ -41,22 +55,18 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk mengedit nama sub-materi
   Future<void> editSubMateri(SubMateri subMateri, String newName) async {
     subMateri.namaMateri = newName;
     await save();
     notifyListeners();
   }
 
-  // Fungsi baru untuk menghapus sub-materi
   Future<void> deleteSubMateri(
     ProgressSubject subject,
     SubMateri subMateri,
   ) async {
     subject.subMateri.remove(subMateri);
-    _updateParentSubjectProgress(
-      subject,
-    ); // Update progress parent setelah hapus
+    _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();
   }

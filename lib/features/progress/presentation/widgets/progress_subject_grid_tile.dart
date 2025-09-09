@@ -6,14 +6,18 @@ import '../../domain/models/progress_subject_model.dart';
 class ProgressSubjectGridTile extends StatelessWidget {
   final ProgressSubject subject;
   final VoidCallback onTap;
+  // Tambahkan callback baru
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const ProgressSubjectGridTile({
     super.key,
     required this.subject,
     required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
   });
 
-  // Helper untuk mendapatkan warna progress
   Color _getProgressColor(String progress) {
     switch (progress) {
       case 'selesai':
@@ -26,7 +30,6 @@ class ProgressSubjectGridTile extends StatelessWidget {
     }
   }
 
-  // Helper untuk menghitung nilai progress bar (0.0 to 1.0)
   double _getProgressValue() {
     if (subject.subMateri.isEmpty) {
       switch (subject.progress) {
@@ -64,13 +67,49 @@ class ProgressSubjectGridTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                subject.namaMateri,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      subject.namaMateri,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Tambahkan PopupMenuButton di sini
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: PopupMenuButton<String>(
+                      iconSize: 18,
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          onEdit();
+                        } else if (value == 'delete') {
+                          onDelete();
+                        }
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Text('Edit Nama'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                    ),
+                  ),
+                ],
               ),
               const Spacer(),
               Text(
