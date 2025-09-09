@@ -34,12 +34,16 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk mengubah warna subject
-  Future<void> updateSubjectColor(
-    ProgressSubject subject,
-    Color newColor,
-  ) async {
-    subject.color = newColor.value;
+  // Fungsi baru untuk mengubah ketiga warna sekaligus
+  Future<void> updateSubjectColors(
+    ProgressSubject subject, {
+    Color? backgroundColor,
+    Color? textColor,
+    Color? progressBarColor,
+  }) async {
+    subject.backgroundColor = backgroundColor?.value;
+    subject.textColor = textColor?.value;
+    subject.progressBarColor = progressBarColor?.value;
     await save();
     notifyListeners();
   }

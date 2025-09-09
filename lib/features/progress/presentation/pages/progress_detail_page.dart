@@ -47,9 +47,8 @@ class ProgressDetailPage extends StatelessWidget {
                       onEdit: () => _showEditSubjectDialog(context, subject),
                       onDelete: () =>
                           _showDeleteConfirmDialog(context, subject),
-                      // Panggil dialog color picker
                       onColorEdit: () =>
-                          _showColorPickerDialog(context, subject),
+                          _showAppearanceDialog(context, subject),
                     );
                   },
                 );
@@ -63,6 +62,7 @@ class ProgressDetailPage extends StatelessWidget {
     );
   }
 
+  // ... (Fungsi lain tidak berubah) ...
   void _showAddSubjectDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -167,44 +167,153 @@ class ProgressDetailPage extends StatelessWidget {
     );
   }
 
-  // Fungsi baru untuk menampilkan dialog color picker
-  void _showColorPickerDialog(BuildContext context, ProgressSubject subject) {
+  void _showAppearanceDialog(BuildContext context, ProgressSubject subject) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
     );
-    Color pickerColor = subject.color != null
-        ? Color(subject.color!)
-        : Theme.of(context).primaryColor;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pilih Warna Materi'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: pickerColor,
-            onColorChanged: (color) => pickerColor = color,
-            enableAlpha: false,
-            displayThumbColor: true,
+      builder: (dialogContext) {
+        return ChangeNotifierProvider.value(
+          value: provider,
+          child: _EditAppearanceDialog(subject: subject),
+        );
+      },
+    );
+  }
+}
+
+class _EditAppearanceDialog extends StatefulWidget {
+  final ProgressSubject subject;
+  const _EditAppearanceDialog({required this.subject});
+
+  @override
+  _EditAppearanceDialogState createState() => _EditAppearanceDialogState();
+}
+
+class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
+  late Color pickerBackgroundColor;
+  late Color pickerTextColor;
+  late Color pickerBarColor;
+  bool _isInitialized = false; // Flag untuk memastikan inisialisasi sekali saja
+
+  // ==> PERBAIKAN: Pindahkan logika dari initState ke didChangeDependencies
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Gunakan flag agar tidak dijalankan berulang kali jika tidak perlu
+    if (!_isInitialized) {
+      final theme = Theme.of(context);
+      pickerBackgroundColor = widget.subject.backgroundColor != null
+          ? Color(widget.subject.backgroundColor!)
+          : theme.cardColor;
+      pickerTextColor = widget.subject.textColor != null
+          ? Color(widget.subject.textColor!)
+          : (pickerBackgroundColor.computeLuminance() > 0.5
+                ? Colors.black87
+                : Colors.white);
+      pickerBarColor = widget.subject.progressBarColor != null
+          ? Color(widget.subject.progressBarColor!)
+          : theme.primaryColor;
+      _isInitialized = true;
+    }
+  }
+
+  Widget _buildColorPicker(
+    String title,
+    Color currentColor,
+    ValueChanged<Color> onColorChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            '#${currentColor.value.toRadixString(16).substring(2).toUpperCase()}',
           ),
+          trailing: Container(width: 24, height: 24, color: currentColor),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Pilih Warna $title'),
+                content: SingleChildScrollView(
+                  child: ColorPicker(
+                    pickerColor: currentColor,
+                    onColorChanged: onColorChanged,
+                    enableAlpha: false,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Batal'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          ElevatedButton(
-            child: const Text('Simpan'),
-            onPressed: () {
-              provider.updateSubjectColor(subject, pickerColor);
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+
+    return AlertDialog(
+      title: const Text('Ubah Tampilan Materi'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildColorPicker(
+              'Warna Latar',
+              pickerBackgroundColor,
+              (color) => setState(() => pickerBackgroundColor = color),
+            ),
+            const SizedBox(height: 16),
+            _buildColorPicker(
+              'Warna Teks',
+              pickerTextColor,
+              (color) => setState(() => pickerTextColor = color),
+            ),
+            const SizedBox(height: 16),
+            _buildColorPicker(
+              'Warna Progress Bar',
+              pickerBarColor,
+              (color) => setState(() => pickerBarColor = color),
+            ),
+          ],
+        ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            provider.updateSubjectColors(
+              widget.subject,
+              backgroundColor: pickerBackgroundColor,
+              textColor: pickerTextColor,
+              progressBarColor: pickerBarColor,
+            );
+            Navigator.of(context).pop();
+          },
+          child: const Text('Simpan'),
+        ),
+      ],
     );
   }
 }

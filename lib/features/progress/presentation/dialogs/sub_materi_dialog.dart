@@ -7,6 +7,7 @@ import '../../domain/models/progress_subject_model.dart';
 
 // Fungsi untuk menampilkan dialog
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
+  // Gunakan Provider.value untuk meneruskan provider yang sudah ada ke dialog
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
@@ -34,6 +35,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     final controller = TextEditingController();
     showDialog(
       context: context,
+      // Penting: Gunakan context dari builder agar tidak konflik
       builder: (dialogContext) => AlertDialog(
         title: const Text('Tambah Sub-Materi Baru'),
         content: TextField(
@@ -49,6 +51,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
+                // Panggil provider untuk menambahkan, lalu tutup dialog input
                 provider.addSubMateri(widget.subject, controller.text);
                 Navigator.pop(dialogContext);
               }
@@ -146,13 +149,12 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           orElse: () => widget.subject,
         );
 
-        // Dapatkan warna subject, atau gunakan warna primer tema jika null
-        final subjectColor = currentSubject.color != null
-            ? Color(currentSubject.color!)
+        // ==> PERBAIKAN: Ganti .color menjadi .backgroundColor
+        final subjectColor = currentSubject.backgroundColor != null
+            ? Color(currentSubject.backgroundColor!)
             : Theme.of(context).primaryColor;
 
         return AlertDialog(
-          // Gunakan warna pada title
           title: Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
@@ -167,7 +169,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               style: const TextStyle(color: Colors.white),
             ),
           ),
-          titlePadding: EdgeInsets.zero, // Hapus padding default
+          titlePadding: EdgeInsets.zero,
           content: SizedBox(
             width: double.maxFinite,
             child: currentSubject.subMateri.isEmpty

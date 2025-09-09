@@ -8,7 +8,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onColorEdit; // Callback baru untuk warna
+  final VoidCallback onColorEdit;
 
   const ProgressSubjectGridTile({
     super.key,
@@ -16,14 +16,8 @@ class ProgressSubjectGridTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
-    required this.onColorEdit, // Tambahkan di konstruktor
+    required this.onColorEdit,
   });
-
-  Color _getProgressColor(String progress, Color defaultColor) {
-    if (progress == 'selesai') return Colors.green;
-    if (progress == 'sementara') return Colors.orange;
-    return defaultColor.withOpacity(0.3); // Gunakan warna default jika 'belum'
-  }
 
   double _getProgressValue() {
     if (subject.subMateri.isEmpty) {
@@ -42,15 +36,33 @@ class ProgressSubjectGridTile extends StatelessWidget {
     return finishedCount / subject.subMateri.length;
   }
 
+  // Helper untuk menentukan warna teks default yang kontras
+  Color _getAdaptiveTextColor(Color backgroundColor) {
+    return backgroundColor.computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Gunakan warna dari subject, atau warna primer tema sebagai default
-    final subjectColor = subject.color != null
-        ? Color(subject.color!)
+
+    // Tentukan warna dengan nilai default
+    final backgroundColor = subject.backgroundColor != null
+        ? Color(subject.backgroundColor!)
+        : theme.cardColor;
+
+    final textColor = subject.textColor != null
+        ? Color(subject.textColor!)
+        : _getAdaptiveTextColor(
+            backgroundColor,
+          ); // Teks adaptif jika tidak di-set
+
+    final progressBarColor = subject.progressBarColor != null
+        ? Color(subject.progressBarColor!)
         : theme.primaryColor;
+
     final progressValue = _getProgressValue();
-    final progressColor = _getProgressColor(subject.progress, subjectColor);
     final totalSubMateri = subject.subMateri.length;
     final selesaiCount = subject.subMateri
         .where((s) => s.progress == 'selesai')
@@ -59,6 +71,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+      color: backgroundColor, // Gunakan warna latar belakang
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -74,6 +87,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
                       subject.namaMateri,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: textColor, // Gunakan warna teks
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -84,13 +98,13 @@ class ProgressSubjectGridTile extends StatelessWidget {
                     height: 24,
                     child: PopupMenuButton<String>(
                       iconSize: 18,
+                      icon: Icon(Icons.more_vert, color: textColor),
                       onSelected: (value) {
                         if (value == 'edit') {
                           onEdit();
                         } else if (value == 'delete') {
                           onDelete();
                         } else if (value == 'color') {
-                          // Aksi baru
                           onColorEdit();
                         }
                       },
@@ -100,10 +114,9 @@ class ProgressSubjectGridTile extends StatelessWidget {
                               value: 'edit',
                               child: Text('Edit Nama'),
                             ),
-                            // Tambahkan item menu baru
                             const PopupMenuItem<String>(
                               value: 'color',
-                              child: Text('Ubah Warna'),
+                              child: Text('Ubah Tampilan'),
                             ),
                             const PopupMenuDivider(),
                             const PopupMenuItem<String>(
@@ -121,15 +134,17 @@ class ProgressSubjectGridTile extends StatelessWidget {
               const Spacer(),
               Text(
                 '${(progressValue * 100).toStringAsFixed(0)}% Selesai',
-                style: theme.textTheme.bodySmall?.copyWith(color: subjectColor),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: textColor.withOpacity(0.8),
+                ),
               ),
               const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: progressValue,
-                  backgroundColor: subjectColor.withOpacity(0.2),
-                  color: subjectColor, // Selalu gunakan warna subject
+                  backgroundColor: progressBarColor.withOpacity(0.2),
+                  color: progressBarColor, // Gunakan warna progress bar
                   minHeight: 8,
                 ),
               ),
@@ -137,7 +152,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
               Text(
                 '$selesaiCount dari $totalSubMateri sub-materi',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
+                  color: textColor.withOpacity(0.7),
                 ),
               ),
             ],
