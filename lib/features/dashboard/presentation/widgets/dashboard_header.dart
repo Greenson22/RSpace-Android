@@ -7,21 +7,28 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
+import 'package:my_aplication/features/time_management/presentation/pages/time_log_page.dart';
 import '../../../../core/services/path_service.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
 import '../../../time_management/application/services/time_log_service.dart';
+import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
+import '../../../content_management/presentation/topics/topics_page.dart';
 
 // Data model untuk menampung statistik header
 class _HeaderStats {
   final int pendingTasks;
   final int dueDiscussions;
   final Duration timeLoggedToday;
+  final int totalDiscussions;
+  final int finishedDiscussions;
 
   _HeaderStats({
     this.pendingTasks = 0,
     this.dueDiscussions = 0,
     this.timeLoggedToday = Duration.zero,
+    this.totalDiscussions = 0,
+    this.finishedDiscussions = 0,
   });
 }
 
@@ -54,12 +61,15 @@ class _DashboardHeaderState extends State<DashboardHeader> {
     // Digabung agar berjalan secara paralel
     final results = await Future.wait([
       _getPendingTaskCount(),
-      _getDueDiscussionsCount(),
+      _getDiscussionStats(), // Menggabungkan dua
       _getTimeLoggedToday(),
     ]);
+    final discussionStats = results[1] as Map<String, int>;
     return _HeaderStats(
       pendingTasks: results[0] as int,
-      dueDiscussions: results[1] as int,
+      dueDiscussions: discussionStats['due'] ?? 0,
+      totalDiscussions: discussionStats['total'] ?? 0,
+      finishedDiscussions: discussionStats['finished'] ?? 0,
       timeLoggedToday: results[2] as Duration,
     );
   }
@@ -80,13 +90,15 @@ class _DashboardHeaderState extends State<DashboardHeader> {
     }
   }
 
-  Future<int> _getDueDiscussionsCount() async {
+  Future<Map<String, int>> _getDiscussionStats() async {
     try {
       final topicsPath = await _pathService.topicsPath;
       final topicsDir = Directory(topicsPath);
-      if (!await topicsDir.exists()) return 0;
+      if (!await topicsDir.exists()) return {};
 
-      int count = 0;
+      int dueCount = 0;
+      int totalCount = 0;
+      int finishedCount = 0;
       final today = DateUtils.dateOnly(DateTime.now());
 
       final topicEntities = topicsDir.listSync().whereType<Directory>();
@@ -104,20 +116,23 @@ class _DashboardHeaderState extends State<DashboardHeader> {
           final contentList = jsonData['content'] as List<dynamic>? ?? [];
           for (var item in contentList) {
             final discussion = Discussion.fromJson(item);
-            final effectiveDate = DateTime.tryParse(
-              discussion.effectiveDate ?? '',
-            );
-            if (!discussion.finished &&
-                effectiveDate != null &&
-                !effectiveDate.isAfter(today)) {
-              count++;
+            totalCount++;
+            if (discussion.finished) {
+              finishedCount++;
+            } else {
+              final effectiveDate = DateTime.tryParse(
+                discussion.effectiveDate ?? '',
+              );
+              if (effectiveDate != null && !effectiveDate.isAfter(today)) {
+                dueCount++;
+              }
             }
           }
         }
       }
-      return count;
+      return {'due': dueCount, 'total': totalCount, 'finished': finishedCount};
     } catch (e) {
-      return 0;
+      return {};
     }
   }
 
@@ -177,28 +192,78 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                 return const Center(child: CircularProgressIndicator());
               }
               final stats = snapshot.data ?? _HeaderStats();
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
+              final progress = stats.totalDiscussions > 0
+                  ? stats.finishedDiscussions / stats.totalDiscussions
+                  : 0.0;
+
+              return Column(
                 children: [
-                  _StatPill(
-                    icon: Icons.task_alt,
-                    label: 'Tugas Belum Selesai',
-                    value: stats.pendingTasks.toString(),
-                    color: Colors.orange.shade700,
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      _StatPill(
+                        icon: Icons.task_alt,
+                        label: 'Tugas Belum Selesai',
+                        value: stats.pendingTasks.toString(),
+                        color: Colors.orange.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyTasksPage(),
+                          ),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.school_outlined,
+                        label: 'Perlu Ditinjau',
+                        value: stats.dueDiscussions.toString(),
+                        color: Colors.blue.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TopicsPage()),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.timer_outlined,
+                        label: 'Aktivitas Hari Ini',
+                        value:
+                            '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
+                        color: Colors.green.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TimeLogPage(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  _StatPill(
-                    icon: Icons.school_outlined,
-                    label: 'Perlu Ditinjau',
-                    value: stats.dueDiscussions.toString(),
-                    color: Colors.blue.shade700,
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Progres Pembahasan',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      Text(
+                        '${stats.finishedDiscussions} / ${stats.totalDiscussions}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  _StatPill(
-                    icon: Icons.timer_outlined,
-                    label: 'Aktivitas Hari Ini',
-                    value:
-                        '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
-                    color: Colors.green.shade700,
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 10,
+                      backgroundColor: Theme.of(context).dividerColor,
+                    ),
                   ),
                 ],
               );
@@ -219,30 +284,39 @@ class _StatPill extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final VoidCallback onTap;
 
   const _StatPill({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          '$value ',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '$value ',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ],
         ),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-      ],
+      ),
     );
   }
 }
