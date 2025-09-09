@@ -4,16 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
 import 'package:provider/provider.dart';
+// Import ReorderableGridView
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
-// Import dialog dan widget baru
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
-// Import color picker
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-class ProgressDetailPage extends StatelessWidget {
+// 1. Ubah menjadi StatefulWidget
+class ProgressDetailPage extends StatefulWidget {
+  @override
+  State<ProgressDetailPage> createState() => _ProgressDetailPageState();
+}
+
+class _ProgressDetailPageState extends State<ProgressDetailPage> {
+  // 2. Tambahkan state untuk mode reorder
+  bool _isReorderMode = false;
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(context);
@@ -26,11 +34,26 @@ class ProgressDetailPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(provider.topic.topics)),
+      appBar: AppBar(
+        title: Text(provider.topic.topics),
+        // 3. Tambahkan actions di AppBar
+        actions: [
+          IconButton(
+            icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
+            onPressed: () {
+              setState(() {
+                _isReorderMode = !_isReorderMode;
+              });
+            },
+            tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Materi',
+          ),
+        ],
+      ),
       body: provider.topic.subjects.isEmpty
           ? const Center(child: Text('Belum ada materi di dalam topik ini.'))
           : LayoutBuilder(
               builder: (context, constraints) {
+                // 4. Ganti GridView.builder dengan ReorderableGridView.builder
                 return ReorderableGridView.builder(
                   padding: const EdgeInsets.all(12.0),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -40,17 +63,20 @@ class ProgressDetailPage extends StatelessWidget {
                     childAspectRatio: 1.2,
                   ),
                   itemCount: provider.topic.subjects.length,
-                  dragEnabled: false, // Reorder dinonaktifkan sementara
+                  dragEnabled: _isReorderMode, // Aktifkan drag
                   onReorder: (oldIndex, newIndex) {
-                    // provider.reorderSubjects(oldIndex, newIndex);
+                    provider.reorderSubjects(oldIndex, newIndex);
                   },
                   itemBuilder: (context, index) {
                     final subject = provider.topic.subjects[index];
                     return ProgressSubjectGridTile(
+                      // 5. Tambahkan Key yang unik
                       key: ValueKey(subject.namaMateri),
                       subject: subject,
                       onTap: () {
-                        showSubMateriDialog(context, subject);
+                        if (!_isReorderMode) {
+                          showSubMateriDialog(context, subject);
+                        }
                       },
                       onEdit: () => _showEditSubjectDialog(context, subject),
                       onDelete: () =>
@@ -62,15 +88,17 @@ class ProgressDetailPage extends StatelessWidget {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddSubjectDialog(context),
-        tooltip: 'Tambah Materi Utama',
-        child: const Icon(Icons.add_circle_outline),
-      ),
+      floatingActionButton: _isReorderMode
+          ? null
+          : FloatingActionButton(
+              onPressed: () => _showAddSubjectDialog(context),
+              tooltip: 'Tambah Materi Utama',
+              child: const Icon(Icons.add_circle_outline),
+            ),
     );
   }
 
-  // ... (Fungsi dialog lain tidak berubah) ...
+  // ... (Sisa kode dialog tidak perlu diubah) ...
   void _showAddSubjectDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -349,9 +377,7 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
     );
   }
 
-  // ==> PERBAIKAN DI SINI <==
   void _showAIPaletteDialog() {
-    // 1. Inisialisasi controller dengan nama subject
     final controller = TextEditingController(text: widget.subject.namaMateri);
     final provider = Provider.of<ProgressDetailProvider>(
       context,
