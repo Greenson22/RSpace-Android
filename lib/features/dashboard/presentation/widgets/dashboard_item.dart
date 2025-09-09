@@ -1,77 +1,106 @@
 // lib/presentation/pages/dashboard_page/widgets/dashboard_item.dart
 import 'package:flutter/material.dart';
 
+enum DashboardItemType { quickAccess, listItem }
+
 class DashboardItem extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
   final List<Color> gradientColors;
-  final Widget? child;
-  final bool isFocused; // ==> TAMBAHKAN PROPERTI isFocused
+  final bool isFocused;
+  final DashboardItemType type;
 
   const DashboardItem({
     super.key,
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.onTap,
     required this.gradientColors,
-    this.child,
-    this.isFocused = false, // ==> SET NILAI DEFAULT
+    this.isFocused = false,
+    required this.type,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return switch (type) {
+      DashboardItemType.quickAccess => _buildQuickAccess(context),
+      DashboardItemType.listItem => _buildListItem(context),
+    };
+  }
+
+  Widget _buildQuickAccess(BuildContext context) {
     return Material(
       borderRadius: BorderRadius.circular(20),
-      color: theme.cardTheme.color ?? theme.cardColor,
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        splashColor: gradientColors[0].withOpacity(0.3),
-        highlightColor: gradientColors[0].withOpacity(0.1),
-        child: Container(
+        splashColor: Colors.white.withOpacity(0.3),
+        highlightColor: Colors.white.withOpacity(0.1),
+        child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             border: isFocused
-                ? Border.all(color: gradientColors[0], width: 3)
+                ? Border.all(
+                    color: Theme.of(context).primaryColorLight,
+                    width: 3,
+                  )
                 : null,
           ),
-          child:
-              child ??
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: gradientColors,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, size: 36, color: Colors.white),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(icon, size: 32, color: Colors.white),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: isFocused
+            ? BorderSide(color: gradientColors[0], width: 2)
+            : BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.grey[800] : Colors.grey[100]),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: gradientColors[0], size: 24),
+        ),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: subtitle != null ? Text(subtitle!) : null,
+        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }

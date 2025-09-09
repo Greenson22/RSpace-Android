@@ -79,95 +79,141 @@ class DashboardGrid extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final screenWidth = MediaQuery.of(context).size.width;
-        int crossAxisCount;
+        int listCrossAxisCount;
         if (screenWidth > 1200) {
-          crossAxisCount = 5;
+          listCrossAxisCount = 5;
         } else if (screenWidth > 900) {
-          crossAxisCount = 4;
+          listCrossAxisCount = 4;
         } else if (screenWidth > 600) {
-          crossAxisCount = 3;
+          listCrossAxisCount = 3;
         } else {
-          crossAxisCount = 2;
+          listCrossAxisCount = 2;
         }
 
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
             'label': 'Topics',
+            'subtitle': 'Kelola semua materi Anda',
             'colors': AppTheme.gradientColors1,
           },
           {
             'icon': Icons.task_alt,
             'label': 'My Tasks',
+            'subtitle': 'Lacak semua tugas Anda',
             'colors': AppTheme.gradientColors2,
           },
-          // Ikon dan label diubah
           {
             'icon': Icons.timer_outlined,
-            'label': 'Jurnal Aktivitas',
+            'label': 'Jurnal',
+            'subtitle': 'Catat & lihat aktivitas',
             'colors': AppTheme.gradientColors3,
           },
           {
             'icon': Icons.pie_chart_outline_rounded,
             'label': 'Statistik',
+            'subtitle': 'Lihat progres & data',
             'colors': AppTheme.gradientColors5,
           },
           {
             'icon': Icons.cloud_outlined,
             'label': 'File Online',
+            'subtitle': 'Akses file dari server',
             'colors': AppTheme.gradientColors4,
           },
           {
             'icon': Icons.construction_outlined,
             'label': 'Kelola Data',
+            'subtitle': 'Perawatan & manajemen data',
             'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
           },
           {
             'icon': Icons.lightbulb_outline,
-            'label': 'Pusat Umpan Balik',
+            'label': 'Umpan Balik',
+            'subtitle': 'Kirim ide, bug, atau saran',
             'colors': AppTheme.gradientColors6,
           },
           {
             'icon': Icons.library_books_outlined,
             'label': 'Pustaka Prompt',
+            'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
           },
           {
             'icon': Icons.folder_open_rounded,
-            'label': 'Penyimpanan Utama',
+            'label': 'Penyimpanan',
+            'subtitle': 'Atur lokasi penyimpanan data',
             'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
           },
           {
             'icon': Icons.settings_backup_restore_rounded,
-            'label': 'Manajemen Backup',
+            'label': 'Backup',
+            'subtitle': 'Cadangkan & pulihkan data',
             'colors': AppTheme.gradientColors8,
           },
         ];
 
         final List<Map<String, dynamic>> itemData = allItemData
-            .where((item) => item['label'] != 'Penyimpanan Utama' || !isPathSet)
+            .where((item) => item['label'] != 'Penyimpanan' || !isPathSet)
             .toList();
 
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.0 / 1.2, // Disesuaikan untuk item vertikal
-          ),
-          itemCount: itemData.length,
-          itemBuilder: (context, index) {
-            final item = itemData[index];
-            return DashboardItem(
-              icon: item['icon'],
-              label: item['label'],
-              gradientColors: item['colors'],
-              onTap: dashboardActions[index],
-              isFocused: isKeyboardActive && focusedIndex == index,
-            );
-          },
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+        final quickAccessItems = itemData.take(4).toList();
+        final listItems = itemData.skip(4).toList();
+        final quickAccessCrossAxisCount = screenWidth < 450 ? 2 : 4;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Quick Access Section
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: quickAccessCrossAxisCount,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: quickAccessItems.length,
+              itemBuilder: (context, index) {
+                final item = quickAccessItems[index];
+                return DashboardItem(
+                  icon: item['icon'],
+                  label: item['label'],
+                  gradientColors: item['colors'],
+                  onTap: dashboardActions[index],
+                  isFocused: isKeyboardActive && focusedIndex == index,
+                  type: DashboardItemType.quickAccess,
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            // List Section
+            Text(
+              "Fitur Lainnya",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            ListView.separated(
+              itemCount: listItems.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = listItems[index];
+                final overallIndex = index + 4;
+                return DashboardItem(
+                  icon: item['icon'],
+                  label: item['label'],
+                  subtitle: item['subtitle'],
+                  gradientColors: item['colors'],
+                  onTap: dashboardActions[overallIndex],
+                  isFocused: isKeyboardActive && focusedIndex == overallIndex,
+                  type: DashboardItemType.listItem,
+                );
+              },
+            ),
+          ],
         );
       },
     );

@@ -50,6 +50,10 @@ class AppTheme {
     Color(0xFFF59E0B),
     Color(0xFFFBBF24),
   ];
+  static const List<Color> gradientHero = [
+    Color(0xFF434343),
+    Color(0xFF000000),
+  ];
 
   // ==> FUNGSI BARU UNTUK MEMBUAT THEME SECARA DINAMIS <==
   static ThemeData getTheme(Color primaryColor, bool isDark) {
