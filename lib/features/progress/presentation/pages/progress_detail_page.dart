@@ -349,9 +349,10 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
     );
   }
 
-  // Dialog baru untuk generate palet dengan AI
+  // ==> PERBAIKAN DI SINI <==
   void _showAIPaletteDialog() {
-    final controller = TextEditingController();
+    // 1. Inisialisasi controller dengan nama subject
+    final controller = TextEditingController(text: widget.subject.namaMateri);
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
@@ -393,7 +394,6 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
                                   .generateAndSavePalette(
                                     theme: controller.text,
                                   );
-                              // Update color pickers dengan hasil dari AI
                               setState(() {
                                 pickerBackgroundColor = Color(
                                   newPalette.backgroundColor,
@@ -468,7 +468,6 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
                       'Pilih Palet Cepat',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    // Tombol untuk generate dengan AI
                     TextButton.icon(
                       icon: const Icon(Icons.auto_awesome, size: 16),
                       label: const Text('Buat dg AI'),
