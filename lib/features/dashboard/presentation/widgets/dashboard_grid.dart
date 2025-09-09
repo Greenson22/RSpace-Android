@@ -80,7 +80,9 @@ class DashboardGrid extends StatelessWidget {
       builder: (context, themeProvider, child) {
         final screenWidth = MediaQuery.of(context).size.width;
         int crossAxisCount;
-        if (screenWidth > 900) {
+        if (screenWidth > 1200) {
+          crossAxisCount = 5;
+        } else if (screenWidth > 900) {
           crossAxisCount = 4;
         } else if (screenWidth > 600) {
           crossAxisCount = 3;
@@ -138,7 +140,7 @@ class DashboardGrid extends StatelessWidget {
           {
             'icon': Icons.settings_backup_restore_rounded,
             'label': 'Manajemen Backup',
-            'colors': const [Color(0xFF7E57C2), Color(0xFF5E35B1)],
+            'colors': AppTheme.gradientColors8,
           },
         ];
 
@@ -151,7 +153,7 @@ class DashboardGrid extends StatelessWidget {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1.0 / 1.1,
+            childAspectRatio: 1.0 / 1.2, // Disesuaikan untuk item vertikal
           ),
           itemCount: itemData.length,
           itemBuilder: (context, index) {

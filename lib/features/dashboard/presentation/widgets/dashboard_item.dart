@@ -22,57 +22,49 @@ class DashboardItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     return Material(
       borderRadius: BorderRadius.circular(20),
-      color: Colors.transparent,
+      color: theme.cardTheme.color ?? theme.cardColor,
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         splashColor: gradientColors[0].withOpacity(0.3),
         highlightColor: gradientColors[0].withOpacity(0.1),
-        child: Ink(
+        child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            color: isDark ? Colors.grey[850] : Colors.white,
             border: isFocused
                 ? Border.all(color: gradientColors[0], width: 3)
-                : Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+                : null,
           ),
           child:
               child ??
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: gradientColors,
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        shape: BoxShape.circle,
                       ),
-                      child: Icon(icon, size: 32, color: Colors.white),
+                      child: Icon(icon, size: 36, color: Colors.white),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text(
                       label,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: theme.textTheme.bodyLarge?.color,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
