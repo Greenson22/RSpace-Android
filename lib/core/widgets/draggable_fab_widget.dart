@@ -15,7 +15,6 @@ class DraggableFab extends StatefulWidget {
 
 class _DraggableFabState extends State<DraggableFab> {
   Offset? _position;
-  final GlobalKey _fabKey = GlobalKey();
   bool _isMenuOpen = false;
 
   void _correctPosition(Size screenSize, double fabSize) {
@@ -45,13 +44,12 @@ class _DraggableFabState extends State<DraggableFab> {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return const SizedBox.shrink();
 
-    // ==> PERBAIKAN DI SINI <==
-    // Bungkus Card dengan SizedBox untuk memberikan lebar yang pasti.
     return SizedBox(
-      width: 220, // Lebar menu
+      width: 220,
       child: Card(
         elevation: 8.0,
-        margin: const EdgeInsets.only(bottom: 12.0),
+        // Hapus margin bawah karena posisi diatur oleh Stack
+        margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
@@ -59,7 +57,7 @@ class _DraggableFabState extends State<DraggableFab> {
           children: [
             InkWell(
               onTap: () {
-                setState(() => _isMenuOpen = false); // Tutup menu
+                setState(() => _isMenuOpen = false);
                 navigator.push(
                   MaterialPageRoute(builder: (_) => const TopicsPage()),
                 );
@@ -73,7 +71,7 @@ class _DraggableFabState extends State<DraggableFab> {
             const Divider(height: 1),
             InkWell(
               onTap: () {
-                setState(() => _isMenuOpen = false); // Tutup menu
+                setState(() => _isMenuOpen = false);
                 navigator.push(
                   MaterialPageRoute(builder: (_) => const MyTasksPage()),
                 );
@@ -106,6 +104,9 @@ class _DraggableFabState extends State<DraggableFab> {
 
     _correctPosition(screenSize, fabSize);
 
+    // Tentukan apakah FAB berada di sisi kiri layar
+    final bool isFabOnLeft = _position!.dx < (screenSize.width / 2);
+
     return Transform.translate(
       offset: _position!,
       child: Opacity(
@@ -126,16 +127,16 @@ class _DraggableFabState extends State<DraggableFab> {
               );
             });
           },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
+          // ==> PERUBAHAN UTAMA: Gunakan Stack, bukan Column <==
+          child: Stack(
+            clipBehavior: Clip.none, // Izinkan menu tampil di luar batas Stack
+            alignment: Alignment.center,
             children: [
-              if (_isMenuOpen) _buildPopupMenu(),
+              // Widget FAB, ini akan menjadi pusat dari Stack
               SizedBox(
                 width: fabSize,
                 height: fabSize,
                 child: FloatingActionButton(
-                  key: _fabKey,
                   onPressed: () {
                     setState(() {
                       _isMenuOpen = !_isMenuOpen;
@@ -150,6 +151,25 @@ class _DraggableFabState extends State<DraggableFab> {
                   ),
                 ),
               ),
+
+              // Tampilkan menu secara kondisional
+              if (_isMenuOpen)
+                // Gunakan Positioned untuk menempatkan menu di kiri atau kanan FAB
+                Positioned(
+                  // Jika FAB di kiri, tampilkan menu di kanan. Jika FAB di kanan, tampilkan di kiri.
+                  left: isFabOnLeft ? fabSize + 12.0 : null,
+                  right: !isFabOnLeft ? fabSize + 12.0 : null,
+                  // Posisikan menu di tengah secara vertikal relatif terhadap FAB
+                  top: fabSize / 2,
+                  // Gunakan Transform untuk menyesuaikan titik pivot menu
+                  child: Transform.translate(
+                    offset: const Offset(
+                      0,
+                      -55,
+                    ), // Sesuaikan agar tengah menu sejajar tengah FAB
+                    child: _buildPopupMenu(),
+                  ),
+                ),
             ],
           ),
         ),
