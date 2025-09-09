@@ -11,7 +11,7 @@ void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
-      value: Provider.of<ProgressDetailProvider>(context),
+      value: Provider.of<ProgressDetailProvider>(context, listen: false),
       child: SubMateriDialog(subject: subject),
     ),
   );
@@ -63,6 +63,20 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
+  // Helper untuk mendapatkan warna berdasarkan status progress
+  Color _getProgressColor(String progress) {
+    switch (progress) {
+      case 'selesai':
+        return Colors.green;
+      case 'sementara':
+        return Colors.orange;
+      case 'belum':
+        return Colors.grey;
+      default:
+        return Colors.black;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Gunakan Consumer di sini agar list di dalam dialog ikut ter-update
@@ -87,8 +101,38 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                       final sub = currentSubject.subMateri[index];
                       return ListTile(
                         title: Text(sub.namaMateri),
-                        trailing: Text(sub.progress),
-                        // TODO: Tambahkan fungsi untuk mengubah progress
+                        // Ganti trailing dengan PopupMenuButton
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (String newProgress) {
+                            provider.updateSubMateriProgress(
+                              currentSubject,
+                              sub,
+                              newProgress,
+                            );
+                          },
+                          itemBuilder: (BuildContext context) =>
+                              <PopupMenuEntry<String>>[
+                                const PopupMenuItem<String>(
+                                  value: 'selesai',
+                                  child: Text('Selesai'),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'sementara',
+                                  child: Text('Sementara'),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'belum',
+                                  child: Text('Belum'),
+                                ),
+                              ],
+                          child: Chip(
+                            label: Text(
+                              sub.progress,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: _getProgressColor(sub.progress),
+                          ),
+                        ),
                       );
                     },
                   ),

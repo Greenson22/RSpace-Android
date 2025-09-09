@@ -14,7 +14,7 @@ class ProgressDetailProvider with ChangeNotifier {
   Future<void> addSubject(String name) async {
     final newSubject = ProgressSubject(
       namaMateri: name,
-      progress: "belum", // Default progress
+      progress: "belum",
       subMateri: [],
     );
     topic.subjects.add(newSubject);
@@ -22,15 +22,60 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk menambahkan sub-materi
   Future<void> addSubMateri(ProgressSubject subject, String name) async {
-    final newSubMateri = SubMateri(
-      namaMateri: name,
-      progress: "belum", // Default progress
-    );
+    final newSubMateri = SubMateri(namaMateri: name, progress: "belum");
     subject.subMateri.add(newSubMateri);
-    await save(); // Simpan perubahan ke file JSON
-    notifyListeners(); // Beri tahu UI untuk update
+    _updateParentSubjectProgress(subject); // Update parent progress
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk mengubah progress sub-materi
+  Future<void> updateSubMateriProgress(
+    ProgressSubject subject,
+    SubMateri subMateri,
+    String newProgress,
+  ) async {
+    subMateri.progress = newProgress;
+    _updateParentSubjectProgress(subject); // Panggil fungsi update parent
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi helper untuk secara otomatis mengupdate progress materi induk
+  void _updateParentSubjectProgress(ProgressSubject subject) {
+    if (subject.subMateri.isEmpty) {
+      // Jika tidak ada sub-materi, statusnya tetap seperti semula atau bisa direset
+      // subject.progress = "belum"; // Opsional
+      return;
+    }
+
+    bool allFinished = subject.subMateri.every(
+      (sub) => sub.progress == 'selesai',
+    );
+    if (allFinished) {
+      subject.progress = 'selesai';
+      return;
+    }
+
+    bool anyInProgress = subject.subMateri.any(
+      (sub) => sub.progress == 'sementara',
+    );
+    if (anyInProgress) {
+      subject.progress = 'sementara';
+      return;
+    }
+
+    bool anyFinished = subject.subMateri.any(
+      (sub) => sub.progress == 'selesai',
+    );
+    if (anyFinished) {
+      subject.progress = 'sementara';
+      return;
+    }
+
+    // Jika semua sub-materi "belum"
+    subject.progress = 'belum';
   }
 
   void update() {
