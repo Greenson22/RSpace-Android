@@ -56,12 +56,14 @@ class _DraggableFabState extends State<DraggableFab> {
 
     _correctPosition(screenSize);
 
-    // ==> 1. BUNGKUS DENGAN WIDGET OPACITY
-    return Opacity(
-      opacity: themeProvider.quickFabOverallOpacity,
-      child: Positioned(
-        left: _position!.dx,
-        top: _position!.dy,
+    // ==> PERBAIKAN DI SINI <==
+    // `Positioned` sekarang adalah widget terluar yang dikembalikan.
+    return Positioned(
+      left: _position!.dx,
+      top: _position!.dy,
+      // `Opacity` dipindahkan menjadi anak dari `Positioned`.
+      child: Opacity(
+        opacity: themeProvider.quickFabOverallOpacity,
         child: GestureDetector(
           onPanUpdate: (details) {
             setState(() {
@@ -84,7 +86,6 @@ class _DraggableFabState extends State<DraggableFab> {
                 const SnackBar(content: Text('Tombol FAB Cepat diklik!')),
               );
             },
-            // ==> 2. ATUR WARNA LATAR BELAKANG DENGAN OPASITAS
             backgroundColor: theme.colorScheme.secondary.withOpacity(
               themeProvider.quickFabBgOpacity,
             ),
