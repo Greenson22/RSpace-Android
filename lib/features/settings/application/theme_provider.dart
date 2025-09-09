@@ -34,11 +34,13 @@ class ThemeProvider with ChangeNotifier {
   bool get showQuickFab => _showQuickFab;
   String _quickFabIcon = '➕';
   String get quickFabIcon => _quickFabIcon;
-  // ==> 1. TAMBAHKAN STATE BARU UNTUK OPASITAS
   double _quickFabBgOpacity = 1.0;
   double get quickFabBgOpacity => _quickFabBgOpacity;
   double _quickFabOverallOpacity = 1.0;
   double get quickFabOverallOpacity => _quickFabOverallOpacity;
+  // ==> 1. TAMBAHKAN STATE BARU UNTUK UKURAN
+  double _quickFabSize = 56.0;
+  double get quickFabSize => _quickFabSize;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -91,12 +93,13 @@ class ThemeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> 2. PERBARUI FUNGSI INI UNTUK MENYIMPAN SEMUA PENGATURAN FAB
   Future<void> updateQuickFabSettings({
     bool? show,
     String? icon,
     double? bgOpacity,
     double? overallOpacity,
+    // ==> 2. TAMBAHKAN PARAMETER UKURAN
+    double? size,
   }) async {
     bool needsNotify = false;
     if (show != null && _showQuickFab != show) {
@@ -117,6 +120,12 @@ class ThemeProvider with ChangeNotifier {
     if (overallOpacity != null && _quickFabOverallOpacity != overallOpacity) {
       _quickFabOverallOpacity = overallOpacity;
       await _prefsService.saveQuickFabOverallOpacity(_quickFabOverallOpacity);
+      needsNotify = true;
+    }
+    // ==> 3. TAMBAHKAN LOGIKA PENYIMPANAN UKURAN
+    if (size != null && _quickFabSize != size) {
+      _quickFabSize = size;
+      await _prefsService.saveQuickFabSize(_quickFabSize);
       needsNotify = true;
     }
     if (needsNotify) {
@@ -171,9 +180,11 @@ class ThemeProvider with ChangeNotifier {
 
     _quickFabIcon = await _prefsService.loadShowQuickFabIconPreference();
 
-    // ==> 3. MUAT PENGATURAN OPASITAS
     _quickFabBgOpacity = await _prefsService.loadQuickFabBgOpacity();
     _quickFabOverallOpacity = await _prefsService.loadQuickFabOverallOpacity();
+
+    // ==> 4. MUAT PENGATURAN UKURAN
+    _quickFabSize = await _prefsService.loadQuickFabSize();
 
     notifyListeners();
   }

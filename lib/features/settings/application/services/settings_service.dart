@@ -11,9 +11,10 @@ class SettingsService {
   static const String _christmasThemeKey = 'christmas_theme_preference';
   static const String _showQuickFabKey = 'show_quick_fab';
   static const String _quickFabIconKey = 'quick_fab_icon';
-  // ==> 1. TAMBAHKAN KUNCI BARU UNTUK OPASITAS
   static const String _quickFabBgOpacityKey = 'quick_fab_bg_opacity';
   static const String _quickFabOverallOpacityKey = 'quick_fab_overall_opacity';
+  // ==> 1. TAMBAHKAN KUNCI BARU UNTUK UKURAN FAB
+  static const String _quickFabSizeKey = 'quick_fab_size';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,7 +57,6 @@ class SettingsService {
     return prefs.getString(_quickFabIconKey) ?? '➕';
   }
 
-  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENYIMPAN & MEMUAT OPASITAS
   Future<void> saveQuickFabBgOpacity(double opacity) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_quickFabBgOpacityKey, opacity);
@@ -75,6 +75,17 @@ class SettingsService {
   Future<double> loadQuickFabOverallOpacity() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble(_quickFabOverallOpacityKey) ?? 1.0; // Default 100%
+  }
+
+  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENYIMPAN & MEMUAT UKURAN
+  Future<void> saveQuickFabSize(double size) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_quickFabSizeKey, size);
+  }
+
+  Future<double> loadQuickFabSize() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_quickFabSizeKey) ?? 56.0; // Default 56.0
   }
 
   Future<void> savePrimaryColor(int colorValue) async {

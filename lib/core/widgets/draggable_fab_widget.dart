@@ -13,11 +13,11 @@ class DraggableFab extends StatefulWidget {
 class _DraggableFabState extends State<DraggableFab> {
   Offset? _position;
 
-  void _correctPosition(Size screenSize) {
+  // ==> 1. PERBARUI FUNGSI KOREKSI UNTUK MENERIMA UKURAN DINAMIS
+  void _correctPosition(Size screenSize, double fabSize) {
     if (_position == null) return;
 
     final padding = MediaQuery.of(context).padding;
-    const fabSize = 56.0;
 
     final double correctedX = _position!.dx.clamp(
       padding.left,
@@ -47,21 +47,22 @@ class _DraggableFabState extends State<DraggableFab> {
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
-    const fabSize = 56.0;
+    // ==> 2. AMBIL UKURAN DARI PROVIDER
+    final fabSize = themeProvider.quickFabSize;
+    // ==> 3. HITUNG UKURAN IKON BERDASARKAN UKURAN FAB
+    final iconSize = fabSize * 0.5; // Ikon akan menjadi 50% dari ukuran FAB
 
     _position ??= Offset(
       screenSize.width - fabSize - 20.0,
       screenSize.height - fabSize - padding.bottom - 20.0,
     );
 
-    _correctPosition(screenSize);
+    // ==> 4. KIRIM UKURAN SAAT MEMANGGIL FUNGSI KOREKSI
+    _correctPosition(screenSize, fabSize);
 
-    // ==> PERBAIKAN DI SINI <==
-    // `Positioned` sekarang adalah widget terluar yang dikembalikan.
     return Positioned(
       left: _position!.dx,
       top: _position!.dy,
-      // `Opacity` dipindahkan menjadi anak dari `Positioned`.
       child: Opacity(
         opacity: themeProvider.quickFabOverallOpacity,
         child: GestureDetector(
@@ -80,18 +81,24 @@ class _DraggableFabState extends State<DraggableFab> {
               );
             });
           },
-          child: FloatingActionButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tombol FAB Cepat diklik!')),
-              );
-            },
-            backgroundColor: theme.colorScheme.secondary.withOpacity(
-              themeProvider.quickFabBgOpacity,
-            ),
-            child: Text(
-              themeProvider.quickFabIcon,
-              style: const TextStyle(fontSize: 24),
+          // ==> 5. BUNGKUS FAB DENGAN SIZEDBOX AGAR UKURANNYA BISA DIATUR
+          child: SizedBox(
+            width: fabSize,
+            height: fabSize,
+            child: FloatingActionButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Tombol FAB Cepat diklik!')),
+                );
+              },
+              backgroundColor: theme.colorScheme.secondary.withOpacity(
+                themeProvider.quickFabBgOpacity,
+              ),
+              child: Text(
+                themeProvider.quickFabIcon,
+                // ==> 6. GUNAKAN UKURAN IKON YANG SUDAH DIHITUNG
+                style: TextStyle(fontSize: iconSize),
+              ),
             ),
           ),
         ),

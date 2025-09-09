@@ -46,7 +46,6 @@ class SharedPreferencesService {
       _settingsService.saveShowQuickFabIconPreference(icon);
   Future<String> loadShowQuickFabIconPreference() =>
       _settingsService.loadShowQuickFabIconPreference();
-  // ==> TAMBAHKAN FUNGSI-FUNGSI INI
   Future<void> saveQuickFabBgOpacity(double opacity) =>
       _settingsService.saveQuickFabBgOpacity(opacity);
   Future<double> loadQuickFabBgOpacity() =>
@@ -55,6 +54,10 @@ class SharedPreferencesService {
       _settingsService.saveQuickFabOverallOpacity(opacity);
   Future<double> loadQuickFabOverallOpacity() =>
       _settingsService.loadQuickFabOverallOpacity();
+  // ==> TAMBAHKAN FUNGSI-FUNGSI INI
+  Future<void> saveQuickFabSize(double size) =>
+      _settingsService.saveQuickFabSize(size);
+  Future<double> loadQuickFabSize() => _settingsService.loadQuickFabSize();
 
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>

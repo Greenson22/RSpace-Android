@@ -23,9 +23,10 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
   late bool _showQuickFab;
   late String _quickFabIcon;
   late TextEditingController _iconController;
-  // ==> 1. TAMBAHKAN STATE LOKAL UNTUK SLIDER
   late double _bgOpacity;
   late double _overallOpacity;
+  // ==> 1. TAMBAHKAN STATE LOKAL UNTUK UKURAN
+  late double _fabSize;
 
   final List<String> _iconSuggestions = ['➕', '📝', '⚡', '💡', '💬', '⭐'];
 
@@ -36,9 +37,10 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
     _showQuickFab = provider.showQuickFab;
     _quickFabIcon = provider.quickFabIcon;
     _iconController = TextEditingController(text: _quickFabIcon);
-    // ==> 2. INISIALISASI STATE SLIDER
     _bgOpacity = provider.quickFabBgOpacity;
     _overallOpacity = provider.quickFabOverallOpacity;
+    // ==> 2. INISIALISASI STATE UKURAN
+    _fabSize = provider.quickFabSize;
   }
 
   @override
@@ -49,7 +51,6 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
 
   void _handleSaveChanges() {
     final provider = Provider.of<ThemeProvider>(context, listen: false);
-    // ==> 3. KIRIM SEMUA NILAI BARU KE PROVIDER
     provider.updateQuickFabSettings(
       show: _showQuickFab,
       icon: _iconController.text.trim().isNotEmpty
@@ -57,6 +58,8 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
           : '➕',
       bgOpacity: _bgOpacity,
       overallOpacity: _overallOpacity,
+      // ==> 3. KIRIM NILAI UKURAN BARU KE PROVIDER
+      size: _fabSize,
     );
     Navigator.of(context).pop();
   }
@@ -111,7 +114,25 @@ class _QuickFabSettingsDialogState extends State<QuickFabSettingsDialog> {
               ),
             ),
             const Divider(height: 24),
-            // ==> 4. TAMBAHKAN UI SLIDER
+            // ==> 4. TAMBAHKAN UI SLIDER UNTUK UKURAN
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Ukuran Tombol (${_fabSize.toInt()} px)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Slider(
+              value: _fabSize,
+              min: 40.0, // Ukuran minimal
+              max: 80.0, // Ukuran maksimal
+              divisions: 4, // 40, 50, 60, 70, 80
+              label: '${_fabSize.toInt()}',
+              onChanged: (value) {
+                setState(() => _fabSize = value);
+              },
+            ),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
