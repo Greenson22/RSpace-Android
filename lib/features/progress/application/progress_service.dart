@@ -25,18 +25,60 @@ class ProgressService {
       (file) => file.path.endsWith('.json'),
     );
 
-    final List<ProgressTopic> topics = [];
+    List<ProgressTopic> topics = [];
     for (final file in files) {
-      // ==> PERBAIKAN: Tambahkan kondisi untuk mengabaikan file palet
       if (path.basename(file.path) == 'custom_palettes.json') {
-        continue; // Lewati file ini dan lanjutkan ke file berikutnya
+        continue;
       }
 
       final jsonString = await file.readAsString();
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
       topics.add(ProgressTopic.fromJson(jsonData));
     }
-    return topics;
+
+    // Logika untuk mengurutkan dan memperbaiki posisi
+    final positionedTopics = topics.where((t) => t.position != -1).toList();
+    final unpositionedTopics = topics.where((t) => t.position == -1).toList();
+
+    positionedTopics.sort((a, b) => a.position.compareTo(b.position));
+
+    int maxPosition = positionedTopics.isNotEmpty
+        ? positionedTopics
+              .map((t) => t.position)
+              .reduce((a, b) => a > b ? a : b)
+        : -1;
+
+    for (final topic in unpositionedTopics) {
+      maxPosition++;
+      topic.position = maxPosition;
+      await saveTopic(topic);
+    }
+
+    final allTopics = [...positionedTopics, ...unpositionedTopics];
+    allTopics.sort((a, b) => a.position.compareTo(b.position));
+
+    bool needsResave = false;
+    for (int i = 0; i < allTopics.length; i++) {
+      if (allTopics[i].position != i) {
+        allTopics[i].position = i;
+        needsResave = true;
+      }
+    }
+
+    if (needsResave) {
+      await saveTopicsOrder(allTopics);
+    }
+
+    return allTopics;
+  }
+
+  // Fungsi baru untuk menyimpan urutan semua topik
+  Future<void> saveTopicsOrder(List<ProgressTopic> topics) async {
+    for (int i = 0; i < topics.length; i++) {
+      final topic = topics[i];
+      topic.position = i;
+      await saveTopic(topic);
+    }
   }
 
   Future<void> saveTopic(ProgressTopic topic) async {
@@ -48,7 +90,13 @@ class ProgressService {
   }
 
   Future<void> addTopic(String topicName) async {
-    final newTopic = ProgressTopic(topics: topicName, subjects: []);
+    // Dapatkan jumlah topik saat ini untuk menentukan posisi berikutnya
+    final currentTopics = await getAllTopics();
+    final newTopic = ProgressTopic(
+      topics: topicName,
+      subjects: [],
+      position: currentTopics.length,
+    );
     await saveTopic(newTopic);
   }
 
@@ -59,5 +107,8 @@ class ProgressService {
     if (await file.exists()) {
       await file.delete();
     }
+    // Perbaiki urutan setelah menghapus
+    final remainingTopics = await getAllTopics();
+    await saveTopicsOrder(remainingTopics);
   }
 }

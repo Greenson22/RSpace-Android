@@ -29,4 +29,16 @@ class ProgressProvider with ChangeNotifier {
     await _progressService.addTopic(name);
     await fetchTopics();
   }
+
+  // Fungsi baru untuk mengurutkan topik
+  Future<void> reorderTopics(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = _topics.removeAt(oldIndex);
+    _topics.insert(newIndex, item);
+
+    await _progressService.saveTopicsOrder(_topics);
+    notifyListeners();
+  }
 }

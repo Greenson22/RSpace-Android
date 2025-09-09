@@ -2,10 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/progress_provider.dart';
 import 'progress_detail_page.dart';
 import '../../application/progress_detail_provider.dart';
-import '../widgets/progress_topic_grid_tile.dart'; // Import widget baru
+import '../widgets/progress_topic_grid_tile.dart';
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
@@ -19,14 +20,20 @@ class ProgressPage extends StatelessWidget {
   }
 }
 
-class _ProgressView extends StatelessWidget {
+class _ProgressView extends StatefulWidget {
   const _ProgressView();
+
+  @override
+  State<_ProgressView> createState() => _ProgressViewState();
+}
+
+class _ProgressViewState extends State<_ProgressView> {
+  bool _isReorderMode = false;
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context);
 
-    // Fungsi untuk menentukan jumlah kolom berdasarkan lebar layar
     int _getCrossAxisCount(double screenWidth) {
       if (screenWidth > 1200) return 5;
       if (screenWidth > 900) return 4;
@@ -35,7 +42,20 @@ class _ProgressView extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Progress Belajar')),
+      appBar: AppBar(
+        title: const Text('Progress Belajar'),
+        actions: [
+          IconButton(
+            icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
+            onPressed: () {
+              setState(() {
+                _isReorderMode = !_isReorderMode;
+              });
+            },
+            tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Topik',
+          ),
+        ],
+      ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : provider.topics.isEmpty
@@ -48,10 +68,9 @@ class _ProgressView extends StatelessWidget {
                 ),
               ),
             )
-          // Ganti ListView dengan GridView
           : LayoutBuilder(
               builder: (context, constraints) {
-                return GridView.builder(
+                return ReorderableGridView.builder(
                   padding: const EdgeInsets.all(12.0),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: _getCrossAxisCount(constraints.maxWidth),
@@ -60,30 +79,39 @@ class _ProgressView extends StatelessWidget {
                     childAspectRatio: 1.1,
                   ),
                   itemCount: provider.topics.length,
+                  dragEnabled: _isReorderMode,
+                  onReorder: (oldIndex, newIndex) {
+                    provider.reorderTopics(oldIndex, newIndex);
+                  },
                   itemBuilder: (context, index) {
                     final topic = provider.topics[index];
                     return ProgressTopicGridTile(
+                      key: ValueKey(topic.topics),
                       topic: topic,
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChangeNotifierProvider(
-                              create: (_) => ProgressDetailProvider(topic),
-                              child: ProgressDetailPage(),
+                        if (!_isReorderMode) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChangeNotifierProvider(
+                                create: (_) => ProgressDetailProvider(topic),
+                                child: ProgressDetailPage(),
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        }
                       },
                     );
                   },
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddTopicDialog(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _isReorderMode
+          ? null
+          : FloatingActionButton(
+              onPressed: () => _showAddTopicDialog(context),
+              child: const Icon(Icons.add),
+            ),
     );
   }
 

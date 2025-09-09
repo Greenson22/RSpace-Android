@@ -6,11 +6,13 @@ class ProgressTopic {
   String topics;
   List<ProgressSubject> subjects;
   Map<String, dynamic> metadata;
+  int position; // Properti baru untuk urutan
 
   ProgressTopic({
     required this.topics,
     required this.subjects,
     this.metadata = const {},
+    this.position = -1, // Nilai default
   });
 
   factory ProgressTopic.fromJson(Map<String, dynamic> json) {
@@ -19,14 +21,20 @@ class ProgressTopic {
         .map((i) => ProgressSubject.fromJson(i))
         .toList();
 
+    final metadata = json['metadata'] as Map<String, dynamic>? ?? {};
+
     return ProgressTopic(
       topics: json['topics'] as String,
       subjects: subjects,
-      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+      metadata: metadata,
+      position: metadata['position'] as int? ?? -1, // Baca posisi dari metadata
     );
   }
 
   Map<String, dynamic> toJson() {
+    // Pastikan metadata diupdate dengan posisi terbaru
+    metadata['position'] = position;
+
     return {
       'topics': topics,
       'subjects': subjects.map((e) => e.toJson()).toList(),
