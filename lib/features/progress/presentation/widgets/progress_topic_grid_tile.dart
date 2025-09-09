@@ -6,9 +6,9 @@ import 'package:my_aplication/features/progress/domain/models/progress_topic_mod
 class ProgressTopicGridTile extends StatelessWidget {
   final ProgressTopic topic;
   final VoidCallback onTap;
-  // Tambahkan callback baru
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onIconChange; // Callback baru
 
   const ProgressTopicGridTile({
     super.key,
@@ -16,6 +16,7 @@ class ProgressTopicGridTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    required this.onIconChange, // Tambahkan di konstruktor
   });
 
   @override
@@ -32,14 +33,16 @@ class ProgressTopicGridTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Gunakan Row untuk menempatkan menu di kanan
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.school_outlined,
-                    size: 32,
-                    color: theme.primaryColor,
+                  // Tampilkan ikon dari model
+                  Text(
+                    topic.icon,
+                    style: TextStyle(
+                      fontSize: 32,
+                      color: theme.textTheme.bodyLarge?.color,
+                    ),
                   ),
                   const Spacer(),
                   SizedBox(
@@ -52,6 +55,9 @@ class ProgressTopicGridTile extends StatelessWidget {
                           onEdit();
                         } else if (value == 'delete') {
                           onDelete();
+                        } else if (value == 'icon') {
+                          // Aksi baru
+                          onIconChange();
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -60,6 +66,12 @@ class ProgressTopicGridTile extends StatelessWidget {
                               value: 'edit',
                               child: Text('Edit Nama'),
                             ),
+                            // Tambahkan item menu baru
+                            const PopupMenuItem<String>(
+                              value: 'icon',
+                              child: Text('Ubah Ikon'),
+                            ),
+                            const PopupMenuDivider(),
                             const PopupMenuItem<String>(
                               value: 'delete',
                               child: Text(

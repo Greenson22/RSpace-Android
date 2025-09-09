@@ -41,13 +41,18 @@ class ProgressProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk edit
   Future<void> editTopic(ProgressTopic oldTopic, String newName) async {
     await _progressService.renameTopic(oldTopic, newName);
     await fetchTopics();
   }
 
-  // Fungsi baru untuk hapus
+  // Fungsi baru untuk mengubah ikon topik
+  Future<void> editTopicIcon(ProgressTopic topic, String newIcon) async {
+    topic.icon = newIcon;
+    await _progressService.saveTopic(topic);
+    notifyListeners();
+  }
+
   Future<void> deleteTopic(ProgressTopic topic) async {
     await _progressService.deleteTopic(topic);
     await fetchTopics();

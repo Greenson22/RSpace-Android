@@ -1,6 +1,7 @@
 // lib/features/progress/presentation/pages/progress_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/progress_provider.dart';
@@ -100,14 +101,14 @@ class _ProgressViewState extends State<_ProgressView> {
                               ),
                             ),
                           ).then((_) {
-                            // Muat ulang data setelah kembali dari halaman detail
                             provider.fetchTopics();
                           });
                         }
                       },
-                      // ==> PERBAIKAN DI SINI: Hubungkan callback ke fungsi
                       onEdit: () => _showEditTopicDialog(context, topic),
                       onDelete: () => _showDeleteConfirmDialog(context, topic),
+                      // Hubungkan callback baru
+                      onIconChange: () => _showEditIconDialog(context, topic),
                     );
                   },
                 );
@@ -122,6 +123,7 @@ class _ProgressViewState extends State<_ProgressView> {
     );
   }
 
+  // ... (Fungsi _showAddTopicDialog, _showEditTopicDialog, _showDeleteConfirmDialog tidak berubah) ...
   void _showAddTopicDialog(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context, listen: false);
     final controller = TextEditingController();
@@ -207,6 +209,18 @@ class _ProgressViewState extends State<_ProgressView> {
           ),
         ],
       ),
+    );
+  }
+
+  // Fungsi baru untuk memanggil dialog ikon
+  void _showEditIconDialog(BuildContext context, ProgressTopic topic) {
+    final provider = Provider.of<ProgressProvider>(context, listen: false);
+    showIconPickerDialog(
+      context: context,
+      name: topic.topics,
+      onIconSelected: (newIcon) {
+        provider.editTopicIcon(topic, newIcon);
+      },
     );
   }
 }
