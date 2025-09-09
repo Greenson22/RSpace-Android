@@ -14,7 +14,9 @@ class DashboardHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
+        color:
+            Theme.of(context).cardTheme.color?.withOpacity(0.8) ??
+            Theme.of(context).cardColor.withOpacity(0.8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),

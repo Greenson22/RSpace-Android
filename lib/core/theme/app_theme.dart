@@ -14,33 +14,33 @@ class AppTheme {
 
   // Palet Warna gradasi untuk dashboard
   static const List<Color> gradientColors1 = [
-    Color(0xFF64B5F6),
-    Color(0xFF2196F3),
+    Color(0xFF6A11CB),
+    Color(0xFF2575FC),
   ];
   static const List<Color> gradientColors2 = [
-    Color(0xFF81C784),
-    Color(0xFF4CAF50),
+    Color(0xFF00B09B),
+    Color(0xFF96C93D),
   ];
   static const List<Color> gradientColors3 = [
-    Color(0xFFFFA726),
-    Color(0xFFFF9800),
+    Color(0xFFFF8008),
+    Color(0xFFFFC837),
   ];
   static const List<Color> gradientColors4 = [
-    Color(0xFFF06292),
-    Color(0xFFE91E63),
+    Color(0xFFE53935),
+    Color(0xFFE35D5B),
   ];
   static const List<Color> gradientColors5 = [
-    Color(0xFFBA68C8),
-    Color(0xFF9C27B0),
+    Color(0xFF8E2DE2),
+    Color(0xFF4A00E0),
   ];
   // ==> TAMBAHKAN GRADIENT BARU <==
   static const List<Color> gradientColors6 = [
-    Color(0xFF7986CB),
-    Color(0xFF3F51B5),
+    Color(0xFF004D40),
+    Color(0xFF009688),
   ];
   static const List<Color> gradientColors7 = [
-    Color(0xFF4DB6AC),
-    Color(0xFF00897B),
+    Color(0xFFD32F2F),
+    Color(0xFFF44336),
   ];
 
   // ==> FUNGSI BARU UNTUK MEMBUAT THEME SECARA DINAMIS <==

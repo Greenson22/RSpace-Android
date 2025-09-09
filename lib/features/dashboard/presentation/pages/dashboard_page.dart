@@ -286,7 +286,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 backgroundColor: backgroundImagePath != null
-                    ? Colors.black.withOpacity(0.2)
+                    ? Colors.transparent
                     : null,
                 elevation: backgroundImagePath != null ? 0 : null,
                 actions: [
