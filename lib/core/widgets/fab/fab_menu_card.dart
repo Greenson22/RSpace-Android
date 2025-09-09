@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_aplication/features/backup_management/presentation/pages/backup_management_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/subjects_page.dart';
+import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/features/file_management/presentation/pages/file_list_page.dart';
 import 'package:my_aplication/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:my_aplication/infrastructure/ads/ad_service.dart';
@@ -160,6 +161,12 @@ class _FabMenuCardState extends State<FabMenuCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ListTile(
+                leading: const Icon(Icons.dashboard_outlined),
+                title: showText ? const Text('Dashboard') : null,
+                dense: true,
+                onTap: () => _navigateToPage(context, const DashboardPage()),
+              ),
               Theme(
                 data: Theme.of(
                   context,
