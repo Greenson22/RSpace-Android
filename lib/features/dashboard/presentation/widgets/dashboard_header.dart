@@ -23,7 +23,6 @@ class _HeaderStats {
   final Duration timeLoggedToday;
   final int totalDiscussions;
   final int finishedDiscussions;
-  // ==> TAMBAHKAN PROPERTI NEURONS <==
   final int neurons;
 
   _HeaderStats({
@@ -32,7 +31,6 @@ class _HeaderStats {
     this.timeLoggedToday = Duration.zero,
     this.totalDiscussions = 0,
     this.finishedDiscussions = 0,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     this.neurons = 0,
   });
 }
@@ -46,7 +44,6 @@ class DashboardHeader extends StatefulWidget {
 
 class _DashboardHeaderState extends State<DashboardHeader> {
   final PathService _pathService = PathService();
-  // ==> PINDAHKAN KE SINI AGAR BISA DIAKSES DI SEMUA FUNGSI <==
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   late Future<_HeaderStats> _statsFuture;
 
@@ -65,12 +62,10 @@ class _DashboardHeaderState extends State<DashboardHeader> {
   }
 
   Future<_HeaderStats> _loadHeaderStats() async {
-    // Digabung agar berjalan secara paralel
     final results = await Future.wait([
       _getPendingTaskCount(),
-      _getDiscussionStats(), // Menggabungkan dua
+      _getDiscussionStats(),
       _getTimeLoggedToday(),
-      // ==> MUAT JUMLAH NEURONS DARI PENYIMPANAN <==
       _prefsService.loadNeurons(),
     ]);
     final discussionStats = results[1] as Map<String, int>;
@@ -80,7 +75,6 @@ class _DashboardHeaderState extends State<DashboardHeader> {
       totalDiscussions: discussionStats['total'] ?? 0,
       finishedDiscussions: discussionStats['finished'] ?? 0,
       timeLoggedToday: results[2] as Duration,
-      // ==> MASUKKAN HASIL KE DALAM OBJEK STATS <==
       neurons: results[3] as int,
     );
   }
@@ -184,7 +178,6 @@ class _DashboardHeaderState extends State<DashboardHeader> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ==> BARIS BARU UNTUK MENAMPILKAN GREETING DAN NEURONS <==
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +201,6 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                   ),
                 ],
               ),
-              // ==> WIDGET UNTUK MENAMPILKAN JUMLAH NEURONS <==
               FutureBuilder<_HeaderStats>(
                 future: _statsFuture,
                 builder: (context, snapshot) {
@@ -225,8 +217,9 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                       Icons.psychology_outlined,
                       color: Colors.white,
                     ),
+                    // ==> PERUBAHAN DI SINI: MENAMBAHKAN TEKS "Neurons" <==
                     label: Text(
-                      neurons.toString(),
+                      '$neurons Neurons', // Tambahkan teks "Neurons"
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
