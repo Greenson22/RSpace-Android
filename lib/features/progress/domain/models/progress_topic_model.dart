@@ -6,13 +6,13 @@ class ProgressTopic {
   String topics;
   List<ProgressSubject> subjects;
   Map<String, dynamic> metadata;
-  int position; // Properti baru untuk urutan
+  int position;
 
   ProgressTopic({
     required this.topics,
     required this.subjects,
     this.metadata = const {},
-    this.position = -1, // Nilai default
+    this.position = -1,
   });
 
   factory ProgressTopic.fromJson(Map<String, dynamic> json) {
@@ -27,18 +27,22 @@ class ProgressTopic {
       topics: json['topics'] as String,
       subjects: subjects,
       metadata: metadata,
-      position: metadata['position'] as int? ?? -1, // Baca posisi dari metadata
+      position: metadata['position'] as int? ?? -1,
     );
   }
 
   Map<String, dynamic> toJson() {
-    // Pastikan metadata diupdate dengan posisi terbaru
-    metadata['position'] = position;
+    // ==> PERBAIKAN DI SINI <==
+    // 1. Buat salinan metadata yang dapat diubah.
+    final Map<String, dynamic> mutableMetadata = Map.from(metadata);
+    // 2. Ubah salinan tersebut.
+    mutableMetadata['position'] = position;
 
     return {
       'topics': topics,
       'subjects': subjects.map((e) => e.toJson()).toList(),
-      'metadata': metadata,
+      // 3. Gunakan salinan yang sudah diubah untuk disimpan.
+      'metadata': mutableMetadata,
     };
   }
 }

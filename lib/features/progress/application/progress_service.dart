@@ -27,8 +27,9 @@ class ProgressService {
 
     List<ProgressTopic> topics = [];
     for (final file in files) {
+      // ==> PERBAIKAN: Tambahkan kondisi untuk mengabaikan file palet
       if (path.basename(file.path) == 'custom_palettes.json') {
-        continue;
+        continue; // Lewati file ini dan lanjutkan ke file berikutnya
       }
 
       final jsonString = await file.readAsString();
