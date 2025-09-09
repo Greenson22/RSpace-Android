@@ -101,6 +101,8 @@ class _ProgressViewState extends State<_ProgressView> {
                           );
                         }
                       },
+                      onEdit: () {},
+                      onDelete: () {},
                     );
                   },
                 );

@@ -27,9 +27,8 @@ class ProgressService {
 
     List<ProgressTopic> topics = [];
     for (final file in files) {
-      // ==> PERBAIKAN: Tambahkan kondisi untuk mengabaikan file palet
       if (path.basename(file.path) == 'custom_palettes.json') {
-        continue; // Lewati file ini dan lanjutkan ke file berikutnya
+        continue;
       }
 
       final jsonString = await file.readAsString();
@@ -37,7 +36,6 @@ class ProgressService {
       topics.add(ProgressTopic.fromJson(jsonData));
     }
 
-    // Logika untuk mengurutkan dan memperbaiki posisi
     final positionedTopics = topics.where((t) => t.position != -1).toList();
     final unpositionedTopics = topics.where((t) => t.position == -1).toList();
 
@@ -73,7 +71,6 @@ class ProgressService {
     return allTopics;
   }
 
-  // Fungsi baru untuk menyimpan urutan semua topik
   Future<void> saveTopicsOrder(List<ProgressTopic> topics) async {
     for (int i = 0; i < topics.length; i++) {
       final topic = topics[i];
@@ -91,7 +88,6 @@ class ProgressService {
   }
 
   Future<void> addTopic(String topicName) async {
-    // Dapatkan jumlah topik saat ini untuk menentukan posisi berikutnya
     final currentTopics = await getAllTopics();
     final newTopic = ProgressTopic(
       topics: topicName,
@@ -101,6 +97,24 @@ class ProgressService {
     await saveTopic(newTopic);
   }
 
+  // Fungsi baru untuk mengubah nama file dan isinya
+  Future<void> renameTopic(ProgressTopic oldTopic, String newName) async {
+    final dirPath = await _progressPath;
+    final oldFileName =
+        '${oldTopic.topics.replaceAll(' ', '_').toLowerCase()}.json';
+    final oldFile = File(path.join(dirPath, oldFileName));
+
+    if (await oldFile.exists()) {
+      oldTopic.topics = newName; // Update nama di dalam objek
+      await saveTopic(
+        oldTopic,
+      ); // Simpan ke file baru (saveTopic akan membuat nama file baru)
+      await oldFile.delete(); // Hapus file lama
+    } else {
+      throw Exception("File topik lama tidak ditemukan.");
+    }
+  }
+
   Future<void> deleteTopic(ProgressTopic topic) async {
     final dirPath = await _progressPath;
     final fileName = '${topic.topics.replaceAll(' ', '_').toLowerCase()}.json';
@@ -108,7 +122,6 @@ class ProgressService {
     if (await file.exists()) {
       await file.delete();
     }
-    // Perbaiki urutan setelah menghapus
     final remainingTopics = await getAllTopics();
     await saveTopicsOrder(remainingTopics);
   }

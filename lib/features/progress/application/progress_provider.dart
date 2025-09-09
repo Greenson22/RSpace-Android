@@ -30,7 +30,6 @@ class ProgressProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  // Fungsi baru untuk mengurutkan topik
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) {
       newIndex -= 1;
@@ -40,5 +39,17 @@ class ProgressProvider with ChangeNotifier {
 
     await _progressService.saveTopicsOrder(_topics);
     notifyListeners();
+  }
+
+  // Fungsi baru untuk edit
+  Future<void> editTopic(ProgressTopic oldTopic, String newName) async {
+    await _progressService.renameTopic(oldTopic, newName);
+    await fetchTopics();
+  }
+
+  // Fungsi baru untuk hapus
+  Future<void> deleteTopic(ProgressTopic topic) async {
+    await _progressService.deleteTopic(topic);
+    await fetchTopics();
   }
 }
