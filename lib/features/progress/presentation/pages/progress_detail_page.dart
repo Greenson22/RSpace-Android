@@ -13,14 +13,7 @@ import '../widgets/progress_subject_grid_tile.dart';
 // Import color picker
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-class ProgressDetailPage extends StatefulWidget {
-  @override
-  State<ProgressDetailPage> createState() => _ProgressDetailPageState();
-}
-
-class _ProgressDetailPageState extends State<ProgressDetailPage> {
-  bool _isReorderMode = false;
-
+class ProgressDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(context);
@@ -33,20 +26,7 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(provider.topic.topics),
-        actions: [
-          IconButton(
-            icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
-            onPressed: () {
-              setState(() {
-                _isReorderMode = !_isReorderMode;
-              });
-            },
-            tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Materi',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(provider.topic.topics)),
       body: provider.topic.subjects.isEmpty
           ? const Center(child: Text('Belum ada materi di dalam topik ini.'))
           : LayoutBuilder(
@@ -60,22 +40,17 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                     childAspectRatio: 1.2,
                   ),
                   itemCount: provider.topic.subjects.length,
-                  dragEnabled:
-                      _isReorderMode, // Aktifkan drag hanya jika mode reorder
+                  dragEnabled: false, // Reorder dinonaktifkan sementara
                   onReorder: (oldIndex, newIndex) {
-                    provider.reorderSubjects(oldIndex, newIndex);
+                    // provider.reorderSubjects(oldIndex, newIndex);
                   },
                   itemBuilder: (context, index) {
                     final subject = provider.topic.subjects[index];
                     return ProgressSubjectGridTile(
-                      key: ValueKey(
-                        subject.namaMateri,
-                      ), // Key wajib untuk reorderable
+                      key: ValueKey(subject.namaMateri),
                       subject: subject,
                       onTap: () {
-                        if (!_isReorderMode) {
-                          showSubMateriDialog(context, subject);
-                        }
+                        showSubMateriDialog(context, subject);
                       },
                       onEdit: () => _showEditSubjectDialog(context, subject),
                       onDelete: () =>
@@ -87,17 +62,15 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                 );
               },
             ),
-      floatingActionButton: _isReorderMode
-          ? null // Sembunyikan FAB saat mode reorder
-          : FloatingActionButton(
-              onPressed: () => _showAddSubjectDialog(context),
-              tooltip: 'Tambah Materi Utama',
-              child: const Icon(Icons.add_circle_outline),
-            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddSubjectDialog(context),
+        tooltip: 'Tambah Materi Utama',
+        child: const Icon(Icons.add_circle_outline),
+      ),
     );
   }
 
-  // ... (Sisa kode dialog tetap sama) ...
+  // ... (Fungsi dialog lain tidak berubah) ...
   void _showAddSubjectDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -376,6 +349,85 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
     );
   }
 
+  // Dialog baru untuk generate palet dengan AI
+  void _showAIPaletteDialog() {
+    final controller = TextEditingController();
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        bool isLoading = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Buat Palet dengan AI'),
+              content: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        labelText: 'Deskripsikan tema palet...',
+                        hintText: 'Contoh: Hutan tropis, Senja di pantai',
+                      ),
+                      autofocus: true,
+                    ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (controller.text.isNotEmpty) {
+                            setDialogState(() => isLoading = true);
+                            try {
+                              final newPalette = await provider
+                                  .generateAndSavePalette(
+                                    theme: controller.text,
+                                  );
+                              // Update color pickers dengan hasil dari AI
+                              setState(() {
+                                pickerBackgroundColor = Color(
+                                  newPalette.backgroundColor,
+                                );
+                                pickerTextColor = Color(newPalette.textColor);
+                                pickerBarColor = Color(
+                                  newPalette.progressBarColor,
+                                );
+                              });
+                              Navigator.pop(dialogContext);
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setDialogState(() => isLoading = false);
+                              }
+                            }
+                          }
+                        },
+                  child: const Text('Buat'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ProgressDetailProvider>(
@@ -409,9 +461,20 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
                   },
                 ),
                 const Divider(height: 24),
-                Text(
-                  'Pilih Palet Cepat',
-                  style: Theme.of(context).textTheme.titleSmall,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pilih Palet Cepat',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    // Tombol untuk generate dengan AI
+                    TextButton.icon(
+                      icon: const Icon(Icons.auto_awesome, size: 16),
+                      label: const Text('Buat dg AI'),
+                      onPressed: _showAIPaletteDialog,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Wrap(

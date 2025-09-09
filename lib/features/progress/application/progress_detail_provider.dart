@@ -1,6 +1,7 @@
 // lib/features/progress/application/progress_detail_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import '../domain/models/color_palette_model.dart';
 import '../domain/models/progress_subject_model.dart';
 import '../domain/models/progress_topic_model.dart';
@@ -10,6 +11,8 @@ import 'progress_service.dart';
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
   final PaletteService _paletteService = PaletteService();
+  final GeminiService _geminiService =
+      GeminiService(); // Instance Gemini Service
   ProgressTopic topic;
 
   List<ColorPalette> _customPalettes = [];
@@ -30,13 +33,27 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Method baru untuk generate palet dengan AI
+  Future<ColorPalette> generateAndSavePalette({required String theme}) async {
+    try {
+      final paletteName = '$theme (AI)';
+      final newPalette = await _geminiService.suggestColorPalette(
+        theme: theme,
+        paletteName: paletteName,
+      );
+      await saveNewPalette(newPalette);
+      return newPalette;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> deleteCustomPalette(ColorPalette palette) async {
     _customPalettes.removeWhere((p) => p.name == palette.name);
     await _paletteService.savePalettes(_customPalettes);
     notifyListeners();
   }
 
-  // Fungsi baru untuk mengurutkan subject
   Future<void> reorderSubjects(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) {
       newIndex -= 1;
@@ -71,7 +88,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ... (sisa kode tetap sama) ...
   Future<void> addSubject(String name) async {
     final newSubject = ProgressSubject(
       namaMateri: name,

@@ -1,6 +1,8 @@
 // lib/data/services/gemini_service.dart
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
 import '../../domain/models/api_key_model.dart';
 // ==> IMPORT MODEL BARU
 import '../../../content_management/domain/models/discussion_model.dart';
@@ -20,7 +22,89 @@ class GeminiService {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK SARAN IKON DENGAN GEMINI <==
+  // Fungsi baru untuk membuat palet dengan AI
+  Future<ColorPalette> suggestColorPalette({
+    required String theme,
+    required String paletteName,
+  }) async {
+    final apiKey = await _getActiveApiKey();
+    final model =
+        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    final prompt =
+        '''
+      Buatkan palet warna harmonis untuk UI kartu berdasarkan tema "$theme".
+      Aturan Jawaban:
+      1. HANYA kembalikan dalam format JSON.
+      2. Objek JSON HARUS memiliki tiga kunci: "backgroundColor", "textColor", dan "progressBarColor".
+      3. Nilai dari setiap kunci HARUS berupa string hex color (contoh: "#RRGGBB").
+      4. Pastikan "textColor" memiliki kontras yang baik dengan "backgroundColor" agar mudah dibaca.
+      5. Jangan sertakan penjelasan atau teks lain di luar objek JSON.
+      
+      Contoh Jawaban:
+      {
+        "backgroundColor": "#2B2D42",
+        "textColor": "#FFFFFF",
+        "progressBarColor": "#8D99AE"
+      }
+      ''';
+
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+          'generationConfig': {'responseMimeType': 'application/json'},
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final textResponse =
+            body['candidates'][0]['content']['parts'][0]['text'];
+        final jsonResponse = jsonDecode(textResponse) as Map<String, dynamic>;
+
+        // Fungsi helper untuk konversi Hex ke integer
+        int hexToInt(String hex) {
+          hex = hex.toUpperCase().replaceAll("#", "");
+          if (hex.length == 6) {
+            hex = "FF" + hex;
+          }
+          return int.parse(hex, radix: 16);
+        }
+
+        return ColorPalette(
+          name: paletteName,
+          backgroundColor: hexToInt(jsonResponse['backgroundColor']),
+          textColor: hexToInt(jsonResponse['textColor']),
+          progressBarColor: hexToInt(jsonResponse['progressBarColor']),
+        );
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody['error']?['message'] ?? response.body;
+        throw Exception(
+          'Gagal mendapatkan respons: ${response.statusCode}\nError: $errorMessage',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<String>> suggestIcon({required String name}) async {
     final apiKey = await _getActiveApiKey();
     final model =
@@ -79,7 +163,6 @@ Contoh Jawaban:
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENCARI TAUTAN CERDAS DENGAN GEMINI
   Future<List<LinkSuggestion>> findSmartLinks({
     required Discussion discussion,
     required List<Map<String, String>> allFiles,
@@ -92,14 +175,12 @@ Contoh Jawaban:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    // Format daftar file menjadi string yang mudah dibaca oleh AI
     final fileListString = allFiles
         .map(
           (f) => "- Judul: \"${f['title']}\", Path: \"${f['relativePath']}\"",
         )
         .join("\n");
 
-    // Format poin-poin diskusi
     final pointsString = discussion.points
         .map((p) => "- ${p.pointText}")
         .join("\n");
@@ -143,7 +224,6 @@ Contoh Jawaban:
               ],
             },
           ],
-          // Tambahkan pengaturan untuk memastikan output adalah JSON
           'generationConfig': {'responseMimeType': 'application/json'},
         }),
       );
@@ -159,7 +239,7 @@ Contoh Jawaban:
               (item) => LinkSuggestion(
                 title: item['title'] ?? 'Tanpa Judul',
                 relativePath: item['relativePath'] ?? '',
-                score: 1.0, // Skor default untuk hasil AI
+                score: 1.0,
               ),
             )
             .toList();
@@ -175,7 +255,6 @@ Contoh Jawaban:
     }
   }
 
-  // ... (sisa kode getChatCompletion dan generateHtmlContent tidak berubah)
   Future<String> getChatCompletion(String query, {String? context}) async {
     final apiKey = await _getActiveApiKey();
     final model =
