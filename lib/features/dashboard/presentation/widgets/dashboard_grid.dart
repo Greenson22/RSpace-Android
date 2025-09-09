@@ -79,16 +79,10 @@ class DashboardGrid extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final screenWidth = MediaQuery.of(context).size.width;
-        int listCrossAxisCount;
         if (screenWidth > 1200) {
-          listCrossAxisCount = 5;
         } else if (screenWidth > 900) {
-          listCrossAxisCount = 4;
         } else if (screenWidth > 600) {
-          listCrossAxisCount = 3;
-        } else {
-          listCrossAxisCount = 2;
-        }
+        } else {}
 
         final List<Map<String, dynamic>> allItemData = [
           {
