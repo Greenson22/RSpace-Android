@@ -197,6 +197,9 @@ class PathService {
   Future<String> get countdownTimersPath async =>
       path.join(await contentsPath, 'countdown_timers.json');
 
+  Future<String> get progressPath async => // Path baru untuk fitur Progress
+      path.join(await _baseDataPath, 'progress');
+
   // ==> TAMBAHKAN PATH BARU UNTUK FILE PROFIL PENGGUNA
   Future<String> get userProfilePath async =>
       path.join(await _baseDataPath, 'user_profile.dat');
