@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
-import '../../../../infrastructure/ads/ad_service.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../state/dashboard_state.dart';
 import '../widgets/dashboard_app_bar.dart';
