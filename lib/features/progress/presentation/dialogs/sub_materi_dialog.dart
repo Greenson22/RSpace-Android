@@ -7,7 +7,6 @@ import '../../domain/models/progress_subject_model.dart';
 
 // Fungsi untuk menampilkan dialog
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
-  // Gunakan Provider.value untuk meneruskan provider yang sudah ada ke dialog
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
@@ -35,7 +34,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      // Penting: Gunakan context dari builder agar tidak konflik
       builder: (dialogContext) => AlertDialog(
         title: const Text('Tambah Sub-Materi Baru'),
         content: TextField(
@@ -51,7 +49,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
-                // Panggil provider untuk menambahkan, lalu tutup dialog input
                 provider.addSubMateri(widget.subject, controller.text);
                 Navigator.pop(dialogContext);
               }
@@ -63,7 +60,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // Dialog baru untuk mengedit nama
   void _showEditSubMateriDialog(BuildContext context, SubMateri subMateri) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -98,7 +94,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // Dialog baru untuk konfirmasi hapus
   void _showDeleteConfirmDialog(BuildContext context, SubMateri subMateri) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -151,8 +146,28 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           orElse: () => widget.subject,
         );
 
+        // Dapatkan warna subject, atau gunakan warna primer tema jika null
+        final subjectColor = currentSubject.color != null
+            ? Color(currentSubject.color!)
+            : Theme.of(context).primaryColor;
+
         return AlertDialog(
-          title: Text(currentSubject.namaMateri),
+          // Gunakan warna pada title
+          title: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: subjectColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(28.0),
+                topRight: Radius.circular(28.0),
+              ),
+            ),
+            child: Text(
+              currentSubject.namaMateri,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          titlePadding: EdgeInsets.zero, // Hapus padding default
           content: SizedBox(
             width: double.maxFinite,
             child: currentSubject.subMateri.isEmpty

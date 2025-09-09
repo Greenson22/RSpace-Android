@@ -22,11 +22,13 @@ class ProgressSubject {
   String namaMateri;
   String progress;
   List<SubMateri> subMateri;
+  int? color; // Properti baru untuk menyimpan warna
 
   ProgressSubject({
     required this.namaMateri,
     required this.progress,
     required this.subMateri,
+    this.color, // Tambahkan di konstruktor
   });
 
   factory ProgressSubject.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class ProgressSubject {
       namaMateri: json['nama_materi'] as String,
       progress: json['progress'] as String,
       subMateri: subMateri,
+      color: json['color'] as int?, // Baca warna dari JSON
     );
   }
 
@@ -47,6 +50,7 @@ class ProgressSubject {
       'nama_materi': namaMateri,
       'progress': progress,
       'sub_materi': subMateri.map((e) => e.toJson()).toList(),
+      'color': color, // Simpan warna ke JSON
     };
   }
 }

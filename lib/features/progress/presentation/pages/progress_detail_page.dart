@@ -7,6 +7,8 @@ import '../../domain/models/progress_subject_model.dart';
 // Import dialog dan widget baru
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
+// Import color picker
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class ProgressDetailPage extends StatelessWidget {
   @override
@@ -42,10 +44,12 @@ class ProgressDetailPage extends StatelessWidget {
                       onTap: () {
                         showSubMateriDialog(context, subject);
                       },
-                      // Implementasikan onEdit dan onDelete
                       onEdit: () => _showEditSubjectDialog(context, subject),
                       onDelete: () =>
                           _showDeleteConfirmDialog(context, subject),
+                      // Panggil dialog color picker
+                      onColorEdit: () =>
+                          _showColorPickerDialog(context, subject),
                     );
                   },
                 );
@@ -99,7 +103,6 @@ class ProgressDetailPage extends StatelessWidget {
     );
   }
 
-  // Dialog baru untuk mengedit nama subject
   void _showEditSubjectDialog(BuildContext context, ProgressSubject subject) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -134,7 +137,6 @@ class ProgressDetailPage extends StatelessWidget {
     );
   }
 
-  // Dialog baru untuk konfirmasi hapus subject
   void _showDeleteConfirmDialog(BuildContext context, ProgressSubject subject) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -159,6 +161,47 @@ class ProgressDetailPage extends StatelessWidget {
               Navigator.pop(dialogContext);
             },
             child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Fungsi baru untuk menampilkan dialog color picker
+  void _showColorPickerDialog(BuildContext context, ProgressSubject subject) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    Color pickerColor = subject.color != null
+        ? Color(subject.color!)
+        : Theme.of(context).primaryColor;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Warna Materi'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: pickerColor,
+            onColorChanged: (color) => pickerColor = color,
+            enableAlpha: false,
+            displayThumbColor: true,
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Batal'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          ElevatedButton(
+            child: const Text('Simpan'),
+            onPressed: () {
+              provider.updateSubjectColor(subject, pickerColor);
+              Navigator.of(context).pop();
+            },
           ),
         ],
       ),

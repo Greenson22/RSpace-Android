@@ -6,9 +6,9 @@ import '../../domain/models/progress_subject_model.dart';
 class ProgressSubjectGridTile extends StatelessWidget {
   final ProgressSubject subject;
   final VoidCallback onTap;
-  // Tambahkan callback baru
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onColorEdit; // Callback baru untuk warna
 
   const ProgressSubjectGridTile({
     super.key,
@@ -16,18 +16,13 @@ class ProgressSubjectGridTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    required this.onColorEdit, // Tambahkan di konstruktor
   });
 
-  Color _getProgressColor(String progress) {
-    switch (progress) {
-      case 'selesai':
-        return Colors.green;
-      case 'sementara':
-        return Colors.orange;
-      case 'belum':
-      default:
-        return Colors.grey.shade300;
-    }
+  Color _getProgressColor(String progress, Color defaultColor) {
+    if (progress == 'selesai') return Colors.green;
+    if (progress == 'sementara') return Colors.orange;
+    return defaultColor.withOpacity(0.3); // Gunakan warna default jika 'belum'
   }
 
   double _getProgressValue() {
@@ -50,8 +45,12 @@ class ProgressSubjectGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Gunakan warna dari subject, atau warna primer tema sebagai default
+    final subjectColor = subject.color != null
+        ? Color(subject.color!)
+        : theme.primaryColor;
     final progressValue = _getProgressValue();
-    final progressColor = _getProgressColor(subject.progress);
+    final progressColor = _getProgressColor(subject.progress, subjectColor);
     final totalSubMateri = subject.subMateri.length;
     final selesaiCount = subject.subMateri
         .where((s) => s.progress == 'selesai')
@@ -80,7 +79,6 @@ class ProgressSubjectGridTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  // Tambahkan PopupMenuButton di sini
                   SizedBox(
                     width: 24,
                     height: 24,
@@ -91,6 +89,9 @@ class ProgressSubjectGridTile extends StatelessWidget {
                           onEdit();
                         } else if (value == 'delete') {
                           onDelete();
+                        } else if (value == 'color') {
+                          // Aksi baru
+                          onColorEdit();
                         }
                       },
                       itemBuilder: (BuildContext context) =>
@@ -99,6 +100,12 @@ class ProgressSubjectGridTile extends StatelessWidget {
                               value: 'edit',
                               child: Text('Edit Nama'),
                             ),
+                            // Tambahkan item menu baru
+                            const PopupMenuItem<String>(
+                              value: 'color',
+                              child: Text('Ubah Warna'),
+                            ),
+                            const PopupMenuDivider(),
                             const PopupMenuItem<String>(
                               value: 'delete',
                               child: Text(
@@ -114,17 +121,15 @@ class ProgressSubjectGridTile extends StatelessWidget {
               const Spacer(),
               Text(
                 '${(progressValue * 100).toStringAsFixed(0)}% Selesai',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: progressColor,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: subjectColor),
               ),
               const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: progressValue,
-                  backgroundColor: progressColor.withOpacity(0.2),
-                  color: progressColor,
+                  backgroundColor: subjectColor.withOpacity(0.2),
+                  color: subjectColor, // Selalu gunakan warna subject
                   minHeight: 8,
                 ),
               ),

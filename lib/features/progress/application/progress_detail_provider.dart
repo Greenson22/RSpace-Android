@@ -22,16 +22,24 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi baru untuk mengedit nama subject
   Future<void> editSubject(ProgressSubject subject, String newName) async {
     subject.namaMateri = newName;
     await save();
     notifyListeners();
   }
 
-  // Fungsi baru untuk menghapus subject
   Future<void> deleteSubject(ProgressSubject subject) async {
     topic.subjects.remove(subject);
+    await save();
+    notifyListeners();
+  }
+
+  // Fungsi baru untuk mengubah warna subject
+  Future<void> updateSubjectColor(
+    ProgressSubject subject,
+    Color newColor,
+  ) async {
+    subject.color = newColor.value;
     await save();
     notifyListeners();
   }
