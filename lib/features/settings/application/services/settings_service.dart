@@ -15,6 +15,7 @@ class SettingsService {
   static const String _quickFabOverallOpacityKey = 'quick_fab_overall_opacity';
   // ==> 1. TAMBAHKAN KUNCI BARU UNTUK UKURAN FAB
   static const String _quickFabSizeKey = 'quick_fab_size';
+  static const String _fabMenuShowTextKey = 'fab_menu_show_text';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -86,6 +87,17 @@ class SettingsService {
   Future<double> loadQuickFabSize() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble(_quickFabSizeKey) ?? 56.0; // Default 56.0
+  }
+
+  Future<void> saveFabMenuShowTextPreference(bool showText) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_fabMenuShowTextKey, showText);
+  }
+
+  Future<bool> loadFabMenuShowTextPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_fabMenuShowTextKey) ??
+        true; // Default: true (tampilkan teks)
   }
 
   Future<void> savePrimaryColor(int colorValue) async {

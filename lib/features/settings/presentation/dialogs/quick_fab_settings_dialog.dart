@@ -49,6 +49,16 @@ class QuickFabSettingsDialog extends StatelessWidget {
                     provider.updateQuickFabSettings(show: value);
                   },
                 ),
+                SwitchListTile(
+                  title: const Text('Tampilkan Teks di Menu'),
+                  subtitle: const Text(
+                    'Jika nonaktif, menu hanya akan menampilkan ikon.',
+                  ),
+                  value: provider.fabMenuShowText,
+                  onChanged: (value) {
+                    provider.updateQuickFabSettings(showMenuText: value);
+                  },
+                ),
                 const Divider(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),

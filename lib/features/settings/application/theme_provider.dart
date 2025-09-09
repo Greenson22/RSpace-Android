@@ -38,9 +38,10 @@ class ThemeProvider with ChangeNotifier {
   double get quickFabBgOpacity => _quickFabBgOpacity;
   double _quickFabOverallOpacity = 1.0;
   double get quickFabOverallOpacity => _quickFabOverallOpacity;
-  // ==> 1. TAMBAHKAN STATE BARU UNTUK UKURAN
   double _quickFabSize = 56.0;
   double get quickFabSize => _quickFabSize;
+  bool _fabMenuShowText = true;
+  bool get fabMenuShowText => _fabMenuShowText;
 
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
@@ -98,8 +99,8 @@ class ThemeProvider with ChangeNotifier {
     String? icon,
     double? bgOpacity,
     double? overallOpacity,
-    // ==> 2. TAMBAHKAN PARAMETER UKURAN
     double? size,
+    bool? showMenuText,
   }) async {
     bool needsNotify = false;
     if (show != null && _showQuickFab != show) {
@@ -122,10 +123,14 @@ class ThemeProvider with ChangeNotifier {
       await _prefsService.saveQuickFabOverallOpacity(_quickFabOverallOpacity);
       needsNotify = true;
     }
-    // ==> 3. TAMBAHKAN LOGIKA PENYIMPANAN UKURAN
     if (size != null && _quickFabSize != size) {
       _quickFabSize = size;
       await _prefsService.saveQuickFabSize(_quickFabSize);
+      needsNotify = true;
+    }
+    if (showMenuText != null && _fabMenuShowText != showMenuText) {
+      _fabMenuShowText = showMenuText;
+      await _prefsService.saveFabMenuShowTextPreference(_fabMenuShowText);
       needsNotify = true;
     }
     if (needsNotify) {
@@ -183,8 +188,8 @@ class ThemeProvider with ChangeNotifier {
     _quickFabBgOpacity = await _prefsService.loadQuickFabBgOpacity();
     _quickFabOverallOpacity = await _prefsService.loadQuickFabOverallOpacity();
 
-    // ==> 4. MUAT PENGATURAN UKURAN
     _quickFabSize = await _prefsService.loadQuickFabSize();
+    _fabMenuShowText = await _prefsService.loadFabMenuShowTextPreference();
 
     notifyListeners();
   }

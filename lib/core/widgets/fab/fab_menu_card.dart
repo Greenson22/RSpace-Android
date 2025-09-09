@@ -6,6 +6,7 @@ import 'package:my_aplication/features/file_management/presentation/pages/file_l
 import 'package:my_aplication/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
+import '../../../features/settings/application/theme_provider.dart';
 import '../../../features/content_management/application/topic_provider.dart';
 import '../../../features/content_management/application/subject_provider.dart';
 import '../../../features/my_tasks/presentation/pages/my_tasks_page.dart';
@@ -40,11 +41,14 @@ class FabMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final showText = themeProvider.fabMenuShowText;
+
     final topicProvider = Provider.of<TopicProvider>(context, listen: false);
     final topics = topicProvider.allTopics.where((t) => !t.isHidden).toList();
 
     return SizedBox(
-      width: 250,
+      width: showText ? 250 : 80,
       child: Card(
         elevation: 8.0,
         margin: EdgeInsets.zero,
@@ -61,21 +65,27 @@ class FabMenuCard extends StatelessWidget {
                 ).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   leading: const Icon(Icons.topic_outlined),
-                  title: const Text('Navigasi Cepat ke Topik'),
+                  // PERBAIKAN: Mengganti `null` dengan widget kosong yang valid
+                  title: showText
+                      ? const Text('Navigasi Cepat')
+                      : const SizedBox.shrink(),
                   dense: true,
                   tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  childrenPadding: const EdgeInsets.only(left: 16),
+                  childrenPadding: EdgeInsets.zero,
                   children: topics.map((topic) {
                     return ListTile(
                       dense: true,
                       leading: Padding(
-                        padding: const EdgeInsets.only(left: 16.0),
-                        child: Text(
-                          topic.icon,
-                          style: const TextStyle(fontSize: 20),
+                        padding: EdgeInsets.only(left: showText ? 32.0 : 0),
+                        child: Center(
+                          widthFactor: 1.0,
+                          child: Text(
+                            topic.icon,
+                            style: const TextStyle(fontSize: 20),
+                          ),
                         ),
                       ),
-                      title: Text(topic.name),
+                      title: showText ? Text(topic.name) : null,
                       onTap: () => _navigateToSubjectsPage(context, topic),
                     );
                   }).toList(),
@@ -86,30 +96,29 @@ class FabMenuCard extends StatelessWidget {
               // Menu Navigasi Utama
               ListTile(
                 leading: const Icon(Icons.task_alt_outlined),
-                title: const Text('Buka My Tasks'),
+                title: showText ? const Text('My Tasks') : null,
                 dense: true,
                 onTap: () => _navigateToPage(context, const MyTasksPage()),
               ),
               ListTile(
                 leading: const Icon(Icons.pie_chart_outline_rounded),
-                title: const Text('Buka Statistik'),
+                title: showText ? const Text('Statistik') : null,
                 dense: true,
                 onTap: () => _navigateToPage(context, const StatisticsPage()),
               ),
               ListTile(
                 leading: const Icon(Icons.cloud_outlined),
-                title: const Text('Buka File Online'),
+                title: showText ? const Text('File Online') : null,
                 dense: true,
                 onTap: () => _navigateToPage(context, const FileListPage()),
               ),
               ListTile(
                 leading: const Icon(Icons.settings_backup_restore_rounded),
-                title: const Text('Buka Manajemen Backup'),
+                title: showText ? const Text('Manajemen Backup') : null,
                 dense: true,
                 onTap: () =>
                     _navigateToPage(context, const BackupManagementPage()),
               ),
-              // ListTile untuk "Buka Kelola Data" telah dihapus dari sini
             ],
           ),
         ),

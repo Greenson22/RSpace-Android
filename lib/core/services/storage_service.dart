@@ -54,10 +54,15 @@ class SharedPreferencesService {
       _settingsService.saveQuickFabOverallOpacity(opacity);
   Future<double> loadQuickFabOverallOpacity() =>
       _settingsService.loadQuickFabOverallOpacity();
-  // ==> TAMBAHKAN FUNGSI-FUNGSI INI
   Future<void> saveQuickFabSize(double size) =>
       _settingsService.saveQuickFabSize(size);
   Future<double> loadQuickFabSize() => _settingsService.loadQuickFabSize();
+
+  // ==> TAMBAHKAN DUA BARIS INI UNTUK MEMPERBAIKI ERROR
+  Future<void> saveFabMenuShowTextPreference(bool showText) =>
+      _settingsService.saveFabMenuShowTextPreference(showText);
+  Future<bool> loadFabMenuShowTextPreference() =>
+      _settingsService.loadFabMenuShowTextPreference();
 
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>
