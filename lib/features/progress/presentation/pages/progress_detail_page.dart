@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
+import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
@@ -186,20 +187,6 @@ class ProgressDetailPage extends StatelessWidget {
   }
 }
 
-class _ColorPalette {
-  final String name;
-  final Color background;
-  final Color text;
-  final Color progressBar;
-
-  _ColorPalette({
-    required this.name,
-    required this.background,
-    required this.text,
-    required this.progressBar,
-  });
-}
-
 class _EditAppearanceDialog extends StatefulWidget {
   final ProgressSubject subject;
   const _EditAppearanceDialog({required this.subject});
@@ -214,42 +201,43 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
   late Color pickerBarColor;
   bool _isInitialized = false;
 
-  final List<_ColorPalette> _palettes = [
-    _ColorPalette(
+  // ==> PERBAIKAN: Gunakan nama parameter yang benar sesuai definisi class
+  final List<ColorPalette> _defaultPalettes = [
+    ColorPalette(
       name: "Biru Laut",
-      background: const Color(0xFF0077B6),
-      text: Colors.white,
-      progressBar: const Color(0xFFADE8F4),
+      backgroundColor: 0xFF0077B6,
+      textColor: 0xFFFFFFFF,
+      progressBarColor: 0xFFADE8F4,
     ),
-    _ColorPalette(
+    ColorPalette(
       name: "Gelap Elegan",
-      background: const Color(0xFF2B2D42),
-      text: Colors.white,
-      progressBar: const Color(0xFF8D99AE),
+      backgroundColor: 0xFF2B2D42,
+      textColor: 0xFFFFFFFF,
+      progressBarColor: 0xFF8D99AE,
     ),
-    _ColorPalette(
+    ColorPalette(
       name: "Alam",
-      background: const Color(0xFF2d6a4f),
-      text: Colors.white,
-      progressBar: const Color(0xFF95d5b2),
+      backgroundColor: 0xFF2d6a4f,
+      textColor: 0xFFFFFFFF,
+      progressBarColor: 0xFF95d5b2,
     ),
-    _ColorPalette(
+    ColorPalette(
       name: "Matahari Terbenam",
-      background: const Color(0xFFf77f00),
-      text: Colors.black,
-      progressBar: const Color(0xFFfcbf49),
+      backgroundColor: 0xFFf77f00,
+      textColor: 0xFF000000,
+      progressBarColor: 0xFFfcbf49,
     ),
-    _ColorPalette(
+    ColorPalette(
       name: "Lavender",
-      background: const Color(0xFFe0b1cb),
-      text: Colors.black,
-      progressBar: const Color(0xFF7251b5),
+      backgroundColor: 0xFFe0b1cb,
+      textColor: 0xFF000000,
+      progressBarColor: 0xFF7251b5,
     ),
-    _ColorPalette(
+    ColorPalette(
       name: "Terang Minimalis",
-      background: const Color(0xFFF8F9FA),
-      text: Colors.black,
-      progressBar: const Color(0xFF6C757D),
+      backgroundColor: 0xFFF8F9FA,
+      textColor: 0xFF000000,
+      progressBarColor: 0xFF6C757D,
     ),
   ];
 
@@ -315,128 +303,179 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void _showSavePaletteDialog() {
+    final controller = TextEditingController();
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
     );
 
-    return AlertDialog(
-      title: const Text('Ubah Tampilan Materi'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ==> TAMBAHKAN TOMBOL UBAH IKON DI SINI
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Text(
-                widget.subject.icon,
-                style: const TextStyle(fontSize: 24),
-              ),
-              title: const Text('Ubah Ikon'),
-              trailing: const Icon(Icons.edit),
-              onTap: () {
-                // Panggil dialog ikon yang sudah ada
-                showIconPickerDialog(
-                  context: context,
-                  name: widget.subject.namaMateri,
-                  onIconSelected: (newIcon) {
-                    provider.updateSubjectIcon(widget.subject, newIcon);
-                    // Tutup dialog ubah tampilan setelah memilih ikon
-                    Navigator.of(context).pop();
-                  },
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Simpan Palet Baru'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Nama Palet'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                final newPalette = ColorPalette(
+                  name: controller.text,
+                  backgroundColor: pickerBackgroundColor.value,
+                  textColor: pickerTextColor.value,
+                  progressBarColor: pickerBarColor.value,
                 );
-              },
-            ),
-            const Divider(height: 24),
-            Text(
-              'Pilih Palet Cepat',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: _palettes.map((palette) {
-                return InkWell(
+                provider.saveNewPalette(newPalette);
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ProgressDetailProvider>(
+      builder: (context, provider, child) {
+        final allPalettes = [..._defaultPalettes, ...provider.customPalettes];
+
+        return AlertDialog(
+          title: const Text('Ubah Tampilan Materi'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Text(
+                    widget.subject.icon,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  title: const Text('Ubah Ikon'),
+                  trailing: const Icon(Icons.edit),
                   onTap: () {
-                    setState(() {
-                      pickerBackgroundColor = palette.background;
-                      pickerTextColor = palette.text;
-                      pickerBarColor = palette.progressBar;
-                    });
+                    showIconPickerDialog(
+                      context: context,
+                      name: widget.subject.namaMateri,
+                      onIconSelected: (newIcon) {
+                        provider.updateSubjectIcon(widget.subject, newIcon);
+                        Navigator.of(context).pop();
+                      },
+                    );
                   },
-                  child: Tooltip(
-                    message: palette.name,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: palette.background,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'A',
-                          style: TextStyle(
-                            color: palette.text,
-                            fontWeight: FontWeight.bold,
+                ),
+                const Divider(height: 24),
+                Text(
+                  'Pilih Palet Cepat',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  children: allPalettes.map((palette) {
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          pickerBackgroundColor = Color(
+                            palette.backgroundColor,
+                          );
+                          pickerTextColor = Color(palette.textColor);
+                          pickerBarColor = Color(palette.progressBarColor);
+                        });
+                      },
+                      child: Tooltip(
+                        message: palette.name,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Color(palette.backgroundColor),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'A',
+                              style: TextStyle(
+                                color: Color(palette.textColor),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                    );
+                  }).toList(),
+                ),
+                const Divider(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Kustomisasi Manual',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                  ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.save, size: 16),
+                      label: const Text('Simpan Palet'),
+                      onPressed: _showSavePaletteDialog,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildColorPicker(
+                  'Warna Latar',
+                  pickerBackgroundColor,
+                  (color) => setState(() => pickerBackgroundColor = color),
+                ),
+                const SizedBox(height: 16),
+                _buildColorPicker(
+                  'Warna Teks',
+                  pickerTextColor,
+                  (color) => setState(() => pickerTextColor = color),
+                ),
+                const SizedBox(height: 16),
+                _buildColorPicker(
+                  'Warna Progress Bar',
+                  pickerBarColor,
+                  (color) => setState(() => pickerBarColor = color),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                provider.updateSubjectColors(
+                  widget.subject,
+                  backgroundColor: pickerBackgroundColor,
+                  textColor: pickerTextColor,
+                  progressBarColor: pickerBarColor,
                 );
-              }).toList(),
-            ),
-            const Divider(height: 24),
-            Text(
-              'Kustomisasi Manual',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 16),
-            _buildColorPicker(
-              'Warna Latar',
-              pickerBackgroundColor,
-              (color) => setState(() => pickerBackgroundColor = color),
-            ),
-            const SizedBox(height: 16),
-            _buildColorPicker(
-              'Warna Teks',
-              pickerTextColor,
-              (color) => setState(() => pickerTextColor = color),
-            ),
-            const SizedBox(height: 16),
-            _buildColorPicker(
-              'Warna Progress Bar',
-              pickerBarColor,
-              (color) => setState(() => pickerBarColor = color),
+                Navigator.of(context).pop();
+              },
+              child: const Text('Terapkan & Simpan'),
             ),
           ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Batal'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            provider.updateSubjectColors(
-              widget.subject,
-              backgroundColor: pickerBackgroundColor,
-              textColor: pickerTextColor,
-              progressBarColor: pickerBarColor,
-            );
-            Navigator.of(context).pop();
-          },
-          child: const Text('Simpan'),
-        ),
-      ],
+        );
+      },
     );
   }
 }
