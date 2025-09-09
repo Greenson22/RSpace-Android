@@ -4,31 +4,48 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
-// Import dialog baru
+// Import dialog dan widget baru
 import '../dialogs/sub_materi_dialog.dart';
+import '../widgets/progress_subject_grid_tile.dart';
 
 class ProgressDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(context);
 
+    // Fungsi untuk menentukan jumlah kolom berdasarkan lebar layar
+    int _getCrossAxisCount(double screenWidth) {
+      if (screenWidth > 1200) return 5;
+      if (screenWidth > 900) return 4;
+      if (screenWidth > 600) return 3;
+      return 2;
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(provider.topic.topics)),
       body: provider.topic.subjects.isEmpty
           ? const Center(child: Text('Belum ada materi di dalam topik ini.'))
-          : ListView.builder(
-              padding: const EdgeInsets.only(bottom: 80),
-              itemCount: provider.topic.subjects.length,
-              itemBuilder: (context, index) {
-                final subject = provider.topic.subjects[index];
-                // Ganti ExpansionTile dengan ListTile
-                return ListTile(
-                  title: Text(subject.namaMateri),
-                  subtitle: Text('Progress: ${subject.progress}'),
-                  trailing: const Icon(Icons.keyboard_arrow_right),
-                  onTap: () {
-                    // Panggil dialog baru saat di-tap
-                    showSubMateriDialog(context, subject);
+          // Ganti ListView.builder dengan GridView.builder
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return GridView.builder(
+                  padding: const EdgeInsets.all(12.0),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _getCrossAxisCount(constraints.maxWidth),
+                    crossAxisSpacing: 12.0,
+                    mainAxisSpacing: 12.0,
+                    childAspectRatio:
+                        1.2, // Sesuaikan rasio agar kartu tidak terlalu tinggi
+                  ),
+                  itemCount: provider.topic.subjects.length,
+                  itemBuilder: (context, index) {
+                    final subject = provider.topic.subjects[index];
+                    return ProgressSubjectGridTile(
+                      subject: subject,
+                      onTap: () {
+                        showSubMateriDialog(context, subject);
+                      },
+                    );
                   },
                 );
               },
