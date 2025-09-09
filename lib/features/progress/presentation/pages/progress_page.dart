@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/progress_provider.dart';
+import '../../domain/models/progress_topic_model.dart';
 import 'progress_detail_page.dart';
 import '../../application/progress_detail_provider.dart';
 import '../widgets/progress_topic_grid_tile.dart';
@@ -98,11 +99,15 @@ class _ProgressViewState extends State<_ProgressView> {
                                 child: ProgressDetailPage(),
                               ),
                             ),
-                          );
+                          ).then((_) {
+                            // Muat ulang data setelah kembali dari halaman detail
+                            provider.fetchTopics();
+                          });
                         }
                       },
-                      onEdit: () {},
-                      onDelete: () {},
+                      // ==> PERBAIKAN DI SINI: Hubungkan callback ke fungsi
+                      onEdit: () => _showEditTopicDialog(context, topic),
+                      onDelete: () => _showDeleteConfirmDialog(context, topic),
                     );
                   },
                 );
@@ -141,6 +146,64 @@ class _ProgressViewState extends State<_ProgressView> {
               }
             },
             child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTopicDialog(BuildContext context, ProgressTopic topic) {
+    final provider = Provider.of<ProgressProvider>(context, listen: false);
+    final controller = TextEditingController(text: topic.topics);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ubah Nama Topik'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Nama Baru'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                provider.editTopic(topic, controller.text);
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(BuildContext context, ProgressTopic topic) {
+    final provider = Provider.of<ProgressProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text(
+          'Anda yakin ingin menghapus topik "${topic.topics}" beserta semua isinya?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              provider.deleteTopic(topic);
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Hapus'),
           ),
         ],
       ),
