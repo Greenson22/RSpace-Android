@@ -1,14 +1,13 @@
 // lib/features/progress/presentation/pages/progress_detail_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
 // Import dialog dan widget baru
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
-// Import color picker
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class ProgressDetailPage extends StatelessWidget {
   @override
@@ -62,7 +61,7 @@ class ProgressDetailPage extends StatelessWidget {
     );
   }
 
-  // ... (Fungsi lain tidak berubah) ...
+  // ... (Fungsi _showAddSubjectDialog, _showEditSubjectDialog, _showDeleteConfirmDialog tidak berubah) ...
   void _showAddSubjectDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -185,6 +184,21 @@ class ProgressDetailPage extends StatelessWidget {
   }
 }
 
+// Helper class untuk palet warna
+class _ColorPalette {
+  final String name;
+  final Color background;
+  final Color text;
+  final Color progressBar;
+
+  _ColorPalette({
+    required this.name,
+    required this.background,
+    required this.text,
+    required this.progressBar,
+  });
+}
+
 class _EditAppearanceDialog extends StatefulWidget {
   final ProgressSubject subject;
   const _EditAppearanceDialog({required this.subject});
@@ -197,13 +211,51 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
   late Color pickerBackgroundColor;
   late Color pickerTextColor;
   late Color pickerBarColor;
-  bool _isInitialized = false; // Flag untuk memastikan inisialisasi sekali saja
+  bool _isInitialized = false;
 
-  // ==> PERBAIKAN: Pindahkan logika dari initState ke didChangeDependencies
+  // ==> BUAT DAFTAR PALET WARNA DI SINI <==
+  final List<_ColorPalette> _palettes = [
+    _ColorPalette(
+      name: "Biru Laut",
+      background: const Color(0xFF0077B6),
+      text: Colors.white,
+      progressBar: const Color(0xFFADE8F4),
+    ),
+    _ColorPalette(
+      name: "Gelap Elegan",
+      background: const Color(0xFF2B2D42),
+      text: Colors.white,
+      progressBar: const Color(0xFF8D99AE),
+    ),
+    _ColorPalette(
+      name: "Alam",
+      background: const Color(0xFF2d6a4f),
+      text: Colors.white,
+      progressBar: const Color(0xFF95d5b2),
+    ),
+    _ColorPalette(
+      name: "Matahari Terbenam",
+      background: const Color(0xFFf77f00),
+      text: Colors.black,
+      progressBar: const Color(0xFFfcbf49),
+    ),
+    _ColorPalette(
+      name: "Lavender",
+      background: const Color(0xFFe0b1cb),
+      text: Colors.black,
+      progressBar: const Color(0xFF7251b5),
+    ),
+    _ColorPalette(
+      name: "Terang Minimalis",
+      background: const Color(0xFFF8F9FA),
+      text: Colors.black,
+      progressBar: const Color(0xFF6C757D),
+    ),
+  ];
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Gunakan flag agar tidak dijalankan berulang kali jika tidak perlu
     if (!_isInitialized) {
       final theme = Theme.of(context);
       pickerBackgroundColor = widget.subject.backgroundColor != null
@@ -275,7 +327,56 @@ class _EditAppearanceDialogState extends State<_EditAppearanceDialog> {
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ==> TAMBAHKAN BAGIAN PALET WARNA DI SINI <==
+            Text(
+              'Pilih Palet Cepat',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              children: _palettes.map((palette) {
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      pickerBackgroundColor = palette.background;
+                      pickerTextColor = palette.text;
+                      pickerBarColor = palette.progressBar;
+                    });
+                  },
+                  child: Tooltip(
+                    message: palette.name,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: palette.background,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'A',
+                          style: TextStyle(
+                            color: palette.text,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const Divider(height: 24),
+            Text(
+              'Kustomisasi Manual',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 16),
             _buildColorPicker(
               'Warna Latar',
               pickerBackgroundColor,
