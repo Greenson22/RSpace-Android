@@ -44,7 +44,6 @@ mixin DashboardState on State<DashboardPage> {
         context,
         listen: false,
       ).addListener(_onSyncStateChanged);
-      _rebuildActions();
     });
   }
 
@@ -78,12 +77,12 @@ mixin DashboardState on State<DashboardPage> {
     if (mounted) {
       setState(() {
         isPathSet = path != null && path.isNotEmpty;
-        _rebuildActions();
       });
     }
   }
 
-  void _rebuildActions() {
+  // ==> PERBAIKAN: Hapus garis bawah (_) untuk menjadikannya publik
+  void rebuildActions() {
     dashboardActions = buildDashboardActions(
       context,
       onShowStorageDialog: () => showStoragePathDialog(context),
@@ -117,17 +116,17 @@ mixin DashboardState on State<DashboardPage> {
         if (totalItems == 0) return;
 
         final screenWidth = MediaQuery.of(context).size.width;
-        int crossAxisCount = screenWidth < 450 ? 2 : 4; // Quick access count
+        int crossAxisCount = screenWidth < 450 ? 2 : 5; // Quick access count
 
         setState(() {
-          if (focusedIndex < 4) {
+          if (focusedIndex < 5) {
             // Logic for Quick Access Grid
             if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
               int nextIndex = focusedIndex + crossAxisCount;
-              if (nextIndex < 4) {
+              if (nextIndex < 5 && nextIndex < totalItems) {
                 focusedIndex = nextIndex;
               } else {
-                focusedIndex = 4; // Move to the first list item
+                focusedIndex = 5; // Move to the first list item
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
               int prevIndex = focusedIndex - crossAxisCount;
@@ -136,7 +135,7 @@ mixin DashboardState on State<DashboardPage> {
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
               if ((focusedIndex + 1) % crossAxisCount != 0 &&
-                  focusedIndex < 3) {
+                  focusedIndex < 4) {
                 focusedIndex++;
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
@@ -151,7 +150,7 @@ mixin DashboardState on State<DashboardPage> {
                 focusedIndex++;
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-              if (focusedIndex > 4) {
+              if (focusedIndex > 5) {
                 focusedIndex--;
               } else {
                 // Try moving up to the grid
@@ -249,7 +248,6 @@ mixin DashboardState on State<DashboardPage> {
         setState(() {
           dashboardPathKey = UniqueKey();
           isPathSet = true;
-          _rebuildActions();
         });
 
         if (mounted) {

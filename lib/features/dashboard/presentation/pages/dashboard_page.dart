@@ -19,6 +19,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> with DashboardState {
   @override
   Widget build(BuildContext context) {
+    // ==> PERBAIKAN: Panggil metode yang sudah publik
+    rebuildActions();
+
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final backgroundImagePath = themeProvider.backgroundImagePath;
