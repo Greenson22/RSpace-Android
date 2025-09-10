@@ -7,6 +7,8 @@ import '../../../application/discussion_provider.dart';
 import '../../../../../core/services/storage_service.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
+// Import file utilitas yang baru diperbarui
+import '../../../../../core/utils/scaffold_messenger_utils.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
   final Discussion discussion;
@@ -18,22 +20,12 @@ class DiscussionSubtitle extends StatelessWidget {
     this.isCompact = false, // Nilai default
   });
 
-  // ==> FUNGSI BARU UNTUK MENAMBAHKAN NEURONS <==
+  // FUNGSI INI SEKARANG LEBIH SEDERHANA
   Future<void> _addNeurons(BuildContext context, int amount) async {
     final prefs = SharedPreferencesService();
-    // Cukup panggil saveNeurons, karena sekarang methodnya adalah add.
     await prefs.saveNeurons(amount);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '🎉 Kamu mendapatkan +$amount Neurons!',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.deepPurple,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Cukup panggil fungsi notifikasi global
+    showNeuronRewardSnackBar(context, amount);
   }
 
   @override
