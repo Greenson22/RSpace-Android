@@ -103,30 +103,17 @@ class QuizPlayerPage extends StatelessWidget {
             );
           }).toList(),
           const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              OutlinedButton(
-                onPressed: provider.currentIndex > 0
-                    ? provider.previousQuestion
-                    : null,
-                child: const Text('Sebelumnya'),
+          // ==> PERUBAHAN DI SINI: Tombol navigasi dihilangkan <==
+          if (provider.currentIndex == provider.questions.length - 1 &&
+              !provider.topic.autoAdvanceNextQuestion)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: provider.finishQuiz,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Selesai'),
               ),
-              if (provider.currentIndex < provider.questions.length - 1)
-                ElevatedButton(
-                  onPressed: provider.nextQuestion,
-                  child: const Text('Berikutnya'),
-                )
-              else
-                ElevatedButton(
-                  onPressed: provider.finishQuiz,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                  child: const Text('Selesai'),
-                ),
-            ],
-          ),
+            ),
         ],
       ),
     );
