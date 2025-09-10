@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../application/discussion_provider.dart'; // Pastikan path ini benar
 import 'dialogs/discussion_dialogs.dart';
-import 'widgets/discussion_card.dart';
+import 'widgets/discussion_list_item.dart'; // Ganti dari discussion_card.dart
 import 'widgets/discussion_stats_header.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 
@@ -358,7 +358,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 final originalIndex = provider.allDiscussions.indexOf(
                   discussion,
                 );
-                return DiscussionCard(
+                return DiscussionListItem(
+                  // Ganti di sini
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
                   index: originalIndex,
@@ -420,7 +421,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         final discussion = discussionList[index];
         final originalIndex = provider.allDiscussions.indexOf(discussion);
         final overallIndex = index + indexOffset;
-        return DiscussionCard(
+        return DiscussionListItem(
+          // Ganti di sini
           key: ValueKey(discussion.hashCode),
           discussion: discussion,
           index: originalIndex,
