@@ -66,24 +66,10 @@ class NeuronService {
     return data['neurons'] as int? ?? 0;
   }
 
-  /// Adds a specified amount to the current neuron count.
-  Future<void> addNeurons(int amount) async {
-    final currentNeurons = await getNeurons();
+  /// Sets the neuron count to a specific value.
+  Future<void> setNeurons(int count) async {
     final data = await _loadProfileData();
-    data['neurons'] = currentNeurons + amount;
+    data['neurons'] = count;
     await _saveProfileData(data);
-  }
-
-  /// Spends a specified amount of neurons if available.
-  /// Returns true if the transaction was successful, false otherwise.
-  Future<bool> spendNeurons(int amount) async {
-    final currentNeurons = await getNeurons();
-    if (currentNeurons >= amount) {
-      final data = await _loadProfileData();
-      data['neurons'] = currentNeurons - amount;
-      await _saveProfileData(data);
-      return true;
-    }
-    return false;
   }
 }

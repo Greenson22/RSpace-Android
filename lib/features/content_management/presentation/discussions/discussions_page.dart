@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:provider/provider.dart';
 import '../../application/discussion_provider.dart'; // Pastikan path ini benar
 import 'dialogs/discussion_dialogs.dart';
@@ -202,8 +203,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             subjectLinkedPath: widget.linkedPath,
           );
           _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
-          // ==> 2. PANGGIL NOTIFIKASI NEURON DI SINI <==
-          showNeuronRewardSnackBar(context, 10);
+          if (mounted) {
+            await Provider.of<StatisticsProvider>(
+              context,
+              listen: false,
+            ).addNeurons(10);
+            showNeuronRewardSnackBar(context, 10);
+          }
         } catch (e) {
           _showSnackBar("Gagal: ${e.toString()}", isError: true);
         }

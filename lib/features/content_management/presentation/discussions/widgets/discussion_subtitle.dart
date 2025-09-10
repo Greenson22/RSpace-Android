@@ -9,6 +9,7 @@ import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 // Import file utilitas yang baru diperbarui
 import '../../../../../core/utils/scaffold_messenger_utils.dart';
+import '../../../../statistics/application/statistics_provider.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
   final Discussion discussion;
@@ -20,11 +21,12 @@ class DiscussionSubtitle extends StatelessWidget {
     this.isCompact = false, // Nilai default
   });
 
-  // FUNGSI INI SEKARANG LEBIH SEDERHANA
   Future<void> _addNeurons(BuildContext context, int amount) async {
-    final prefs = SharedPreferencesService();
-    await prefs.saveNeurons(amount);
-    // Cukup panggil fungsi notifikasi global
+    // Panggil provider, bukan service
+    await Provider.of<StatisticsProvider>(
+      context,
+      listen: false,
+    ).addNeurons(amount);
     showNeuronRewardSnackBar(context, amount);
   }
 

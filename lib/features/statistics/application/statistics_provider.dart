@@ -1,4 +1,4 @@
-// lib/presentation/providers/statistics_provider.dart
+// lib/features/statistics/application/statistics_provider.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +11,7 @@ import '../../../core/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
+import '../../../core/services/storage_service.dart'; // Import storage service
 
 class StatisticsProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();
@@ -18,8 +19,9 @@ class StatisticsProvider with ChangeNotifier {
   final DiscussionService _discussionService = DiscussionService();
   final MyTaskService _myTaskService = MyTaskService();
   final PathService _pathService = PathService();
-  // ==> TAMBAHKAN TIMELOG SERVICE <==
   final TimeLogService _timeLogService = TimeLogService();
+  final SharedPreferencesService _prefsService =
+      SharedPreferencesService(); // Add prefs service
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -27,8 +29,22 @@ class StatisticsProvider with ChangeNotifier {
   AppStatistics _stats = AppStatistics();
   AppStatistics get stats => _stats;
 
+  int _neuronCount = 0; // State untuk neurons
+  int get neuronCount => _neuronCount;
+
   StatisticsProvider() {
     generateStatistics();
+  }
+
+  /// Menambah neuron, menyimpan, dan memberi notifikasi ke listener.
+  Future<void> addNeurons(int amount) async {
+    final currentNeurons = await _prefsService.loadNeurons();
+    final newTotal = currentNeurons + amount;
+    // Panggil service untuk menyimpan total baru
+    await _prefsService.saveNeurons(newTotal);
+    // Update state di provider
+    _neuronCount = newTotal;
+    notifyListeners();
   }
 
   Future<void> generateStatistics() async {
@@ -41,8 +57,10 @@ class StatisticsProvider with ChangeNotifier {
       int totalFinishedDiscussionCount = 0;
       int totalPointCount = 0;
       List<TopicStatistics> perTopicStats = [];
-      // ==> MAP BARU UNTUK MENGHITUNG REPETITION CODE <==
       Map<String, int> repetitionCodeCounts = {};
+
+      // ==> MUAT JUMLAH NEURON SAAT STATISTIK DIBUAT <==
+      _neuronCount = await _prefsService.loadNeurons();
 
       final topics = await _topicService.getTopics();
       final topicsPath = await _pathService.topicsPath;
@@ -72,8 +90,6 @@ class StatisticsProvider with ChangeNotifier {
                 totalFinishedDiscussionCount++;
               }
               currentTopicPointCount += discussion.points.length;
-
-              // ==> LOGIKA PENGHITUNGAN REPETITION CODE <==
               final code = discussion.effectiveRepetitionCode;
               repetitionCodeCounts[code] =
                   (repetitionCodeCounts[code] ?? 0) + 1;
@@ -112,7 +128,6 @@ class StatisticsProvider with ChangeNotifier {
         }
       }
 
-      // ==> LOGIKA BARU UNTUK MENGHITUNG STATISTIK JURNAL <==
       Duration totalTimeLogged = Duration.zero;
       Duration averageTimePerDay = Duration.zero;
       String? mostActiveDay;
@@ -147,7 +162,6 @@ class StatisticsProvider with ChangeNotifier {
           ).format(mostActiveEntry.date);
         }
       }
-      // --- AKHIR LOGIKA BARU ---
 
       _stats = AppStatistics(
         topicCount: topics.length,
@@ -160,7 +174,6 @@ class StatisticsProvider with ChangeNotifier {
         completedTaskCount: completedTaskCount,
         perTopicStats: perTopicStats,
         repetitionCodeCounts: repetitionCodeCounts,
-        // ==> MASUKKAN DATA BARU KE MODEL <==
         totalTimeLogged: totalTimeLogged,
         averageTimePerDay: averageTimePerDay,
         mostActiveDay: mostActiveDay,

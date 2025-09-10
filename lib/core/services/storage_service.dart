@@ -18,7 +18,7 @@ class SharedPreferencesService {
       NeuronService(); // Instantiate the new service
 
   // Update neuron methods to use NeuronService
-  Future<void> saveNeurons(int count) => _neuronService.addNeurons(count);
+  Future<void> saveNeurons(int count) => _neuronService.setNeurons(count);
   Future<int> loadNeurons() => _neuronService.getNeurons();
 
   // Metode untuk Pengaturan

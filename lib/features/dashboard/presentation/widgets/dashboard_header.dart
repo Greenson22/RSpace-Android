@@ -1,4 +1,4 @@
-// lib/presentation/pages/dashboard_page/widgets/dashboard_header.dart
+// lib/features/dashboard/presentation/widgets/dashboard_header.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -15,6 +15,8 @@ import '../../../my_tasks/application/my_task_service.dart';
 import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
+import 'package:provider/provider.dart';
+import '../../../statistics/application/statistics_provider.dart';
 
 class _HeaderStats {
   final int pendingTasks;
@@ -41,7 +43,6 @@ class DashboardHeader extends StatefulWidget {
   State<DashboardHeader> createState() => _DashboardHeaderState();
 }
 
-// ==> TAMBAHKAN WidgetsBindingObserver <==
 class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
@@ -52,27 +53,28 @@ class _DashboardHeaderState extends State<DashboardHeader>
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
-    // ==> DAFTARKAN OBSERVER <==
     WidgetsBinding.instance.addObserver(this);
   }
 
-  // ==> TAMBAHKAN dispose UNTUK MELEPAS OBSERVER <==
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  // ==> TAMBAHKAN FUNGSI INI UNTUK MENDETEKSI PERUBAHAN <==
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Jika pengguna kembali ke aplikasi, muat ulang statistik
     if (state == AppLifecycleState.resumed) {
       if (mounted) {
         setState(() {
           _statsFuture = _loadHeaderStats();
         });
+        // Juga muat ulang data di provider statistik
+        Provider.of<StatisticsProvider>(
+          context,
+          listen: false,
+        ).generateStatistics();
       }
     }
   }
@@ -225,24 +227,16 @@ class _DashboardHeaderState extends State<DashboardHeader>
                   ),
                 ],
               ),
-              FutureBuilder<_HeaderStats>(
-                future: _statsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  }
-                  final neurons = snapshot.data?.neurons ?? 0;
+              // ==> PERUBAHAN DI SINI: GUNAKAN CONSUMER <==
+              Consumer<StatisticsProvider>(
+                builder: (context, statsProvider, child) {
                   return Chip(
                     avatar: const Icon(
                       Icons.psychology_outlined,
                       color: Colors.white,
                     ),
                     label: Text(
-                      '$neurons Neurons',
+                      '${statsProvider.neuronCount} Neurons',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -254,7 +248,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
               ),
             ],
           ),
-
           const Divider(height: 24),
           FutureBuilder<_HeaderStats>(
             future: _statsFuture,
