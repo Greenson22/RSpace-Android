@@ -62,7 +62,39 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGELOLA PENGATURAN <==
+  // ==> FUNGSI BARU UNTUK MENAMBAHKAN PERTANYAAN KE SET YANG ADA <==
+  Future<void> addQuestionsToQuizSet({
+    required String quizSetName,
+    required String subjectJsonPath,
+    required int questionCount,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      // 1. Generate pertanyaan baru
+      final newQuestions = await _geminiService.generateQuizFromSubject(
+        subjectJsonPath,
+        questionCount: questionCount,
+      );
+
+      // 2. Muat set kuis yang ada
+      final existingSet = quizSets.firstWhere((qs) => qs.name == quizSetName);
+
+      // 3. Tambahkan pertanyaan baru ke daftar yang sudah ada
+      existingSet.questions.addAll(newQuestions);
+
+      // 4. Simpan kembali seluruh set kuis
+      await _quizService.saveQuizSet(topic.name, existingSet);
+
+      // 5. Muat ulang data untuk memperbarui UI
+      await fetchQuizSets();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> updateShuffle(bool value) async {
     topic.shuffleQuestions = value;
@@ -76,7 +108,6 @@ class QuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> TAMBAHKAN FUNGSI BARU DI SINI <==
   Future<void> updateAutoAdvance(bool value) async {
     topic.autoAdvanceNextQuestion = value;
     await _quizService.saveTopic(topic);

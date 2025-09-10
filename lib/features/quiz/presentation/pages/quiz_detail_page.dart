@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
 import '../dialogs/add_quiz_dialog.dart';
+// ==> IMPORT DIALOG BARU
+import '../dialogs/add_questions_dialog.dart';
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -26,7 +28,6 @@ class QuizDetailPage extends StatelessWidget {
                       ? const Center(
                           child: Text('Belum ada set kuis di dalam topik ini.'),
                         )
-                      // ==> DIPERBAIKI: Kirim 'context' ke dalam fungsi
                       : _buildQuizSetList(context, provider),
                 ),
               ],
@@ -48,7 +49,6 @@ class QuizDetailPage extends StatelessWidget {
           ? provider.topic.questionLimit.toString()
           : '',
     );
-    // ==> CONTROLLER BARU UNTUK DELAY
     final delayController = TextEditingController(
       text: provider.topic.autoAdvanceDelay.toString(),
     );
@@ -80,7 +80,6 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateShowCorrectAnswer(value);
             },
           ),
-          // ==> TAMBAHKAN PENGATURAN BARU DI SINI
           SwitchListTile(
             title: const Text('Auto Lanjut Pertanyaan'),
             subtitle: const Text('Pindah otomatis setelah menjawab.'),
@@ -89,7 +88,6 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateAutoAdvance(value);
             },
           ),
-          // Tampilkan input delay hanya jika auto-lanjut aktif
           if (provider.topic.autoAdvanceNextQuestion)
             ListTile(
               title: const Text('Tunda Auto Lanjut'),
@@ -138,7 +136,7 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
-  // ==> DIPERBAIKI: Tambahkan parameter BuildContext
+  // ==> UI LIST DIPERBARUI SECARA SIGNIFIKAN <==
   Widget _buildQuizSetList(BuildContext context, QuizDetailProvider provider) {
     return ListView(
       children: [
@@ -153,21 +151,43 @@ class QuizDetailPage extends StatelessWidget {
           final isIncluded = provider.topic.includedQuizSets.contains(
             quizSet.name,
           );
-          return CheckboxListTile(
-            title: Text(quizSet.name.replaceAll('_', ' ')),
-            subtitle: Text('${quizSet.questions.length} pertanyaan'),
-            value: isIncluded,
-            onChanged: (bool? value) {
-              if (value != null) {
-                provider.toggleQuizSetInclusion(quizSet.name, value);
-              }
-            },
-            secondary: IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () {
-                // Tambahkan konfirmasi sebelum menghapus
-                provider.deleteQuizSet(quizSet.name);
-              },
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: ListTile(
+              leading: Checkbox(
+                value: isIncluded,
+                onChanged: (bool? value) {
+                  if (value != null) {
+                    provider.toggleQuizSetInclusion(quizSet.name, value);
+                  }
+                },
+              ),
+              title: Text(quizSet.name.replaceAll('_', ' ')),
+              subtitle: Text('${quizSet.questions.length} pertanyaan'),
+              trailing: PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'add') {
+                    showAddQuestionsDialog(context, quizSet);
+                  } else if (value == 'delete') {
+                    // TODO: Tambahkan konfirmasi dialog
+                    provider.deleteQuizSet(quizSet.name);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'add',
+                    child: Text('Tambah Pertanyaan (AI)'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      'Hapus Set Kuis',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }).toList(),
