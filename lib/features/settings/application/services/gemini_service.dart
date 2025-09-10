@@ -1,8 +1,10 @@
-// lib/data/services/gemini_service.dart
+// lib/features/settings/application/services/gemini_service.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import '../../domain/models/api_key_model.dart';
 // ==> IMPORT MODEL BARU
 import '../../../content_management/domain/models/discussion_model.dart';
@@ -11,6 +13,7 @@ import '../../../../core/services/storage_service.dart';
 
 class GeminiService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
+  final DiscussionService _discussionService = DiscussionService();
 
   Future<String> _getActiveApiKey() async {
     final List<ApiKey> keys = await _prefsService.loadApiKeys();
@@ -374,6 +377,118 @@ Jawaban Anda:
         final errorMessage = errorBody['error']?['message'] ?? response.body;
         throw Exception(
           'Gagal menghasilkan konten: ${response.statusCode}\nError: $errorMessage',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMBUAT KUIS <==
+  Future<List<QuizQuestion>> generateQuizFromSubject(
+    String subjectJsonPath,
+  ) async {
+    final apiKey = await _getActiveApiKey();
+    final model =
+        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    // 1. Muat konten dari subject
+    final discussions = await _discussionService.loadDiscussions(
+      subjectJsonPath,
+    );
+    final contentBuffer = StringBuffer();
+    for (final discussion in discussions) {
+      if (!discussion.finished) {
+        contentBuffer.writeln('- Judul: ${discussion.discussion}');
+        for (final point in discussion.points) {
+          contentBuffer.writeln('  - Poin: ${point.pointText}');
+        }
+      }
+    }
+
+    if (contentBuffer.isEmpty) {
+      throw Exception(
+        'Subject ini tidak memiliki konten aktif untuk dibuatkan kuis.',
+      );
+    }
+
+    final prompt =
+        '''
+    Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
+    ---
+    ${contentBuffer.toString()}
+    ---
+    
+    Buatkan 5 pertanyaan kuis pilihan ganda yang relevan.
+    
+    Aturan Jawaban:
+    1.  HANYA kembalikan dalam format array JSON yang valid.
+    2.  Setiap objek dalam array mewakili satu pertanyaan dan HARUS memiliki kunci: "questionText", "options", dan "correctAnswerIndex".
+    3.  "questionText" harus berupa string.
+    4.  "options" harus berupa array berisi 4 string pilihan jawaban.
+    5.  "correctAnswerIndex" harus berupa integer (0-3) yang menunjuk ke jawaban yang benar.
+    6.  Jangan sertakan penjelasan atau teks lain di luar array JSON.
+
+    Contoh Jawaban:
+    [
+      {
+        "questionText": "Apa itu widget dalam Flutter?",
+        "options": ["Blok bangunan UI", "Tipe variabel", "Fungsi database", "Permintaan jaringan"],
+        "correctAnswerIndex": 0
+      }
+    ]
+    ''';
+
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+          'generationConfig': {'responseMimeType': 'application/json'},
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final textResponse =
+            body['candidates'][0]['content']['parts'][0]['text'];
+        final List<dynamic> jsonResponse = jsonDecode(textResponse);
+
+        return jsonResponse.map((item) {
+          final optionsList = (item['options'] as List<dynamic>).cast<String>();
+          final correctIndex = item['correctAnswerIndex'] as int;
+
+          final options = List.generate(optionsList.length, (i) {
+            return QuizOption(
+              text: optionsList[i],
+              isCorrect: i == correctIndex,
+            );
+          });
+
+          return QuizQuestion(
+            questionText: item['questionText'] as String,
+            options: options,
+          );
+        }).toList();
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody['error']?['message'] ?? response.body;
+        throw Exception(
+          'Gagal mendapatkan respons: ${response.statusCode}\nError: $errorMessage',
         );
       }
     } catch (e) {

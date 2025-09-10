@@ -6,6 +6,8 @@ import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/quiz_provider.dart';
 import '../../domain/models/quiz_model.dart';
 import '../widgets/quiz_topic_grid_tile.dart';
+import 'quiz_detail_page.dart';
+import '../../application/quiz_detail_provider.dart';
 
 class QuizPage extends StatelessWidget {
   const QuizPage({super.key});
@@ -89,7 +91,19 @@ class _QuizViewState extends State<_QuizView> {
                       topic: topic,
                       onTap: () {
                         if (!_isReorderMode) {
-                          // Navigasi ke halaman detail kuis (akan dibuat nanti)
+                          // Navigasi ke halaman detail kuis
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChangeNotifierProvider(
+                                create: (_) => QuizDetailProvider(topic),
+                                child: const QuizDetailPage(),
+                              ),
+                            ),
+                          ).then((_) {
+                            // Muat ulang data setelah kembali, jika ada perubahan
+                            provider.fetchTopics();
+                          });
                         }
                       },
                       onEdit: () => _showEditTopicDialog(context, topic),
@@ -119,6 +133,7 @@ class _QuizViewState extends State<_QuizView> {
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(labelText: 'Nama Topik Kuis'),
+          autofocus: true,
         ),
         actions: [
           TextButton(
