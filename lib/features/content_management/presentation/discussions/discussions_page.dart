@@ -10,6 +10,7 @@ import 'widgets/discussion_stats_header.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
+import '../../domain/models/discussion_model.dart'; // Import model
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -216,11 +217,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  void _deleteDiscussion(
-    BuildContext context,
-    DiscussionProvider provider,
-    dynamic discussion,
-  ) {
+  void _deleteDiscussion(DiscussionProvider provider, Discussion discussion) {
     showDeleteDiscussionConfirmationDialog(
       context: context,
       discussionName: discussion.discussion,
@@ -238,6 +235,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           if (success) {
             await provider.deleteDiscussion(discussion);
             if (mounted) {
+              // Panggil _showSnackBar dengan benar (tanpa context)
               _showSnackBar(
                 'Diskusi "${discussion.discussion}" berhasil dihapus.',
               );
@@ -245,6 +243,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             }
           } else {
             if (mounted) {
+              // Panggil _showSnackBar dengan benar (tanpa context)
               _showSnackBar(
                 "Gagal menghapus: Neuron tidak cukup.",
                 isError: true,
@@ -253,6 +252,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           }
         } catch (e) {
           if (mounted) {
+            // Panggil _showSnackBar dengan benar (tanpa context)
             _showSnackBar("Gagal menghapus: ${e.toString()}", isError: true);
           }
         }
@@ -420,6 +420,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   onToggleVisibility: _togglePointsVisibility,
                   subjectName: widget.subjectName,
                   subjectLinkedPath: widget.linkedPath,
+                  // ==> Perubahan di sini: Mengirim fungsi dari state induk <==
+                  onDelete: () => _deleteDiscussion(provider, discussion),
                 );
               },
             ),
@@ -482,6 +484,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onToggleVisibility: _togglePointsVisibility,
           subjectName: widget.subjectName,
           subjectLinkedPath: widget.linkedPath,
+          // ==> Perubahan di sini: Mengirim fungsi dari state induk <==
+          onDelete: () => _deleteDiscussion(provider, discussion),
         );
       },
     );

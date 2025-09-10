@@ -19,6 +19,7 @@ class DiscussionListItem extends StatelessWidget {
   final Function(int) onToggleVisibility;
   final String subjectName;
   final String? subjectLinkedPath;
+  final VoidCallback onDelete; // Parameter baru untuk callback delete
 
   const DiscussionListItem({
     super.key,
@@ -29,6 +30,7 @@ class DiscussionListItem extends StatelessWidget {
     required this.onToggleVisibility,
     required this.subjectName,
     this.subjectLinkedPath,
+    required this.onDelete, // Tambahkan di constructor
   });
 
   void _showSnackBar(
@@ -134,7 +136,7 @@ class DiscussionListItem extends StatelessWidget {
                     onFinish: () => _markAsFinished(context, provider),
                     onReactivate: () =>
                         _reactivateDiscussion(context, provider),
-                    onDelete: () => _deleteDiscussion(context, provider),
+                    onDelete: onDelete, // Gunakan callback dari parameter
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
@@ -368,33 +370,5 @@ class DiscussionListItem extends StatelessWidget {
   ) {
     provider.reactivateDiscussion(discussion);
     _showSnackBar(context, 'Diskusi diaktifkan kembali.');
-  }
-
-  void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
-    showDeleteDiscussionConfirmationDialog(
-      context: context,
-      discussionName: discussion.discussion,
-      hasLinkedFile:
-          discussion.filePath != null && discussion.filePath!.isNotEmpty,
-      onDelete: () async {
-        try {
-          await provider.deleteDiscussion(discussion);
-          if (context.mounted) {
-            _showSnackBar(
-              context,
-              'Diskusi "${discussion.discussion}" berhasil dihapus.',
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            _showSnackBar(
-              context,
-              "Gagal menghapus: ${e.toString()}",
-              isError: true,
-            );
-          }
-        }
-      },
-    );
   }
 }
