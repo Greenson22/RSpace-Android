@@ -46,7 +46,7 @@ class QuizTopicGridTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    topic.title,
+                    topic.name,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

@@ -47,8 +47,12 @@ class QuizProvider with ChangeNotifier {
   }
 
   Future<void> editTopicIcon(QuizTopic topic, String newIcon) async {
-    topic.icon = newIcon;
-    await _quizService.saveTopic(topic);
+    // Langsung modifikasi objek dan simpan
+    final topicToUpdate = _topics.firstWhere((t) => t.name == topic.name);
+    topicToUpdate.icon = newIcon;
+    await _quizService.saveTopicsOrder(
+      _topics,
+    ); // saveTopicsOrder akan menyimpan config individual
     notifyListeners();
   }
 

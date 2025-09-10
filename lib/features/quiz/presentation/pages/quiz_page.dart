@@ -85,7 +85,7 @@ class _QuizViewState extends State<_QuizView> {
                   itemBuilder: (context, index) {
                     final topic = provider.topics[index];
                     return QuizTopicGridTile(
-                      key: ValueKey(topic.title),
+                      key: ValueKey(topic.name),
                       topic: topic,
                       onTap: () {
                         if (!_isReorderMode) {
@@ -141,7 +141,7 @@ class _QuizViewState extends State<_QuizView> {
 
   void _showEditTopicDialog(BuildContext context, QuizTopic topic) {
     final provider = Provider.of<QuizProvider>(context, listen: false);
-    final controller = TextEditingController(text: topic.title);
+    final controller = TextEditingController(text: topic.name);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -176,9 +176,7 @@ class _QuizViewState extends State<_QuizView> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Konfirmasi Hapus'),
-        content: Text(
-          'Anda yakin ingin menghapus topik kuis "${topic.title}"?',
-        ),
+        content: Text('Anda yakin ingin menghapus topik kuis "${topic.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -201,7 +199,7 @@ class _QuizViewState extends State<_QuizView> {
     final provider = Provider.of<QuizProvider>(context, listen: false);
     showIconPickerDialog(
       context: context,
-      name: topic.title,
+      name: topic.name,
       onIconSelected: (newIcon) {
         provider.editTopicIcon(topic, newIcon);
       },
