@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/quiz_detail_provider.dart';
 
-// Fungsi untuk menampilkan dialog
 void showAddQuestionsDialog(BuildContext context, QuizSet quizSet) {
   final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
@@ -24,7 +23,6 @@ void showAddQuestionsDialog(BuildContext context, QuizSet quizSet) {
   );
 }
 
-// Widget utama dialog
 class AddQuestionsDialog extends StatefulWidget {
   final QuizSet quizSet;
   const AddQuestionsDialog({super.key, required this.quizSet});
@@ -44,6 +42,8 @@ class _AddQuestionsDialogState extends State<AddQuestionsDialog> {
   );
   String? _selectedTopicName;
   String? _selectedSubjectName;
+  // ==> TAMBAHKAN STATE BARU UNTUK KESULITAN <==
+  QuizDifficulty _selectedDifficulty = QuizDifficulty.medium;
   List<String> _topicNames = [];
   List<Subject> _subjects = [];
   bool _isLoadingTopics = true;
@@ -116,6 +116,8 @@ class _AddQuestionsDialogState extends State<AddQuestionsDialog> {
         quizSetName: widget.quizSet.name,
         subjectJsonPath: subjectJsonPath,
         questionCount: questionCount,
+        // ==> KIRIM TINGKAT KESULITAN KE PROVIDER <==
+        difficulty: _selectedDifficulty,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +152,25 @@ class _AddQuestionsDialogState extends State<AddQuestionsDialog> {
             children: [
               const Text('Pilih sumber materi untuk dibuatkan pertanyaan.'),
               const SizedBox(height: 24),
+              // ==> TAMBAHKAN DROPDOWN UNTUK TINGKAT KESULITAN <==
+              DropdownButtonFormField<QuizDifficulty>(
+                value: _selectedDifficulty,
+                decoration: const InputDecoration(
+                  labelText: 'Tingkat Kesulitan',
+                ),
+                items: QuizDifficulty.values.map((difficulty) {
+                  return DropdownMenuItem(
+                    value: difficulty,
+                    child: Text(difficulty.displayName),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedDifficulty = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _questionCountController,
                 decoration: const InputDecoration(

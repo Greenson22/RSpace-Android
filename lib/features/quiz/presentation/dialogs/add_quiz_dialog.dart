@@ -5,18 +5,17 @@ import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/topic_service.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/services.dart'; // Import untuk input formatter
 
 void showAddQuizDialog(BuildContext context) {
-  // Mengambil provider dari context Halaman Detail
   final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
   showDialog(
     context: context,
-    // Gunakan builder agar dialog tidak full-screen di layar kecil
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
       child: const AddQuizDialog(),
@@ -37,14 +36,14 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   final SubjectService _subjectService = SubjectService();
   final PathService _pathService = PathService();
 
-  // State untuk mengelola pilihan dropdown dan text field
   final TextEditingController _quizSetNameController = TextEditingController();
-  // ==> TAMBAHKAN CONTROLLER BARU UNTUK JUMLAH PERTANYAAN <==
   final TextEditingController _questionCountController = TextEditingController(
     text: '10',
   );
   String? _selectedTopicName;
   String? _selectedSubjectName;
+  // ==> TAMBAHKAN STATE BARU UNTUK KESULITAN <==
+  QuizDifficulty _selectedDifficulty = QuizDifficulty.medium;
   List<String> _topicNames = [];
   List<Subject> _subjects = [];
   bool _isLoadingTopics = true;
@@ -59,7 +58,6 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   @override
   void dispose() {
     _quizSetNameController.dispose();
-    // ==> JANGAN LUPA DISPOSE CONTROLLER BARU <==
     _questionCountController.dispose();
     super.dispose();
   }
@@ -95,7 +93,6 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingSubjects = false);
-      // Handle error
     }
   }
 
@@ -112,18 +109,17 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
       '$_selectedSubjectName.json',
     );
     final quizSetName = _quizSetNameController.text.trim();
-    // ==> PARSE JUMLAH PERTANYAAN <==
     final questionCount = int.tryParse(_questionCountController.text) ?? 10;
 
-    // Tutup dialog saat proses dimulai
     Navigator.of(context).pop();
 
     try {
-      // ==> KIRIM JUMLAH PERTANYAAN KE PROVIDER <==
       await provider.addQuizSetFromSubject(
         quizSetName,
         subjectJsonPath,
         questionCount,
+        // ==> KIRIM TINGKAT KESULITAN KE PROVIDER <==
+        _selectedDifficulty,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -173,7 +169,25 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              // ==> TAMBAHKAN INPUT FIELD UNTUK JUMLAH PERTANYAAN <==
+              // ==> TAMBAHKAN DROPDOWN UNTUK TINGKAT KESULITAN <==
+              DropdownButtonFormField<QuizDifficulty>(
+                value: _selectedDifficulty,
+                decoration: const InputDecoration(
+                  labelText: 'Tingkat Kesulitan',
+                ),
+                items: QuizDifficulty.values.map((difficulty) {
+                  return DropdownMenuItem(
+                    value: difficulty,
+                    child: Text(difficulty.displayName),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedDifficulty = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _questionCountController,
                 decoration: const InputDecoration(
@@ -235,7 +249,6 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
                           if (value != null) {
                             setState(() {
                               _selectedSubjectName = value;
-                              // Otomatis isi nama kuis jika kosong
                               if (_quizSetNameController.text.trim().isEmpty) {
                                 _quizSetNameController.text =
                                     "Kuis tentang $value";

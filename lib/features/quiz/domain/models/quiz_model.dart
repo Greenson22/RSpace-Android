@@ -2,6 +2,25 @@
 
 import 'package:uuid/uuid.dart';
 
+//==> TAMBAHKAN ENUM BARU UNTUK TINGKAT KESULITAN <==
+enum QuizDifficulty { ringan, medium, susah, hots }
+
+//==> TAMBAHKAN FUNGSI HELPER UNTUK MENDAPATKAN NAMA YANG MUDAH DIBACA <==
+extension QuizDifficultyExtension on QuizDifficulty {
+  String get displayName {
+    switch (this) {
+      case QuizDifficulty.ringan:
+        return 'Ringan';
+      case QuizDifficulty.medium:
+        return 'Medium';
+      case QuizDifficulty.susah:
+        return 'Susah';
+      case QuizDifficulty.hots:
+        return 'HOTS';
+    }
+  }
+}
+
 // Model untuk Pilihan Jawaban (Tidak Berubah)
 class QuizOption {
   String text;
@@ -66,7 +85,6 @@ class QuizSet {
   }
 }
 
-// ==> MODEL TOPIK KUIS DIPERBARUI DENGAN PENGATURAN BARU <==
 class QuizTopic {
   String name;
   String icon;
@@ -77,7 +95,6 @@ class QuizTopic {
   int questionLimit; // 0 berarti tanpa batas
   List<String> includedQuizSets; // Menyimpan nama file dari QuizSet
   bool showCorrectAnswer;
-  // ==> TAMBAHKAN PROPERTI BARU DI SINI <==
   bool autoAdvanceNextQuestion;
   int autoAdvanceDelay; // Dalam detik
 
@@ -89,7 +106,6 @@ class QuizTopic {
     this.questionLimit = 0,
     this.includedQuizSets = const [],
     this.showCorrectAnswer = false,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     this.autoAdvanceNextQuestion = false,
     this.autoAdvanceDelay = 2,
   });
@@ -103,7 +119,6 @@ class QuizTopic {
       questionLimit: configJson['questionLimit'] as int? ?? 0,
       includedQuizSets: List<String>.from(configJson['includedQuizSets'] ?? []),
       showCorrectAnswer: configJson['showCorrectAnswer'] as bool? ?? false,
-      // ==> BACA DARI JSON, BERI NILAI DEFAULT <==
       autoAdvanceNextQuestion:
           configJson['autoAdvanceNextQuestion'] as bool? ?? false,
       autoAdvanceDelay: configJson['autoAdvanceDelay'] as int? ?? 2,
@@ -118,14 +133,12 @@ class QuizTopic {
       'questionLimit': questionLimit,
       'includedQuizSets': includedQuizSets,
       'showCorrectAnswer': showCorrectAnswer,
-      // ==> SIMPAN KE JSON <==
       'autoAdvanceNextQuestion': autoAdvanceNextQuestion,
       'autoAdvanceDelay': autoAdvanceDelay,
     };
   }
 
   Map<String, dynamic> toFullJson() {
-    // Fungsi ini mungkin tidak lagi relevan jika pertanyaan disimpan terpisah
     return {'name': name, 'metadata': toConfigJson()};
   }
 }

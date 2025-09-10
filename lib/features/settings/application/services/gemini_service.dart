@@ -387,9 +387,9 @@ Jawaban Anda:
   Future<List<QuizQuestion>> generateQuizFromSubject(
     String subjectJsonPath, {
     int questionCount = 10,
+    QuizDifficulty difficulty = QuizDifficulty.medium,
   }) async {
     final apiKey = await _getActiveApiKey();
-    // ==> PERUBAHAN DI SINI: Gunakan model khusus kuis <==
     final model =
         await _prefsService.loadGeminiQuizModel() ?? 'gemini-1.5-flash';
 
@@ -397,7 +397,6 @@ Jawaban Anda:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    // 1. Muat konten dari subject
     final discussions = await _discussionService.loadDiscussions(
       subjectJsonPath,
     );
@@ -424,7 +423,8 @@ Jawaban Anda:
     ${contentBuffer.toString()}
     ---
     
-    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan.
+    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
+    Untuk tingkat kesulitan "HOTS", buatlah pertanyaan yang membutuhkan analisis atau penerapan konsep, bukan hanya ingatan.
     
     Aturan Jawaban:
     1.  HANYA kembalikan dalam format array JSON yang valid.

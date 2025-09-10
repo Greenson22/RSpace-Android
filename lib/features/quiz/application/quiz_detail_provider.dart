@@ -1,8 +1,8 @@
 // lib/features/quiz/application/quiz_detail_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
-import '../domain/models/quiz_model.dart';
 import 'quiz_service.dart';
 
 class QuizDetailProvider with ChangeNotifier {
@@ -23,11 +23,9 @@ class QuizDetailProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Muat ulang data topik terbaru untuk mendapatkan setting terakhir
       topic = await _quizService.getTopic(topic.name);
       quizSets = await _quizService.getQuizSetsInTopic(topic.name);
 
-      // Jika belum ada set yang dipilih, pilih semua secara default
       if (topic.includedQuizSets.isEmpty && quizSets.isNotEmpty) {
         topic.includedQuizSets = quizSets.map((e) => e.name).toList();
         await _quizService.saveTopic(topic);
@@ -38,10 +36,12 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI DIPERBARUI <==
   Future<void> addQuizSetFromSubject(
     String quizSetName,
     String subjectJsonPath,
     int questionCount,
+    QuizDifficulty difficulty, // Tambah parameter
   ) async {
     _isLoading = true;
     notifyListeners();
@@ -49,11 +49,12 @@ class QuizDetailProvider with ChangeNotifier {
       final newQuestions = await _geminiService.generateQuizFromSubject(
         subjectJsonPath,
         questionCount: questionCount,
+        difficulty: difficulty, // Kirim ke service
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
       await _quizService.saveQuizSet(topic.name, newQuizSet);
-      await fetchQuizSets(); // Muat ulang semua data
+      await fetchQuizSets();
     } catch (e) {
       rethrow;
     } finally {
@@ -62,30 +63,25 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI DIPERBARUI <==
   Future<void> addQuestionsToQuizSet({
     required String quizSetName,
     required String subjectJsonPath,
     required int questionCount,
+    required QuizDifficulty difficulty, // Tambah parameter
   }) async {
     _isLoading = true;
     notifyListeners();
     try {
-      // 1. Generate pertanyaan baru
       final newQuestions = await _geminiService.generateQuizFromSubject(
         subjectJsonPath,
         questionCount: questionCount,
+        difficulty: difficulty, // Kirim ke service
       );
 
-      // 2. Muat set kuis yang ada
       final existingSet = quizSets.firstWhere((qs) => qs.name == quizSetName);
-
-      // 3. Tambahkan pertanyaan baru ke daftar yang sudah ada
       existingSet.questions.addAll(newQuestions);
-
-      // 4. Simpan kembali seluruh set kuis
       await _quizService.saveQuizSet(topic.name, existingSet);
-
-      // 5. Muat ulang data untuk memperbarui UI
       await fetchQuizSets();
     } catch (e) {
       rethrow;
@@ -137,15 +133,10 @@ class QuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> PERBAIKI FUNGSI INI <==
   Future<void> deleteQuizSet(String quizSetName) async {
-    // Hapus dari daftar inklusi di topik
     topic.includedQuizSets.remove(quizSetName);
-    // Hapus file fisik
     await _quizService.deleteQuizSet(topic.name, quizSetName);
-    // Simpan perubahan pada topik (daftar inklusi yang baru)
     await _quizService.saveTopic(topic);
-    // Muat ulang data untuk memperbarui UI
     await fetchQuizSets();
   }
 }
