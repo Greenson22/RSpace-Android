@@ -92,10 +92,11 @@ class DiscussionCard extends StatelessWidget {
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
       context: context,
+      discussion: discussion, // Kirim objek discussion
       title: 'Tambah Poin Baru',
       label: 'Teks Poin',
-      onSave: (text, inheritCode) {
-        provider.addPoint(discussion, text, inheritRepetitionCode: inheritCode);
+      onSave: (text, repetitionCode) {
+        provider.addPoint(discussion, text, repetitionCode: repetitionCode);
         _showSnackBar(context, 'Poin berhasil ditambahkan.');
       },
     );

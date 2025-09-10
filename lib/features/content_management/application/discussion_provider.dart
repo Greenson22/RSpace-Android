@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import '../domain/models/discussion_model.dart';
 import '../domain/services/discussion_service.dart';
 import '../../../core/services/path_service.dart';
@@ -126,14 +127,12 @@ class DiscussionProvider
   void addPoint(
     Discussion discussion,
     String text, {
-    bool inheritRepetitionCode = false,
+    required String repetitionCode,
   }) {
     final newPoint = Point(
       pointText: text,
-      date: inheritRepetitionCode && discussion.date != null
-          ? discussion.date!
-          : DateFormat('yyyy-MM-dd').format(DateTime.now()),
-      repetitionCode: inheritRepetitionCode ? discussion.repetitionCode : 'R0D',
+      date: getNewDateForRepetitionCode(repetitionCode),
+      repetitionCode: repetitionCode,
     );
     discussion.points.add(newPoint);
     filterAndSortDiscussions();
