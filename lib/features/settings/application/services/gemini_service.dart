@@ -384,8 +384,8 @@ Jawaban Anda:
     }
   }
 
-  Future<List<QuizQuestion>> generateQuizFromSubject(
-    String subjectJsonPath, {
+  Future<List<QuizQuestion>> generateQuizFromText(
+    String customTopic, {
     int questionCount = 10,
     QuizDifficulty difficulty = QuizDifficulty.medium,
   }) async {
@@ -397,30 +397,15 @@ Jawaban Anda:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    final discussions = await _discussionService.loadDiscussions(
-      subjectJsonPath,
-    );
-    final contentBuffer = StringBuffer();
-    for (final discussion in discussions) {
-      if (!discussion.finished) {
-        contentBuffer.writeln('- Judul: ${discussion.discussion}');
-        for (final point in discussion.points) {
-          contentBuffer.writeln('  - Poin: ${point.pointText}');
-        }
-      }
-    }
-
-    if (contentBuffer.isEmpty) {
-      throw Exception(
-        'Subject ini tidak memiliki konten aktif untuk dibuatkan kuis.',
-      );
+    if (customTopic.trim().isEmpty) {
+      throw Exception('Materi kuis tidak boleh kosong.');
     }
 
     final prompt =
         '''
     Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
     ---
-    ${contentBuffer.toString()}
+    $customTopic
     ---
     
     Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
@@ -443,7 +428,6 @@ Jawaban Anda:
       }
     ]
     ''';
-
     final apiUrl =
         'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
 
@@ -472,14 +456,12 @@ Jawaban Anda:
         return jsonResponse.map((item) {
           final optionsList = (item['options'] as List<dynamic>).cast<String>();
           final correctIndex = item['correctAnswerIndex'] as int;
-
           final options = List.generate(optionsList.length, (i) {
             return QuizOption(
               text: optionsList[i],
               isCorrect: i == correctIndex,
             );
           });
-
           return QuizQuestion(
             questionText: item['questionText'] as String,
             options: options,
@@ -495,5 +477,37 @@ Jawaban Anda:
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<List<QuizQuestion>> generateQuizFromSubject(
+    String subjectJsonPath, {
+    int questionCount = 10,
+    QuizDifficulty difficulty = QuizDifficulty.medium,
+  }) async {
+    final discussions = await _discussionService.loadDiscussions(
+      subjectJsonPath,
+    );
+    final contentBuffer = StringBuffer();
+    for (final discussion in discussions) {
+      if (!discussion.finished) {
+        contentBuffer.writeln('- Judul: ${discussion.discussion}');
+        for (final point in discussion.points) {
+          contentBuffer.writeln('  - Poin: ${point.pointText}');
+        }
+      }
+    }
+
+    if (contentBuffer.isEmpty) {
+      throw Exception(
+        'Subject ini tidak memiliki konten aktif untuk dibuatkan kuis.',
+      );
+    }
+
+    // Panggil fungsi generate dari teks dengan konten yang sudah diekstrak
+    return generateQuizFromText(
+      contentBuffer.toString(),
+      questionCount: questionCount,
+      difficulty: difficulty,
+    );
   }
 }

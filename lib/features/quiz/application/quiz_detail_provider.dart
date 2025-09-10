@@ -36,12 +36,11 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI DIPERBARUI <==
   Future<void> addQuizSetFromSubject(
     String quizSetName,
     String subjectJsonPath,
     int questionCount,
-    QuizDifficulty difficulty, // Tambah parameter
+    QuizDifficulty difficulty,
   ) async {
     _isLoading = true;
     notifyListeners();
@@ -49,7 +48,7 @@ class QuizDetailProvider with ChangeNotifier {
       final newQuestions = await _geminiService.generateQuizFromSubject(
         subjectJsonPath,
         questionCount: questionCount,
-        difficulty: difficulty, // Kirim ke service
+        difficulty: difficulty,
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
@@ -63,12 +62,37 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI DIPERBARUI <==
+  Future<void> addQuizSetFromText({
+    required String quizSetName,
+    required String customTopic,
+    required int questionCount,
+    required QuizDifficulty difficulty,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final newQuestions = await _geminiService.generateQuizFromText(
+        customTopic,
+        questionCount: questionCount,
+        difficulty: difficulty,
+      );
+      final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
+
+      await _quizService.saveQuizSet(topic.name, newQuizSet);
+      await fetchQuizSets();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> addQuestionsToQuizSet({
     required String quizSetName,
     required String subjectJsonPath,
     required int questionCount,
-    required QuizDifficulty difficulty, // Tambah parameter
+    required QuizDifficulty difficulty,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -76,7 +100,7 @@ class QuizDetailProvider with ChangeNotifier {
       final newQuestions = await _geminiService.generateQuizFromSubject(
         subjectJsonPath,
         questionCount: questionCount,
-        difficulty: difficulty, // Kirim ke service
+        difficulty: difficulty,
       );
 
       final existingSet = quizSets.firstWhere((qs) => qs.name == quizSetName);

@@ -7,6 +7,8 @@ import '../../application/quiz_detail_provider.dart';
 import '../dialogs/add_questions_dialog.dart';
 import '../dialogs/add_quiz_dialog.dart';
 import '../dialogs/quiz_settings_dialog.dart';
+// ==> IMPORT DIALOG BARU
+import '../dialogs/generate_quiz_from_text_dialog.dart';
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -24,10 +26,11 @@ class QuizDetailPage extends StatelessWidget {
             onPressed: () => showQuizSettingsDialog(context),
             tooltip: 'Pengaturan Sesi Kuis',
           ),
+          // ==> PERBARUI TOMBOL TAMBAH UNTUK MEMBERI PILIHAN <==
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => showAddQuizDialog(context),
-            tooltip: 'Buat Set Kuis Baru (AI)',
+            onPressed: () => _showAddOptions(context),
+            tooltip: 'Buat Set Kuis Baru',
           ),
         ],
       ),
@@ -47,7 +50,38 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI DENGAN DIALOG KONFIRMASI <==
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PILIHAN <==
+  void _showAddOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Pilih Sumber Materi'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showAddQuizDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.topic_outlined),
+              title: Text('Dari Subject yang Ada'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showGenerateQuizFromTextDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.text_fields_outlined),
+              title: Text('Dari Teks Manual'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuizSetList(BuildContext context, QuizDetailProvider provider) {
     return ListView(
       children: [
@@ -80,7 +114,6 @@ class QuizDetailPage extends StatelessWidget {
                   if (value == 'add') {
                     showAddQuestionsDialog(context, quizSet);
                   } else if (value == 'delete') {
-                    // Tampilkan dialog konfirmasi
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
@@ -105,7 +138,6 @@ class QuizDetailPage extends StatelessWidget {
                         ],
                       ),
                     );
-                    // Jika dikonfirmasi, panggil fungsi hapus
                     if (confirmed == true) {
                       provider.deleteQuizSet(quizSet.name);
                     }
