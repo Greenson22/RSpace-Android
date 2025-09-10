@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/widgets/point_tile.dart
+// lib/features/content_management/presentation/discussions/widgets/point_tile.dart
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,8 +6,10 @@ import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import 'point_edit_popup_menu.dart';
 import '../../../../../core/widgets/linkify_text.dart';
-import '../dialogs/discussion_dialogs.dart'; // Impor file barrel
+import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
+import '../../../../../core/providers/neuron_provider.dart';
+import '../../../../../core/utils/scaffold_messenger_utils.dart';
 
 class PointTile extends StatelessWidget {
   final Discussion discussion;
@@ -144,6 +146,13 @@ class PointTile extends StatelessWidget {
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
+                        // ==> PERBAIKAN DIMULAI DI SINI <==
+                        // 1. Simpan context sebelum await
+                        final currentContext = context;
+                        final scaffoldMessenger = ScaffoldMessenger.of(
+                          currentContext,
+                        );
+
                         if (isFinished) return;
                         final currentCode = point.repetitionCode;
                         final currentIndex = getRepetitionCodeIndex(
@@ -153,20 +162,40 @@ class PointTile extends StatelessWidget {
                             provider.repetitionCodes.length - 1) {
                           final nextCode =
                               provider.repetitionCodes[currentIndex + 1];
+
+                          // 2. Lakukan operasi async (await)
                           final confirmed =
                               await showRepetitionCodeUpdateConfirmationDialog(
-                                context: context,
+                                context: currentContext,
                                 currentCode: currentCode,
                                 nextCode: nextCode,
                               );
+
+                          // 3. Setelah await, cek apakah widget masih mounted
+                          if (!currentContext.mounted) return;
+
                           if (confirmed) {
                             provider.incrementRepetitionCode(point);
-                            _showSnackBar(
-                              context,
-                              'Kode repetisi poin diubah ke $nextCode.',
+
+                            final reward = getNeuronRewardForCode(nextCode);
+                            if (reward > 0) {
+                              await Provider.of<NeuronProvider>(
+                                currentContext,
+                                listen: false,
+                              ).addNeurons(reward);
+                              showNeuronRewardSnackBar(currentContext, reward);
+                            }
+
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Kode repetisi poin diubah ke $nextCode.',
+                                ),
+                              ),
                             );
                           }
                         }
+                        // ==> PERBAIKAN SELESAI <==
                       },
                   ),
                 ],

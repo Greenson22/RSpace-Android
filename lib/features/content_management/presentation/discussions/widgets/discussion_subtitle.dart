@@ -4,30 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
+import '../../../../../core/services/storage_service.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
-// Import file utilitas yang baru diperbarui
 import '../../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../../core/providers/neuron_provider.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
   final Discussion discussion;
-  final bool isCompact; // Properti baru
+  final bool isCompact;
 
   const DiscussionSubtitle({
     super.key,
     required this.discussion,
-    this.isCompact = false, // Nilai default
+    this.isCompact = false,
   });
-
-  Future<void> _addNeurons(BuildContext context, int amount) async {
-    // Panggil NeuronProvider
-    await Provider.of<NeuronProvider>(
-      context,
-      listen: false,
-    ).addNeurons(amount);
-    showNeuronRewardSnackBar(context, amount);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +35,6 @@ class DiscussionSubtitle extends StatelessWidget {
 
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
-    // >> PERBAIKAN: Logika disederhanakan, langsung menggunakan getter dari model
     final displayDate = discussion.effectiveDate;
     final displayCode = discussion.effectiveRepetitionCode;
 
@@ -70,9 +60,9 @@ class DiscussionSubtitle extends StatelessWidget {
 
     return RichText(
       text: TextSpan(
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontSize: isCompact ? 11 : 12, // Ukuran font dinamis
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontSize: isCompact ? 11 : 12),
         children: [
           const TextSpan(text: 'Date: '),
           TextSpan(
@@ -85,35 +75,50 @@ class DiscussionSubtitle extends StatelessWidget {
             style: TextStyle(
               color: getColorForRepetitionCode(codeText),
               fontWeight: FontWeight.bold,
-              // ==> Tampilkan garis bawah hanya jika bisa diklik <==
               decoration: (!discussion.finished && discussion.points.isEmpty)
                   ? TextDecoration.underline
                   : null,
             ),
-            // ==> Atur recognizer hanya jika bisa diklik <==
             recognizer: (!discussion.finished && discussion.points.isEmpty)
                 ? (TapGestureRecognizer()
                     ..onTap = () async {
-                      // Aksi ini akan selalu menargetkan diskusi itu sendiri, bukan point di dalamnya.
+                      // ==> PERBAIKAN DIMULAI DI SINI <==
+                      // 1. Simpan context sebelum await
+                      final currentContext = context;
+                      final scaffoldMessenger = ScaffoldMessenger.of(
+                        currentContext,
+                      );
+
                       final currentCode = discussion.repetitionCode;
                       final currentIndex = getRepetitionCodeIndex(currentCode);
                       if (currentIndex < provider.repetitionCodes.length - 1) {
                         final nextCode =
                             provider.repetitionCodes[currentIndex + 1];
+
+                        // 2. Lakukan operasi async (await)
                         final confirmed =
                             await showRepetitionCodeUpdateConfirmationDialog(
-                              context: context,
+                              context: currentContext,
                               currentCode: currentCode,
                               nextCode: nextCode,
                             );
+
+                        // 3. Setelah await, cek apakah widget masih mounted
+                        if (!currentContext.mounted) return;
+
                         if (confirmed) {
-                          // ==> TAMBAHKAN NEURONS DI SINI <==
-                          _addNeurons(
-                            context,
-                            5,
-                          ); // Beri 5 neuron setiap kali naik level
                           provider.incrementRepetitionCode(discussion);
-                          ScaffoldMessenger.of(context).showSnackBar(
+
+                          final reward = getNeuronRewardForCode(nextCode);
+                          if (reward > 0) {
+                            await Provider.of<NeuronProvider>(
+                              currentContext,
+                              listen: false,
+                            ).addNeurons(reward);
+                            showNeuronRewardSnackBar(currentContext, reward);
+                          }
+
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                               content: Text(
                                 'Kode repetisi diubah ke $nextCode.',
@@ -123,6 +128,7 @@ class DiscussionSubtitle extends StatelessWidget {
                           );
                         }
                       }
+                      // ==> PERBAIKAN SELESAI <==
                     })
                 : null,
           ),

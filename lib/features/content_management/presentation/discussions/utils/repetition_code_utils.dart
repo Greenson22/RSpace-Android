@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/utils/repetition_code_utils.dart
+// lib/features/content_management/presentation/discussions/utils/repetition_code_utils.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -13,6 +13,22 @@ const List<String> kRepetitionCodes = [
   'R30D',
   'Finish',
 ];
+
+// ==> BARU: Peta untuk hadiah neuron <==
+const Map<String, int> kNeuronRewards = {
+  'R1D': 1,
+  'R3D': 3,
+  'R7D': 7,
+  'R7D2': 7,
+  'R7D3': 7,
+  'R30D': 30,
+  'Finish': 50,
+};
+
+/// Mendapatkan jumlah neuron berdasarkan kode repetisi.
+int getNeuronRewardForCode(String code) {
+  return kNeuronRewards[code] ?? 0;
+}
 
 // Fungsi untuk mendapatkan indeks kode, berguna untuk perbandingan
 int getRepetitionCodeIndex(String code) {
