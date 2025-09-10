@@ -70,9 +70,21 @@ class QuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> TAMBAHKAN FUNGSI BARU DI SINI <==
   Future<void> updateShowCorrectAnswer(bool value) async {
     topic.showCorrectAnswer = value;
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  // ==> TAMBAHKAN FUNGSI BARU DI SINI <==
+  Future<void> updateAutoAdvance(bool value) async {
+    topic.autoAdvanceNextQuestion = value;
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  Future<void> updateAutoAdvanceDelay(int delay) async {
+    topic.autoAdvanceDelay = delay;
     await _quizService.saveTopic(topic);
     notifyListeners();
   }

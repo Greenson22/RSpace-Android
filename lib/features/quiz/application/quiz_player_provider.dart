@@ -1,5 +1,6 @@
 // lib/features/quiz/application/quiz_player_provider.dart
 
+import 'dart:async'; // ==> IMPORT TIMER
 import 'package:flutter/material.dart';
 import '../domain/models/quiz_model.dart';
 import 'quiz_service.dart';
@@ -22,10 +23,12 @@ class QuizPlayerProvider with ChangeNotifier {
   final Map<String, QuizOption?> _userAnswers = {};
   Map<String, QuizOption?> get userAnswers => _userAnswers;
 
-  // ==> TAMBAHKAN STATE BARU UNTUK MENGETAHUI JIKA JAWABAN SUDAH DITAMPILKAN
   final Set<String> _revealedAnswers = {};
   bool isAnswerRevealed(String questionId) =>
       _revealedAnswers.contains(questionId);
+
+  // ==> TAMBAHKAN TIMER DI SINI
+  Timer? _autoAdvanceTimer;
 
   int get score {
     int correctAnswers = 0;
@@ -41,36 +44,51 @@ class QuizPlayerProvider with ChangeNotifier {
     _loadQuestions();
   }
 
+  // ==> JANGAN LUPA BERSIHKAN TIMER SAAT PROVIDER DIHAPUS
+  @override
+  void dispose() {
+    _autoAdvanceTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadQuestions() async {
     _state = QuizState.loading;
     notifyListeners();
 
     try {
-      // Service akan menangani logika shuffle, limit, dan filter set kuis
       _questions = await _quizService.getAllQuestionsInTopic(topic);
-
       _userAnswers.clear();
-      // ==> RESET SET JAWABAN TERLIHAT
       _revealedAnswers.clear();
       _currentIndex = 0;
       _state = QuizState.playing;
     } catch (e) {
       _questions = [];
-      _state = QuizState.finished; // Atau bisa juga state error
+      _state = QuizState.finished;
     }
     notifyListeners();
   }
 
   void answerQuestion(QuizQuestion question, QuizOption option) {
     _userAnswers[question.id] = option;
-    // ==> JIKA FITUR AKTIF, TAMBAHKAN ID PERTANYAAN KE SET
     if (topic.showCorrectAnswer) {
       _revealedAnswers.add(question.id);
+    }
+    // ==> LOGIKA AUTO-ADVANCE
+    if (topic.autoAdvanceNextQuestion) {
+      _autoAdvanceTimer?.cancel(); // Batalkan timer sebelumnya jika ada
+      _autoAdvanceTimer = Timer(Duration(seconds: topic.autoAdvanceDelay), () {
+        if (currentIndex < _questions.length - 1) {
+          nextQuestion();
+        } else {
+          finishQuiz();
+        }
+      });
     }
     notifyListeners();
   }
 
   void nextQuestion() {
+    _autoAdvanceTimer?.cancel(); // Batalkan timer saat pindah manual
     if (_currentIndex < _questions.length - 1) {
       _currentIndex++;
       notifyListeners();
@@ -78,6 +96,7 @@ class QuizPlayerProvider with ChangeNotifier {
   }
 
   void previousQuestion() {
+    _autoAdvanceTimer?.cancel(); // Batalkan timer saat pindah manual
     if (_currentIndex > 0) {
       _currentIndex--;
       notifyListeners();
@@ -85,6 +104,7 @@ class QuizPlayerProvider with ChangeNotifier {
   }
 
   void finishQuiz() {
+    _autoAdvanceTimer?.cancel(); // Batalkan timer
     _state = QuizState.finished;
     notifyListeners();
   }

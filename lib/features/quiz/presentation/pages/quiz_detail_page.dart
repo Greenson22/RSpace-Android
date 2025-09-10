@@ -48,6 +48,10 @@ class QuizDetailPage extends StatelessWidget {
           ? provider.topic.questionLimit.toString()
           : '',
     );
+    // ==> CONTROLLER BARU UNTUK DELAY
+    final delayController = TextEditingController(
+      text: provider.topic.autoAdvanceDelay.toString(),
+    );
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -66,7 +70,6 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateShuffle(value);
             },
           ),
-          // ==> TAMBAHKAN SWITCH BARU DI SINI <==
           SwitchListTile(
             title: const Text('Tampilkan Jawaban Benar'),
             subtitle: const Text(
@@ -77,6 +80,38 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateShowCorrectAnswer(value);
             },
           ),
+          // ==> TAMBAHKAN PENGATURAN BARU DI SINI
+          SwitchListTile(
+            title: const Text('Auto Lanjut Pertanyaan'),
+            subtitle: const Text('Pindah otomatis setelah menjawab.'),
+            value: provider.topic.autoAdvanceNextQuestion,
+            onChanged: (value) {
+              provider.updateAutoAdvance(value);
+            },
+          ),
+          // Tampilkan input delay hanya jika auto-lanjut aktif
+          if (provider.topic.autoAdvanceNextQuestion)
+            ListTile(
+              title: const Text('Tunda Auto Lanjut'),
+              trailing: SizedBox(
+                width: 80,
+                child: TextFormField(
+                  controller: delayController,
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    suffixText: 'detik',
+                  ),
+                  onFieldSubmitted: (value) {
+                    final delay = int.tryParse(value) ?? 2;
+                    provider.updateAutoAdvanceDelay(delay);
+                  },
+                ),
+              ),
+            ),
           ListTile(
             title: const Text('Batas Pertanyaan'),
             subtitle: const Text('Isi 0 atau kosongkan untuk tanpa batas'),
