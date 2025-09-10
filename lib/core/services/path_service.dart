@@ -192,17 +192,17 @@ class PathService {
       path.join(await contentsPath, 'feedback.json');
 
   Future<String> get promptLibraryPath async =>
-      path.join(await _baseDataPath, 'prompt_library');
+      path.join(await contentsPath, 'prompt_library');
 
   Future<String> get countdownTimersPath async =>
       path.join(await contentsPath, 'countdown_timers.json');
 
   Future<String> get progressPath async => // Path baru untuk fitur Progress
-      path.join(await _baseDataPath, 'progress');
+      path.join(await contentsPath, 'progress');
 
   // ==> TAMBAHKAN PATH BARU UNTUK FILE PROFIL PENGGUNA
   Future<String> get userProfilePath async =>
-      path.join(await _baseDataPath, 'user_profile.dat');
+      path.join(await contentsPath, 'user_profile.dat');
 
   Future<String> get perpuskuDataPath async {
     String? customPath = await loadPerpuskuDataPath();
