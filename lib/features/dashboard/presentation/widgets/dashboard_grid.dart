@@ -15,6 +15,7 @@ import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_page.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -42,6 +43,10 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
+    ),
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const QuizPage()),
     ),
     () => Navigator.push(
       context,
@@ -120,6 +125,12 @@ class DashboardGrid extends StatelessWidget {
             'label': 'Statistik',
             'subtitle': 'Lihat progres & data',
             'colors': AppTheme.gradientColors5,
+          },
+          {
+            'icon': Icons.quiz_outlined,
+            'label': 'Kuis',
+            'subtitle': 'Uji pemahaman Anda',
+            'colors': const [Color(0xFF43A047), Color(0xFF66BB6A)],
           },
           {
             'icon': Icons.cloud_outlined,
