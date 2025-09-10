@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
-import '../dialogs/add_quiz_dialog.dart';
-// ==> IMPORT DIALOG BARU
 import '../dialogs/add_questions_dialog.dart';
+import '../dialogs/add_quiz_dialog.dart';
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -16,7 +15,17 @@ class QuizDetailPage extends StatelessWidget {
     final provider = Provider.of<QuizDetailProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Kelola Kuis: ${provider.topic.name}')),
+      appBar: AppBar(
+        title: Text('Kelola Kuis: ${provider.topic.name}'),
+        // ==> PERUBAHAN DI SINI: Tombol ditambahkan di actions <==
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => showAddQuizDialog(context),
+            tooltip: 'Buat Set Kuis Baru (AI)',
+          ),
+        ],
+      ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -32,11 +41,7 @@ class QuizDetailPage extends StatelessWidget {
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showAddQuizDialog(context),
-        label: const Text('Buat Set Kuis Baru (AI)'),
-        icon: const Icon(Icons.add),
-      ),
+      // ==> PERUBAHAN DI SINI: FloatingActionButton dihapus <==
     );
   }
 
@@ -49,6 +54,7 @@ class QuizDetailPage extends StatelessWidget {
           ? provider.topic.questionLimit.toString()
           : '',
     );
+    // ==> CONTROLLER BARU UNTUK DELAY
     final delayController = TextEditingController(
       text: provider.topic.autoAdvanceDelay.toString(),
     );
@@ -80,6 +86,7 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateShowCorrectAnswer(value);
             },
           ),
+          // ==> TAMBAHKAN PENGATURAN BARU DI SINI
           SwitchListTile(
             title: const Text('Auto Lanjut Pertanyaan'),
             subtitle: const Text('Pindah otomatis setelah menjawab.'),
@@ -88,6 +95,7 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateAutoAdvance(value);
             },
           ),
+          // Tampilkan input delay hanya jika auto-lanjut aktif
           if (provider.topic.autoAdvanceNextQuestion)
             ListTile(
               title: const Text('Tunda Auto Lanjut'),
