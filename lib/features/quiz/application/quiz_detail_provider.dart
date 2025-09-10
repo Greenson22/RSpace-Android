@@ -38,15 +38,19 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI DIPERBARUI UNTUK MENERIMA questionCount <==
   Future<void> addQuizSetFromSubject(
     String quizSetName,
     String subjectJsonPath,
+    int questionCount,
   ) async {
     _isLoading = true;
     notifyListeners();
     try {
+      // ==> KIRIM questionCount KE SERVICE <==
       final newQuestions = await _geminiService.generateQuizFromSubject(
         subjectJsonPath,
+        questionCount: questionCount,
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 

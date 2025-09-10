@@ -384,10 +384,11 @@ Jawaban Anda:
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT KUIS <==
+  // ==> FUNGSI DIPERBARUI UNTUK MENERIMA questionCount <==
   Future<List<QuizQuestion>> generateQuizFromSubject(
-    String subjectJsonPath,
-  ) async {
+    String subjectJsonPath, {
+    int questionCount = 10,
+  }) async {
     final apiKey = await _getActiveApiKey();
     final model =
         await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
@@ -416,6 +417,7 @@ Jawaban Anda:
       );
     }
 
+    // ==> PROMPT DIPERBARUI UNTUK MEMASUKKAN JUMLAH PERTANYAAN <==
     final prompt =
         '''
     Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
@@ -423,7 +425,7 @@ Jawaban Anda:
     ${contentBuffer.toString()}
     ---
     
-    Buatkan 5 pertanyaan kuis pilihan ganda yang relevan.
+    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan.
     
     Aturan Jawaban:
     1.  HANYA kembalikan dalam format array JSON yang valid.

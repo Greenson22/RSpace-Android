@@ -8,6 +8,7 @@ import 'package:my_aplication/features/content_management/domain/services/topic_
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:flutter/services.dart'; // Import untuk input formatter
 
 void showAddQuizDialog(BuildContext context) {
   // Mengambil provider dari context Halaman Detail
@@ -38,6 +39,10 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
 
   // State untuk mengelola pilihan dropdown dan text field
   final TextEditingController _quizSetNameController = TextEditingController();
+  // ==> TAMBAHKAN CONTROLLER BARU UNTUK JUMLAH PERTANYAAN <==
+  final TextEditingController _questionCountController = TextEditingController(
+    text: '10',
+  );
   String? _selectedTopicName;
   String? _selectedSubjectName;
   List<String> _topicNames = [];
@@ -54,6 +59,8 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   @override
   void dispose() {
     _quizSetNameController.dispose();
+    // ==> JANGAN LUPA DISPOSE CONTROLLER BARU <==
+    _questionCountController.dispose();
     super.dispose();
   }
 
@@ -105,12 +112,19 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
       '$_selectedSubjectName.json',
     );
     final quizSetName = _quizSetNameController.text.trim();
+    // ==> PARSE JUMLAH PERTANYAAN <==
+    final questionCount = int.tryParse(_questionCountController.text) ?? 10;
 
     // Tutup dialog saat proses dimulai
     Navigator.of(context).pop();
 
     try {
-      await provider.addQuizSetFromSubject(quizSetName, subjectJsonPath);
+      // ==> KIRIM JUMLAH PERTANYAAN KE PROVIDER <==
+      await provider.addQuizSetFromSubject(
+        quizSetName,
+        subjectJsonPath,
+        questionCount,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -154,6 +168,26 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Nama set kuis tidak boleh kosong.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // ==> TAMBAHKAN INPUT FIELD UNTUK JUMLAH PERTANYAAN <==
+              TextFormField(
+                controller: _questionCountController,
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah Pertanyaan',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Jumlah tidak boleh kosong.';
+                  }
+                  final count = int.tryParse(value);
+                  if (count == null || count <= 0) {
+                    return 'Masukkan angka yang valid.';
                   }
                   return null;
                 },
