@@ -62,7 +62,6 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMBAHKAN PERTANYAAN KE SET YANG ADA <==
   Future<void> addQuestionsToQuizSet({
     required String quizSetName,
     required String subjectJsonPath,
@@ -138,9 +137,15 @@ class QuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> PERBAIKI FUNGSI INI <==
   Future<void> deleteQuizSet(String quizSetName) async {
-    // TODO: Implementasi di QuizService untuk menghapus file JSON
-    // await _quizService.deleteQuizSet(topic.name, quizSetName);
-    await fetchQuizSets(); // Untuk sementara, cukup refresh
+    // Hapus dari daftar inklusi di topik
+    topic.includedQuizSets.remove(quizSetName);
+    // Hapus file fisik
+    await _quizService.deleteQuizSet(topic.name, quizSetName);
+    // Simpan perubahan pada topik (daftar inklusi yang baru)
+    await _quizService.saveTopic(topic);
+    // Muat ulang data untuk memperbarui UI
+    await fetchQuizSets();
   }
 }

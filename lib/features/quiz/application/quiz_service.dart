@@ -94,6 +94,18 @@ class QuizService {
     await file.writeAsString(encoder.convert(quizSet.toJson()));
   }
 
+  // ==> FUNGSI BARU UNTUK MENGHAPUS FILE SET KUIS <==
+  Future<void> deleteQuizSet(String topicName, String quizSetName) async {
+    final quizzesPath = await _quizPath;
+    final fileName = '${quizSetName.replaceAll(' ', '_').toLowerCase()}.json';
+    final filePath = path.join(quizzesPath, topicName, fileName);
+    final file = File(filePath);
+
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+
   Future<List<QuizTopic>> getAllTopics() async {
     final quizzesPath = await _quizPath;
     final directory = Directory(quizzesPath);
@@ -168,6 +180,9 @@ class QuizService {
       'shuffleQuestions': true,
       'questionLimit': 0,
       'includedQuizSets': [],
+      'showCorrectAnswer': false,
+      'autoAdvanceNextQuestion': false,
+      'autoAdvanceDelay': 2,
     };
   }
 
@@ -236,6 +251,9 @@ class QuizService {
         shuffleQuestions: fullTopicData.shuffleQuestions,
         questionLimit: fullTopicData.questionLimit,
         includedQuizSets: fullTopicData.includedQuizSets,
+        showCorrectAnswer: fullTopicData.showCorrectAnswer,
+        autoAdvanceNextQuestion: fullTopicData.autoAdvanceNextQuestion,
+        autoAdvanceDelay: fullTopicData.autoAdvanceDelay,
       );
       await saveTopic(newTopicData);
     } catch (e) {

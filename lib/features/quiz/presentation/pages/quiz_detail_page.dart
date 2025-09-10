@@ -6,10 +6,8 @@ import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
 import '../dialogs/add_questions_dialog.dart';
 import '../dialogs/add_quiz_dialog.dart';
-// ==> IMPORT DIALOG PENGATURAN BARU
 import '../dialogs/quiz_settings_dialog.dart';
 
-// ==> KEMBALIKAN MENJADI STATELESSWIDGET
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
 
@@ -21,7 +19,6 @@ class QuizDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Kelola Kuis: ${provider.topic.name}'),
         actions: [
-          // ==> TOMBOL PENGATURAN BARU
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => showQuizSettingsDialog(context),
@@ -38,7 +35,6 @@ class QuizDetailPage extends StatelessWidget {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // ==> PANEL PENGATURAN DIHAPUS DARI SINI
                 Expanded(
                   child: provider.quizSets.isEmpty
                       ? const Center(
@@ -51,6 +47,7 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
+  // ==> FUNGSI INI DIPERBARUI DENGAN DIALOG KONFIRMASI <==
   Widget _buildQuizSetList(BuildContext context, QuizDetailProvider provider) {
     return ListView(
       children: [
@@ -79,12 +76,39 @@ class QuizDetailPage extends StatelessWidget {
               title: Text(quizSet.name.replaceAll('_', ' ')),
               subtitle: Text('${quizSet.questions.length} pertanyaan'),
               trailing: PopupMenuButton<String>(
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'add') {
                     showAddQuestionsDialog(context, quizSet);
                   } else if (value == 'delete') {
-                    // TODO: Tambahkan konfirmasi dialog
-                    provider.deleteQuizSet(quizSet.name);
+                    // Tampilkan dialog konfirmasi
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Konfirmasi Hapus'),
+                        content: Text(
+                          'Anda yakin ingin menghapus set kuis "${quizSet.name}" secara permanen?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: const Text('Batal'),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: const Text('Hapus'),
+                          ),
+                        ],
+                      ),
+                    );
+                    // Jika dikonfirmasi, panggil fungsi hapus
+                    if (confirmed == true) {
+                      provider.deleteQuizSet(quizSet.name);
+                    }
                   }
                 },
                 itemBuilder: (context) => [
