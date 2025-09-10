@@ -2,15 +2,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_aplication/core/providers/neuron_provider.dart';
 import 'package:provider/provider.dart';
-import '../../application/discussion_provider.dart'; // Pastikan path ini benar
+import '../../application/discussion_provider.dart';
 import 'dialogs/discussion_dialogs.dart';
-import 'widgets/discussion_list_item.dart'; // Ganti dari discussion_card.dart
+import 'widgets/discussion_list_item.dart';
 import 'widgets/discussion_stats_header.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
-// ==> 1. IMPORT FILE UTILITAS UNTUK NOTIFIKASI <==
 import '../../../../core/utils/scaffold_messenger_utils.dart';
+import '../../../../core/providers/neuron_provider.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -204,7 +203,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           );
           _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
           if (mounted) {
-            // Panggil NeuronProvider
             await Provider.of<NeuronProvider>(
               context,
               listen: false,
@@ -213,6 +211,50 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           }
         } catch (e) {
           _showSnackBar("Gagal: ${e.toString()}", isError: true);
+        }
+      },
+    );
+  }
+
+  void _deleteDiscussion(
+    BuildContext context,
+    DiscussionProvider provider,
+    dynamic discussion,
+  ) {
+    showDeleteDiscussionConfirmationDialog(
+      context: context,
+      discussionName: discussion.discussion,
+      hasLinkedFile:
+          discussion.filePath != null && discussion.filePath!.isNotEmpty,
+      onDelete: () async {
+        try {
+          final neuronProvider = Provider.of<NeuronProvider>(
+            context,
+            listen: false,
+          );
+
+          final bool success = await neuronProvider.spendNeurons(15);
+
+          if (success) {
+            await provider.deleteDiscussion(discussion);
+            if (mounted) {
+              _showSnackBar(
+                'Diskusi "${discussion.discussion}" berhasil dihapus.',
+              );
+              showNeuronPenaltySnackBar(context, 15);
+            }
+          } else {
+            if (mounted) {
+              _showSnackBar(
+                "Gagal menghapus: Neuron tidak cukup.",
+                isError: true,
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            _showSnackBar("Gagal menghapus: ${e.toString()}", isError: true);
+          }
         }
       },
     );
@@ -370,7 +412,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   discussion,
                 );
                 return DiscussionListItem(
-                  // Ganti di sini
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
                   index: originalIndex,
@@ -433,7 +474,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         final originalIndex = provider.allDiscussions.indexOf(discussion);
         final overallIndex = index + indexOffset;
         return DiscussionListItem(
-          // Ganti di sini
           key: ValueKey(discussion.hashCode),
           discussion: discussion,
           index: originalIndex,
