@@ -232,7 +232,7 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
     _activeFilterType = null;
     _selectedRepetitionCode = null;
     _selectedDateRange = null;
-    _showFinishedDiscussions = false;
+    _showFinishedDiscussions = true;
     prefsService.saveFilterPreference(null, null);
     filterAndSortDiscussions();
   }
