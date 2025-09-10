@@ -46,7 +46,6 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   QuizDifficulty _selectedDifficulty = QuizDifficulty.medium;
   List<String> _topicNames = [];
   List<Subject> _subjects = [];
-  bool _isLoadingTopics = true;
   bool _isLoadingSubjects = false;
 
   @override
@@ -63,7 +62,6 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   }
 
   Future<void> _loadTopics() async {
-    setState(() => _isLoadingTopics = true);
     final topics = await _topicService.getTopics();
     if (!mounted) return;
     setState(() {
@@ -71,7 +69,6 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
           .where((t) => !t.isHidden)
           .map((t) => t.name)
           .toList();
-      _isLoadingTopics = false;
     });
   }
 

@@ -1,6 +1,5 @@
 // lib/features/settings/application/services/gemini_service.dart
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';

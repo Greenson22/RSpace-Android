@@ -9,7 +9,6 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/features/time_management/presentation/pages/time_log_page.dart';
 import '../../../../core/services/path_service.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
 import '../../../time_management/application/services/time_log_service.dart';
@@ -46,7 +45,6 @@ class DashboardHeader extends StatefulWidget {
 class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
   late Future<_HeaderStats> _statsFuture;
 
   @override

@@ -1,7 +1,5 @@
 // lib/features/progress/domain/models/color_palette_model.dart
 
-import 'package:flutter/material.dart';
-
 class ColorPalette {
   String name;
   final int backgroundColor;
