@@ -20,25 +20,42 @@ class QuizService {
     return dirPath;
   }
 
-  Future<QuizTopic> getTopic(String topicName) async {
+  // ==> BARU: Fungsi untuk mendapatkan semua set kuis dalam satu topik
+  Future<List<QuizSet>> getQuizSetsInTopic(String topicName) async {
     final quizzesPath = await _quizPath;
     final topicPath = path.join(quizzesPath, topicName);
-    final configFile = File(path.join(topicPath, _configFile));
+    final directory = Directory(topicPath);
 
-    if (!await configFile.exists()) {
-      throw Exception('File konfigurasi untuk $topicName tidak ditemukan.');
+    if (!await directory.exists()) return [];
+
+    final files = directory.listSync().whereType<File>().where(
+      (file) =>
+          file.path.endsWith('.json') &&
+          path.basename(file.path) != _configFile,
+    );
+
+    List<QuizSet> quizSets = [];
+    for (final file in files) {
+      final jsonString = await file.readAsString();
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final quizSetName = path.basenameWithoutExtension(file.path);
+      quizSets.add(QuizSet.fromJson(quizSetName, jsonData));
     }
-
-    final configString = await configFile.readAsString();
-    final configJson = jsonDecode(configString) as Map<String, dynamic>;
-
-    // Asumsi ada file utama untuk pertanyaan, atau bisa dikembangkan lebih lanjut
-    // Untuk saat ini, kita gabungkan saja dalam satu file config.
-    final fullTopic = QuizTopic.fromJson({'name': topicName, ...configJson});
-
-    return fullTopic;
+    return quizSets;
   }
 
+  // ==> BARU: Fungsi untuk menyimpan satu set kuis ke file JSON-nya
+  Future<void> saveQuizSet(String topicName, QuizSet quizSet) async {
+    final quizzesPath = await _quizPath;
+    final fileName = '${quizSet.name.replaceAll(' ', '_').toLowerCase()}.json';
+    final filePath = path.join(quizzesPath, topicName, fileName);
+    final file = File(filePath);
+
+    const encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(quizSet.toJson()));
+  }
+
+  // Fungsi ini tetap sama, untuk mengelola folder topik
   Future<List<QuizTopic>> getAllTopics() async {
     final quizzesPath = await _quizPath;
     final directory = Directory(quizzesPath);
@@ -58,27 +75,22 @@ class QuizService {
       topics.add(QuizTopic.fromConfig(name, config));
     }
 
-    // ... (Logika sorting dan fixing posisi sama seperti sebelumnya) ...
+    // Logika sorting dan fixing posisi (tidak berubah)
     final positionedTopics = topics.where((t) => t.position != -1).toList();
     final unpositionedTopics = topics.where((t) => t.position == -1).toList();
-
     positionedTopics.sort((a, b) => a.position.compareTo(b.position));
-
     int maxPosition = positionedTopics.isNotEmpty
         ? positionedTopics
               .map((t) => t.position)
               .reduce((a, b) => a > b ? a : b)
         : -1;
-
     for (final topic in unpositionedTopics) {
       maxPosition++;
       topic.position = maxPosition;
       await _saveTopicConfig(topic);
     }
-
     final allTopics = [...positionedTopics, ...unpositionedTopics];
     allTopics.sort((a, b) => a.position.compareTo(b.position));
-
     bool needsResave = false;
     for (int i = 0; i < allTopics.length; i++) {
       if (allTopics[i].position != i) {
@@ -86,13 +98,13 @@ class QuizService {
         needsResave = true;
       }
     }
-
     if (needsResave) {
       await saveTopicsOrder(allTopics);
     }
-
     return allTopics;
   }
+
+  // Fungsi-fungsi lain untuk mengelola FOLDER topik (sebagian besar tidak berubah)
 
   Future<void> saveTopicsOrder(List<QuizTopic> topics) async {
     for (int i = 0; i < topics.length; i++) {
@@ -106,61 +118,27 @@ class QuizService {
     final quizzesPath = await _quizPath;
     final configPath = path.join(quizzesPath, topicName, _configFile);
     final configFile = File(configPath);
-
     if (await configFile.exists()) {
       try {
         final jsonString = await configFile.readAsString();
-        if (jsonString.isNotEmpty) {
-          final data = jsonDecode(jsonString) as Map<String, dynamic>;
-          // Pastikan ada data 'questions' di dalam config
-          data['questions'] ??= [];
-          return data;
-        }
+        if (jsonString.isNotEmpty)
+          return jsonDecode(jsonString) as Map<String, dynamic>;
       } catch (e) {
-        // Abaikan
+        /* Abaikan */
       }
     }
-    return {'icon': _defaultIcon, 'position': -1, 'questions': []};
-  }
-
-  // Helper diubah untuk menyimpan seluruh data topik (termasuk pertanyaan)
-  Future<void> saveTopic(QuizTopic topic) async {
-    final quizzesPath = await _quizPath;
-    final configPath = path.join(quizzesPath, topic.name, _configFile);
-    final configFile = File(configPath);
-    try {
-      if (!await configFile.parent.exists()) {
-        await configFile.parent.create(recursive: true);
-      }
-      const encoder = JsonEncoder.withIndent('  ');
-      await configFile.writeAsString(encoder.convert(topic.toFullJson()));
-    } catch (e) {
-      // Abaikan jika gagal menulis file
-    }
+    return {'icon': _defaultIcon, 'position': -1};
   }
 
   Future<void> _saveTopicConfig(QuizTopic topic) async {
-    // Membaca data yang ada untuk mempertahankan 'questions'
-    final existingData = await _getTopicConfig(topic.name);
-    final questions = existingData['questions'] ?? [];
-
-    final configData = topic.toConfigJson();
-    final fullData = {
-      'name': topic.name,
-      'metadata': configData,
-      'questions': questions,
-    };
-
     final quizzesPath = await _quizPath;
     final configPath = path.join(quizzesPath, topic.name, _configFile);
     final configFile = File(configPath);
-
     try {
       await configFile.create(recursive: true);
-      const encoder = JsonEncoder.withIndent('  ');
-      await configFile.writeAsString(encoder.convert(fullData));
+      await configFile.writeAsString(jsonEncode(topic.toConfigJson()));
     } catch (e) {
-      // Handle error
+      /* Abaikan */
     }
   }
 
@@ -170,11 +148,9 @@ class QuizService {
     final quizzesPath = await _quizPath;
     final newTopicPath = path.join(quizzesPath, topicName);
     final directory = Directory(newTopicPath);
-
     if (await directory.exists()) {
       throw Exception('Topik kuis dengan nama "$topicName" sudah ada.');
     }
-
     try {
       await directory.create();
       final currentTopics = await getAllTopics();
@@ -182,11 +158,8 @@ class QuizService {
         name: topicName,
         icon: _defaultIcon,
         position: currentTopics.length,
-        questions: [],
       );
-      await saveTopic(
-        newTopic,
-      ); // Menggunakan saveTopic untuk membuat file config
+      await _saveTopicConfig(newTopic);
     } catch (e) {
       throw Exception('Gagal membuat topik kuis: $e');
     }
@@ -206,17 +179,14 @@ class QuizService {
       throw Exception('Topik kuis dengan nama "$newName" sudah ada.');
     }
     try {
-      // Baca semua data sebelum rename
-      final fullTopicData = await getTopic(oldTopic.name);
+      final oldConfig = await _getTopicConfig(oldTopic.name);
       await oldDir.rename(newPath);
-      // Buat objek baru dengan nama baru dan simpan kembali
-      final newTopicData = QuizTopic(
+      final newTopic = QuizTopic(
         name: newName,
-        icon: fullTopicData.icon,
-        position: fullTopicData.position,
-        questions: fullTopicData.questions,
+        icon: oldConfig['icon'] as String? ?? _defaultIcon,
+        position: oldConfig['position'] as int? ?? -1,
       );
-      await saveTopic(newTopicData);
+      await _saveTopicConfig(newTopic);
     } catch (e) {
       throw Exception('Gagal mengubah nama topik kuis: $e');
     }

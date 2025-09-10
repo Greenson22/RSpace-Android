@@ -15,6 +15,7 @@ void showAddQuizDialog(BuildContext context) {
 
   showDialog(
     context: context,
+    // Gunakan builder agar dialog tidak full-screen di layar kecil
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
       child: const AddQuizDialog(),
@@ -30,11 +31,13 @@ class AddQuizDialog extends StatefulWidget {
 }
 
 class _AddQuizDialogState extends State<AddQuizDialog> {
+  final _formKey = GlobalKey<FormState>();
   final TopicService _topicService = TopicService();
   final SubjectService _subjectService = SubjectService();
   final PathService _pathService = PathService();
 
-  // State untuk mengelola pilihan dropdown
+  // State untuk mengelola pilihan dropdown dan text field
+  final TextEditingController _quizSetNameController = TextEditingController();
   String? _selectedTopicName;
   String? _selectedSubjectName;
   List<String> _topicNames = [];
@@ -48,9 +51,16 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
     _loadTopics();
   }
 
+  @override
+  void dispose() {
+    _quizSetNameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadTopics() async {
     setState(() => _isLoadingTopics = true);
     final topics = await _topicService.getTopics();
+    if (!mounted) return;
     setState(() {
       _topicNames = topics
           .where((t) => !t.isHidden)
@@ -70,23 +80,20 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
       final topicsPath = await _pathService.topicsPath;
       final topicPath = path.join(topicsPath, topicName);
       final subjects = await _subjectService.getSubjects(topicPath);
+      if (!mounted) return;
       setState(() {
         _subjects = subjects.where((s) => !s.isHidden).toList();
         _isLoadingSubjects = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoadingSubjects = false);
       // Handle error
     }
   }
 
   Future<void> _handleGenerate() async {
-    if (_selectedTopicName == null || _selectedSubjectName == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan pilih Topik dan Subject terlebih dahulu.'),
-        ),
-      );
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -97,12 +104,21 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
       _selectedTopicName!,
       '$_selectedSubjectName.json',
     );
+    final quizSetName = _quizSetNameController.text.trim();
 
     // Tutup dialog saat proses dimulai
     Navigator.of(context).pop();
 
     try {
-      await provider.addQuestionsFromSubject(subjectJsonPath);
+      await provider.addQuizSetFromSubject(quizSetName, subjectJsonPath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kuis baru berhasil dibuat!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -119,54 +135,85 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Buat Kuis dengan AI'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pilih materi dari "Topics" untuk dibuatkan soal kuis secara otomatis oleh AI.',
-            ),
-            const SizedBox(height: 24),
-            DropdownButtonFormField<String>(
-              value: _selectedTopicName,
-              hint: const Text('Pilih Topik...'),
-              isExpanded: true,
-              items: _topicNames
-                  .map(
-                    (name) => DropdownMenuItem(value: name, child: Text(name)),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedTopicName = value);
-                  _loadSubjects(value);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            if (_selectedTopicName != null)
-              _isLoadingSubjects
-                  ? const Center(child: CircularProgressIndicator())
-                  : DropdownButtonFormField<String>(
-                      value: _selectedSubjectName,
-                      hint: const Text('Pilih Subject...'),
-                      isExpanded: true,
-                      items: _subjects
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s.name,
-                              child: Text(s.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _selectedSubjectName = value);
-                        }
-                      },
-                    ),
-          ],
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Pilih materi dari "Topics" untuk dibuatkan soal kuis secara otomatis oleh AI.',
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: _quizSetNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Set Kuis (contoh: Kuis Bab 1)',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nama set kuis tidak boleh kosong.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedTopicName,
+                hint: const Text('Pilih Topik Sumber Materi'),
+                isExpanded: true,
+                items: _topicNames
+                    .map(
+                      (name) =>
+                          DropdownMenuItem(value: name, child: Text(name)),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedTopicName = value);
+                    _loadSubjects(value);
+                  }
+                },
+                validator: (value) =>
+                    value == null ? 'Topik harus dipilih.' : null,
+              ),
+              const SizedBox(height: 16),
+              if (_selectedTopicName != null)
+                _isLoadingSubjects
+                    ? const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : DropdownButtonFormField<String>(
+                        value: _selectedSubjectName,
+                        hint: const Text('Pilih Subject Sumber Materi'),
+                        isExpanded: true,
+                        items: _subjects
+                            .map(
+                              (s) => DropdownMenuItem(
+                                value: s.name,
+                                child: Text(s.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedSubjectName = value;
+                              // Otomatis isi nama kuis jika kosong
+                              if (_quizSetNameController.text.trim().isEmpty) {
+                                _quizSetNameController.text =
+                                    "Kuis tentang $value";
+                              }
+                            });
+                          }
+                        },
+                        validator: (value) =>
+                            value == null ? 'Subject harus dipilih.' : null,
+                      ),
+            ],
+          ),
         ),
       ),
       actions: [

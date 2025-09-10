@@ -2,6 +2,7 @@
 
 import 'package:uuid/uuid.dart';
 
+// Model untuk Pilihan Jawaban (Tidak Berubah)
 class QuizOption {
   String text;
   bool isCorrect;
@@ -16,6 +17,7 @@ class QuizOption {
   Map<String, dynamic> toJson() => {'text': text, 'isCorrect': isCorrect};
 }
 
+// Model untuk satu Pertanyaan (Tidak Berubah)
 class QuizQuestion {
   final String id;
   String questionText;
@@ -44,53 +46,43 @@ class QuizQuestion {
   };
 }
 
-class QuizTopic {
-  String name;
-  String icon;
-  int position;
+// ==> BARU: Model untuk satu file JSON kuis (satu set kuis)
+class QuizSet {
+  String name; // Nama file JSON tanpa ekstensi
   List<QuizQuestion> questions;
 
-  QuizTopic({
-    required this.name,
-    this.icon = '❓',
-    this.position = -1,
-    this.questions = const [],
-  });
+  QuizSet({required this.name, this.questions = const []});
 
-  factory QuizTopic.fromJson(Map<String, dynamic> json) {
-    final metadata = json['metadata'] as Map<String, dynamic>? ?? {};
+  factory QuizSet.fromJson(String name, Map<String, dynamic> json) {
     final questionsList = json['questions'] as List? ?? [];
     final questions = questionsList
         .map((q) => QuizQuestion.fromJson(q))
         .toList();
-
-    return QuizTopic(
-      name: json['name'] as String? ?? 'Tanpa Nama', // Diambil dari nama folder
-      icon: metadata['icon'] as String? ?? '❓',
-      position: metadata['position'] as int? ?? -1,
-      questions: questions,
-    );
+    return QuizSet(name: name, questions: questions);
   }
 
-  // Konstruktor khusus untuk membaca dari file config di service
+  Map<String, dynamic> toJson() {
+    return {'questions': questions.map((q) => q.toJson()).toList()};
+  }
+}
+
+// Model untuk Topik Kuis (Folder) - Disederhanakan
+class QuizTopic {
+  String name;
+  String icon;
+  int position;
+
+  QuizTopic({required this.name, this.icon = '❓', this.position = -1});
+
   factory QuizTopic.fromConfig(String name, Map<String, dynamic> configJson) {
     return QuizTopic(
       name: name,
       icon: configJson['icon'] as String? ?? '❓',
       position: configJson['position'] as int? ?? -1,
-      questions: [], // Pertanyaan akan dimuat terpisah
     );
   }
 
   Map<String, dynamic> toConfigJson() {
     return {'icon': icon, 'position': position};
-  }
-
-  Map<String, dynamic> toFullJson() {
-    return {
-      'name': name,
-      'metadata': toConfigJson(),
-      'questions': questions.map((q) => q.toJson()).toList(),
-    };
   }
 }
