@@ -1,4 +1,4 @@
-// lib/data/services/shared_preferences/gemini_service.dart
+// lib/core/services/gemini_storage_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../../features/settings/domain/models/api_key_model.dart';
@@ -11,6 +11,8 @@ class GeminiService {
   static const String _geminiContentModelKey = 'gemini_model';
   static const String _geminiChatModelKey = 'gemini_chat_model';
   static const String _geminiGeneralModelKey = 'gemini_general_model';
+  // ==> TAMBAHKAN KEY BARU <==
+  static const String _geminiQuizModelKey = 'gemini_quiz_model';
 
   Future<void> saveApiKeys(List<ApiKey> keys) async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,6 +75,17 @@ class GeminiService {
   Future<String?> loadGeminiGeneralModel() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_geminiGeneralModelKey);
+  }
+
+  // ==> TAMBAHKAN FUNGSI BARU UNTUK MODEL KUIS <==
+  Future<void> saveGeminiQuizModel(String modelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_geminiQuizModelKey, modelId);
+  }
+
+  Future<String?> loadGeminiQuizModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_geminiQuizModelKey);
   }
 
   Future<void> savePrompts(List<Prompt> prompts) async {

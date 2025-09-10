@@ -384,14 +384,14 @@ Jawaban Anda:
     }
   }
 
-  // ==> FUNGSI DIPERBARUI UNTUK MENERIMA questionCount <==
   Future<List<QuizQuestion>> generateQuizFromSubject(
     String subjectJsonPath, {
     int questionCount = 10,
   }) async {
     final apiKey = await _getActiveApiKey();
+    // ==> PERUBAHAN DI SINI: Gunakan model khusus kuis <==
     final model =
-        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+        await _prefsService.loadGeminiQuizModel() ?? 'gemini-1.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
@@ -417,7 +417,6 @@ Jawaban Anda:
       );
     }
 
-    // ==> PROMPT DIPERBARUI UNTUK MEMASUKKAN JUMLAH PERTANYAAN <==
     final prompt =
         '''
     Anda adalah AI pembuat kuis. Berdasarkan materi berikut:

@@ -107,6 +107,9 @@ class SharedPreferencesService {
       _geminiService.saveGeminiGeneralModel(modelId);
   Future<String?> loadGeminiGeneralModel() =>
       _geminiService.loadGeminiGeneralModel();
+  Future<void> saveGeminiQuizModel(String modelId) =>
+      _geminiService.saveGeminiQuizModel(modelId);
+  Future<String?> loadGeminiQuizModel() => _geminiService.loadGeminiQuizModel();
   Future<void> savePrompts(List<Prompt> prompts) =>
       _geminiService.savePrompts(prompts);
   Future<List<Prompt>> loadPrompts() => _geminiService.loadPrompts();

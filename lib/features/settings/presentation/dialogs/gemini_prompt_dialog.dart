@@ -1,4 +1,4 @@
-// lib/presentation/pages/dashboard_page/dialogs/gemini_prompt_dialog.dart
+// lib/features/settings/presentation/dialogs/gemini_prompt_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/prompt_model.dart';
@@ -32,6 +32,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   String? _selectedContentModelId;
   String? _selectedChatModelId;
   String? _selectedGeneralModelId;
+  // ==> TAMBAHKAN STATE BARU <==
+  String? _selectedQuizModelId;
 
   // Daftar model AI
   final List<GeminiModelInfo> _models = const [
@@ -57,6 +59,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     final contentModelId = await _prefsService.loadGeminiContentModel();
     final chatModelId = await _prefsService.loadGeminiChatModel();
     final generalModelId = await _prefsService.loadGeminiGeneralModel();
+    // ==> MUAT MODEL KUIS <==
+    final quizModelId = await _prefsService.loadGeminiQuizModel();
 
     if (savedPrompts.isEmpty) {
       final defaultPrompt = await _prefsService.getActivePrompt();
@@ -80,6 +84,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         _selectedChatModelId = chatModelId ?? _models[1].id; // Default to Flash
         _selectedGeneralModelId =
             generalModelId ?? _models[1].id; // Default to Flash
+        // ==> ATUR STATE UNTUK MODEL KUIS <==
+        _selectedQuizModelId = quizModelId ?? _models[1].id; // Default to Flash
         _isLoading = false;
       });
     }
@@ -213,6 +219,10 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     if (_selectedGeneralModelId != null) {
       await _prefsService.saveGeminiGeneralModel(_selectedGeneralModelId!);
     }
+    // ==> SIMPAN MODEL KUIS <==
+    if (_selectedQuizModelId != null) {
+      await _prefsService.saveGeminiQuizModel(_selectedQuizModelId!);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -310,6 +320,29 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                       onChanged: (value) {
                         setState(() {
                           _selectedChatModelId = value;
+                        });
+                      },
+                    ),
+                    // ==> TAMBAHKAN DROPDOWN BARU DI SINI <==
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedQuizModelId,
+                      decoration: const InputDecoration(
+                        labelText: 'Model untuk Generate Kuis',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _models.map((model) {
+                        return DropdownMenuItem<String>(
+                          value: model.id,
+                          child: Text(
+                            model.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedQuizModelId = value;
                         });
                       },
                     ),
