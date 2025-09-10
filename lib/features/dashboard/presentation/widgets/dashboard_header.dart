@@ -16,7 +16,7 @@ import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
 import 'package:provider/provider.dart';
-import '../../../statistics/application/statistics_provider.dart';
+import '../../../../core/providers/neuron_provider.dart'; // Import provider baru
 
 class _HeaderStats {
   final int pendingTasks;
@@ -70,11 +70,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
         setState(() {
           _statsFuture = _loadHeaderStats();
         });
-        // Juga muat ulang data di provider statistik
-        Provider.of<StatisticsProvider>(
-          context,
-          listen: false,
-        ).generateStatistics();
+        // Muat ulang data di provider neuron
+        Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
       }
     }
   }
@@ -92,7 +89,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
       _getPendingTaskCount(),
       _getDiscussionStats(),
       _getTimeLoggedToday(),
-      _prefsService.loadNeurons(),
     ]);
     final discussionStats = results[1] as Map<String, int>;
     return _HeaderStats(
@@ -101,7 +97,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
       totalDiscussions: discussionStats['total'] ?? 0,
       finishedDiscussions: discussionStats['finished'] ?? 0,
       timeLoggedToday: results[2] as Duration,
-      neurons: results[3] as int,
     );
   }
 
@@ -227,16 +222,15 @@ class _DashboardHeaderState extends State<DashboardHeader>
                   ),
                 ],
               ),
-              // ==> PERUBAHAN DI SINI: GUNAKAN CONSUMER <==
-              Consumer<StatisticsProvider>(
-                builder: (context, statsProvider, child) {
+              Consumer<NeuronProvider>(
+                builder: (context, neuronProvider, child) {
                   return Chip(
                     avatar: const Icon(
                       Icons.psychology_outlined,
                       color: Colors.white,
                     ),
                     label: Text(
-                      '${statsProvider.neuronCount} Neurons',
+                      '${neuronProvider.neuronCount} Neurons',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

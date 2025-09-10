@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
+import 'package:my_aplication/core/providers/neuron_provider.dart';
 import 'package:provider/provider.dart';
 import '../../application/discussion_provider.dart'; // Pastikan path ini benar
 import 'dialogs/discussion_dialogs.dart';
@@ -204,7 +204,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           );
           _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
           if (mounted) {
-            await Provider.of<StatisticsProvider>(
+            // Panggil NeuronProvider
+            await Provider.of<NeuronProvider>(
               context,
               listen: false,
             ).addNeurons(10);

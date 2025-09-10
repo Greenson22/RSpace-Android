@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
-import '../../../../../core/services/storage_service.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 // Import file utilitas yang baru diperbarui
 import '../../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../statistics/application/statistics_provider.dart';
+import '../../../../../core/providers/neuron_provider.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
   final Discussion discussion;
@@ -22,8 +21,8 @@ class DiscussionSubtitle extends StatelessWidget {
   });
 
   Future<void> _addNeurons(BuildContext context, int amount) async {
-    // Panggil provider, bukan service
-    await Provider.of<StatisticsProvider>(
+    // Panggil NeuronProvider
+    await Provider.of<NeuronProvider>(
       context,
       listen: false,
     ).addNeurons(amount);

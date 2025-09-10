@@ -11,7 +11,6 @@ import '../../../core/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
-import '../../../core/services/storage_service.dart'; // Import storage service
 
 class StatisticsProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();
@@ -20,8 +19,6 @@ class StatisticsProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();
   final PathService _pathService = PathService();
   final TimeLogService _timeLogService = TimeLogService();
-  final SharedPreferencesService _prefsService =
-      SharedPreferencesService(); // Add prefs service
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -29,22 +26,8 @@ class StatisticsProvider with ChangeNotifier {
   AppStatistics _stats = AppStatistics();
   AppStatistics get stats => _stats;
 
-  int _neuronCount = 0; // State untuk neurons
-  int get neuronCount => _neuronCount;
-
   StatisticsProvider() {
     generateStatistics();
-  }
-
-  /// Menambah neuron, menyimpan, dan memberi notifikasi ke listener.
-  Future<void> addNeurons(int amount) async {
-    final currentNeurons = await _prefsService.loadNeurons();
-    final newTotal = currentNeurons + amount;
-    // Panggil service untuk menyimpan total baru
-    await _prefsService.saveNeurons(newTotal);
-    // Update state di provider
-    _neuronCount = newTotal;
-    notifyListeners();
   }
 
   Future<void> generateStatistics() async {
@@ -58,9 +41,6 @@ class StatisticsProvider with ChangeNotifier {
       int totalPointCount = 0;
       List<TopicStatistics> perTopicStats = [];
       Map<String, int> repetitionCodeCounts = {};
-
-      // ==> MUAT JUMLAH NEURON SAAT STATISTIK DIBUAT <==
-      _neuronCount = await _prefsService.loadNeurons();
 
       final topics = await _topicService.getTopics();
       final topicsPath = await _pathService.topicsPath;
@@ -90,6 +70,7 @@ class StatisticsProvider with ChangeNotifier {
                 totalFinishedDiscussionCount++;
               }
               currentTopicPointCount += discussion.points.length;
+
               final code = discussion.effectiveRepetitionCode;
               repetitionCodeCounts[code] =
                   (repetitionCodeCounts[code] ?? 0) + 1;

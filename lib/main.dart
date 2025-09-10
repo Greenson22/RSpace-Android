@@ -15,7 +15,7 @@ import 'package:my_aplication/features/link_maintenance/application/providers/un
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
 import 'package:quick_actions/quick_actions.dart';
-import 'core/widgets/ad_banner_widget.dart'; // ==> IMPORT WIDGET IKLAN DI SINI
+import 'core/widgets/ad_banner_widget.dart';
 import 'features/prompt_library/application/prompt_provider.dart';
 import 'features/my_tasks/presentation/pages/my_tasks_page.dart';
 import 'features/settings/application/theme_provider.dart';
@@ -23,6 +23,7 @@ import 'package:my_aplication/features/backup_management/application/sync_provid
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'features/feedback/application/feedback_provider.dart';
 import 'core/widgets/draggable_fab_view.dart';
+import 'core/providers/neuron_provider.dart'; // Import provider baru
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -67,6 +68,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BrokenLinkProvider()),
         ChangeNotifierProvider(create: (_) => FinishedDiscussionsProvider()),
         ChangeNotifierProvider(create: (_) => PromptProvider()),
+        ChangeNotifierProvider(
+          create: (_) => NeuronProvider(),
+        ), // Daftarkan provider baru
       ],
       child: const MyApp(),
     ),
@@ -126,13 +130,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           title: 'RSpace',
           theme: themeProvider.currentTheme,
           home: const DashboardPage(),
-          // ==> PERUBAHAN UTAMA ADA DI DALAM BUILDER INI <==
           builder: (context, navigator) {
             return Column(
-              // 1. Bungkus dengan Column
               children: [
                 Expanded(
-                  // 2. Buat navigator mengisi ruang yang tersedia
                   child: Stack(
                     children: [
                       if (navigator != null) navigator,
@@ -153,7 +154,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                // 3. Tambahkan AdBannerWidget di bawah navigator
                 if (Platform.isAndroid || Platform.isIOS)
                   const AdBannerWidget(),
               ],
