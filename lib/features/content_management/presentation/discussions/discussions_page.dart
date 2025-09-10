@@ -10,7 +10,7 @@ import 'widgets/discussion_stats_header.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
-import '../../domain/models/discussion_model.dart'; // Import model
+import '../../domain/models/discussion_model.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -71,7 +71,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           targetJsonPath,
           targetLinkedPath,
         );
-
         _showSnackBar(logMessage, isLong: true);
       } catch (e) {
         _showSnackBar(
@@ -87,6 +86,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     bool isError = false,
     bool isLong = false,
   }) {
+    // Cek mounted di sini untuk keamanan
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -202,8 +202,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             createHtmlFile: createHtmlFile,
             subjectLinkedPath: widget.linkedPath,
           );
-          _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
           if (mounted) {
+            _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
             await Provider.of<NeuronProvider>(
               context,
               listen: false,
@@ -232,27 +232,22 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
           final bool success = await neuronProvider.spendNeurons(15);
 
+          if (!mounted) return; // Cek mounted setelah await
+
           if (success) {
             await provider.deleteDiscussion(discussion);
-            if (mounted) {
-              // Panggil _showSnackBar dengan benar (tanpa context)
-              _showSnackBar(
-                'Diskusi "${discussion.discussion}" berhasil dihapus.',
-              );
-              showNeuronPenaltySnackBar(context, 15);
-            }
+            _showSnackBar(
+              'Diskusi "${discussion.discussion}" berhasil dihapus.',
+            );
+            showNeuronPenaltySnackBar(context, 15);
           } else {
-            if (mounted) {
-              // Panggil _showSnackBar dengan benar (tanpa context)
-              _showSnackBar(
-                "Gagal menghapus: Neuron tidak cukup.",
-                isError: true,
-              );
-            }
+            _showSnackBar(
+              "Gagal menghapus: Neuron tidak cukup.",
+              isError: true,
+            );
           }
         } catch (e) {
           if (mounted) {
-            // Panggil _showSnackBar dengan benar (tanpa context)
             _showSnackBar("Gagal menghapus: ${e.toString()}", isError: true);
           }
         }
@@ -420,7 +415,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   onToggleVisibility: _togglePointsVisibility,
                   subjectName: widget.subjectName,
                   subjectLinkedPath: widget.linkedPath,
-                  // ==> Perubahan di sini: Mengirim fungsi dari state induk <==
                   onDelete: () => _deleteDiscussion(provider, discussion),
                 );
               },
@@ -484,7 +478,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onToggleVisibility: _togglePointsVisibility,
           subjectName: widget.subjectName,
           subjectLinkedPath: widget.linkedPath,
-          // ==> Perubahan di sini: Mengirim fungsi dari state induk <==
           onDelete: () => _deleteDiscussion(provider, discussion),
         );
       },

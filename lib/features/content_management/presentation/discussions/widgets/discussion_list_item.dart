@@ -1,9 +1,13 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_list_item.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_point_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/confirmation_dialogs.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/edit_dialogs.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/html_file_picker_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/move_discussion_dialog.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
-import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
 import 'discussion_action_menu.dart';
@@ -19,7 +23,7 @@ class DiscussionListItem extends StatelessWidget {
   final Function(int) onToggleVisibility;
   final String subjectName;
   final String? subjectLinkedPath;
-  final VoidCallback onDelete; // Parameter baru untuk callback delete
+  final VoidCallback onDelete; // Parameter untuk callback delete
 
   const DiscussionListItem({
     super.key,
