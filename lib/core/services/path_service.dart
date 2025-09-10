@@ -200,6 +200,9 @@ class PathService {
   Future<String> get progressPath async => // Path baru untuk fitur Progress
       path.join(await contentsPath, 'progress');
 
+  // ==> TAMBAHKAN PATH BARU UNTUK KUIS <==
+  Future<String> get quizPath async => path.join(await contentsPath, 'quizzes');
+
   // ==> TAMBAHKAN PATH BARU UNTUK FILE PROFIL PENGGUNA
   Future<String> get userProfilePath async =>
       path.join(await contentsPath, 'user_profile.dat');
