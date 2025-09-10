@@ -192,6 +192,16 @@ class QuizService {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MEMUAT SEMUA PERTANYAAN DALAM SATU TOPIK <==
+  Future<List<QuizQuestion>> getAllQuestionsInTopic(String topicName) async {
+    final List<QuizQuestion> allQuestions = [];
+    final quizSets = await getQuizSetsInTopic(topicName);
+    for (final quizSet in quizSets) {
+      allQuestions.addAll(quizSet.questions);
+    }
+    return allQuestions;
+  }
+
   Future<void> deleteTopic(QuizTopic topic) async {
     final quizzesPath = await _quizPath;
     final topicPath = path.join(quizzesPath, topic.name);

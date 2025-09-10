@@ -5,7 +5,8 @@ import '../../domain/models/quiz_model.dart';
 
 class QuizTopicGridTile extends StatelessWidget {
   final QuizTopic topic;
-  final VoidCallback onTap;
+  final VoidCallback onPlay;
+  final VoidCallback onManage;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
@@ -13,7 +14,8 @@ class QuizTopicGridTile extends StatelessWidget {
   const QuizTopicGridTile({
     super.key,
     required this.topic,
-    required this.onTap,
+    required this.onPlay,
+    required this.onManage,
     required this.onEdit,
     required this.onDelete,
     required this.onIconChange,
@@ -27,7 +29,7 @@ class QuizTopicGridTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
       child: InkWell(
-        onTap: onTap,
+        onTap: onPlay,
         child: Stack(
           children: [
             Padding(
@@ -66,7 +68,9 @@ class QuizTopicGridTile extends StatelessWidget {
                 child: PopupMenuButton<String>(
                   iconSize: 18,
                   onSelected: (value) {
-                    if (value == 'edit') {
+                    if (value == 'manage') {
+                      onManage();
+                    } else if (value == 'edit') {
                       onEdit();
                     } else if (value == 'delete') {
                       onDelete();
@@ -77,10 +81,18 @@ class QuizTopicGridTile extends StatelessWidget {
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
+                          value: 'manage',
+                          child: ListTile(
+                            leading: Icon(Icons.settings_outlined),
+                            title: Text('Kelola Kuis'),
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem<String>(
                           value: 'edit',
                           child: ListTile(
                             leading: Icon(Icons.edit_outlined),
-                            title: Text('Edit Nama'),
+                            title: Text('Edit Nama Topik'),
                           ),
                         ),
                         const PopupMenuItem<String>(
@@ -99,7 +111,7 @@ class QuizTopicGridTile extends StatelessWidget {
                               color: Colors.red,
                             ),
                             title: Text(
-                              'Hapus',
+                              'Hapus Topik',
                               style: TextStyle(color: Colors.red),
                             ),
                           ),

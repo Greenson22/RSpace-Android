@@ -8,6 +8,7 @@ import '../../domain/models/quiz_model.dart';
 import '../widgets/quiz_topic_grid_tile.dart';
 import 'quiz_detail_page.dart';
 import '../../application/quiz_detail_provider.dart';
+import 'quiz_player_page.dart';
 
 class QuizPage extends StatelessWidget {
   const QuizPage({super.key});
@@ -89,9 +90,19 @@ class _QuizViewState extends State<_QuizView> {
                     return QuizTopicGridTile(
                       key: ValueKey(topic.name),
                       topic: topic,
-                      onTap: () {
+                      onPlay: () {
                         if (!_isReorderMode) {
-                          // Navigasi ke halaman detail kuis
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  QuizPlayerPage(topicName: topic.name),
+                            ),
+                          );
+                        }
+                      },
+                      onManage: () {
+                        if (!_isReorderMode) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -101,7 +112,6 @@ class _QuizViewState extends State<_QuizView> {
                               ),
                             ),
                           ).then((_) {
-                            // Muat ulang data setelah kembali, jika ada perubahan
                             provider.fetchTopics();
                           });
                         }
