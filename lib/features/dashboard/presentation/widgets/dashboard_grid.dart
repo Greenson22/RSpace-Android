@@ -1,4 +1,5 @@
-// lib/presentation/pages/dashboard_page/widgets/dashboard_grid.dart
+// lib/features/dashboard/presentation/widgets/dashboard_grid.dart
+import 'dart:io'; // <-- TAMBAHKAN IMPORT INI
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,7 @@ import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_page.dart';
+import '../../../webview_page/presentation/pages/webview_page.dart'; // <-- TAMBAHKAN IMPORT HALAMAN BARU
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -61,6 +63,12 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
+    // <-- TAMBAHKAN AKSI BARU DI SINI (SEBELUM PENYIMPANAN)
+    if (Platform.isAndroid)
+      () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const WebViewPage()),
+      ),
     if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(
       context,
@@ -156,6 +164,14 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
           },
+          // <-- TAMBAHKAN DATA VISUAL UNTUK ITEM BARU DI SINI
+          if (Platform.isAndroid)
+            {
+              'icon': Icons.public,
+              'label': 'WebView',
+              'subtitle': 'Buka halaman web',
+              'colors': const [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+            },
           {
             'icon': Icons.folder_open_rounded,
             'label': 'Penyimpanan',

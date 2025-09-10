@@ -57,6 +57,7 @@ dependencies:
   flutter_markdown: ^0.7.7+1
   google_mobile_ads: ^6.0.0
   numberpicker: ^2.1.2
+  webview_flutter: ^4.13.0
 
   uuid: any
   mime: any
