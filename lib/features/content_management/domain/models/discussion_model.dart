@@ -65,33 +65,30 @@ class Discussion {
       return null;
     }
 
-    final hasNonR0D = activePoints.any((p) => p.repetitionCode != 'R0D');
-
-    List<Point> pointsToConsider = hasNonR0D
-        ? activePoints.where((p) => p.repetitionCode != 'R0D').toList()
-        : activePoints;
-
-    if (pointsToConsider.isEmpty) {
-      pointsToConsider = activePoints;
-    }
-
-    pointsToConsider.sort((a, b) {
+    // >> PERBAIKAN: Logika diubah untuk memprioritaskan kode terkecil (R0D)
+    // Tidak ada lagi logika pemisahan R0D. Semua poin aktif diurutkan.
+    activePoints.sort((a, b) {
+      // Urutan pertama berdasarkan indeks kode repetisi (R0D akan menjadi yang terkecil)
       int codeComparison = getRepetitionCodeIndex(
         a.repetitionCode,
       ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
+
       if (codeComparison != 0) {
         return codeComparison;
       }
+
+      // Jika kodenya sama, urutkan berdasarkan tanggal (yang lebih dulu lebih utama)
       try {
         final dateA = DateTime.parse(a.date);
         final dateB = DateTime.parse(b.date);
         return dateA.compareTo(dateB);
       } catch (e) {
+        // Jika tanggal tidak valid, anggap sama
         return 0;
       }
     });
 
-    return pointsToConsider.first;
+    return activePoints.first;
   }
 
   String get effectiveRepetitionCode {
