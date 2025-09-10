@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/dialogs/confirmation_dialogs.dart
+// lib/features/content_management/presentation/discussions/dialogs/confirmation_dialogs.dart
 import 'package:flutter/material.dart';
 
 Future<void> showDeleteDiscussionConfirmationDialog({
@@ -25,10 +25,16 @@ Future<void> showDeleteDiscussionConfirmationDialog({
                 'PERINGATAN: File HTML yang tertaut dengan diskusi ini juga akan dihapus secara permanen.',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.red,
+                  color: Colors.orange,
                 ),
               ),
             ],
+            // ==> PERINGATAN NEURON DITAMBAHKAN DI SINI <==
+            const SizedBox(height: 16),
+            const Text(
+              'Tindakan ini akan mengurangi 15 Neurons Anda.',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+            ),
           ],
         ),
         actions: [

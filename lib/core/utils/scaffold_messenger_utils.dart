@@ -29,3 +29,18 @@ void showNeuronRewardSnackBar(BuildContext context, int amount) {
     ),
   );
 }
+
+/// Menampilkan SnackBar khusus untuk penalti neuron.
+void showNeuronPenaltySnackBar(BuildContext context, int amount) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        'Kamu kehilangan $amount Neurons karena menghapus data.',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: Colors.red.shade700,
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
