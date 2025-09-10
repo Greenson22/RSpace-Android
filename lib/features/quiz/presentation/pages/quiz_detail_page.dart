@@ -17,7 +17,6 @@ class QuizDetailPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Kelola Kuis: ${provider.topic.name}'),
-        // ==> PERUBAHAN DI SINI: Tombol ditambahkan di actions <==
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -41,102 +40,115 @@ class QuizDetailPage extends StatelessWidget {
                 ),
               ],
             ),
-      // ==> PERUBAHAN DI SINI: FloatingActionButton dihapus <==
     );
   }
 
+  // ==> WIDGET INI TELAH DIPERBARUI TOTAL <==
   Widget _buildSettingsPanel(
     BuildContext context,
     QuizDetailProvider provider,
   ) {
+    final theme = Theme.of(context);
     final limitController = TextEditingController(
       text: provider.topic.questionLimit > 0
           ? provider.topic.questionLimit.toString()
           : '',
     );
-    // ==> CONTROLLER BARU UNTUK DELAY
     final delayController = TextEditingController(
       text: provider.topic.autoAdvanceDelay.toString(),
     );
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        key: const PageStorageKey('quiz-settings-panel'),
+        initiallyExpanded: true,
+        leading: Icon(Icons.settings_outlined, color: theme.primaryColor),
+        title: Text(
+          'Pengaturan Sesi Kuis',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         children: [
-          Text(
-            'Pengaturan Sesi Kuis',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            title: const Text('Acak Pertanyaan'),
-            value: provider.topic.shuffleQuestions,
-            onChanged: (value) {
-              provider.updateShuffle(value);
-            },
-          ),
-          SwitchListTile(
-            title: const Text('Tampilkan Jawaban Benar'),
-            subtitle: const Text(
-              'Langsung perlihatkan hasil setelah menjawab.',
-            ),
-            value: provider.topic.showCorrectAnswer,
-            onChanged: (value) {
-              provider.updateShowCorrectAnswer(value);
-            },
-          ),
-          // ==> TAMBAHKAN PENGATURAN BARU DI SINI
-          SwitchListTile(
-            title: const Text('Auto Lanjut Pertanyaan'),
-            subtitle: const Text('Pindah otomatis setelah menjawab.'),
-            value: provider.topic.autoAdvanceNextQuestion,
-            onChanged: (value) {
-              provider.updateAutoAdvance(value);
-            },
-          ),
-          // Tampilkan input delay hanya jika auto-lanjut aktif
-          if (provider.topic.autoAdvanceNextQuestion)
-            ListTile(
-              title: const Text('Tunda Auto Lanjut'),
-              trailing: SizedBox(
-                width: 80,
-                child: TextFormField(
-                  controller: delayController,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                    suffixText: 'detik',
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Acak Pertanyaan'),
+                  value: provider.topic.shuffleQuestions,
+                  onChanged: (value) => provider.updateShuffle(value),
+                ),
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Tampilkan Jawaban Benar'),
+                  subtitle: const Text(
+                    'Langsung perlihatkan hasil setelah menjawab.',
                   ),
-                  onFieldSubmitted: (value) {
-                    final delay = int.tryParse(value) ?? 2;
-                    provider.updateAutoAdvanceDelay(delay);
-                  },
+                  value: provider.topic.showCorrectAnswer,
+                  onChanged: (value) => provider.updateShowCorrectAnswer(value),
                 ),
-              ),
-            ),
-          ListTile(
-            title: const Text('Batas Pertanyaan'),
-            subtitle: const Text('Isi 0 atau kosongkan untuk tanpa batas'),
-            trailing: SizedBox(
-              width: 80,
-              child: TextFormField(
-                controller: limitController,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  isDense: true,
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Auto Lanjut Pertanyaan'),
+                  subtitle: const Text('Pindah otomatis setelah menjawab.'),
+                  value: provider.topic.autoAdvanceNextQuestion,
+                  onChanged: (value) => provider.updateAutoAdvance(value),
                 ),
-                onFieldSubmitted: (value) {
-                  final limit = int.tryParse(value) ?? 0;
-                  provider.updateQuestionLimit(limit);
-                },
-              ),
+                if (provider.topic.autoAdvanceNextQuestion)
+                  ListTile(
+                    dense: true,
+                    title: const Text('Tunda Auto Lanjut'),
+                    trailing: SizedBox(
+                      width: 80,
+                      child: TextFormField(
+                        controller: delayController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          suffixText: 'detik',
+                        ),
+                        onFieldSubmitted: (value) {
+                          final delay = int.tryParse(value) ?? 2;
+                          provider.updateAutoAdvanceDelay(delay);
+                        },
+                      ),
+                    ),
+                  ),
+                ListTile(
+                  dense: true,
+                  title: const Text('Batas Pertanyaan'),
+                  subtitle: const Text(
+                    'Isi 0 atau kosongkan untuk tanpa batas',
+                  ),
+                  trailing: SizedBox(
+                    width: 80,
+                    child: TextFormField(
+                      controller: limitController,
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onFieldSubmitted: (value) {
+                        final limit = int.tryParse(value) ?? 0;
+                        provider.updateQuestionLimit(limit);
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -144,7 +156,6 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
-  // ==> UI LIST DIPERBARUI SECARA SIGNIFIKAN <==
   Widget _buildQuizSetList(BuildContext context, QuizDetailProvider provider) {
     return ListView(
       children: [
