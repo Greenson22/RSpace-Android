@@ -66,7 +66,8 @@ Page resource error:
           },
         ),
       )
-      ..loadRequest(Uri.parse('https://flutter.dev'));
+      // --- PERUBAHAN DI SINI ---
+      ..loadRequest(Uri.parse('https://www.google.com'));
 
     // Aktifkan debugging untuk WebView di Android
     if (controller.platform is AndroidWebViewController) {
@@ -82,7 +83,7 @@ Page resource error:
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter WebView'),
+        title: const Text('Google Search'), // Judul bisa disesuaikan
         // Menu ini mendemonstrasikan bahwa widget Flutter bisa ditampilkan di atas web view.
         actions: <Widget>[NavigationControls(webViewController: _controller)],
       ),
