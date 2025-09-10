@@ -5,17 +5,19 @@ import '../../application/quiz_player_provider.dart';
 import '../../domain/models/quiz_model.dart';
 
 class QuizPlayerPage extends StatelessWidget {
-  final String topicName;
-  const QuizPlayerPage({super.key, required this.topicName});
+  // ==> DIUBAH: Terima objek QuizTopic, bukan hanya String
+  final QuizTopic topic;
+  const QuizPlayerPage({super.key, required this.topic});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => QuizPlayerProvider(topicName: topicName),
+      // ==> DIPERBAIKI: Berikan seluruh objek 'topic' ke provider
+      create: (_) => QuizPlayerProvider(topic: topic, topicName: ''),
       child: Consumer<QuizPlayerProvider>(
         builder: (context, provider, child) {
           return Scaffold(
-            appBar: AppBar(title: Text('Kuis: $topicName')),
+            appBar: AppBar(title: Text('Kuis: ${topic.name}')),
             body: _buildBody(context, provider),
           );
         },
@@ -30,7 +32,13 @@ class QuizPlayerPage extends StatelessWidget {
       case QuizState.playing:
         if (provider.questions.isEmpty) {
           return const Center(
-            child: Text('Tidak ada pertanyaan dalam kuis ini.'),
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Tidak ada pertanyaan untuk dimainkan. Coba periksa pengaturan kuis di halaman "Kelola Kuis".',
+                textAlign: TextAlign.center,
+              ),
+            ),
           );
         }
         return _buildQuestionView(context, provider);

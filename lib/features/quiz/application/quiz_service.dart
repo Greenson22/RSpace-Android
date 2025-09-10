@@ -20,7 +20,21 @@ class QuizService {
     return dirPath;
   }
 
-  // ==> BARU: Fungsi untuk mendapatkan semua set kuis dalam satu topik
+  Future<QuizTopic> getTopic(String topicName) async {
+    final quizzesPath = await _quizPath;
+    final topicPath = path.join(quizzesPath, topicName);
+    final configFile = File(path.join(topicPath, _configFile));
+
+    if (!await configFile.exists()) {
+      throw Exception('File konfigurasi untuk $topicName tidak ditemukan.');
+    }
+
+    final configString = await configFile.readAsString();
+    final configJson = jsonDecode(configString) as Map<String, dynamic>;
+
+    return QuizTopic.fromConfig(topicName, configJson);
+  }
+
   Future<List<QuizSet>> getQuizSetsInTopic(String topicName) async {
     final quizzesPath = await _quizPath;
     final topicPath = path.join(quizzesPath, topicName);
@@ -44,7 +58,32 @@ class QuizService {
     return quizSets;
   }
 
-  // ==> BARU: Fungsi untuk menyimpan satu set kuis ke file JSON-nya
+  Future<List<QuizQuestion>> getAllQuestionsInTopic(QuizTopic topic) async {
+    final List<QuizQuestion> allQuestions = [];
+    final quizSets = await getQuizSetsInTopic(topic.name);
+
+    // Filter hanya set kuis yang diikutkan
+    final includedSets = quizSets.where(
+      (set) => topic.includedQuizSets.contains(set.name),
+    );
+
+    for (final quizSet in includedSets) {
+      allQuestions.addAll(quizSet.questions);
+    }
+
+    // Acak jika diatur
+    if (topic.shuffleQuestions) {
+      allQuestions.shuffle();
+    }
+
+    // Batasi jumlah pertanyaan jika diatur (dan bukan 0)
+    if (topic.questionLimit > 0 && allQuestions.length > topic.questionLimit) {
+      return allQuestions.sublist(0, topic.questionLimit);
+    }
+
+    return allQuestions;
+  }
+
   Future<void> saveQuizSet(String topicName, QuizSet quizSet) async {
     final quizzesPath = await _quizPath;
     final fileName = '${quizSet.name.replaceAll(' ', '_').toLowerCase()}.json';
@@ -55,7 +94,6 @@ class QuizService {
     await file.writeAsString(encoder.convert(quizSet.toJson()));
   }
 
-  // Fungsi ini tetap sama, untuk mengelola folder topik
   Future<List<QuizTopic>> getAllTopics() async {
     final quizzesPath = await _quizPath;
     final directory = Directory(quizzesPath);
@@ -75,7 +113,6 @@ class QuizService {
       topics.add(QuizTopic.fromConfig(name, config));
     }
 
-    // Logika sorting dan fixing posisi (tidak berubah)
     final positionedTopics = topics.where((t) => t.position != -1).toList();
     final unpositionedTopics = topics.where((t) => t.position == -1).toList();
     positionedTopics.sort((a, b) => a.position.compareTo(b.position));
@@ -104,8 +141,6 @@ class QuizService {
     return allTopics;
   }
 
-  // Fungsi-fungsi lain untuk mengelola FOLDER topik (sebagian besar tidak berubah)
-
   Future<void> saveTopicsOrder(List<QuizTopic> topics) async {
     for (int i = 0; i < topics.length; i++) {
       final topic = topics[i];
@@ -127,19 +162,32 @@ class QuizService {
         /* Abaikan */
       }
     }
-    return {'icon': _defaultIcon, 'position': -1};
+    return {
+      'icon': _defaultIcon,
+      'position': -1,
+      'shuffleQuestions': true,
+      'questionLimit': 0,
+      'includedQuizSets': [],
+    };
   }
 
-  Future<void> _saveTopicConfig(QuizTopic topic) async {
+  Future<void> saveTopic(QuizTopic topic) async {
     final quizzesPath = await _quizPath;
     final configPath = path.join(quizzesPath, topic.name, _configFile);
     final configFile = File(configPath);
     try {
-      await configFile.create(recursive: true);
-      await configFile.writeAsString(jsonEncode(topic.toConfigJson()));
+      if (!await configFile.parent.exists()) {
+        await configFile.parent.create(recursive: true);
+      }
+      const encoder = JsonEncoder.withIndent('  ');
+      await configFile.writeAsString(encoder.convert(topic.toConfigJson()));
     } catch (e) {
-      /* Abaikan */
+      // Abaikan jika gagal menulis file
     }
+  }
+
+  Future<void> _saveTopicConfig(QuizTopic topic) async {
+    await saveTopic(topic);
   }
 
   Future<void> addTopic(String topicName) async {
@@ -156,7 +204,6 @@ class QuizService {
       final currentTopics = await getAllTopics();
       final newTopic = QuizTopic(
         name: topicName,
-        icon: _defaultIcon,
         position: currentTopics.length,
       );
       await _saveTopicConfig(newTopic);
@@ -179,27 +226,21 @@ class QuizService {
       throw Exception('Topik kuis dengan nama "$newName" sudah ada.');
     }
     try {
-      final oldConfig = await _getTopicConfig(oldTopic.name);
+      final fullTopicData = await getTopic(oldTopic.name);
       await oldDir.rename(newPath);
-      final newTopic = QuizTopic(
+
+      final newTopicData = QuizTopic(
         name: newName,
-        icon: oldConfig['icon'] as String? ?? _defaultIcon,
-        position: oldConfig['position'] as int? ?? -1,
+        icon: fullTopicData.icon,
+        position: fullTopicData.position,
+        shuffleQuestions: fullTopicData.shuffleQuestions,
+        questionLimit: fullTopicData.questionLimit,
+        includedQuizSets: fullTopicData.includedQuizSets,
       );
-      await _saveTopicConfig(newTopic);
+      await saveTopic(newTopicData);
     } catch (e) {
       throw Exception('Gagal mengubah nama topik kuis: $e');
     }
-  }
-
-  // ==> FUNGSI BARU UNTUK MEMUAT SEMUA PERTANYAAN DALAM SATU TOPIK <==
-  Future<List<QuizQuestion>> getAllQuestionsInTopic(String topicName) async {
-    final List<QuizQuestion> allQuestions = [];
-    final quizSets = await getQuizSetsInTopic(topicName);
-    for (final quizSet in quizSets) {
-      allQuestions.addAll(quizSet.questions);
-    }
-    return allQuestions;
   }
 
   Future<void> deleteTopic(QuizTopic topic) async {

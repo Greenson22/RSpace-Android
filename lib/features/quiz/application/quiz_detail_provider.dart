@@ -9,7 +9,7 @@ class QuizDetailProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
   final GeminiService _geminiService = GeminiService();
 
-  final QuizTopic topic;
+  QuizTopic topic;
   List<QuizSet> quizSets = [];
 
   bool _isLoading = true;
@@ -23,7 +23,15 @@ class QuizDetailProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      // Muat ulang data topik terbaru untuk mendapatkan setting terakhir
+      topic = await _quizService.getTopic(topic.name);
       quizSets = await _quizService.getQuizSetsInTopic(topic.name);
+
+      // Jika belum ada set yang dipilih, pilih semua secara default
+      if (topic.includedQuizSets.isEmpty && quizSets.isNotEmpty) {
+        topic.includedQuizSets = quizSets.map((e) => e.name).toList();
+        await _quizService.saveTopic(topic);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -42,10 +50,8 @@ class QuizDetailProvider with ChangeNotifier {
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
-      // Simpan file quiz set yang baru
       await _quizService.saveQuizSet(topic.name, newQuizSet);
-      // Muat ulang daftar kuis
-      await fetchQuizSets();
+      await fetchQuizSets(); // Muat ulang semua data
     } catch (e) {
       rethrow;
     } finally {
@@ -54,11 +60,35 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteQuizSet(String quizSetName) async {
-    // Logika untuk menghapus file quiz set akan ditambahkan di QuizService
-    // Untuk saat ini, kita refresh state-nya
-    quizSets.removeWhere((qs) => qs.name == quizSetName);
-    // await _quizService.deleteQuizSet(topic.name, quizSetName); // (Fungsi ini perlu dibuat di service)
+  // ==> FUNGSI BARU UNTUK MENGELOLA PENGATURAN <==
+
+  Future<void> updateShuffle(bool value) async {
+    topic.shuffleQuestions = value;
+    await _quizService.saveTopic(topic);
     notifyListeners();
+  }
+
+  Future<void> updateQuestionLimit(int limit) async {
+    topic.questionLimit = limit;
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  Future<void> toggleQuizSetInclusion(String quizSetName, bool include) async {
+    final included = topic.includedQuizSets.toSet();
+    if (include) {
+      included.add(quizSetName);
+    } else {
+      included.remove(quizSetName);
+    }
+    topic.includedQuizSets = included.toList();
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  Future<void> deleteQuizSet(String quizSetName) async {
+    // TODO: Implementasi di QuizService untuk menghapus file JSON
+    // await _quizService.deleteQuizSet(topic.name, quizSetName);
+    await fetchQuizSets(); // Untuk sementara, cukup refresh
   }
 }

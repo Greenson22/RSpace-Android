@@ -46,7 +46,7 @@ class QuizQuestion {
   };
 }
 
-// ==> BARU: Model untuk satu file JSON kuis (satu set kuis)
+// Model untuk satu file JSON kuis (satu set kuis)
 class QuizSet {
   String name; // Nama file JSON tanpa ekstensi
   List<QuizQuestion> questions;
@@ -66,23 +66,49 @@ class QuizSet {
   }
 }
 
-// Model untuk Topik Kuis (Folder) - Disederhanakan
+// ==> MODEL TOPIK KUIS DIPERBARUI DENGAN PENGATURAN BARU <==
 class QuizTopic {
   String name;
   String icon;
   int position;
 
-  QuizTopic({required this.name, this.icon = '❓', this.position = -1});
+  // Pengaturan Kuis
+  bool shuffleQuestions;
+  int questionLimit; // 0 berarti tanpa batas
+  List<String> includedQuizSets; // Menyimpan nama file dari QuizSet
+
+  QuizTopic({
+    required this.name,
+    this.icon = '❓',
+    this.position = -1,
+    this.shuffleQuestions = true,
+    this.questionLimit = 0,
+    this.includedQuizSets = const [],
+  });
 
   factory QuizTopic.fromConfig(String name, Map<String, dynamic> configJson) {
     return QuizTopic(
       name: name,
       icon: configJson['icon'] as String? ?? '❓',
       position: configJson['position'] as int? ?? -1,
+      shuffleQuestions: configJson['shuffleQuestions'] as bool? ?? true,
+      questionLimit: configJson['questionLimit'] as int? ?? 0,
+      includedQuizSets: List<String>.from(configJson['includedQuizSets'] ?? []),
     );
   }
 
   Map<String, dynamic> toConfigJson() {
-    return {'icon': icon, 'position': position};
+    return {
+      'icon': icon,
+      'position': position,
+      'shuffleQuestions': shuffleQuestions,
+      'questionLimit': questionLimit,
+      'includedQuizSets': includedQuizSets,
+    };
+  }
+
+  Map<String, dynamic> toFullJson() {
+    // Fungsi ini mungkin tidak lagi relevan jika pertanyaan disimpan terpisah
+    return {'name': name, 'metadata': toConfigJson()};
   }
 }

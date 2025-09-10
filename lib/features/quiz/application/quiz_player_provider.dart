@@ -8,7 +8,7 @@ enum QuizState { loading, playing, finished }
 
 class QuizPlayerProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
-  final String topicName;
+  final QuizTopic topic;
 
   QuizState _state = QuizState.loading;
   QuizState get state => _state;
@@ -32,7 +32,7 @@ class QuizPlayerProvider with ChangeNotifier {
     return correctAnswers;
   }
 
-  QuizPlayerProvider({required this.topicName}) {
+  QuizPlayerProvider({required this.topic, required String topicName}) {
     _loadQuestions();
   }
 
@@ -41,8 +41,9 @@ class QuizPlayerProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _questions = await _quizService.getAllQuestionsInTopic(topicName);
-      _questions.shuffle(); // Acak pertanyaan agar lebih bervariasi
+      // Service akan menangani logika shuffle, limit, dan filter set kuis
+      _questions = await _quizService.getAllQuestionsInTopic(topic);
+
       _userAnswers.clear();
       _currentIndex = 0;
       _state = QuizState.playing;

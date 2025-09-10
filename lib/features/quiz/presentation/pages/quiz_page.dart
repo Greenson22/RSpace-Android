@@ -95,8 +95,8 @@ class _QuizViewState extends State<_QuizView> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  QuizPlayerPage(topicName: topic.name),
+                              // Mengirim seluruh objek topic ke QuizPlayerPage
+                              builder: (_) => QuizPlayerPage(topic: topic),
                             ),
                           );
                         }
