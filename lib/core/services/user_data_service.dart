@@ -60,17 +60,6 @@ class UserDataService {
     await file.writeAsBytes(encryptedBytes);
   }
 
-  Future<void> saveNeurons(int count) async {
-    final data = await _loadProfileData();
-    data['neurons'] = count;
-    await _saveProfileData(data);
-  }
-
-  Future<int> loadNeurons() async {
-    final data = await _loadProfileData();
-    return data['neurons'] as int? ?? 0; // Default 0 jika tidak ada
-  }
-
   static const String _geminiChatHistory = 'gemini_chat_history';
   static const String _sortTypeKey = 'sort_type';
   static const String _sortAscendingKey = 'sort_ascending';

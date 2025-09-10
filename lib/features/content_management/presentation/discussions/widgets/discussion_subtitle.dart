@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/widgets/discussion_subtitle.dart
+// lib/features/content_management/presentation/discussions/widgets/discussion_subtitle.dart
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,8 +21,8 @@ class DiscussionSubtitle extends StatelessWidget {
   // ==> FUNGSI BARU UNTUK MENAMBAHKAN NEURONS <==
   Future<void> _addNeurons(BuildContext context, int amount) async {
     final prefs = SharedPreferencesService();
-    final currentNeurons = await prefs.loadNeurons();
-    await prefs.saveNeurons(currentNeurons + amount);
+    // Cukup panggil saveNeurons, karena sekarang methodnya adalah add.
+    await prefs.saveNeurons(amount);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

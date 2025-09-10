@@ -7,16 +7,19 @@ import '../../features/settings/application/services/settings_service.dart';
 import 'path_service.dart';
 import 'gemini_storage_service.dart';
 import 'user_data_service.dart';
+import 'neuron_service.dart'; // Import the new service
 
 class SharedPreferencesService {
   final SettingsService _settingsService = SettingsService();
   final PathService _pathService = PathService();
   final GeminiService _geminiService = GeminiService();
   final UserDataService _userDataService = UserDataService();
+  final NeuronService _neuronService =
+      NeuronService(); // Instantiate the new service
 
-  // ==> TAMBAHKAN DUA BARIS INI <==
-  Future<void> saveNeurons(int count) => _userDataService.saveNeurons(count);
-  Future<int> loadNeurons() => _userDataService.loadNeurons();
+  // Update neuron methods to use NeuronService
+  Future<void> saveNeurons(int count) => _neuronService.addNeurons(count);
+  Future<int> loadNeurons() => _neuronService.getNeurons();
 
   // Metode untuk Pengaturan
   Future<void> saveThemePreference(bool isDarkMode) =>
