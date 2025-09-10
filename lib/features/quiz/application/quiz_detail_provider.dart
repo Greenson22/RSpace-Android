@@ -38,7 +38,6 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI DIPERBARUI UNTUK MENERIMA questionCount <==
   Future<void> addQuizSetFromSubject(
     String quizSetName,
     String subjectJsonPath,
@@ -47,7 +46,6 @@ class QuizDetailProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // ==> KIRIM questionCount KE SERVICE <==
       final newQuestions = await _geminiService.generateQuizFromSubject(
         subjectJsonPath,
         questionCount: questionCount,
@@ -68,6 +66,13 @@ class QuizDetailProvider with ChangeNotifier {
 
   Future<void> updateShuffle(bool value) async {
     topic.shuffleQuestions = value;
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  // ==> TAMBAHKAN FUNGSI BARU DI SINI <==
+  Future<void> updateShowCorrectAnswer(bool value) async {
+    topic.showCorrectAnswer = value;
     await _quizService.saveTopic(topic);
     notifyListeners();
   }

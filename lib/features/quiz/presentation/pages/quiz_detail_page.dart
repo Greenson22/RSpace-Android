@@ -66,6 +66,17 @@ class QuizDetailPage extends StatelessWidget {
               provider.updateShuffle(value);
             },
           ),
+          // ==> TAMBAHKAN SWITCH BARU DI SINI <==
+          SwitchListTile(
+            title: const Text('Tampilkan Jawaban Benar'),
+            subtitle: const Text(
+              'Langsung perlihatkan hasil setelah menjawab.',
+            ),
+            value: provider.topic.showCorrectAnswer,
+            onChanged: (value) {
+              provider.updateShowCorrectAnswer(value);
+            },
+          ),
           ListTile(
             title: const Text('Batas Pertanyaan'),
             subtitle: const Text('Isi 0 atau kosongkan untuk tanpa batas'),

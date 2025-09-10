@@ -50,6 +50,8 @@ class QuizPlayerPage extends StatelessWidget {
   Widget _buildQuestionView(BuildContext context, QuizPlayerProvider provider) {
     final question = provider.questions[provider.currentIndex];
     final userAnswer = provider.userAnswers[question.id];
+    // ==> DAPATKAN STATUS APAKAH JAWABAN SUDAH DITAMPILKAN
+    final isRevealed = provider.isAnswerRevealed(question.id);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -76,15 +78,27 @@ class QuizPlayerPage extends StatelessWidget {
           const SizedBox(height: 16),
           ...question.options.map((option) {
             bool isSelected = userAnswer == option;
+            Color? cardColor;
+            // ==> LOGIKA UNTUK MEWARNAI JAWABAN
+            if (isRevealed) {
+              if (option.isCorrect) {
+                cardColor = Colors.green.withOpacity(0.3); // Jawaban benar
+              } else if (isSelected && !option.isCorrect) {
+                cardColor = Colors.red.withOpacity(0.3); // Jawaban salah
+              }
+            } else if (isSelected) {
+              cardColor = Theme.of(context).primaryColor.withOpacity(0.3);
+            }
+
             return Card(
-              color: isSelected
-                  ? Theme.of(context).primaryColor.withOpacity(0.3)
-                  : null,
+              color: cardColor,
               child: ListTile(
                 title: Text(option.text),
-                onTap: () {
-                  provider.answerQuestion(question, option);
-                },
+                onTap: isRevealed
+                    ? null // Jangan biarkan pengguna mengubah jawaban jika sudah ditampilkan
+                    : () {
+                        provider.answerQuestion(question, option);
+                      },
               ),
             );
           }).toList(),

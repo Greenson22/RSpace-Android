@@ -76,6 +76,8 @@ class QuizTopic {
   bool shuffleQuestions;
   int questionLimit; // 0 berarti tanpa batas
   List<String> includedQuizSets; // Menyimpan nama file dari QuizSet
+  // ==> TAMBAHKAN PROPERTI BARU DI SINI <==
+  bool showCorrectAnswer;
 
   QuizTopic({
     required this.name,
@@ -84,6 +86,8 @@ class QuizTopic {
     this.shuffleQuestions = true,
     this.questionLimit = 0,
     this.includedQuizSets = const [],
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    this.showCorrectAnswer = false,
   });
 
   factory QuizTopic.fromConfig(String name, Map<String, dynamic> configJson) {
@@ -94,6 +98,8 @@ class QuizTopic {
       shuffleQuestions: configJson['shuffleQuestions'] as bool? ?? true,
       questionLimit: configJson['questionLimit'] as int? ?? 0,
       includedQuizSets: List<String>.from(configJson['includedQuizSets'] ?? []),
+      // ==> BACA DARI JSON, BERI NILAI DEFAULT FALSE <==
+      showCorrectAnswer: configJson['showCorrectAnswer'] as bool? ?? false,
     );
   }
 
@@ -104,6 +110,8 @@ class QuizTopic {
       'shuffleQuestions': shuffleQuestions,
       'questionLimit': questionLimit,
       'includedQuizSets': includedQuizSets,
+      // ==> SIMPAN KE JSON <==
+      'showCorrectAnswer': showCorrectAnswer,
     };
   }
 

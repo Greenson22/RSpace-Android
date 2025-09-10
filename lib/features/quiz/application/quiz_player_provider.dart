@@ -22,6 +22,11 @@ class QuizPlayerProvider with ChangeNotifier {
   final Map<String, QuizOption?> _userAnswers = {};
   Map<String, QuizOption?> get userAnswers => _userAnswers;
 
+  // ==> TAMBAHKAN STATE BARU UNTUK MENGETAHUI JIKA JAWABAN SUDAH DITAMPILKAN
+  final Set<String> _revealedAnswers = {};
+  bool isAnswerRevealed(String questionId) =>
+      _revealedAnswers.contains(questionId);
+
   int get score {
     int correctAnswers = 0;
     _userAnswers.forEach((questionId, selectedOption) {
@@ -45,6 +50,8 @@ class QuizPlayerProvider with ChangeNotifier {
       _questions = await _quizService.getAllQuestionsInTopic(topic);
 
       _userAnswers.clear();
+      // ==> RESET SET JAWABAN TERLIHAT
+      _revealedAnswers.clear();
       _currentIndex = 0;
       _state = QuizState.playing;
     } catch (e) {
@@ -56,6 +63,10 @@ class QuizPlayerProvider with ChangeNotifier {
 
   void answerQuestion(QuizQuestion question, QuizOption option) {
     _userAnswers[question.id] = option;
+    // ==> JIKA FITUR AKTIF, TAMBAHKAN ID PERTANYAAN KE SET
+    if (topic.showCorrectAnswer) {
+      _revealedAnswers.add(question.id);
+    }
     notifyListeners();
   }
 
