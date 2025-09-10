@@ -1,4 +1,4 @@
-// lib/presentation/providers/discussion_provider.dart
+// lib/features/content_management/application/discussion_provider.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -120,6 +120,10 @@ class DiscussionProvider
       filePath: newFilePath,
     );
     _allDiscussions.add(newDiscussion);
+
+    // ==> PERUBAHAN DI SINI: Tambahkan 10 neuron setiap membuat diskusi baru <==
+    await prefsService.saveNeurons(10);
+
     filterAndSortDiscussions();
     await saveDiscussions();
   }

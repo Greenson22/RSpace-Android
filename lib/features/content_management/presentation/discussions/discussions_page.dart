@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page.dart
+// lib/features/content_management/presentation/discussions/discussions_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +8,8 @@ import 'dialogs/discussion_dialogs.dart';
 import 'widgets/discussion_list_item.dart'; // Ganti dari discussion_card.dart
 import 'widgets/discussion_stats_header.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
+// ==> 1. IMPORT FILE UTILITAS UNTUK NOTIFIKASI <==
+import '../../../../core/utils/scaffold_messenger_utils.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -200,6 +202,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             subjectLinkedPath: widget.linkedPath,
           );
           _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
+          // ==> 2. PANGGIL NOTIFIKASI NEURON DI SINI <==
+          showNeuronRewardSnackBar(context, 10);
         } catch (e) {
           _showSnackBar("Gagal: ${e.toString()}", isError: true);
         }
