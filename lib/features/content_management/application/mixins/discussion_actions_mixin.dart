@@ -315,28 +315,30 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
     container.innerHtml = contentDoc.body?.innerHtml ?? '';
 
-    final tempDir = await getTemporaryDirectory();
-    final tempFile = File(
-      path.join(tempDir.path, '${DateTime.now().millisecondsSinceEpoch}.html'),
-    );
-    await tempFile.writeAsString(indexDoc.outerHtml);
-
-    // --- LOGIKA BARU DIMULAI DI SINI ---
+    final finalHtmlContent = indexDoc.outerHtml;
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     if (themeProvider.openInAppBrowser && Platform.isAndroid) {
-      // Buka dengan WebView Internal jika di Android dan pengaturan aktif
+      // Buka dengan WebView Internal dan kirim konten HTML langsung
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => WebViewPage(
             title: discussion.discussion,
-            initialUrl: tempFile.uri.toString(),
+            htmlContent: finalHtmlContent,
           ),
         ),
       );
     } else {
-      // Gunakan metode standar (eksternal) untuk platform lain atau jika pengaturan nonaktif
+      // Untuk platform lain atau jika setelan nonaktif, gunakan file sementara
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        path.join(
+          tempDir.path,
+          '${DateTime.now().millisecondsSinceEpoch}.html',
+        ),
+      );
+      await tempFile.writeAsString(finalHtmlContent);
       final result = await OpenFile.open(tempFile.path);
       if (result.type != ResultType.done) throw Exception(result.message);
     }

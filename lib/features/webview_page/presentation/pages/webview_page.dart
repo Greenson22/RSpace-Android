@@ -1,20 +1,24 @@
 // lib/features/webview_page/presentation/pages/webview_page.dart
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
-// --- PASTIKAN IMPORT INI ADA ---
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 class WebViewPage extends StatefulWidget {
-  final String initialUrl;
+  // --- UBAH KONSTRUKTOR ---
+  final String? initialUrl;
+  final String? htmlContent;
   final String title;
 
   const WebViewPage({
     super.key,
-    required this.initialUrl,
+    this.initialUrl,
+    this.htmlContent,
     this.title = 'WebView',
-  });
+  }) : assert(
+         initialUrl != null || htmlContent != null,
+       ); // Pastikan salah satu tidak null
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
@@ -28,9 +32,7 @@ class _WebViewPageState extends State<WebViewPage> {
     super.initState();
 
     late final PlatformWebViewControllerCreationParams params;
-    // Cek apakah platform saat ini adalah Android
     if (WebViewPlatform.instance is AndroidWebViewPlatform) {
-      // Baris ini sekarang akan valid karena sudah di-import
       params = AndroidWebViewControllerCreationParams();
     } else {
       params = const PlatformWebViewControllerCreationParams();
@@ -66,8 +68,14 @@ Page resource error:
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(widget.initialUrl));
+      );
+
+    // --- LOGIKA BARU UNTUK MEMILIH CARA MEMUAT KONTEN ---
+    if (widget.htmlContent != null) {
+      controller.loadHtmlString(widget.htmlContent!);
+    } else if (widget.initialUrl != null) {
+      controller.loadRequest(Uri.parse(widget.initialUrl!));
+    }
 
     if (controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
