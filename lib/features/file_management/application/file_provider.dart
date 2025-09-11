@@ -1,4 +1,4 @@
-// lib/presentation/providers/file_provider.dart
+// lib/features/file_management/application/file_provider.dart
 
 import 'dart:async';
 import 'dart:convert';
@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
+import 'package:my_aplication/features/backup_management/presentation/utils/backup_dialogs.dart';
 import '../domain/models/file_model.dart';
 import '../../../core/services/storage_service.dart';
 
@@ -44,13 +46,14 @@ class FileProvider with ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
-  // ==> HAPUS NILAI DEFAULT DAN JADIKAN NULLABLE <==
+  bool _isDownloading = false;
+  bool get isDownloading => _isDownloading;
+
   String? _apiDomain;
   String? _apiKey;
   String? get apiDomain => _apiDomain;
   String? get apiKey => _apiKey;
 
-  // Getter dinamis sekarang akan menangani nilai null
   String get _rspaceEndpoint => '$_apiDomain/api/rspace/files';
   String get _perpuskuEndpoint => '$_apiDomain/api/perpusku/files';
   String get _rspaceDownloadBaseUrl => '$_apiDomain/api/rspace/download/';
@@ -67,7 +70,6 @@ class FileProvider with ChangeNotifier {
   Future<void> _initialize() async {
     await _loadApiConfig();
     await _loadDownloadPath();
-    // Panggil fetchFiles hanya jika konfigurasi ada
     if (_apiDomain != null && _apiKey != null) {
       await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
     } else {
@@ -86,7 +88,6 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<void> saveApiConfig(String domain, String apiKey) async {
-    // Hapus garis miring di akhir domain jika ada
     if (domain.endsWith('/')) {
       domain = domain.substring(0, domain.length - 1);
     }
@@ -147,7 +148,6 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<void> fetchFiles() async {
-    // ==> TAMBAHKAN PEMERIKSAAN DI SINI <==
     if (_apiDomain == null ||
         _apiKey == null ||
         _apiDomain!.isEmpty ||
@@ -208,9 +208,6 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  // Sisa kode (deleteFile, uploadFile, downloadFile, dll) tidak perlu diubah
-  // karena sudah menggunakan getter dinamis yang bergantung pada _apiDomain dan _apiKey.
-  // ... (sisa kode sama seperti sebelumnya) ...
   Future<String> deleteFile(FileItem file, bool isRspaceFile) async {
     final url = isRspaceFile
         ? '$_rspaceDeleteBaseUrl${file.uniqueName}'
@@ -288,6 +285,108 @@ class FileProvider with ChangeNotifier {
       _uploadProgress.remove(fileName);
       notifyListeners();
     }
+  }
+
+  Future<void> downloadAndImportAll(BuildContext context) async {
+    if (_downloadPath == null || _downloadPath!.isEmpty) {
+      throw Exception('Folder tujuan download belum ditentukan.');
+    }
+
+    _isDownloading = true;
+    notifyListeners();
+
+    try {
+      final rspaceFile = _rspaceFiles.isNotEmpty ? _rspaceFiles.first : null;
+      final perpuskuFile = _perpuskuFiles.isNotEmpty
+          ? _perpuskuFiles.first
+          : null;
+
+      if (rspaceFile == null && perpuskuFile == null) {
+        throw Exception('Tidak ada file yang tersedia untuk diunduh.');
+      }
+
+      List<File> downloadedFiles = [];
+
+      if (rspaceFile != null) {
+        final downloaded = await _downloadSingleFile(rspaceFile, true);
+        downloadedFiles.add(downloaded);
+      }
+      if (perpuskuFile != null) {
+        final downloaded = await _downloadSingleFile(perpuskuFile, false);
+        downloadedFiles.add(downloaded);
+      }
+
+      if (context.mounted) {
+        final confirmed =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Konfirmasi Import'),
+                content: Text(
+                  'Download selesai. Lanjutkan untuk mengimpor ${downloadedFiles.length} file? Ini akan menimpa data yang ada.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Batal'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Lanjutkan'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+
+        if (confirmed && context.mounted) {
+          if (rspaceFile != null) {
+            await importSpecificFile(
+              context,
+              downloadedFiles.firstWhere(
+                (f) => path.basename(f.path) == rspaceFile.originalName,
+              ),
+              'RSpace',
+            );
+          }
+          if (perpuskuFile != null) {
+            await importSpecificFile(
+              context,
+              downloadedFiles.firstWhere(
+                (f) => path.basename(f.path) == perpuskuFile.originalName,
+              ),
+              'PerpusKu',
+            );
+          }
+        }
+      }
+    } finally {
+      _isDownloading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<File> _downloadSingleFile(FileItem file, bool isRspaceFile) async {
+    final subfolder = isRspaceFile ? 'rspace_download' : 'perpusku_download';
+    final downloadsDir = Directory(path.join(_downloadPath!, subfolder));
+    if (!await downloadsDir.exists()) {
+      await downloadsDir.create(recursive: true);
+    }
+    final String savePath = path.join(downloadsDir.path, file.originalName);
+
+    final request = http.Request('GET', Uri.parse(file.downloadUrl));
+    request.headers['x-api-key'] = _apiKey!;
+    final http.StreamedResponse response = await request.send();
+
+    if (response.statusCode != 200) {
+      throw HttpException('Gagal mengunduh: Status ${response.statusCode}');
+    }
+
+    final List<int> bytes = await response.stream.toBytes();
+    final downloadedFile = File(savePath);
+    await downloadedFile.writeAsBytes(bytes);
+    await _scanDownloadedFiles();
+    return downloadedFile;
   }
 
   Future<String> downloadFile(FileItem file, bool isRspaceFile) async {

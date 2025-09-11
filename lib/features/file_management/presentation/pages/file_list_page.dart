@@ -1,4 +1,4 @@
-// lib/presentation/pages/file_list_page.dart
+// lib/features/file_management/presentation/pages/file_list_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,10 +30,8 @@ class FileListPage extends StatelessWidget {
             }
 
             return RefreshIndicator(
-              onRefresh: () => Future.wait([
-                provider.fetchFiles(),
-                provider.fetchFiles(), // Mungkin salah satu bisa dihapus
-              ]),
+              onRefresh: () =>
+                  Future.wait([provider.fetchFiles(), provider.fetchFiles()]),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   const double breakpoint = 800.0;
@@ -125,12 +123,18 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
     FocusScope.of(context).unfocus();
   }
 
+  void _downloadAndImportAll() {
+    final provider = Provider.of<FileProvider>(context, listen: false);
+    provider.downloadAndImportAll(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<FileProvider>(
       builder: (context, provider, child) {
         final bool shouldBeExpanded =
             provider.apiDomain == null || provider.apiKey == null;
+        final bool isConfigured = !shouldBeExpanded;
 
         return Card(
           child: ExpansionTile(
@@ -184,6 +188,22 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
                         ),
                       ),
                     ),
+                    if (isConfigured) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.download_for_offline_outlined),
+                          label: const Text('Download & Import Semua'),
+                          onPressed: provider.isDownloading
+                              ? null
+                              : _downloadAndImportAll,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
