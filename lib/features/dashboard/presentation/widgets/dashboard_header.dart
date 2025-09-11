@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -54,12 +55,13 @@ class _DashboardHeaderState extends State<DashboardHeader>
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final GeminiService _geminiService = GeminiService();
   late Future<_HeaderStats> _statsFuture;
-  late Future<String> _quoteFuture;
+  String? _motivationalQuote;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _statsFuture = _loadHeaderStats();
+    _updateAndDisplayQuote(); // Muat kutipan
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -75,16 +77,54 @@ class _DashboardHeaderState extends State<DashboardHeader>
     if (state == AppLifecycleState.resumed) {
       if (mounted) {
         setState(() {
-          _loadData();
+          _statsFuture = _loadHeaderStats();
+          _updateAndDisplayQuote(); // Muat ulang kutipan saat aplikasi kembali
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
       }
     }
   }
 
-  void _loadData() {
-    _statsFuture = _loadHeaderStats();
-    _quoteFuture = _geminiService.getMotivationalQuote();
+  /// Helper untuk mengambil kutipan acak dari cache lokal.
+  Future<String> _getQuoteFromCache() async {
+    const fallbackQuote = 'Teruslah belajar setiap hari.';
+    final random = Random();
+    try {
+      final quotesPath = await _pathService.motivationalQuotesPath;
+      final quotesFile = File(quotesPath);
+      if (await quotesFile.exists()) {
+        final jsonString = await quotesFile.readAsString();
+        if (jsonString.isNotEmpty) {
+          final existingQuotes = List<String>.from(jsonDecode(jsonString));
+          if (existingQuotes.isNotEmpty) {
+            return existingQuotes[random.nextInt(existingQuotes.length)];
+          }
+        }
+      }
+    } catch (e) {
+      // Abaikan error dan kembalikan fallback
+    }
+    return fallbackQuote;
+  }
+
+  /// Memuat kutipan dari cache untuk ditampilkan segera,
+  /// lalu memuat kutipan baru dari Gemini di latar belakang.
+  Future<void> _updateAndDisplayQuote() async {
+    // 1. Tampilkan kutipan dari cache terlebih dahulu
+    final cachedQuote = await _getQuoteFromCache();
+    if (mounted) {
+      setState(() {
+        _motivationalQuote = cachedQuote;
+      });
+    }
+
+    // 2. Minta kutipan baru dari Gemini di latar belakang
+    final newQuote = await _geminiService.getMotivationalQuote();
+    if (mounted) {
+      setState(() {
+        _motivationalQuote = newQuote;
+      });
+    }
   }
 
   String _getGreeting() {
@@ -297,34 +337,17 @@ class _DashboardHeaderState extends State<DashboardHeader>
             ],
           ),
           const SizedBox(height: 12),
-          // --- PERUBAHAN DI SINI: Tombol refresh dihapus ---
-          FutureBuilder<String>(
-            future: _quoteFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                );
-              }
-              if (snapshot.hasError) {
-                return Text(
-                  'Gagal memuat motivasi.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.red,
-                  ),
-                );
-              }
-              return Text(
-                '"${snapshot.data ?? "Teruslah berusaha."}"',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                ),
-              );
-            },
+          // --- UI PERUBAHAN UTAMA DI SINI ---
+          Text(
+            _motivationalQuote == null
+                ? 'Memuat motivasi...'
+                : '"$_motivationalQuote"',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const Divider(height: 24),
           FutureBuilder<_HeaderStats>(
