@@ -14,11 +14,11 @@ class SettingsService {
   static const String _quickFabIconKey = 'quick_fab_icon';
   static const String _quickFabBgOpacityKey = 'quick_fab_bg_opacity';
   static const String _quickFabOverallOpacityKey = 'quick_fab_overall_opacity';
-  // ==> 1. TAMBAHKAN KUNCI BARU UNTUK UKURAN FAB
   static const String _quickFabSizeKey = 'quick_fab_size';
   static const String _fabMenuShowTextKey = 'fab_menu_show_text';
-  // --- TAMBAHKAN KUNCI BARU UNTUK PENGATURAN WEBVIEW ---
   static const String _openInAppBrowserKey = 'open_in_app_browser';
+  // KUNCI BARU UNTUK TEMA EDITOR
+  static const String _htmlEditorThemeKey = 'html_editor_theme';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -83,7 +83,6 @@ class SettingsService {
     return prefs.getDouble(_quickFabOverallOpacityKey) ?? 1.0; // Default 100%
   }
 
-  // ==> 2. TAMBAHKAN FUNGSI BARU UNTUK MENYIMPAN & MEMUAT UKURAN
   Future<void> saveQuickFabSize(double size) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_quickFabSizeKey, size);
@@ -162,7 +161,6 @@ class SettingsService {
     return prefs.getBool(_showFloatingCharacterKey) ?? true;
   }
 
-  // --- TAMBAHKAN FUNGSI BARU UNTUK WEBVIEW ---
   Future<void> saveOpenInAppBrowser(bool openInApp) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_openInAppBrowserKey, openInApp);
@@ -172,5 +170,17 @@ class SettingsService {
     final prefs = await SharedPreferences.getInstance();
     // Defaultnya true, yaitu buka di dalam aplikasi
     return prefs.getBool(_openInAppBrowserKey) ?? true;
+  }
+
+  // FUNGSI BARU UNTUK MENYIMPAN TEMA EDITOR
+  Future<void> saveHtmlEditorTheme(String themeName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_htmlEditorThemeKey, themeName);
+  }
+
+  // FUNGSI BARU UNTUK MEMUAT TEMA EDITOR
+  Future<String?> loadHtmlEditorTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_htmlEditorThemeKey);
   }
 }

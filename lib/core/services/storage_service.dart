@@ -25,7 +25,6 @@ class SharedPreferencesService {
   Future<void> saveThemePreference(bool isDarkMode) =>
       _settingsService.saveThemePreference(isDarkMode);
   Future<bool> loadThemePreference() => _settingsService.loadThemePreference();
-  // DITAMBAHKAN
   Future<void> saveChristmasThemePreference(bool isChristmas) =>
       _settingsService.saveChristmasThemePreference(isChristmas);
   Future<bool> loadChristmasThemePreference() =>
@@ -69,18 +68,20 @@ class SharedPreferencesService {
   Future<void> saveQuickFabSize(double size) =>
       _settingsService.saveQuickFabSize(size);
   Future<double> loadQuickFabSize() => _settingsService.loadQuickFabSize();
-
-  // ==> TAMBAHKAN DUA BARIS INI UNTUK MEMPERBAIKI ERROR
   Future<void> saveFabMenuShowTextPreference(bool showText) =>
       _settingsService.saveFabMenuShowTextPreference(showText);
   Future<bool> loadFabMenuShowTextPreference() =>
       _settingsService.loadFabMenuShowTextPreference();
-
-  // --- TAMBAHKAN METODE BARU UNTUK WEBVIEW ---
   Future<void> saveOpenInAppBrowser(bool openInApp) =>
       _settingsService.saveOpenInAppBrowser(openInApp);
   Future<bool> loadOpenInAppBrowser() =>
       _settingsService.loadOpenInAppBrowser();
+
+  // FUNGSI BARU UNTUK TEMA EDITOR
+  Future<void> saveHtmlEditorTheme(String themeName) =>
+      _settingsService.saveHtmlEditorTheme(themeName);
+  Future<String?> loadHtmlEditorTheme() =>
+      _settingsService.loadHtmlEditorTheme();
 
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>

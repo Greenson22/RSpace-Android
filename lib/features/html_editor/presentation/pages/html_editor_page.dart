@@ -7,7 +7,8 @@ import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
-import '../themes/editor_themes.dart'; // Import file tema baru
+import '../../../../core/services/storage_service.dart'; // Import service penyimpanan
+import '../themes/editor_themes.dart';
 
 class HtmlEditorPage extends StatefulWidget {
   final Discussion discussion;
@@ -19,19 +20,47 @@ class HtmlEditorPage extends StatefulWidget {
 }
 
 class _HtmlEditorPageState extends State<HtmlEditorPage> {
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   CodeController? _controller;
   bool _isLoading = true;
   String? _error;
 
-  // State baru untuk mengelola tema yang dipilih
   late EditorTheme _selectedTheme;
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi tema default
+    // Inisialisasi tema default sebelum memuat
     _selectedTheme = editorThemes.first;
-    _loadFileContent();
+    _initializeEditor();
+  }
+
+  // Gabungkan pemuatan tema dan konten file
+  Future<void> _initializeEditor() async {
+    await _loadTheme();
+    await _loadFileContent();
+  }
+
+  Future<void> _loadTheme() async {
+    final themeName = await _prefsService.loadHtmlEditorTheme();
+    if (themeName != null) {
+      final themeIndex = editorThemes.indexWhere((t) => t.name == themeName);
+      if (themeIndex != -1) {
+        setState(() {
+          _selectedTheme = editorThemes[themeIndex];
+        });
+      }
+    }
+  }
+
+  Future<void> _handleThemeChanged(EditorTheme? newTheme) async {
+    if (newTheme != null) {
+      setState(() {
+        _selectedTheme = newTheme;
+      });
+      // Simpan tema yang baru dipilih
+      await _prefsService.saveHtmlEditorTheme(newTheme.name);
+    }
   }
 
   @override
@@ -103,16 +132,10 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          // Dropdown untuk memilih tema
           DropdownButton<EditorTheme>(
             value: _selectedTheme,
-            onChanged: (EditorTheme? newTheme) {
-              if (newTheme != null) {
-                setState(() {
-                  _selectedTheme = newTheme;
-                });
-              }
-            },
+            onChanged:
+                _handleThemeChanged, // Panggil fungsi baru saat tema berubah
             items: editorThemes.map<DropdownMenuItem<EditorTheme>>((
               EditorTheme theme,
             ) {
@@ -125,7 +148,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
               );
             }).toList(),
             dropdownColor: Colors.grey[800],
-            underline: Container(), // Menghilangkan garis bawah
+            underline: Container(),
           ),
           IconButton(
             icon: const Icon(Icons.save),
@@ -145,7 +168,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           : Padding(
               padding: const EdgeInsets.all(8.0),
               child: CodeTheme(
-                // Gunakan tema yang dipilih dari state
                 data: CodeThemeData(styles: _selectedTheme.theme),
                 child: CodeField(
                   controller: _controller!,
