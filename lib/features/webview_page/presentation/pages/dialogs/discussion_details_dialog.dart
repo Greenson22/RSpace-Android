@@ -1,4 +1,4 @@
-// lib/features/webview_page/presentation/dialogs/discussion_details_dialog.dart
+// lib/features/webview_page/presentation/pages/dialogs/discussion_details_dialog.dart
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -207,26 +207,8 @@ void showDiscussionDetailsDialog(BuildContext context, Discussion discussion) {
                 ),
               ),
             ),
-            // --- INI ADALAH STRUKTUR YANG BENAR ---
+            // --- TOMBOL TAMBAH POIN DIHAPUS DARI SINI ---
             actions: [
-              TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Tambah Poin'),
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-
-                  Future.delayed(Duration.zero, () {
-                    showAddPointDialogFromWebView(
-                      context: context,
-                      discussion: discussion,
-                      onPointAdded: () {
-                        showAppSnackBar(context, 'Poin berhasil ditambahkan.');
-                        showDiscussionDetailsDialog(context, discussion);
-                      },
-                    );
-                  });
-                },
-              ),
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Tutup'),
