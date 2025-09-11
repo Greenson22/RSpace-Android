@@ -14,32 +14,70 @@ class FileListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('File Online & Unduhan')),
+      // AppBar sekarang di dalam ChangeNotifierProvider untuk akses ke provider
       body: ChangeNotifierProvider(
         create: (_) => FileProvider(),
         child: Consumer<FileProvider>(
           builder: (context, provider, child) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+            // Cek apakah API sudah dikonfigurasi
+            final bool isApiConfigured =
+                provider.apiDomain != null &&
+                provider.apiDomain!.isNotEmpty &&
+                provider.apiKey != null &&
+                provider.apiKey!.isNotEmpty;
 
-            if (provider.errorMessage != null &&
-                provider.rspaceFiles.isEmpty &&
-                provider.perpuskuFiles.isEmpty) {
-              return _buildErrorView(context, provider);
-            }
-
-            return RefreshIndicator(
-              onRefresh: () =>
-                  Future.wait([provider.fetchFiles(), provider.fetchFiles()]),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const double breakpoint = 800.0;
-                  if (constraints.maxWidth > breakpoint) {
-                    return const DesktopLayout();
-                  } else {
-                    return const MobileLayout();
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('File Online & Unduhan'),
+                actions: [
+                  // Tombol baru ditambahkan di sini
+                  if (isApiConfigured)
+                    IconButton(
+                      icon: provider.isDownloading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.download_for_offline_outlined),
+                      onPressed: provider.isDownloading
+                          ? null
+                          : () => provider.downloadAndImportAll(context),
+                      tooltip: 'Download & Import Semua',
+                    ),
+                ],
+              ),
+              body: Builder(
+                builder: (context) {
+                  if (provider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
                   }
+
+                  if (provider.errorMessage != null &&
+                      provider.rspaceFiles.isEmpty &&
+                      provider.perpuskuFiles.isEmpty) {
+                    return _buildErrorView(context, provider);
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () => Future.wait([
+                      provider.fetchFiles(),
+                      provider.fetchFiles(),
+                    ]),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const double breakpoint = 800.0;
+                        if (constraints.maxWidth > breakpoint) {
+                          return const DesktopLayout();
+                        } else {
+                          return const MobileLayout();
+                        }
+                      },
+                    ),
+                  );
                 },
               ),
             );
@@ -123,18 +161,12 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
     FocusScope.of(context).unfocus();
   }
 
-  void _downloadAndImportAll() {
-    final provider = Provider.of<FileProvider>(context, listen: false);
-    provider.downloadAndImportAll(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<FileProvider>(
       builder: (context, provider, child) {
         final bool shouldBeExpanded =
             provider.apiDomain == null || provider.apiKey == null;
-        final bool isConfigured = !shouldBeExpanded;
 
         return Card(
           child: ExpansionTile(
@@ -188,22 +220,7 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
                         ),
                       ),
                     ),
-                    if (isConfigured) ...[
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.download_for_offline_outlined),
-                          label: const Text('Download & Import Semua'),
-                          onPressed: provider.isDownloading
-                              ? null
-                              : _downloadAndImportAll,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
+                    // Tombol 'Download & Import Semua' telah dipindahkan dari sini
                   ],
                 ),
               ),
