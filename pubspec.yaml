@@ -58,6 +58,8 @@ dependencies:
   google_mobile_ads: ^6.0.0
   numberpicker: ^2.1.2
   webview_flutter: ^4.13.0
+  flutter_highlight: ^0.7.0
+  code_text_field: ^1.1.0
 
   uuid: any
   mime: any

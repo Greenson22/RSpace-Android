@@ -2,6 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:code_text_field/code_text_field.dart';
+import 'package:flutter_highlight/themes/vs2015.dart'; // Tema untuk highlight
+import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
+
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 
@@ -15,20 +19,19 @@ class HtmlEditorPage extends StatefulWidget {
 }
 
 class _HtmlEditorPageState extends State<HtmlEditorPage> {
-  late final TextEditingController _controller;
+  CodeController? _controller;
   bool _isLoading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
     _loadFileContent();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -42,7 +45,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       final content = await provider.readHtmlFromFile(
         widget.discussion.filePath!,
       );
-      _controller.text = content;
+
+      // PERBAIKAN: Hapus parameter 'theme' dari sini
+      _controller = CodeController(text: content, language: xml);
     } catch (e) {
       setState(() {
         _error = "Gagal memuat file: ${e.toString()}";
@@ -57,11 +62,12 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   }
 
   Future<void> _saveFileContent() async {
+    if (_controller == null) return;
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     try {
       await provider.writeHtmlToFile(
         widget.discussion.filePath!,
-        _controller.text,
+        _controller!.text,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +101,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: _isLoading ? null : _saveFileContent,
+            onPressed: _isLoading || _controller == null
+                ? null
+                : _saveFileContent,
             tooltip: 'Simpan Perubahan',
           ),
         ],
@@ -108,15 +116,14 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _controller,
-                expands: true,
-                maxLines: null,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Masukkan konten HTML di sini...',
+              // PERBAIKAN: Bungkus CodeField dengan CodeTheme untuk menerapkan tema
+              child: CodeTheme(
+                data: const CodeThemeData(styles: vs2015Theme),
+                child: CodeField(
+                  controller: _controller!,
+                  expands: true,
+                  textStyle: const TextStyle(fontFamily: 'monospace'),
                 ),
-                style: const TextStyle(fontFamily: 'monospace'),
               ),
             ),
     );
