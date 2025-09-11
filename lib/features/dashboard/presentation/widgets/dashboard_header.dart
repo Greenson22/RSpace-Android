@@ -22,16 +22,16 @@ class _HeaderStats {
   final int pendingTasks;
   final int dueDiscussions;
   final Duration timeLoggedToday;
-  final int totalDueTasks;
-  final int finishedDueTasks;
+  final int totalDiscussions;
+  final int finishedDiscussions;
   final int neurons;
 
   _HeaderStats({
     this.pendingTasks = 0,
     this.dueDiscussions = 0,
     this.timeLoggedToday = Duration.zero,
-    this.totalDueTasks = 0,
-    this.finishedDueTasks = 0,
+    this.totalDiscussions = 0,
+    this.finishedDiscussions = 0,
     this.neurons = 0,
   });
 }
@@ -93,8 +93,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return _HeaderStats(
       pendingTasks: results[0] as int,
       dueDiscussions: discussionStats['due'] ?? 0,
-      totalDueTasks: discussionStats['totalDue'] ?? 0,
-      finishedDueTasks: discussionStats['finishedDue'] ?? 0,
+      totalDiscussions: discussionStats['total'] ?? 0,
+      finishedDiscussions: discussionStats['finished'] ?? 0,
       timeLoggedToday: results[2] as Duration,
     );
   }
@@ -123,8 +123,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (!await topicsDir.exists()) return {};
 
       int dueCount = 0;
-      int totalDueTasks = 0;
-      int finishedDueTasks = 0;
+      int totalDiscussions = 0;
+      int finishedDiscussions = 0;
       final today = DateUtils.dateOnly(DateTime.now());
 
       final topicEntities = topicsDir.listSync().whereType<Directory>();
@@ -136,18 +136,26 @@ class _DashboardHeaderState extends State<DashboardHeader>
         );
 
         for (final subjectFile in subjectFiles) {
+          final jsonString = await subjectFile.readAsString();
+          if (jsonString.isEmpty) continue;
+          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+
+          // ==> PERUBAHAN DI SINI: Cek apakah subject disembunyikan <==
+          final metadata = jsonData['metadata'] as Map<String, dynamic>? ?? {};
+          final isHidden = metadata['isHidden'] as bool? ?? false;
+          if (isHidden) {
+            continue; // Lewati subject ini jika disembunyikan
+          }
+
+          final contentList = jsonData['content'] as List<dynamic>? ?? [];
+
           final topicName = path.basename(topicDir.path);
           final subjectName = path.basenameWithoutExtension(subjectFile.path);
           final subjectId = '$topicName/$subjectName';
 
-          if (excludedSubjects.contains(subjectId)) {
-            continue;
-          }
-
-          final jsonString = await subjectFile.readAsString();
-          if (jsonString.isEmpty) continue;
-          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-          final contentList = jsonData['content'] as List<dynamic>? ?? [];
+          bool isSubjectIncludedInProgres = !excludedSubjects.contains(
+            subjectId,
+          );
 
           for (var item in contentList) {
             final discussion = Discussion.fromJson(item);
@@ -161,23 +169,10 @@ class _DashboardHeaderState extends State<DashboardHeader>
               }
             }
 
-            if (discussion.points.isNotEmpty) {
-              for (final point in discussion.points) {
-                final pointDate = DateTime.tryParse(point.date);
-                if (pointDate != null && !pointDate.isAfter(today)) {
-                  totalDueTasks++;
-                  if (point.finished) {
-                    finishedDueTasks++;
-                  }
-                }
-              }
-            } else {
-              final discussionDate = DateTime.tryParse(discussion.date ?? '');
-              if (discussionDate != null && !discussionDate.isAfter(today)) {
-                totalDueTasks++;
-                if (discussion.finished) {
-                  finishedDueTasks++;
-                }
+            if (isSubjectIncludedInProgres) {
+              totalDiscussions++;
+              if (discussion.finished) {
+                finishedDiscussions++;
               }
             }
           }
@@ -185,8 +180,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
       }
       return {
         'due': dueCount,
-        'totalDue': totalDueTasks,
-        'finishedDue': finishedDueTasks,
+        'total': totalDiscussions,
+        'finished': finishedDiscussions,
       };
     } catch (e) {
       if (kDebugMode) {
@@ -284,8 +279,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 return const Center(child: CircularProgressIndicator());
               }
               final stats = snapshot.data ?? _HeaderStats();
-              final progress = stats.totalDueTasks > 0
-                  ? stats.finishedDueTasks / stats.totalDueTasks
+              final progress = stats.totalDiscussions > 0
+                  ? stats.finishedDiscussions / stats.totalDiscussions
                   : 0.0;
 
               return Column(
@@ -336,12 +331,12 @@ class _DashboardHeaderState extends State<DashboardHeader>
                     children: [
                       Expanded(
                         child: Text(
-                          'Progres Tugas Jatuh Tempo',
+                          'Progres Pembahasan (Sesuai Pengaturan)',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
                       Text(
-                        '${stats.finishedDueTasks} / ${stats.totalDueTasks}',
+                        '${stats.finishedDiscussions} / ${stats.totalDiscussions}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
