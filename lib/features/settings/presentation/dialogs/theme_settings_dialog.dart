@@ -27,6 +27,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
   late Color _selectedColor;
   // ==> STATE LOKAL BARU UNTUK SLIDER <==
   late double _dashboardScale;
+  // --- TAMBAHKAN STATE BARU UNTUK WEBVIEW ---
+  late bool _openInAppBrowser;
 
   @override
   void initState() {
@@ -37,6 +39,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     _selectedColor = provider.primaryColor;
     // ==> INISIALISASI STATE SLIDER <==
     _dashboardScale = provider.dashboardItemScale;
+    // --- INISIALISASI STATE WEBVIEW ---
+    _openInAppBrowser = provider.openInAppBrowser;
   }
 
   /// Menyimpan semua perubahan tema dan menutup dialog.
@@ -49,6 +53,10 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
       // ==> SIMPAN NILAI DARI SLIDER <==
       dashboardScale: _dashboardScale,
     );
+    // --- SIMPAN PENGATURAN WEBVIEW ---
+    if (provider.openInAppBrowser != _openInAppBrowser) {
+      provider.toggleOpenInAppBrowser();
+    }
     Navigator.of(context).pop();
   }
 
@@ -74,6 +82,16 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               secondary: const Icon(Icons.celebration_outlined),
               value: _isChristmas,
               onChanged: (value) => setState(() => _isChristmas = value),
+            ),
+            // --- TAMBAHKAN SWITCH BARU DI SINI ---
+            SwitchListTile(
+              title: const Text('Buka Link di Aplikasi'),
+              subtitle: const Text(
+                'Gunakan WebView internal untuk membuka file HTML.',
+              ),
+              secondary: const Icon(Icons.open_in_new),
+              value: _openInAppBrowser,
+              onChanged: (value) => setState(() => _openInAppBrowser = value),
             ),
             const Divider(),
             Padding(

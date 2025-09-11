@@ -9,6 +9,9 @@ import 'package:mime/mime.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import '../../../../features/settings/application/theme_provider.dart';
+import '../../../../features/webview_page/presentation/pages/webview_page.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
@@ -276,7 +279,10 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     await file.writeAsString(htmlContent);
   }
 
-  Future<void> openDiscussionFile(Discussion discussion) async {
+  Future<void> openDiscussionFile(
+    Discussion discussion,
+    BuildContext context,
+  ) async {
     if (discussion.filePath == null) throw Exception('Tidak ada path file.');
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
@@ -315,8 +321,25 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     );
     await tempFile.writeAsString(indexDoc.outerHtml);
 
-    final result = await OpenFile.open(tempFile.path);
-    if (result.type != ResultType.done) throw Exception(result.message);
+    // --- LOGIKA BARU DIMULAI DI SINI ---
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    if (themeProvider.openInAppBrowser && Platform.isAndroid) {
+      // Buka dengan WebView Internal jika di Android dan pengaturan aktif
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WebViewPage(
+            title: discussion.discussion,
+            initialUrl: tempFile.uri.toString(),
+          ),
+        ),
+      );
+    } else {
+      // Gunakan metode standar (eksternal) untuk platform lain atau jika pengaturan nonaktif
+      final result = await OpenFile.open(tempFile.path);
+      if (result.type != ResultType.done) throw Exception(result.message);
+    }
   }
 
   Future<void> editDiscussionFile(Discussion discussion) async {

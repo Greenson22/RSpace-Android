@@ -17,6 +17,8 @@ class SettingsService {
   // ==> 1. TAMBAHKAN KUNCI BARU UNTUK UKURAN FAB
   static const String _quickFabSizeKey = 'quick_fab_size';
   static const String _fabMenuShowTextKey = 'fab_menu_show_text';
+  // --- TAMBAHKAN KUNCI BARU UNTUK PENGATURAN WEBVIEW ---
+  static const String _openInAppBrowserKey = 'open_in_app_browser';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -158,5 +160,17 @@ class SettingsService {
   Future<bool> loadShowFloPreference() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_showFloatingCharacterKey) ?? true;
+  }
+
+  // --- TAMBAHKAN FUNGSI BARU UNTUK WEBVIEW ---
+  Future<void> saveOpenInAppBrowser(bool openInApp) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_openInAppBrowserKey, openInApp);
+  }
+
+  Future<bool> loadOpenInAppBrowser() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Defaultnya true, yaitu buka di dalam aplikasi
+    return prefs.getBool(_openInAppBrowserKey) ?? true;
   }
 }

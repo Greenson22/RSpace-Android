@@ -43,6 +43,10 @@ class ThemeProvider with ChangeNotifier {
   bool _fabMenuShowText = true;
   bool get fabMenuShowText => _fabMenuShowText;
 
+  // --- TAMBAHKAN STATE BARU UNTUK WEBVIEW ---
+  bool _openInAppBrowser = true;
+  bool get openInAppBrowser => _openInAppBrowser;
+
   ThemeData get currentTheme {
     if (_isChristmasTheme) {
       return AppTheme.getChristmasTheme(_darkTheme);
@@ -92,6 +96,13 @@ class ThemeProvider with ChangeNotifier {
   void toggleFloatingCharacter() async {
     _showFloatingCharacter = !_showFloatingCharacter;
     await _prefsService.saveShowFloPreference(_showFloatingCharacter);
+    notifyListeners();
+  }
+
+  // --- TAMBAHKAN FUNGSI BARU UNTUK WEBVIEW ---
+  void toggleOpenInAppBrowser() async {
+    _openInAppBrowser = !_openInAppBrowser;
+    await _prefsService.saveOpenInAppBrowser(_openInAppBrowser);
     notifyListeners();
   }
 
@@ -193,6 +204,9 @@ class ThemeProvider with ChangeNotifier {
 
     _quickFabSize = await _prefsService.loadQuickFabSize();
     _fabMenuShowText = await _prefsService.loadFabMenuShowTextPreference();
+
+    // --- MUAT PENGATURAN BARU UNTUK WEBVIEW ---
+    _openInAppBrowser = await _prefsService.loadOpenInAppBrowser();
 
     notifyListeners();
   }

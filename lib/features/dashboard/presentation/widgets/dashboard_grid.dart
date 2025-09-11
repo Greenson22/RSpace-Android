@@ -67,7 +67,7 @@ List<VoidCallback> buildDashboardActions(
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const WebViewPage()),
+        MaterialPageRoute(builder: (_) => const WebViewPage(initialUrl: '')),
       ),
     if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(

@@ -76,6 +76,12 @@ class SharedPreferencesService {
   Future<bool> loadFabMenuShowTextPreference() =>
       _settingsService.loadFabMenuShowTextPreference();
 
+  // --- TAMBAHKAN METODE BARU UNTUK WEBVIEW ---
+  Future<void> saveOpenInAppBrowser(bool openInApp) =>
+      _settingsService.saveOpenInAppBrowser(openInApp);
+  Future<bool> loadOpenInAppBrowser() =>
+      _settingsService.loadOpenInAppBrowser();
+
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>
       _pathService.saveCustomStoragePath(path);

@@ -96,7 +96,7 @@ class DiscussionListItem extends StatelessWidget {
                     : (isSelected ? theme.primaryColor : null),
               ),
               onPressed: hasFile
-                  ? () => provider.openDiscussionFile(discussion)
+                  ? () => provider.openDiscussionFile(discussion, context)
                   : null,
               tooltip: hasFile ? 'Buka File' : null,
             ),

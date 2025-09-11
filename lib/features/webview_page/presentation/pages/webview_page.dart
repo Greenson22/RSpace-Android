@@ -3,11 +3,18 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-// Import untuk fitur spesifik Android.
+// --- PASTIKAN IMPORT INI ADA ---
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 class WebViewPage extends StatefulWidget {
-  const WebViewPage({super.key});
+  final String initialUrl;
+  final String title;
+
+  const WebViewPage({
+    super.key,
+    required this.initialUrl,
+    this.title = 'WebView',
+  });
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
@@ -20,13 +27,12 @@ class _WebViewPageState extends State<WebViewPage> {
   void initState() {
     super.initState();
 
-    // Inisialisasi controller dengan pengaturan spesifik platform
     late final PlatformWebViewControllerCreationParams params;
     // Cek apakah platform saat ini adalah Android
     if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      // Baris ini sekarang akan valid karena sudah di-import
       params = AndroidWebViewControllerCreationParams();
     } else {
-      // Fallback jika bukan Android (meskipun kita hanya menampilkannya di Android)
       params = const PlatformWebViewControllerCreationParams();
     }
 
@@ -57,19 +63,12 @@ Page resource error:
           ''');
           },
           onNavigationRequest: (NavigationRequest request) {
-            if (request.url.startsWith('https://www.youtube.com/')) {
-              debugPrint('blocking navigation to ${request.url}');
-              return NavigationDecision.prevent;
-            }
-            debugPrint('allowing navigation to ${request.url}');
             return NavigationDecision.navigate;
           },
         ),
       )
-      // --- PERUBAHAN DI SINI ---
-      ..loadRequest(Uri.parse('https://www.google.com'));
+      ..loadRequest(Uri.parse(widget.initialUrl));
 
-    // Aktifkan debugging untuk WebView di Android
     if (controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
       (controller.platform as AndroidWebViewController)
@@ -83,8 +82,7 @@ Page resource error:
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Google Search'), // Judul bisa disesuaikan
-        // Menu ini mendemonstrasikan bahwa widget Flutter bisa ditampilkan di atas web view.
+        title: Text(widget.title),
         actions: <Widget>[NavigationControls(webViewController: _controller)],
       ),
       body: WebViewWidget(controller: _controller),
@@ -92,7 +90,6 @@ Page resource error:
   }
 }
 
-// Widget untuk kontrol navigasi (maju, mundur, reload)
 class NavigationControls extends StatelessWidget {
   const NavigationControls({super.key, required this.webViewController});
 
@@ -107,12 +104,6 @@ class NavigationControls extends StatelessWidget {
           onPressed: () async {
             if (await webViewController.canGoBack()) {
               await webViewController.goBack();
-            } else {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No back history item')),
-                );
-              }
             }
           },
         ),
@@ -121,12 +112,6 @@ class NavigationControls extends StatelessWidget {
           onPressed: () async {
             if (await webViewController.canGoForward()) {
               await webViewController.goForward();
-            } else {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No forward history item')),
-                );
-              }
             }
           },
         ),

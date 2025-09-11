@@ -84,8 +84,9 @@ class DiscussionTile extends StatelessWidget {
       },
       leading: IconButton(
         icon: Icon(iconData, color: iconColor, size: 24),
+        // --- PERBAIKAN DI SINI ---
         onPressed: hasFile
-            ? () => provider.openDiscussionFile(discussion)
+            ? () => provider.openDiscussionFile(discussion, context)
             : null,
         tooltip: hasFile ? 'Buka File' : null,
       ),
