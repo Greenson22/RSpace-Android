@@ -10,6 +10,8 @@ class UserDataService {
   static const String _filterValueKey = 'filter_value';
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
+  static const String _excludedSubjectsForProgressKey =
+      'excluded_subjects_for_progress';
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
@@ -74,5 +76,17 @@ class UserDataService {
     final sortType = prefs.getString(_backupSortTypeKey) ?? 'date';
     final sortAscending = prefs.getBool(_backupSortAscendingKey) ?? false;
     return {'sortType': sortType, 'sortAscending': sortAscending};
+  }
+
+  Future<void> saveExcludedSubjects(List<String> subjectIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_excludedSubjectsForProgressKey, subjectIds);
+  }
+
+  Future<Set<String>> loadExcludedSubjects() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> excluded =
+        prefs.getStringList(_excludedSubjectsForProgressKey) ?? [];
+    return excluded.toSet();
   }
 }

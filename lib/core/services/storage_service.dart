@@ -140,6 +140,12 @@ class SharedPreferencesService {
   Future<Map<String, dynamic>> loadBackupSortPreferences() =>
       _userDataService.loadBackupSortPreferences();
 
+  // ==> METODE BARU DITAMBAHKAN <==
+  Future<void> saveExcludedSubjects(List<String> subjectIds) =>
+      _userDataService.saveExcludedSubjects(subjectIds);
+  Future<Set<String>> loadExcludedSubjects() =>
+      _userDataService.loadExcludedSubjects();
+
   // Konfigurasi API lama
   static const String _apiDomainKey = 'api_domain';
   static const String _apiKeyKey = 'api_key';

@@ -50,6 +50,7 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
                 isPathSet: isPathSet,
                 onShowStorageDialog: () => showStoragePathDialog(context),
                 onSync: handleBackupAndSync,
+                onRefresh: () {},
               ),
               body: SafeArea(
                 child: Column(
