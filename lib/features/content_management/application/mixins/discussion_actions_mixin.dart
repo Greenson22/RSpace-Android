@@ -10,6 +10,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
 import '../../../../features/settings/application/theme_provider.dart';
 import '../../../../features/webview_page/presentation/pages/webview_page.dart';
 import '../../domain/models/discussion_model.dart';
@@ -188,6 +189,14 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
+  Future<String> readHtmlFromFile(String relativePath) async {
+    final basePath = await getPerpuskuHtmlBasePath();
+    final fullPath = path.join(basePath, relativePath);
+    final file = File(fullPath);
+    if (!await file.exists()) throw Exception("File tidak ditemukan.");
+    return await file.readAsString();
+  }
+
   Future<void> updateDiscussionFilePath(
     Discussion discussion,
     String filePath,
@@ -350,14 +359,58 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
-  Future<void> editDiscussionFile(Discussion discussion) async {
+  Future<void> editDiscussionFileWithSelection(
+    Discussion discussion,
+    BuildContext context,
+  ) async {
+    // Tampilkan dialog untuk memilih editor
+    // PERBAIKAN DI SINI
+    final choice = await showDialog<String?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Editor'),
+        content: const Text(
+          'Buka dengan editor internal atau aplikasi eksternal?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'internal'),
+            child: const Text('Internal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'external'),
+            child: const Text('Eksternal'),
+          ),
+        ],
+      ),
+    );
+
+    if (choice == 'internal' && context.mounted) {
+      // Navigasi ke halaman editor internal baru
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider.value(
+            value: this as DiscussionProvider,
+            child: HtmlEditorPage(discussion: discussion),
+          ),
+        ),
+      );
+    } else if (choice == 'external') {
+      // Logika untuk membuka editor eksternal yang sudah ada
+      await _openFileWithExternalEditor(discussion);
+    }
+  }
+
+  Future<void> _openFileWithExternalEditor(Discussion discussion) async {
     if (discussion.filePath == null) throw Exception('Tidak ada path file.');
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
     final contentPath = path.join(basePath, discussion.filePath!);
 
-    if (!await File(contentPath).exists())
+    if (!await File(contentPath).exists()) {
       throw Exception('File tidak ditemukan.');
+    }
 
     if (Platform.isLinux) {
       const editors = ['gedit', 'kate', 'mousepad', 'code', 'xdg-open'];

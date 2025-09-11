@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/widgets/discussion_card.dart
+// lib/features/content_management/presentation/discussions/widgets/discussion_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
@@ -70,7 +70,8 @@ class DiscussionCard extends StatelessWidget {
             ),
             onSetFilePath: () => _setFilePath(context, provider),
             onGenerateHtml: () => _generateHtml(context),
-            onEditFile: () => _editFile(context, provider),
+            onEditFile: () =>
+                provider.editDiscussionFileWithSelection(discussion, context),
             onRemoveFilePath: () => _removeFilePath(context, provider),
             onSmartLink: () => _findSmartLink(context, provider),
             onFinish: () => _markAsFinished(context, provider),
@@ -234,14 +235,6 @@ class DiscussionCard extends StatelessWidget {
     );
     if (success == true && context.mounted) {
       _showSnackBar(context, 'Konten HTML berhasil dibuat!');
-    }
-  }
-
-  void _editFile(BuildContext context, DiscussionProvider provider) async {
-    try {
-      await provider.editDiscussionFile(discussion);
-    } catch (e) {
-      _showSnackBar(context, e.toString());
     }
   }
 

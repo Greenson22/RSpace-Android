@@ -134,7 +134,10 @@ class DiscussionListItem extends StatelessWidget {
                     ),
                     onSetFilePath: () => _setFilePath(context, provider),
                     onGenerateHtml: () => _generateHtml(context),
-                    onEditFile: () => _editFile(context, provider),
+                    onEditFile: () => provider.editDiscussionFileWithSelection(
+                      discussion,
+                      context,
+                    ),
                     onRemoveFilePath: () => _removeFilePath(context, provider),
                     onSmartLink: () => _findSmartLink(context, provider),
                     onFinish: () => _markAsFinished(context, provider),
@@ -322,14 +325,6 @@ class DiscussionListItem extends StatelessWidget {
     );
     if (success == true && context.mounted) {
       _showSnackBar(context, 'Konten HTML berhasil dibuat!');
-    }
-  }
-
-  void _editFile(BuildContext context, DiscussionProvider provider) async {
-    try {
-      await provider.editDiscussionFile(discussion);
-    } catch (e) {
-      _showSnackBar(context, e.toString(), isError: true);
     }
   }
 
