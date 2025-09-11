@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/prompt_model.dart';
 import '../../../../core/services/storage_service.dart';
+// ==> 1. IMPORT GEMINI SERVICE UNTUK MENGAMBIL PROMPT DEFAULT
+import '../../application/services/gemini_service.dart';
 
 // Kelas helper untuk data model
 class GeminiModelInfo {
@@ -32,10 +34,11 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   String? _selectedContentModelId;
   String? _selectedChatModelId;
   String? _selectedGeneralModelId;
-  // ==> TAMBAHKAN STATE BARU <==
   String? _selectedQuizModelId;
 
-  // Daftar model AI
+  // ==> 2. TAMBAHKAN CONTROLLER UNTUK PROMPT MOTIVASI
+  late TextEditingController _motivationalPromptController;
+
   final List<GeminiModelInfo> _models = const [
     GeminiModelInfo(name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro'),
     GeminiModelInfo(name: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash'),
@@ -51,7 +54,16 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   @override
   void initState() {
     super.initState();
+    // ==> 3. INISIALISASI CONTROLLER
+    _motivationalPromptController = TextEditingController();
     _loadSavedData();
+  }
+
+  // ==> 4. JANGAN LUPA DISPOSE CONTROLLER
+  @override
+  void dispose() {
+    _motivationalPromptController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSavedData() async {
@@ -59,8 +71,10 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     final contentModelId = await _prefsService.loadGeminiContentModel();
     final chatModelId = await _prefsService.loadGeminiChatModel();
     final generalModelId = await _prefsService.loadGeminiGeneralModel();
-    // ==> MUAT MODEL KUIS <==
     final quizModelId = await _prefsService.loadGeminiQuizModel();
+    // ==> 5. MUAT PROMPT MOTIVASI YANG TERSIMPAN
+    final motivationalPrompt = await _prefsService
+        .loadMotivationalQuotePrompt();
 
     if (savedPrompts.isEmpty) {
       final defaultPrompt = await _prefsService.getActivePrompt();
@@ -79,13 +93,13 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     if (mounted) {
       setState(() {
         _prompts = savedPrompts;
-        _selectedContentModelId =
-            contentModelId ?? _models[1].id; // Default to Flash
-        _selectedChatModelId = chatModelId ?? _models[1].id; // Default to Flash
-        _selectedGeneralModelId =
-            generalModelId ?? _models[1].id; // Default to Flash
-        // ==> ATUR STATE UNTUK MODEL KUIS <==
-        _selectedQuizModelId = quizModelId ?? _models[1].id; // Default to Flash
+        _selectedContentModelId = contentModelId ?? _models[1].id;
+        _selectedChatModelId = chatModelId ?? _models[1].id;
+        _selectedGeneralModelId = generalModelId ?? _models[1].id;
+        _selectedQuizModelId = quizModelId ?? _models[1].id;
+        // ==> 6. SET TEKS CONTROLLER
+        _motivationalPromptController.text =
+            motivationalPrompt ?? GeminiService.defaultMotivationalPrompt;
         _isLoading = false;
       });
     }
@@ -219,15 +233,19 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     if (_selectedGeneralModelId != null) {
       await _prefsService.saveGeminiGeneralModel(_selectedGeneralModelId!);
     }
-    // ==> SIMPAN MODEL KUIS <==
     if (_selectedQuizModelId != null) {
       await _prefsService.saveGeminiQuizModel(_selectedQuizModelId!);
     }
 
+    // ==> 7. SIMPAN PROMPT MOTIVASI
+    await _prefsService.saveMotivationalQuotePrompt(
+      _motivationalPromptController.text,
+    );
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Pengaturan model AI berhasil disimpan.'),
+          content: Text('Pengaturan model & prompt AI berhasil disimpan.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -323,7 +341,6 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                         });
                       },
                     ),
-                    // ==> TAMBAHKAN DROPDOWN BARU DI SINI <==
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: _selectedQuizModelId,
@@ -346,6 +363,34 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                         });
                       },
                     ),
+                    const Divider(height: 32),
+                    // ==> 8. TAMBAHKAN UI UNTUK PROMPT MOTIVASI
+                    Text(
+                      'Prompt untuk Kata Motivasi',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _motivationalPromptController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Masukkan perintah untuk AI...',
+                      ),
+                      maxLines: 4,
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        child: const Text('Gunakan Default'),
+                        onPressed: () {
+                          setState(() {
+                            _motivationalPromptController.text =
+                                GeminiService.defaultMotivationalPrompt;
+                          });
+                        },
+                      ),
+                    ),
+                    // --- AKHIR UI BARU ---
                     const SizedBox(height: 16),
                     Text(
                       'Prompt Kustom untuk Generate Konten',
@@ -399,7 +444,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         OutlinedButton.icon(
           onPressed: () => _addNewOrEditPrompt(),
           icon: const Icon(Icons.add),
-          label: const Text('Tambah Prompt'),
+          label: const Text('Tambah Prompt Konten'),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -407,7 +452,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         ),
         ElevatedButton(
           onPressed: _saveAllSettings,
-          child: const Text('Simpan Model'),
+          child: const Text('Simpan Pengaturan'),
         ),
       ],
     );

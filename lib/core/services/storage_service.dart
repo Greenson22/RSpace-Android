@@ -82,6 +82,13 @@ class SharedPreferencesService {
   Future<String?> loadHtmlEditorTheme() =>
       _settingsService.loadHtmlEditorTheme();
 
+  // ==> PENAMBAHAN FUNGSI UNTUK PROMPT MOTIVASI <==
+  Future<void> saveMotivationalQuotePrompt(String prompt) =>
+      _settingsService.saveMotivationalQuotePrompt(prompt);
+  Future<String?> loadMotivationalQuotePrompt() =>
+      _settingsService.loadMotivationalQuotePrompt();
+  // --- AKHIR PENAMBAHAN ---
+
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>
       _pathService.saveCustomStoragePath(path);

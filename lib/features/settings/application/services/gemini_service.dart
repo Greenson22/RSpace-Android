@@ -15,8 +15,11 @@ import '../../../../core/services/storage_service.dart';
 class GeminiService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final DiscussionService _discussionService = DiscussionService();
-  // ==> 1. TAMBAHKAN INSTANCE PATHSERVICE
   final PathService _pathService = PathService();
+
+  // Prompt default untuk kata motivasi
+  static const String defaultMotivationalPrompt =
+      'Berikan saya satu kalimat motivasi singkat tentang belajar atau pengetahuan dalam Bahasa Indonesia. Kalimat harus inspiratif dan tidak lebih dari 20 kata. Jangan gunakan tanda kutip di awal dan akhir kalimat.';
 
   Future<String> _getActiveApiKey() async {
     final List<ApiKey> keys = await _prefsService.loadApiKeys();
@@ -28,10 +31,8 @@ class GeminiService {
     }
   }
 
-  // ==> 2. FUNGSI INI DIUBAH TOTAL
   /// Menghasilkan atau mengambil satu kalimat motivasi belajar.
   Future<String> getMotivationalQuote() async {
-    // Daftar fallback jika semua gagal
     const fallbackQuotes = [
       'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.',
       'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.',
@@ -40,7 +41,7 @@ class GeminiService {
     ];
     final random = Random();
 
-    // Membaca kutipan yang sudah ada
+    // Membaca kutipan yang sudah ada dari file JSON
     List<String> existingQuotes = [];
     final quotesPath = await _pathService.motivationalQuotesPath;
     final quotesFile = File(quotesPath);
@@ -51,14 +52,16 @@ class GeminiService {
           existingQuotes = List<String>.from(jsonDecode(jsonString));
         }
       } else {
+        // Jika file tidak ada, buat file baru dengan array kosong
         await quotesFile.create(recursive: true);
         await quotesFile.writeAsString('[]');
       }
     } catch (e) {
-      // Abaikan jika ada error pembacaan file
+      // Abaikan jika ada error saat membaca file, akan menggunakan fallback
     }
 
     final apiKey = await _getActiveApiKey();
+    // Jika tidak ada API key, gunakan kutipan dari cache atau fallback
     if (apiKey.isEmpty) {
       if (existingQuotes.isNotEmpty) {
         return existingQuotes[random.nextInt(existingQuotes.length)];
@@ -66,13 +69,14 @@ class GeminiService {
       return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
     }
 
+    // Gunakan prompt kustom jika ada, jika tidak, gunakan default
+    final customPrompt = await _prefsService.loadMotivationalQuotePrompt();
+    final prompt = customPrompt ?? defaultMotivationalPrompt;
+
     final model =
         await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
     final apiUrl =
         'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
-
-    const prompt =
-        'Berikan saya satu kalimat motivasi singkat tentang belajar atau pengetahuan dalam Bahasa Indonesia. Kalimat harus inspiratif dan tidak lebih dari 20 kata. Jangan gunakan tanda kutip di awal dan akhir kalimat.';
 
     try {
       final response = await http.post(
@@ -86,7 +90,9 @@ class GeminiService {
               ],
             },
           ],
-          'generationConfig': {'temperature': 0.9},
+          'generationConfig': {
+            'temperature': 0.9, // Sedikit lebih kreatif
+          },
         }),
       );
 
@@ -113,13 +119,13 @@ class GeminiService {
         }
       }
     } catch (e) {
-      // Jika error, kembalikan dari cache atau fallback
+      // Jika error saat request API, kembalikan dari cache atau fallback
       if (existingQuotes.isNotEmpty) {
         return existingQuotes[random.nextInt(existingQuotes.length)];
       }
     }
 
-    // Fallback terakhir
+    // Fallback terakhir jika semua proses gagal
     return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
   }
 

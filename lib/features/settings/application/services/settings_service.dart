@@ -19,6 +19,8 @@ class SettingsService {
   static const String _openInAppBrowserKey = 'open_in_app_browser';
   // KUNCI BARU UNTUK TEMA EDITOR
   static const String _htmlEditorThemeKey = 'html_editor_theme';
+  // KUNCI BARU UNTUK PROMPT MOTIVASI
+  static const String _motivationalQuotePromptKey = 'motivational_quote_prompt';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -182,5 +184,17 @@ class SettingsService {
   Future<String?> loadHtmlEditorTheme() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_htmlEditorThemeKey);
+  }
+
+  // FUNGSI BARU UNTUK MENYIMPAN PROMPT MOTIVASI
+  Future<void> saveMotivationalQuotePrompt(String prompt) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_motivationalQuotePromptKey, prompt);
+  }
+
+  // FUNGSI BARU UNTUK MEMUAT PROMPT MOTIVASI
+  Future<String?> loadMotivationalQuotePrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_motivationalQuotePromptKey);
   }
 }
