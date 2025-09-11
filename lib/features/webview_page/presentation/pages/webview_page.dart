@@ -14,7 +14,6 @@ class WebViewPage extends StatefulWidget {
   final String? initialUrl;
   final String? htmlContent;
   final String title;
-  // --- TAMBAHKAN PARAMETER BARU ---
   final Discussion? discussion;
 
   const WebViewPage({
@@ -22,7 +21,7 @@ class WebViewPage extends StatefulWidget {
     this.initialUrl,
     this.htmlContent,
     this.title = 'WebView',
-    this.discussion, // Tambahkan di konstruktor
+    this.discussion,
   }) : assert(initialUrl != null || htmlContent != null);
 
   @override
@@ -76,7 +75,7 @@ class _WebViewPageState extends State<WebViewPage> {
     _controller = controller;
   }
 
-  // --- FUNGSI BARU UNTUK MENAMPILKAN DIALOG EDIT ---
+  // --- FUNGSI INI DIPERBARUI SECARA SIGNIFIKAN ---
   void _showDiscussionDetailsDialog(
     BuildContext context,
     Discussion discussion,
@@ -85,7 +84,14 @@ class _WebViewPageState extends State<WebViewPage> {
       context,
       listen: false,
     );
-    String selectedCode = discussion.effectiveRepetitionCode;
+
+    // Simpan state perubahan di dalam Map agar bisa diedit secara individual
+    final Map<dynamic, String> pendingCodeChanges = {
+      discussion: discussion.effectiveRepetitionCode, // Untuk diskusi utama
+    };
+    for (var point in discussion.points) {
+      pendingCodeChanges[point] = point.repetitionCode; // Untuk setiap poin
+    }
 
     showDialog(
       context: context,
@@ -93,36 +99,92 @@ class _WebViewPageState extends State<WebViewPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Detail Diskusi'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      discussion.discussion,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text('Jadwal Tinjau: ${discussion.effectiveDate ?? "N/A"}'),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: selectedCode,
-                      decoration: const InputDecoration(
-                        labelText: 'Kode Repetisi',
+              title: const Text('Detail & Poin Diskusi'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- Bagian Diskusi Utama ---
+                      Text(
+                        discussion.discussion,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                      items: kRepetitionCodes.map((code) {
-                        return DropdownMenuItem(value: code, child: Text(code));
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setDialogState(() {
-                            selectedCode = newValue;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        'Jadwal Tinjau: ${discussion.effectiveDate ?? "N/A"}',
+                      ),
+                      const SizedBox(height: 16),
+                      // Hanya tampilkan dropdown jika tidak punya poin
+                      if (discussion.points.isEmpty)
+                        DropdownButtonFormField<String>(
+                          value: pendingCodeChanges[discussion],
+                          decoration: const InputDecoration(
+                            labelText: 'Kode Repetisi Diskusi',
+                          ),
+                          items: kRepetitionCodes.map((code) {
+                            return DropdownMenuItem(
+                              value: code,
+                              child: Text(code),
+                            );
+                          }).toList(),
+                          onChanged: (newValue) {
+                            if (newValue != null) {
+                              setDialogState(() {
+                                pendingCodeChanges[discussion] = newValue;
+                              });
+                            }
+                          },
+                        ),
+
+                      if (discussion.points.isNotEmpty)
+                        const Divider(height: 32),
+
+                      // --- Bagian Daftar Poin ---
+                      if (discussion.points.isNotEmpty)
+                        ...discussion.points.map((point) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('• ${point.pointText}'),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '  Jadwal: ${point.date}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                DropdownButtonFormField<String>(
+                                  value: pendingCodeChanges[point],
+                                  isDense: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Kode Repetisi Poin',
+                                  ),
+                                  items: kRepetitionCodes.map((code) {
+                                    return DropdownMenuItem(
+                                      value: code,
+                                      child: Text(code),
+                                    );
+                                  }).toList(),
+                                  onChanged: (newValue) {
+                                    if (newValue != null) {
+                                      setDialogState(() {
+                                        pendingCodeChanges[point] = newValue;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -132,28 +194,44 @@ class _WebViewPageState extends State<WebViewPage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    if (selectedCode != discussion.effectiveRepetitionCode) {
+                    int totalReward = 0;
+                    String lastMessage = '';
+
+                    // Proses perubahan untuk diskusi utama (jika ada)
+                    final newDiscussionCode = pendingCodeChanges[discussion]!;
+                    if (newDiscussionCode != discussion.repetitionCode) {
                       discussionProvider.updateDiscussionCode(
                         discussion,
-                        selectedCode,
+                        newDiscussionCode,
                       );
-
-                      final reward = getNeuronRewardForCode(selectedCode);
-                      if (reward > 0) {
-                        await Provider.of<NeuronProvider>(
-                          context,
-                          listen: false,
-                        ).addNeurons(reward);
-                        showNeuronRewardSnackBar(context, reward);
-                      }
-                      showAppSnackBar(
-                        context,
-                        'Kode repetisi berhasil diubah ke $selectedCode.',
-                      );
+                      totalReward += getNeuronRewardForCode(newDiscussionCode);
+                      lastMessage = 'Kode repetisi diskusi berhasil diubah.';
                     }
+
+                    // Proses perubahan untuk setiap poin
+                    for (var point in discussion.points) {
+                      final newPointCode = pendingCodeChanges[point]!;
+                      if (newPointCode != point.repetitionCode) {
+                        discussionProvider.updatePointCode(point, newPointCode);
+                        totalReward += getNeuronRewardForCode(newPointCode);
+                        lastMessage = 'Kode repetisi poin berhasil diubah.';
+                      }
+                    }
+
+                    if (totalReward > 0) {
+                      await Provider.of<NeuronProvider>(
+                        context,
+                        listen: false,
+                      ).addNeurons(totalReward);
+                      showNeuronRewardSnackBar(context, totalReward);
+                    }
+                    if (lastMessage.isNotEmpty) {
+                      showAppSnackBar(context, lastMessage);
+                    }
+
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Simpan'),
+                  child: const Text('Simpan Perubahan'),
                 ),
               ],
             );
@@ -169,11 +247,10 @@ class _WebViewPageState extends State<WebViewPage> {
       appBar: AppBar(
         title: Text(widget.title, overflow: TextOverflow.ellipsis),
         actions: <Widget>[
-          // --- TAMBAHKAN TOMBOL EDIT DI SINI ---
           if (widget.discussion != null)
             IconButton(
               icon: const Icon(Icons.edit_note),
-              tooltip: 'Edit Detail Diskusi',
+              tooltip: 'Edit Detail & Poin',
               onPressed: () =>
                   _showDiscussionDetailsDialog(context, widget.discussion!),
             ),
@@ -185,7 +262,6 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 }
 
-// ... (Kelas NavigationControls tetap sama)
 class NavigationControls extends StatelessWidget {
   const NavigationControls({super.key, required this.webViewController});
 
