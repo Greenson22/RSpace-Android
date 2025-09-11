@@ -77,7 +77,6 @@ class _WebViewPageState extends State<WebViewPage> {
     _controller = controller;
   }
 
-  // --- FUNGSI INI DIPERBARUI SECARA SIGNIFIKAN ---
   void _showDiscussionDetailsDialog(
     BuildContext context,
     Discussion discussion,
@@ -92,7 +91,42 @@ class _WebViewPageState extends State<WebViewPage> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Helper untuk membuat widget kode yang bisa diketuk
+            // --- LOGIKA BARU UNTUK FILTER DAN SORT ---
+            final List<Point> displayedPoints = discussion.points
+                .where(
+                  (point) => discussionProvider.doesPointMatchFilter(point),
+                )
+                .toList();
+
+            displayedPoints.sort((a, b) {
+              switch (discussionProvider.sortType) {
+                case 'name':
+                  return a.pointText.toLowerCase().compareTo(
+                    b.pointText.toLowerCase(),
+                  );
+                case 'code':
+                  return getRepetitionCodeIndex(
+                    a.repetitionCode,
+                  ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
+                default: // date
+                  final dateA = DateTime.tryParse(a.date);
+                  final dateB = DateTime.tryParse(b.date);
+                  if (dateA == null && dateB == null) return 0;
+                  if (dateA == null)
+                    return discussionProvider.sortAscending ? 1 : -1;
+                  if (dateB == null)
+                    return discussionProvider.sortAscending ? -1 : 1;
+                  return dateA.compareTo(dateB);
+              }
+            });
+
+            if (!discussionProvider.sortAscending) {
+              final reversedList = displayedPoints.reversed.toList();
+              displayedPoints.clear();
+              displayedPoints.addAll(reversedList);
+            }
+            // --- AKHIR LOGIKA BARU ---
+
             Widget buildTappableCode(dynamic item) {
               final isPoint = item is Point;
               final currentCode = isPoint
@@ -144,7 +178,6 @@ class _WebViewPageState extends State<WebViewPage> {
                                 'Kode diubah ke $nextCode.',
                               );
 
-                              // Perbarui UI dialog
                               setDialogState(() {});
                             }
                           }
@@ -164,7 +197,6 @@ class _WebViewPageState extends State<WebViewPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Bagian Diskusi Utama
                       Text(
                         discussion.discussion,
                         style: const TextStyle(
@@ -177,16 +209,15 @@ class _WebViewPageState extends State<WebViewPage> {
                         'Jadwal Tinjau: ${discussion.effectiveDate ?? "N/A"}',
                       ),
                       const SizedBox(height: 8),
-                      // Hanya tampilkan jika tidak punya poin
                       if (discussion.points.isEmpty)
                         buildTappableCode(discussion),
 
                       if (discussion.points.isNotEmpty)
                         const Divider(height: 32),
 
-                      // Bagian Daftar Poin
                       if (discussion.points.isNotEmpty)
-                        ...discussion.points.map((point) {
+                        ...displayedPoints.map((point) {
+                          // Gunakan displayedPoints
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
                             child: Column(
