@@ -7,15 +7,14 @@ import '../../features/settings/application/services/settings_service.dart';
 import 'path_service.dart';
 import 'gemini_storage_service.dart';
 import 'user_data_service.dart';
-import 'neuron_service.dart'; // Import the new service
+import 'neuron_service.dart';
 
 class SharedPreferencesService {
   final SettingsService _settingsService = SettingsService();
   final PathService _pathService = PathService();
   final GeminiService _geminiService = GeminiService();
   final UserDataService _userDataService = UserDataService();
-  final NeuronService _neuronService =
-      NeuronService(); // Instantiate the new service
+  final NeuronService _neuronService = NeuronService();
 
   // Update neuron methods to use NeuronService
   Future<void> saveNeurons(int count) => _neuronService.setNeurons(count);
@@ -139,12 +138,16 @@ class SharedPreferencesService {
       _userDataService.saveBackupSortPreferences(sortType, sortAscending);
   Future<Map<String, dynamic>> loadBackupSortPreferences() =>
       _userDataService.loadBackupSortPreferences();
-
-  // ==> METODE BARU DITAMBAHKAN <==
   Future<void> saveExcludedSubjects(List<String> subjectIds) =>
       _userDataService.saveExcludedSubjects(subjectIds);
   Future<Set<String>> loadExcludedSubjects() =>
       _userDataService.loadExcludedSubjects();
+
+  // ==> METODE BARU DITAMBAHKAN <==
+  Future<void> saveExcludedTaskCategories(List<String> categoryNames) =>
+      _userDataService.saveExcludedTaskCategories(categoryNames);
+  Future<Set<String>> loadExcludedTaskCategories() =>
+      _userDataService.loadExcludedTaskCategories();
 
   // Konfigurasi API lama
   static const String _apiDomainKey = 'api_domain';

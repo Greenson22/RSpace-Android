@@ -10,19 +10,20 @@ import '../../../settings/presentation/dialogs/gemini_prompt_dialog.dart';
 import '../../../settings/presentation/dialogs/quick_fab_settings_dialog.dart';
 import '../../../settings/presentation/dialogs/theme_settings_dialog.dart';
 import '../dialogs/progress_settings_dialog.dart';
+import '../dialogs/task_settings_dialog.dart';
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isPathSet;
   final VoidCallback onShowStorageDialog;
   final VoidCallback onSync;
-  final VoidCallback onRefresh; // Tambahkan callback ini
+  final VoidCallback onRefresh;
 
   const DashboardAppBar({
     super.key,
     required this.isPathSet,
     required this.onShowStorageDialog,
     required this.onSync,
-    required this.onRefresh, // Tambahkan ini di konstruktor
+    required this.onRefresh,
   });
 
   @override
@@ -63,7 +64,15 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                 builder: (context) => const ProgressSettingsDialog(),
               );
               if (changed == true) {
-                onRefresh(); // Panggil callback refresh
+                onRefresh();
+              }
+            } else if (value == 'task_settings') {
+              final changed = await showDialog<bool>(
+                context: context,
+                builder: (context) => const TaskSettingsDialog(),
+              );
+              if (changed == true) {
+                onRefresh();
               }
             } else if (value == 'api_key') {
               showGeminiApiKeyDialog(context);
@@ -95,6 +104,13 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: ListTile(
                 leading: Icon(Icons.rule_folder_outlined),
                 title: Text('Atur Progres Dashboard'),
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'task_settings',
+              child: ListTile(
+                leading: Icon(Icons.playlist_add_check_circle_outlined),
+                title: Text('Atur Tugas Dashboard'),
               ),
             ),
             const PopupMenuItem<String>(
