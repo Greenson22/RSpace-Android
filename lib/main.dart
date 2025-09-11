@@ -16,7 +16,6 @@ import 'package:my_aplication/features/link_maintenance/application/providers/un
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
 import 'package:quick_actions/quick_actions.dart';
-import 'core/widgets/ad_banner_widget.dart';
 import 'features/prompt_library/application/prompt_provider.dart';
 import 'features/my_tasks/presentation/pages/my_tasks_page.dart';
 import 'features/settings/application/theme_provider.dart';
@@ -135,31 +134,23 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           theme: themeProvider.currentTheme,
           home: const DashboardPage(),
           builder: (context, navigator) {
-            return Column(
+            return Stack(
               children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      if (navigator != null) navigator,
-                      if (isChristmas)
-                        const IgnorePointer(
-                          child: SnowWidget(
-                            isRunning: true,
-                            totalSnow: 200,
-                            speed: 0.5,
-                            snowColor: Colors.white,
-                          ),
-                        ),
-                      if (showFlo)
-                        const IgnorePointer(
-                          child: FloatingCharacter(isVisible: true),
-                        ),
-                      if (showQuickFab) const DraggableFabView(),
-                    ],
+                if (navigator != null) navigator,
+                if (isChristmas)
+                  const IgnorePointer(
+                    child: SnowWidget(
+                      isRunning: true,
+                      totalSnow: 200,
+                      speed: 0.5,
+                      snowColor: Colors.white,
+                    ),
                   ),
-                ),
-                if (Platform.isAndroid || Platform.isIOS)
-                  const AdBannerWidget(),
+                if (showFlo)
+                  const IgnorePointer(
+                    child: FloatingCharacter(isVisible: true),
+                  ),
+                if (showQuickFab) const DraggableFabView(),
               ],
             );
           },
