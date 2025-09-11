@@ -18,20 +18,21 @@ import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../../../core/services/storage_service.dart';
 
+// ==> CLASS STATS DIPERBARUI <==
 class _HeaderStats {
   final int pendingTasks;
+  final int totalTasks;
   final int dueDiscussions;
   final Duration timeLoggedToday;
-  final int totalDiscussions;
-  final int finishedDiscussions;
+  final int selectedDiscussionsCount; // Menggantikan total & finished
   final int neurons;
 
   _HeaderStats({
     this.pendingTasks = 0,
+    this.totalTasks = 0,
     this.dueDiscussions = 0,
     this.timeLoggedToday = Duration.zero,
-    this.totalDiscussions = 0,
-    this.finishedDiscussions = 0,
+    this.selectedDiscussionsCount = 0, // Nilai default baru
     this.neurons = 0,
   });
 }
@@ -85,38 +86,42 @@ class _DashboardHeaderState extends State<DashboardHeader>
 
   Future<_HeaderStats> _loadHeaderStats() async {
     final results = await Future.wait([
-      _getPendingTaskCount(),
+      _getTaskStats(),
       _getDiscussionStats(),
       _getTimeLoggedToday(),
     ]);
+    final taskStats = results[0] as Map<String, int>;
     final discussionStats = results[1] as Map<String, int>;
     return _HeaderStats(
-      pendingTasks: results[0] as int,
+      pendingTasks: taskStats['pending'] ?? 0,
+      totalTasks: taskStats['total'] ?? 0,
       dueDiscussions: discussionStats['due'] ?? 0,
-      totalDiscussions: discussionStats['total'] ?? 0,
-      finishedDiscussions: discussionStats['finished'] ?? 0,
+      selectedDiscussionsCount: discussionStats['selectedCount'] ?? 0,
       timeLoggedToday: results[2] as Duration,
     );
   }
 
-  Future<int> _getPendingTaskCount() async {
+  Future<Map<String, int>> _getTaskStats() async {
     try {
       final excludedCategories = await _prefsService
           .loadExcludedTaskCategories();
       final myTaskService = MyTaskService();
       final categories = await myTaskService.loadMyTasks();
-      int count = 0;
+      int pendingCount = 0;
+      int totalCount = 0;
       for (final category in categories) {
         if (!category.isHidden && !excludedCategories.contains(category.name)) {
-          count += category.tasks.where((task) => !task.checked).length;
+          totalCount += category.tasks.length;
+          pendingCount += category.tasks.where((task) => !task.checked).length;
         }
       }
-      return count;
+      return {'pending': pendingCount, 'total': totalCount};
     } catch (e) {
-      return 0;
+      return {'pending': 0, 'total': 0};
     }
   }
 
+  // ==> FUNGSI INI DIUBAH KEMBALI SESUAI PERMINTAAN <==
   Future<Map<String, int>> _getDiscussionStats() async {
     try {
       final excludedSubjects = await _prefsService.loadExcludedSubjects();
@@ -125,8 +130,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (!await topicsDir.exists()) return {};
 
       int dueCount = 0;
-      int totalDiscussions = 0;
-      int finishedDiscussions = 0;
+      int selectedDiscussionsCount = 0;
       final today = DateUtils.dateOnly(DateTime.now());
 
       final topicEntities = topicsDir.listSync().whereType<Directory>();
@@ -160,11 +164,12 @@ class _DashboardHeaderState extends State<DashboardHeader>
             for (var item in contentList) {
               final discussion = Discussion.fromJson(item);
 
-              totalDiscussions++;
-              if (discussion.finished) {
-                finishedDiscussions++;
+              // Kalkulasi untuk "Total Diskusi" (hanya discussion tanpa point)
+              if (discussion.points.isEmpty) {
+                selectedDiscussionsCount++;
               }
 
+              // Kalkulasi untuk "Perlu Ditinjau" (tetap sama, dari semua item)
               if (!discussion.finished) {
                 final effectiveDate = DateTime.tryParse(
                   discussion.effectiveDate ?? '',
@@ -177,11 +182,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
           }
         }
       }
-      return {
-        'due': dueCount,
-        'total': totalDiscussions,
-        'finished': finishedDiscussions,
-      };
+      return {'due': dueCount, 'selectedCount': selectedDiscussionsCount};
     } catch (e) {
       if (kDebugMode) {
         print('Error calculating discussion stats: $e');
@@ -278,78 +279,62 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 return const Center(child: CircularProgressIndicator());
               }
               final stats = snapshot.data ?? _HeaderStats();
-              final progress = stats.totalDiscussions > 0
-                  ? stats.finishedDiscussions / stats.totalDiscussions
-                  : 0.0;
 
-              return Column(
+              // ==> UI DIPERBARUI DI SINI <==
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                alignment: WrapAlignment.center,
                 children: [
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _StatPill(
-                        icon: Icons.task_alt,
-                        label: 'Tugas Belum Selesai',
-                        value: stats.pendingTasks.toString(),
-                        color: Colors.orange.shade700,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const MyTasksPage(),
-                          ),
-                        ),
-                      ),
-                      _StatPill(
-                        icon: Icons.school_outlined,
-                        label: 'Perlu Ditinjau',
-                        value: stats.dueDiscussions.toString(),
-                        color: Colors.blue.shade700,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const TopicsPage()),
-                        ),
-                      ),
-                      _StatPill(
-                        icon: Icons.timer_outlined,
-                        label: 'Aktivitas Hari Ini',
-                        value:
-                            '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
-                        color: Colors.green.shade700,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TimeLogPage(),
-                          ),
-                        ),
-                      ),
-                    ],
+                  _StatPill(
+                    icon: Icons.task_alt,
+                    label: 'Tugas Belum Selesai',
+                    value: stats.pendingTasks.toString(),
+                    color: Colors.orange.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MyTasksPage()),
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Progres Pembahasan (Sesuai Pengaturan)',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      Text(
-                        '${stats.finishedDiscussions} / ${stats.totalDiscussions}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  _StatPill(
+                    icon: Icons.list_alt_outlined,
+                    label: 'Total Tugas',
+                    value: stats.totalTasks.toString(),
+                    color: Colors.teal.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MyTasksPage()),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
-                      backgroundColor: Theme.of(context).dividerColor,
+                  _StatPill(
+                    icon: Icons.school_outlined,
+                    label: 'Perlu Ditinjau',
+                    value: stats.dueDiscussions.toString(),
+                    color: Colors.blue.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TopicsPage()),
+                    ),
+                  ),
+                  _StatPill(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'Total Diskusi',
+                    value: stats.selectedDiscussionsCount.toString(),
+                    color: Colors.purple.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TopicsPage()),
+                    ),
+                  ),
+                  _StatPill(
+                    icon: Icons.timer_outlined,
+                    label: 'Aktivitas Hari Ini',
+                    value:
+                        '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
+                    color: Colors.green.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TimeLogPage()),
                     ),
                   ),
                 ],
