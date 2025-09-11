@@ -207,8 +207,7 @@ void showDiscussionDetailsDialog(BuildContext context, Discussion discussion) {
                 ),
               ),
             ),
-            // --- PERBAIKAN DI SINI ---
-            // 'actions' dipindahkan menjadi parameter langsung dari AlertDialog
+            // --- INI ADALAH STRUKTUR YANG BENAR ---
             actions: [
               TextButton.icon(
                 icon: const Icon(Icons.add),
