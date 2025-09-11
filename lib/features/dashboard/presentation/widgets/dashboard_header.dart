@@ -297,52 +297,32 @@ class _DashboardHeaderState extends State<DashboardHeader>
             ],
           ),
           const SizedBox(height: 12),
-          // --- PERBAIKAN PADA FUTURE BUILDER ---
+          // --- PERUBAHAN DI SINI: Tombol refresh dihapus ---
           FutureBuilder<String>(
             future: _quoteFuture,
             builder: (context, snapshot) {
-              Widget content;
               if (snapshot.connectionState == ConnectionState.waiting) {
-                content = const SizedBox(
+                return const SizedBox(
                   height: 16,
                   width: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 );
-              } else if (snapshot.hasError) {
-                content = Text(
+              }
+              if (snapshot.hasError) {
+                return Text(
                   'Gagal memuat motivasi.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
                     color: Colors.red,
                   ),
                 );
-              } else {
-                content = Expanded(
-                  child: Text(
-                    '"${snapshot.data}"',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
-                  ),
-                );
               }
-
-              return Row(
-                children: [
-                  content,
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    iconSize: 20,
-                    tooltip: 'Ganti Kata Motivasi',
-                    onPressed: () {
-                      setState(() {
-                        _quoteFuture = _geminiService.getMotivationalQuote();
-                      });
-                    },
-                  ),
-                ],
+              return Text(
+                '"${snapshot.data ?? "Teruslah berusaha."}"',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
               );
             },
           ),
