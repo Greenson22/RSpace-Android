@@ -6,9 +6,10 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import '../widgets/navigation_controls.dart';
 import '../pages/dialogs/discussion_details_dialog.dart';
-// ==> 1. IMPORT DIALOG UNTUK MENAMBAH POIN
 import 'dialogs/add_point_dialog_webview.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
+// ==> IMPORT DIALOG BOOKMARK BARU
+import 'dialogs/bookmarks_dialog.dart';
 
 class WebViewPage extends StatefulWidget {
   final String? initialUrl;
@@ -83,8 +84,14 @@ class _WebViewPageState extends State<WebViewPage> {
       appBar: AppBar(
         title: Text(widget.title, overflow: TextOverflow.ellipsis),
         actions: <Widget>[
+          // ==> TAMBAHKAN TOMBOL BOOKMARK DI SINI
+          if (!isFromDiscussion)
+            IconButton(
+              icon: const Icon(Icons.bookmarks_outlined),
+              tooltip: 'Bookmark',
+              onPressed: () => showBookmarksDialog(context, _controller),
+            ),
           if (isFromDiscussion) ...[
-            // ==> 2. TAMBAHKAN TOMBOL BARU DI SINI
             IconButton(
               icon: const Icon(Icons.add_comment_outlined),
               tooltip: 'Tambah Poin',
@@ -93,7 +100,6 @@ class _WebViewPageState extends State<WebViewPage> {
                   context: context,
                   discussion: widget.discussion!,
                   onPointAdded: () {
-                    // Cukup tampilkan notifikasi, karena dialog detail akan me-refresh sendiri
                     showAppSnackBar(context, 'Poin berhasil ditambahkan.');
                   },
                 );

@@ -207,6 +207,10 @@ class PathService {
   Future<String> get userProfilePath async =>
       path.join(await contentsPath, 'user_profile.dat');
 
+  // ==> TAMBAHKAN PATH BARU UNTUK BOOKMARK
+  Future<String> get bookmarksPath async =>
+      path.join(await contentsPath, 'bookmarks.json');
+
   Future<String> get perpuskuDataPath async {
     String? customPath = await loadPerpuskuDataPath();
     if (customPath != null && customPath.isNotEmpty) {
