@@ -91,8 +91,6 @@ class _WebViewPageState extends State<WebViewPage> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // --- LOGIKA BARU UNTUK SORT & FILTER ---
-            // 1. Ambil semua poin dan urutkan sesuai pengaturan
             final sortedPoints = List<Point>.from(discussion.points);
 
             sortedPoints.sort((a, b) {
@@ -122,9 +120,7 @@ class _WebViewPageState extends State<WebViewPage> {
               sortedPoints.clear();
               sortedPoints.addAll(reversedList);
             }
-            // --- AKHIR LOGIKA SORT ---
 
-            // Helper untuk membuat widget kode yang bisa diketuk
             Widget buildCodeWidget({
               required dynamic item,
               required bool isActive,
@@ -137,7 +133,6 @@ class _WebViewPageState extends State<WebViewPage> {
                   ? getColorForRepetitionCode(currentCode)
                   : Colors.grey;
 
-              // Jika tidak aktif, jangan berikan recognizer
               if (!isActive) {
                 return RichText(
                   text: TextSpan(
@@ -155,7 +150,6 @@ class _WebViewPageState extends State<WebViewPage> {
                 );
               }
 
-              // Jika aktif, buat bisa diketuk
               return RichText(
                 text: TextSpan(
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -240,7 +234,6 @@ class _WebViewPageState extends State<WebViewPage> {
 
                       if (discussion.points.isNotEmpty)
                         ...sortedPoints.map((point) {
-                          // 2. Cek apakah poin aktif sesuai filter
                           final bool isActive = discussionProvider
                               .doesPointMatchFilter(point);
                           final Color textColor = isActive
@@ -293,18 +286,25 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Tentukan apakah WebView dibuka dari diskusi atau bukan
+    final bool isFromDiscussion = widget.discussion != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title, overflow: TextOverflow.ellipsis),
         actions: <Widget>[
-          if (widget.discussion != null)
+          if (isFromDiscussion)
             IconButton(
               icon: const Icon(Icons.edit_note),
               tooltip: 'Edit Detail & Poin',
               onPressed: () =>
                   _showDiscussionDetailsDialog(context, widget.discussion!),
             ),
-          NavigationControls(webViewController: _controller),
+          NavigationControls(
+            webViewController: _controller,
+            // Kirim informasi ini ke NavigationControls
+            isFromDiscussion: isFromDiscussion,
+          ),
         ],
       ),
       body: WebViewWidget(controller: _controller),
@@ -312,31 +312,41 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 }
 
+// --- PERBARUI WIDGET NAVIGATIONCONTROLS ---
 class NavigationControls extends StatelessWidget {
-  const NavigationControls({super.key, required this.webViewController});
-
   final WebViewController webViewController;
+  final bool isFromDiscussion; // Tambahkan properti baru
+
+  const NavigationControls({
+    super.key,
+    required this.webViewController,
+    this.isFromDiscussion = false, // Beri nilai default
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () async {
-            if (await webViewController.canGoBack()) {
-              await webViewController.goBack();
-            }
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.arrow_forward_ios),
-          onPressed: () async {
-            if (await webViewController.canGoForward()) {
-              await webViewController.goForward();
-            }
-          },
-        ),
+        // Tampilkan tombol ini hanya jika TIDAK dibuka dari diskusi
+        if (!isFromDiscussion) ...[
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios),
+            onPressed: () async {
+              if (await webViewController.canGoBack()) {
+                await webViewController.goBack();
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward_ios),
+            onPressed: () async {
+              if (await webViewController.canGoForward()) {
+                await webViewController.goForward();
+              }
+            },
+          ),
+        ],
+        // Tombol reload tetap ditampilkan
         IconButton(
           icon: const Icon(Icons.replay),
           onPressed: () => webViewController.reload(),
