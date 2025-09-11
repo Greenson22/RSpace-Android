@@ -91,14 +91,11 @@ class _WebViewPageState extends State<WebViewPage> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // --- LOGIKA BARU UNTUK FILTER DAN SORT ---
-            final List<Point> displayedPoints = discussion.points
-                .where(
-                  (point) => discussionProvider.doesPointMatchFilter(point),
-                )
-                .toList();
+            // --- LOGIKA BARU UNTUK SORT & FILTER ---
+            // 1. Ambil semua poin dan urutkan sesuai pengaturan
+            final sortedPoints = List<Point>.from(discussion.points);
 
-            displayedPoints.sort((a, b) {
+            sortedPoints.sort((a, b) {
               switch (discussionProvider.sortType) {
                 case 'name':
                   return a.pointText.toLowerCase().compareTo(
@@ -121,18 +118,44 @@ class _WebViewPageState extends State<WebViewPage> {
             });
 
             if (!discussionProvider.sortAscending) {
-              final reversedList = displayedPoints.reversed.toList();
-              displayedPoints.clear();
-              displayedPoints.addAll(reversedList);
+              final reversedList = sortedPoints.reversed.toList();
+              sortedPoints.clear();
+              sortedPoints.addAll(reversedList);
             }
-            // --- AKHIR LOGIKA BARU ---
+            // --- AKHIR LOGIKA SORT ---
 
-            Widget buildTappableCode(dynamic item) {
+            // Helper untuk membuat widget kode yang bisa diketuk
+            Widget buildCodeWidget({
+              required dynamic item,
+              required bool isActive,
+            }) {
               final isPoint = item is Point;
               final currentCode = isPoint
                   ? item.repetitionCode
                   : discussion.repetitionCode;
+              final textColor = isActive
+                  ? getColorForRepetitionCode(currentCode)
+                  : Colors.grey;
 
+              // Jika tidak aktif, jangan berikan recognizer
+              if (!isActive) {
+                return RichText(
+                  text: TextSpan(
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                    children: [
+                      const TextSpan(text: 'Kode Repetisi: '),
+                      TextSpan(
+                        text: currentCode,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Jika aktif, buat bisa diketuk
               return RichText(
                 text: TextSpan(
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -141,7 +164,7 @@ class _WebViewPageState extends State<WebViewPage> {
                     TextSpan(
                       text: currentCode,
                       style: TextStyle(
-                        color: getColorForRepetitionCode(currentCode),
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         decoration: TextDecoration.underline,
                       ),
@@ -210,29 +233,42 @@ class _WebViewPageState extends State<WebViewPage> {
                       ),
                       const SizedBox(height: 8),
                       if (discussion.points.isEmpty)
-                        buildTappableCode(discussion),
+                        buildCodeWidget(item: discussion, isActive: true),
 
                       if (discussion.points.isNotEmpty)
                         const Divider(height: 32),
 
                       if (discussion.points.isNotEmpty)
-                        ...displayedPoints.map((point) {
-                          // Gunakan displayedPoints
+                        ...sortedPoints.map((point) {
+                          // 2. Cek apakah poin aktif sesuai filter
+                          final bool isActive = discussionProvider
+                              .doesPointMatchFilter(point);
+                          final Color textColor = isActive
+                              ? Theme.of(context).textTheme.bodyLarge!.color!
+                              : Colors.grey;
+
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('• ${point.pointText}'),
+                                Text(
+                                  '• ${point.pointText}',
+                                  style: TextStyle(color: textColor),
+                                ),
                                 const SizedBox(height: 4),
                                 Text(
                                   '  Jadwal: ${point.date}',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: textColor),
                                 ),
                                 const SizedBox(height: 4),
                                 Padding(
                                   padding: const EdgeInsets.only(left: 8.0),
-                                  child: buildTappableCode(point),
+                                  child: buildCodeWidget(
+                                    item: point,
+                                    isActive: isActive,
+                                  ),
                                 ),
                               ],
                             ),
