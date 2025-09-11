@@ -1,11 +1,13 @@
 // lib/features/settings/application/services/gemini_service.dart
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 import 'package:http/http.dart' as http;
+import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import '../../domain/models/api_key_model.dart';
-// ==> IMPORT MODEL BARU
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../link_maintenance/domain/models/link_suggestion_model.dart';
 import '../../../../core/services/storage_service.dart';
@@ -13,6 +15,8 @@ import '../../../../core/services/storage_service.dart';
 class GeminiService {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final DiscussionService _discussionService = DiscussionService();
+  // ==> 1. TAMBAHKAN INSTANCE PATHSERVICE
+  final PathService _pathService = PathService();
 
   Future<String> _getActiveApiKey() async {
     final List<ApiKey> keys = await _prefsService.loadApiKeys();
@@ -24,13 +28,42 @@ class GeminiService {
     }
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
-  /// Menghasilkan satu kalimat motivasi belajar dari Gemini.
+  // ==> 2. FUNGSI INI DIUBAH TOTAL
+  /// Menghasilkan atau mengambil satu kalimat motivasi belajar.
   Future<String> getMotivationalQuote() async {
+    // Daftar fallback jika semua gagal
+    const fallbackQuotes = [
+      'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.',
+      'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.',
+      'Satu-satunya sumber pengetahuan adalah pengalaman.',
+      'Belajar adalah proses seumur hidup, bukan hanya di sekolah.',
+    ];
+    final random = Random();
+
+    // Membaca kutipan yang sudah ada
+    List<String> existingQuotes = [];
+    final quotesPath = await _pathService.motivationalQuotesPath;
+    final quotesFile = File(quotesPath);
+    try {
+      if (await quotesFile.exists()) {
+        final jsonString = await quotesFile.readAsString();
+        if (jsonString.isNotEmpty) {
+          existingQuotes = List<String>.from(jsonDecode(jsonString));
+        }
+      } else {
+        await quotesFile.create(recursive: true);
+        await quotesFile.writeAsString('[]');
+      }
+    } catch (e) {
+      // Abaikan jika ada error pembacaan file
+    }
+
     final apiKey = await _getActiveApiKey();
-    // Jika tidak ada API key, kembalikan quote default.
     if (apiKey.isEmpty) {
-      return 'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.';
+      if (existingQuotes.isNotEmpty) {
+        return existingQuotes[random.nextInt(existingQuotes.length)];
+      }
+      return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
     }
 
     final model =
@@ -53,9 +86,7 @@ class GeminiService {
               ],
             },
           ],
-          'generationConfig': {
-            'temperature': 0.9, // Tingkatkan kreativitas
-          },
+          'generationConfig': {'temperature': 0.9},
         }),
       );
 
@@ -67,24 +98,31 @@ class GeminiService {
           if (content != null) {
             final parts = content['parts'] as List<dynamic>?;
             if (parts != null && parts.isNotEmpty) {
-              return parts[0]['text'] as String? ??
-                  'Teruslah belajar setiap hari.';
+              final newQuote = parts[0]['text'] as String? ?? '';
+              if (newQuote.isNotEmpty && !existingQuotes.contains(newQuote)) {
+                existingQuotes.add(newQuote);
+                // Jaga agar daftar tidak lebih dari 5
+                if (existingQuotes.length > 5) {
+                  existingQuotes.removeAt(0); // Hapus yang paling lama
+                }
+                await quotesFile.writeAsString(jsonEncode(existingQuotes));
+              }
+              return newQuote;
             }
           }
         }
-        return 'Gagal memuat kutipan. Coba lagi nanti.';
-      } else {
-        // Jika API error, kembalikan pesan default.
-        return 'Setiap hari adalah kesempatan untuk belajar hal baru.';
       }
     } catch (e) {
-      // Jika terjadi error koneksi, dll.
-      return 'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.';
+      // Jika error, kembalikan dari cache atau fallback
+      if (existingQuotes.isNotEmpty) {
+        return existingQuotes[random.nextInt(existingQuotes.length)];
+      }
     }
-  }
-  // --- AKHIR FUNGSI BARU ---
 
-  // Fungsi baru untuk membuat palet dengan AI
+    // Fallback terakhir
+    return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
+  }
+
   Future<ColorPalette> suggestColorPalette({
     required String theme,
     required String paletteName,
@@ -140,7 +178,6 @@ class GeminiService {
             body['candidates'][0]['content']['parts'][0]['text'];
         final jsonResponse = jsonDecode(textResponse) as Map<String, dynamic>;
 
-        // Fungsi helper untuk konversi Hex ke integer
         int hexToInt(String hex) {
           hex = hex.toUpperCase().replaceAll("#", "");
           if (hex.length == 6) {
@@ -562,7 +599,6 @@ Jawaban Anda:
       );
     }
 
-    // Panggil fungsi generate dari teks dengan konten yang sudah diekstrak
     return generateQuizFromText(
       contentBuffer.toString(),
       questionCount: questionCount,
