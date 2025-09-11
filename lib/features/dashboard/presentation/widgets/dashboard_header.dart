@@ -21,16 +21,16 @@ class _HeaderStats {
   final int pendingTasks;
   final int dueDiscussions;
   final Duration timeLoggedToday;
-  final int totalDiscussions;
-  final int finishedDiscussions;
+  final int totalDueTasks;
+  final int finishedDueTasks;
   final int neurons;
 
   _HeaderStats({
     this.pendingTasks = 0,
     this.dueDiscussions = 0,
     this.timeLoggedToday = Duration.zero,
-    this.totalDiscussions = 0,
-    this.finishedDiscussions = 0,
+    this.totalDueTasks = 0,
+    this.finishedDueTasks = 0,
     this.neurons = 0,
   });
 }
@@ -92,8 +92,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return _HeaderStats(
       pendingTasks: results[0] as int,
       dueDiscussions: discussionStats['due'] ?? 0,
-      totalDiscussions: discussionStats['total'] ?? 0,
-      finishedDiscussions: discussionStats['finished'] ?? 0,
+      totalDueTasks: discussionStats['totalDue'] ?? 0,
+      finishedDueTasks: discussionStats['finishedDue'] ?? 0,
       timeLoggedToday: results[2] as Duration,
     );
   }
@@ -114,15 +114,16 @@ class _DashboardHeaderState extends State<DashboardHeader>
     }
   }
 
+  // ==> FUNGSI INI DIUBAH TOTAL UNTUK MENGHITUNG PROGRES BARU <==
   Future<Map<String, int>> _getDiscussionStats() async {
     try {
       final topicsPath = await _pathService.topicsPath;
       final topicsDir = Directory(topicsPath);
       if (!await topicsDir.exists()) return {};
 
-      int dueCount = 0;
-      int totalCount = 0;
-      int finishedCount = 0;
+      int dueCount = 0; // Untuk pil "Perlu Ditinjau"
+      int totalDueTasks = 0; // Untuk denominator progress bar
+      int finishedDueTasks = 0; // Untuk numerator progress bar
       final today = DateUtils.dateOnly(DateTime.now());
 
       final topicEntities = topicsDir.listSync().whereType<Directory>();
@@ -138,12 +139,12 @@ class _DashboardHeaderState extends State<DashboardHeader>
           if (jsonString.isEmpty) continue;
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           final contentList = jsonData['content'] as List<dynamic>? ?? [];
+
           for (var item in contentList) {
             final discussion = Discussion.fromJson(item);
-            totalCount++;
-            if (discussion.finished) {
-              finishedCount++;
-            } else {
+
+            // Kalkulasi untuk pil "Perlu Ditinjau" (tetap sama)
+            if (!discussion.finished) {
               final effectiveDate = DateTime.tryParse(
                 discussion.effectiveDate ?? '',
               );
@@ -151,11 +152,41 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 dueCount++;
               }
             }
+
+            // Kalkulasi baru untuk Progress Bar
+            if (discussion.points.isNotEmpty) {
+              // Jika ada point, hitung progres berdasarkan point
+              for (final point in discussion.points) {
+                final pointDate = DateTime.tryParse(point.date);
+                if (pointDate != null && !pointDate.isAfter(today)) {
+                  totalDueTasks++;
+                  if (point.finished) {
+                    finishedDueTasks++;
+                  }
+                }
+              }
+            } else {
+              // Jika tidak ada point, hitung dari discussion itu sendiri
+              final discussionDate = DateTime.tryParse(discussion.date ?? '');
+              if (discussionDate != null && !discussionDate.isAfter(today)) {
+                totalDueTasks++;
+                if (discussion.finished) {
+                  finishedDueTasks++;
+                }
+              }
+            }
           }
         }
       }
-      return {'due': dueCount, 'total': totalCount, 'finished': finishedCount};
+      return {
+        'due': dueCount,
+        'totalDue': totalDueTasks,
+        'finishedDue': finishedDueTasks,
+      };
     } catch (e) {
+      if (kDebugMode) {
+        print('Error calculating discussion stats: $e');
+      }
       return {};
     }
   }
@@ -248,8 +279,9 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 return const Center(child: CircularProgressIndicator());
               }
               final stats = snapshot.data ?? _HeaderStats();
-              final progress = stats.totalDiscussions > 0
-                  ? stats.finishedDiscussions / stats.totalDiscussions
+              // ==> LOGIKA PROGRESS BAR DIUBAH <==
+              final progress = stats.totalDueTasks > 0
+                  ? stats.finishedDueTasks / stats.totalDueTasks
                   : 0.0;
 
               return Column(
@@ -296,16 +328,17 @@ class _DashboardHeaderState extends State<DashboardHeader>
                     ],
                   ),
                   const SizedBox(height: 20),
+                  // ==> UI PROGRESS BAR DIUBAH <==
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          'Progres Pembahasan',
+                          'Progres Tugas Jatuh Tempo',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
                       Text(
-                        '${stats.finishedDiscussions} / ${stats.totalDiscussions}',
+                        '${stats.finishedDueTasks} / ${stats.totalDueTasks}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
