@@ -3,11 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:code_text_field/code_text_field.dart';
-import 'package:flutter_highlight/themes/vs2015.dart'; // Tema untuk highlight
 import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
+import '../themes/editor_themes.dart'; // Import file tema baru
 
 class HtmlEditorPage extends StatefulWidget {
   final Discussion discussion;
@@ -23,9 +23,14 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   bool _isLoading = true;
   String? _error;
 
+  // State baru untuk mengelola tema yang dipilih
+  late EditorTheme _selectedTheme;
+
   @override
   void initState() {
     super.initState();
+    // Inisialisasi tema default
+    _selectedTheme = editorThemes.first;
     _loadFileContent();
   }
 
@@ -46,7 +51,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
         widget.discussion.filePath!,
       );
 
-      // PERBAIKAN: Hapus parameter 'theme' dari sini
       _controller = CodeController(text: content, language: xml);
     } catch (e) {
       setState(() {
@@ -99,6 +103,30 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          // Dropdown untuk memilih tema
+          DropdownButton<EditorTheme>(
+            value: _selectedTheme,
+            onChanged: (EditorTheme? newTheme) {
+              if (newTheme != null) {
+                setState(() {
+                  _selectedTheme = newTheme;
+                });
+              }
+            },
+            items: editorThemes.map<DropdownMenuItem<EditorTheme>>((
+              EditorTheme theme,
+            ) {
+              return DropdownMenuItem<EditorTheme>(
+                value: theme,
+                child: Text(
+                  theme.name,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              );
+            }).toList(),
+            dropdownColor: Colors.grey[800],
+            underline: Container(), // Menghilangkan garis bawah
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _isLoading || _controller == null
@@ -116,9 +144,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
             )
           : Padding(
               padding: const EdgeInsets.all(8.0),
-              // PERBAIKAN: Bungkus CodeField dengan CodeTheme untuk menerapkan tema
               child: CodeTheme(
-                data: const CodeThemeData(styles: vs2015Theme),
+                // Gunakan tema yang dipilih dari state
+                data: CodeThemeData(styles: _selectedTheme.theme),
                 child: CodeField(
                   controller: _controller!,
                   expands: true,
