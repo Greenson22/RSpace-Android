@@ -1,4 +1,4 @@
-// lib/presentation/pages/file_list_page/layouts/desktop_layout.dart
+// lib/features/file_management/presentation/layouts/desktop_layout.dart
 
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -23,7 +23,6 @@ class DesktopLayout extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Kolom Kiri (Pengaturan)
         Expanded(
           flex: 2,
           child: ListView(
@@ -36,7 +35,6 @@ class DesktopLayout extends StatelessWidget {
           ),
         ),
         const VerticalDivider(width: 1),
-        // Kolom Kanan (Daftar File)
         Expanded(
           flex: 3,
           child: ListView(
@@ -80,7 +78,6 @@ class DesktopLayout extends StatelessWidget {
     );
   }
 
-  // Helper methods (sama seperti di mobile_layout)
   Future<void> _selectDownloadFolder(BuildContext context) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
@@ -400,34 +397,53 @@ class DesktopLayout extends StatelessWidget {
     File file,
     bool isRspaceFile,
   ) {
+    final provider = Provider.of<FileProvider>(context);
+    final isSelected = provider.selectedDownloadedFiles.contains(file.path);
+    final theme = Theme.of(context);
     final fileName = path.basename(file.path);
     final fileSize = file.lengthSync();
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
+      color: isSelected ? theme.primaryColor.withOpacity(0.2) : null,
       child: ListTile(
-        leading: const Icon(Icons.drafts_rounded),
+        onTap: () {
+          if (provider.isSelectionMode) {
+            provider.toggleDownloadedFileSelection(file);
+          } else {
+            OpenFile.open(file.path);
+          }
+        },
+        onLongPress: () {
+          provider.toggleDownloadedFileSelection(file);
+        },
+        leading: isSelected
+            ? Icon(Icons.check_circle, color: theme.primaryColor)
+            : const Icon(Icons.drafts_rounded),
         title: Text(fileName),
         subtitle: Text('Ukuran: ${formatBytes(fileSize, 2)}'),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) async {
-            if (value == 'open') {
-              await OpenFile.open(file.path);
-            } else if (value == 'import') {
-              final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
-              importSpecificFile(context, file, backupType);
-            } else if (value == 'delete') {
-              _deleteDownloadedFile(context, file);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'open', child: Text('Buka File')),
-            const PopupMenuItem(value: 'import', child: Text('Import')),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Hapus', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
+        trailing: provider.isSelectionMode
+            ? null
+            : PopupMenuButton<String>(
+                onSelected: (value) async {
+                  if (value == 'open') {
+                    await OpenFile.open(file.path);
+                  } else if (value == 'import') {
+                    final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
+                    importSpecificFile(context, file, backupType);
+                  } else if (value == 'delete') {
+                    _deleteDownloadedFile(context, file);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'open', child: Text('Buka File')),
+                  const PopupMenuItem(value: 'import', child: Text('Import')),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Hapus', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
       ),
     );
   }

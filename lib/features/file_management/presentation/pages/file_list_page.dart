@@ -13,44 +13,23 @@ class FileListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // AppBar sekarang di dalam ChangeNotifierProvider untuk akses ke provider
-      body: ChangeNotifierProvider(
-        create: (_) => FileProvider(),
-        child: Consumer<FileProvider>(
-          builder: (context, provider, child) {
-            // Cek apakah API sudah dikonfigurasi
-            final bool isApiConfigured =
-                provider.apiDomain != null &&
-                provider.apiDomain!.isNotEmpty &&
-                provider.apiKey != null &&
-                provider.apiKey!.isNotEmpty;
-
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('File Online & Unduhan'),
-                actions: [
-                  // Tombol baru ditambahkan di sini
-                  if (isApiConfigured)
-                    IconButton(
-                      icon: provider.isDownloading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.download_for_offline_outlined),
-                      onPressed: provider.isDownloading
-                          ? null
-                          : () => provider.downloadAndImportAll(context),
-                      tooltip: 'Download & Import Semua',
-                    ),
-                ],
-              ),
-              body: Builder(
+    return ChangeNotifierProvider(
+      create: (_) => FileProvider(),
+      child: Consumer<FileProvider>(
+        builder: (context, provider, child) {
+          return Scaffold(
+            appBar: provider.isSelectionMode
+                ? _buildSelectionAppBar(context, provider)
+                : _buildDefaultAppBar(context, provider),
+            body: WillPopScope(
+              onWillPop: () async {
+                if (provider.isSelectionMode) {
+                  provider.clearSelection();
+                  return false;
+                }
+                return true;
+              },
+              child: Builder(
                 builder: (context) {
                   if (provider.isLoading) {
                     return const Center(child: CircularProgressIndicator());
@@ -80,10 +59,94 @@ class FileListPage extends StatelessWidget {
                   );
                 },
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
+    );
+  }
+
+  AppBar _buildDefaultAppBar(BuildContext context, FileProvider provider) {
+    final bool isApiConfigured =
+        provider.apiDomain != null &&
+        provider.apiDomain!.isNotEmpty &&
+        provider.apiKey != null &&
+        provider.apiKey!.isNotEmpty;
+
+    return AppBar(
+      title: const Text('File Online & Unduhan'),
+      actions: [
+        if (isApiConfigured)
+          IconButton(
+            icon: provider.isDownloading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.download_for_offline_outlined),
+            onPressed: provider.isDownloading
+                ? null
+                : () => provider.downloadAndImportAll(context),
+            tooltip: 'Download & Import Semua',
+          ),
+      ],
+    );
+  }
+
+  AppBar _buildSelectionAppBar(BuildContext context, FileProvider provider) {
+    return AppBar(
+      title: Text('${provider.selectedDownloadedFiles.length} dipilih'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => provider.clearSelection(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          onPressed: () => provider.selectAllDownloaded(),
+          tooltip: 'Pilih Semua',
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () async {
+            final confirmed =
+                await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Konfirmasi Hapus'),
+                    content: Text(
+                      'Anda yakin ingin menghapus ${provider.selectedDownloadedFiles.length} file ini dari perangkat?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Batal'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text('Hapus'),
+                      ),
+                    ],
+                  ),
+                ) ??
+                false;
+            if (confirmed) {
+              final message = await provider.deleteSelectedDownloadedFiles();
+              if (context.mounted) {
+                showAppSnackBar(context, message);
+              }
+            }
+          },
+          tooltip: 'Hapus Pilihan',
+        ),
+      ],
     );
   }
 
@@ -220,7 +283,6 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
                         ),
                       ),
                     ),
-                    // Tombol 'Download & Import Semua' telah dipindahkan dari sini
                   ],
                 ),
               ),

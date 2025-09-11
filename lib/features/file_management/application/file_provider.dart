@@ -10,7 +10,6 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
-import 'package:my_aplication/features/backup_management/presentation/utils/backup_dialogs.dart';
 import '../domain/models/file_model.dart';
 import '../../../core/services/storage_service.dart';
 
@@ -49,6 +48,11 @@ class FileProvider with ChangeNotifier {
   bool _isDownloading = false;
   bool get isDownloading => _isDownloading;
 
+  // ==> STATE BARU UNTUK SELEKSI FILE <==
+  final Set<String> _selectedDownloadedFiles = {};
+  Set<String> get selectedDownloadedFiles => _selectedDownloadedFiles;
+  bool get isSelectionMode => _selectedDownloadedFiles.isNotEmpty;
+
   String? _apiDomain;
   String? _apiKey;
   String? get apiDomain => _apiDomain;
@@ -66,6 +70,47 @@ class FileProvider with ChangeNotifier {
   FileProvider() {
     _initialize();
   }
+
+  // ==> FUNGSI BARU UNTUK MENGELOLA SELEKSI <==
+  void toggleDownloadedFileSelection(File file) {
+    if (_selectedDownloadedFiles.contains(file.path)) {
+      _selectedDownloadedFiles.remove(file.path);
+    } else {
+      _selectedDownloadedFiles.add(file.path);
+    }
+    notifyListeners();
+  }
+
+  void selectAllDownloaded() {
+    _selectedDownloadedFiles.addAll(_downloadedRspaceFiles.map((f) => f.path));
+    _selectedDownloadedFiles.addAll(
+      _downloadedPerpuskuFiles.map((f) => f.path),
+    );
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedDownloadedFiles.clear();
+    notifyListeners();
+  }
+
+  Future<String> deleteSelectedDownloadedFiles() async {
+    final count = _selectedDownloadedFiles.length;
+    for (String path in _selectedDownloadedFiles) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (e) {
+        // Abaikan error jika file tidak dapat dihapus
+      }
+    }
+    _selectedDownloadedFiles.clear();
+    await _scanDownloadedFiles(); // Muat ulang daftar file
+    return '$count file berhasil dihapus.';
+  }
+  // --- AKHIR FUNGSI BARU ---
 
   Future<void> _initialize() async {
     await _loadApiConfig();
