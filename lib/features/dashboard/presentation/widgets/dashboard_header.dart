@@ -22,17 +22,21 @@ import '../../../../core/services/storage_service.dart';
 class _HeaderStats {
   final int pendingTasks;
   final int totalTasks;
+  final int finishedTasks; // Properti baru
   final int dueDiscussions;
   final Duration timeLoggedToday;
-  final int selectedDiscussionsCount; // Menggantikan total & finished
+  final int totalDiscussions;
+  final int finishedDiscussions;
   final int neurons;
 
   _HeaderStats({
     this.pendingTasks = 0,
     this.totalTasks = 0,
+    this.finishedTasks = 0, // Properti baru
     this.dueDiscussions = 0,
     this.timeLoggedToday = Duration.zero,
-    this.selectedDiscussionsCount = 0, // Nilai default baru
+    this.totalDiscussions = 0,
+    this.finishedDiscussions = 0,
     this.neurons = 0,
   });
 }
@@ -95,12 +99,15 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return _HeaderStats(
       pendingTasks: taskStats['pending'] ?? 0,
       totalTasks: taskStats['total'] ?? 0,
+      finishedTasks: taskStats['finished'] ?? 0,
       dueDiscussions: discussionStats['due'] ?? 0,
-      selectedDiscussionsCount: discussionStats['selectedCount'] ?? 0,
+      totalDiscussions: discussionStats['total'] ?? 0,
+      finishedDiscussions: discussionStats['finished'] ?? 0,
       timeLoggedToday: results[2] as Duration,
     );
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<Map<String, int>> _getTaskStats() async {
     try {
       final excludedCategories = await _prefsService
@@ -109,19 +116,24 @@ class _DashboardHeaderState extends State<DashboardHeader>
       final categories = await myTaskService.loadMyTasks();
       int pendingCount = 0;
       int totalCount = 0;
+      int finishedCount = 0;
       for (final category in categories) {
         if (!category.isHidden && !excludedCategories.contains(category.name)) {
           totalCount += category.tasks.length;
           pendingCount += category.tasks.where((task) => !task.checked).length;
+          finishedCount += category.tasks.where((task) => task.checked).length;
         }
       }
-      return {'pending': pendingCount, 'total': totalCount};
+      return {
+        'pending': pendingCount,
+        'total': totalCount,
+        'finished': finishedCount,
+      };
     } catch (e) {
-      return {'pending': 0, 'total': 0};
+      return {'pending': 0, 'total': 0, 'finished': 0};
     }
   }
 
-  // ==> FUNGSI INI DIUBAH KEMBALI SESUAI PERMINTAAN <==
   Future<Map<String, int>> _getDiscussionStats() async {
     try {
       final excludedSubjects = await _prefsService.loadExcludedSubjects();
@@ -130,7 +142,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (!await topicsDir.exists()) return {};
 
       int dueCount = 0;
-      int selectedDiscussionsCount = 0;
+      int totalDiscussions = 0;
+      int finishedDiscussions = 0;
       final today = DateUtils.dateOnly(DateTime.now());
 
       final topicEntities = topicsDir.listSync().whereType<Directory>();
@@ -164,12 +177,13 @@ class _DashboardHeaderState extends State<DashboardHeader>
             for (var item in contentList) {
               final discussion = Discussion.fromJson(item);
 
-              // Kalkulasi untuk "Total Diskusi" (hanya discussion tanpa point)
               if (discussion.points.isEmpty) {
-                selectedDiscussionsCount++;
+                totalDiscussions++;
+                if (discussion.finished) {
+                  finishedDiscussions++;
+                }
               }
 
-              // Kalkulasi untuk "Perlu Ditinjau" (tetap sama, dari semua item)
               if (!discussion.finished) {
                 final effectiveDate = DateTime.tryParse(
                   discussion.effectiveDate ?? '',
@@ -182,7 +196,11 @@ class _DashboardHeaderState extends State<DashboardHeader>
           }
         }
       }
-      return {'due': dueCount, 'selectedCount': selectedDiscussionsCount};
+      return {
+        'due': dueCount,
+        'total': totalDiscussions,
+        'finished': finishedDiscussions,
+      };
     } catch (e) {
       if (kDebugMode) {
         print('Error calculating discussion stats: $e');
@@ -287,6 +305,16 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 alignment: WrapAlignment.center,
                 children: [
                   _StatPill(
+                    icon: Icons.list_alt_outlined,
+                    label: 'Total Tugas',
+                    value: stats.totalTasks.toString(),
+                    color: Colors.teal.shade700,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MyTasksPage()),
+                    ),
+                  ),
+                  _StatPill(
                     icon: Icons.task_alt,
                     label: 'Tugas Belum Selesai',
                     value: stats.pendingTasks.toString(),
@@ -296,11 +324,12 @@ class _DashboardHeaderState extends State<DashboardHeader>
                       MaterialPageRoute(builder: (_) => const MyTasksPage()),
                     ),
                   ),
+                  // STAT PILL BARU DITAMBAHKAN
                   _StatPill(
-                    icon: Icons.list_alt_outlined,
-                    label: 'Total Tugas',
-                    value: stats.totalTasks.toString(),
-                    color: Colors.teal.shade700,
+                    icon: Icons.check_circle_outline,
+                    label: 'Tugas Selesai',
+                    value: stats.finishedTasks.toString(),
+                    color: Colors.green.shade700,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const MyTasksPage()),
@@ -319,7 +348,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                   _StatPill(
                     icon: Icons.chat_bubble_outline,
                     label: 'Total Diskusi',
-                    value: stats.selectedDiscussionsCount.toString(),
+                    value: stats.totalDiscussions.toString(),
                     color: Colors.purple.shade700,
                     onTap: () => Navigator.push(
                       context,
@@ -331,7 +360,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                     label: 'Aktivitas Hari Ini',
                     value:
                         '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
-                    color: Colors.green.shade700,
+                    color: Colors.cyan.shade700,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const TimeLogPage()),
