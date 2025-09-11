@@ -1,5 +1,5 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
-import 'dart:io'; // <-- TAMBAHKAN IMPORT INI
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
@@ -11,13 +11,12 @@ import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../backup_management/presentation/pages/backup_management_page.dart';
 import '../../../file_management/presentation/pages/file_list_page.dart';
 import '../../../feedback/presentation/pages/feedback_center_page.dart';
-// Import diubah dari TimeHubPage ke TimeLogPage
 import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_page.dart';
-import '../../../webview_page/presentation/pages/webview_page.dart'; // <-- TAMBAHKAN IMPORT HALAMAN BARU
+import '../../../webview_page/presentation/pages/webview_page.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -25,7 +24,6 @@ List<VoidCallback> buildDashboardActions(
   required bool isPathSet,
 }) {
   final List<VoidCallback?> actions = [
-    // ==> PERBAIKAN: Sesuaikan urutan aksi agar cocok dengan urutan visual
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
@@ -63,11 +61,16 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
-    // <-- TAMBAHKAN AKSI BARU DI SINI (SEBELUM PENYIMPANAN)
+    // --- PERUBAHAN DI SINI ---
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const WebViewPage(initialUrl: '')),
+        MaterialPageRoute(
+          builder: (_) => const WebViewPage(
+            initialUrl: 'https://www.google.com',
+            title: 'Web Browser',
+          ),
+        ),
       ),
     if (!isPathSet) onShowStorageDialog,
     () => Navigator.push(
@@ -97,13 +100,8 @@ class DashboardGrid extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final screenWidth = MediaQuery.of(context).size.width;
-        if (screenWidth > 1200) {
-        } else if (screenWidth > 900) {
-        } else if (screenWidth > 600) {
-        } else {}
 
         final List<Map<String, dynamic>> allItemData = [
-          // ==> PERBAIKAN: Sesuaikan urutan item visual
           {
             'icon': Icons.topic_outlined,
             'label': 'Topics',
@@ -164,7 +162,6 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
           },
-          // <-- TAMBAHKAN DATA VISUAL UNTUK ITEM BARU DI SINI
           if (Platform.isAndroid)
             {
               'icon': Icons.public,
@@ -197,7 +194,6 @@ class DashboardGrid extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Quick Access Section
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -221,7 +217,6 @@ class DashboardGrid extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-            // List Section
             Text(
               "Fitur Lainnya",
               style: Theme.of(context).textTheme.titleLarge,
