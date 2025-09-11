@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_point_dialog.dart';
+import 'package:my_aplication/features/webview_page/presentation/pages/dialogs/add_point_dialog_webview.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/confirmation_dialogs.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:my_aplication/core/providers/neuron_provider.dart';
@@ -208,7 +208,7 @@ void showDiscussionDetailsDialog(BuildContext context, Discussion discussion) {
               ),
             ),
             // --- PERBAIKAN DI SINI ---
-            // Pindahkan 'actions' ke level AlertDialog, bukan di dalam content
+            // 'actions' dipindahkan menjadi parameter langsung dari AlertDialog
             actions: [
               TextButton.icon(
                 icon: const Icon(Icons.add),
@@ -217,18 +217,12 @@ void showDiscussionDetailsDialog(BuildContext context, Discussion discussion) {
                   Navigator.pop(dialogContext);
 
                   Future.delayed(Duration.zero, () {
-                    showAddPointDialog(
+                    showAddPointDialogFromWebView(
                       context: context,
                       discussion: discussion,
-                      title: 'Tambah Poin Baru',
-                      label: 'Teks Poin',
-                      onSave: (text, repetitionCode) {
-                        discussionProvider.addPoint(
-                          discussion,
-                          text,
-                          repetitionCode: repetitionCode,
-                        );
+                      onPointAdded: () {
                         showAppSnackBar(context, 'Poin berhasil ditambahkan.');
+                        showDiscussionDetailsDialog(context, discussion);
                       },
                     );
                   });
