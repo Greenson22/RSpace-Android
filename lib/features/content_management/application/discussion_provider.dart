@@ -135,7 +135,8 @@ class DiscussionProvider
   }) {
     final newPoint = Point(
       pointText: text,
-      date: getNewDateForRepetitionCode(repetitionCode),
+      // ==> PERUBAHAN DI SINI: Menggunakan tanggal dari discussion induk <==
+      date: discussion.date ?? DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: repetitionCode,
     );
     discussion.points.add(newPoint);
