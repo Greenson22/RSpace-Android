@@ -11,6 +11,7 @@ import 'package:my_aplication/features/time_management/presentation/pages/time_l
 import '../../../../core/services/path_service.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
+import '../../../settings/application/services/gemini_service.dart';
 import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
@@ -18,11 +19,10 @@ import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../../../core/services/storage_service.dart';
 
-// ==> CLASS STATS DIPERBARUI <==
 class _HeaderStats {
   final int pendingTasks;
   final int totalTasks;
-  final int finishedTasks; // Properti baru
+  final int finishedTasks;
   final int dueDiscussions;
   final Duration timeLoggedToday;
   final int totalDiscussions;
@@ -32,7 +32,7 @@ class _HeaderStats {
   _HeaderStats({
     this.pendingTasks = 0,
     this.totalTasks = 0,
-    this.finishedTasks = 0, // Properti baru
+    this.finishedTasks = 0,
     this.dueDiscussions = 0,
     this.timeLoggedToday = Duration.zero,
     this.totalDiscussions = 0,
@@ -52,12 +52,14 @@ class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
+  final GeminiService _geminiService = GeminiService();
   late Future<_HeaderStats> _statsFuture;
+  late Future<String> _quoteFuture;
 
   @override
   void initState() {
     super.initState();
-    _statsFuture = _loadHeaderStats();
+    _loadData();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -73,11 +75,16 @@ class _DashboardHeaderState extends State<DashboardHeader>
     if (state == AppLifecycleState.resumed) {
       if (mounted) {
         setState(() {
-          _statsFuture = _loadHeaderStats();
+          _loadData();
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
       }
     }
+  }
+
+  void _loadData() {
+    _statsFuture = _loadHeaderStats();
+    _quoteFuture = _geminiService.getMotivationalQuote();
   }
 
   String _getGreeting() {
@@ -107,7 +114,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<Map<String, int>> _getTaskStats() async {
     try {
       final excludedCategories = await _prefsService
@@ -250,24 +256,25 @@ class _DashboardHeaderState extends State<DashboardHeader>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getGreeting(),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat(
-                      'EEEE, d MMMM yyyy',
-                      'id_ID',
-                    ).format(DateTime.now()),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat(
+                        'EEEE, d MMMM yyyy',
+                        'id_ID',
+                      ).format(DateTime.now()),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
               Consumer<NeuronProvider>(
                 builder: (context, neuronProvider, child) {
@@ -289,6 +296,56 @@ class _DashboardHeaderState extends State<DashboardHeader>
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // --- PERBAIKAN PADA FUTURE BUILDER ---
+          FutureBuilder<String>(
+            future: _quoteFuture,
+            builder: (context, snapshot) {
+              Widget content;
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                content = const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              } else if (snapshot.hasError) {
+                content = Text(
+                  'Gagal memuat motivasi.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.red,
+                  ),
+                );
+              } else {
+                content = Expanded(
+                  child: Text(
+                    '"${snapshot.data}"',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  ),
+                );
+              }
+
+              return Row(
+                children: [
+                  content,
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    iconSize: 20,
+                    tooltip: 'Ganti Kata Motivasi',
+                    onPressed: () {
+                      setState(() {
+                        _quoteFuture = _geminiService.getMotivationalQuote();
+                      });
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
           const Divider(height: 24),
           FutureBuilder<_HeaderStats>(
             future: _statsFuture,
@@ -297,8 +354,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 return const Center(child: CircularProgressIndicator());
               }
               final stats = snapshot.data ?? _HeaderStats();
-
-              // ==> UI DIPERBARUI DI SINI <==
               return Wrap(
                 spacing: 16,
                 runSpacing: 16,
@@ -324,7 +379,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                       MaterialPageRoute(builder: (_) => const MyTasksPage()),
                     ),
                   ),
-                  // STAT PILL BARU DITAMBAHKAN
                   _StatPill(
                     icon: Icons.check_circle_outline,
                     label: 'Tugas Selesai',

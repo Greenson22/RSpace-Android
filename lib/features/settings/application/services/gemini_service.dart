@@ -24,6 +24,66 @@ class GeminiService {
     }
   }
 
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  /// Menghasilkan satu kalimat motivasi belajar dari Gemini.
+  Future<String> getMotivationalQuote() async {
+    final apiKey = await _getActiveApiKey();
+    // Jika tidak ada API key, kembalikan quote default.
+    if (apiKey.isEmpty) {
+      return 'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.';
+    }
+
+    final model =
+        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+
+    const prompt =
+        'Berikan saya satu kalimat motivasi singkat tentang belajar atau pengetahuan dalam Bahasa Indonesia. Kalimat harus inspiratif dan tidak lebih dari 20 kata. Jangan gunakan tanda kutip di awal dan akhir kalimat.';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+          'generationConfig': {
+            'temperature': 0.9, // Tingkatkan kreativitas
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final candidates = body['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final content = candidates[0]['content'] as Map<String, dynamic>?;
+          if (content != null) {
+            final parts = content['parts'] as List<dynamic>?;
+            if (parts != null && parts.isNotEmpty) {
+              return parts[0]['text'] as String? ??
+                  'Teruslah belajar setiap hari.';
+            }
+          }
+        }
+        return 'Gagal memuat kutipan. Coba lagi nanti.';
+      } else {
+        // Jika API error, kembalikan pesan default.
+        return 'Setiap hari adalah kesempatan untuk belajar hal baru.';
+      }
+    } catch (e) {
+      // Jika terjadi error koneksi, dll.
+      return 'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.';
+    }
+  }
+  // --- AKHIR FUNGSI BARU ---
+
   // Fungsi baru untuk membuat palet dengan AI
   Future<ColorPalette> suggestColorPalette({
     required String theme,
