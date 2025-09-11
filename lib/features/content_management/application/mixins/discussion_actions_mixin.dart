@@ -1,4 +1,4 @@
-// lib/presentation/providers/mixins/discussion_actions_mixin.dart
+// lib/features/content_management/application/mixins/discussion_actions_mixin.dart
 
 import 'dart:convert';
 import 'dart:io';
@@ -16,6 +16,7 @@ import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
+import '../discussion_provider.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
   // DEPENDENCIES
@@ -323,9 +324,14 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => WebViewPage(
-            title: discussion.discussion,
-            htmlContent: finalHtmlContent,
+          builder: (_) => ChangeNotifierProvider.value(
+            // Sediakan instance DiscussionProvider yang sudah ada
+            value: this as DiscussionProvider,
+            child: WebViewPage(
+              title: discussion.discussion,
+              htmlContent: finalHtmlContent,
+              discussion: discussion, // Kirim objek discussion
+            ),
           ),
         ),
       );
