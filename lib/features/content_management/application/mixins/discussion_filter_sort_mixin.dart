@@ -1,4 +1,4 @@
-// lib/presentation/providers/mixins/discussion_filter_sort_mixin.dart
+// lib/features/content_management/application/mixins/discussion_filter_sort_mixin.dart
 
 import 'package:flutter/material.dart';
 import '../../domain/models/discussion_model.dart';
@@ -189,6 +189,25 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
       }
     }
     return true;
+  }
+
+  // ==> FUNGSI BARU DITAMBAHKAN <==
+  bool doesDiscussionMatchFilter(Discussion discussion) {
+    if (discussion.finished) return false;
+
+    if (_activeFilterType == 'code' && _selectedRepetitionCode != null) {
+      return discussion.effectiveRepetitionCode == _selectedRepetitionCode;
+    } else if (_activeFilterType == 'date' && _selectedDateRange != null) {
+      if (discussion.effectiveDate == null) return false;
+      try {
+        final dDate = DateTime.parse(discussion.effectiveDate!);
+        return !dDate.isBefore(_selectedDateRange!.start) &&
+            !dDate.isAfter(_selectedDateRange!.end);
+      } catch (e) {
+        return false;
+      }
+    }
+    return true; // Return true jika tidak ada filter aktif
   }
 
   void applySort(String sortType, bool sortAscending) {

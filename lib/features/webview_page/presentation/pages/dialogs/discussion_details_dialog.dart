@@ -136,6 +136,10 @@ void showDiscussionDetailsDialog(BuildContext context, Discussion discussion) {
             );
           }
 
+          // ==> PERUBAHAN DI SINI <==
+          final bool isDiscussionActive = discussionProvider
+              .doesDiscussionMatchFilter(discussion);
+
           return AlertDialog(
             title: const Text('Detail & Poin Diskusi'),
             content: SizedBox(
@@ -147,18 +151,27 @@ void showDiscussionDetailsDialog(BuildContext context, Discussion discussion) {
                   children: [
                     Text(
                       discussion.discussion,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        // ==> PERUBAHAN DI SINI <==
+                        color: isDiscussionActive ? null : Colors.grey,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text('Jadwal Tinjau: ${discussion.effectiveDate ?? "N/A"}'),
+                    Text(
+                      'Jadwal Tinjau: ${discussion.effectiveDate ?? "N/A"}',
+                      // ==> PERUBAHAN DI SINI <==
+                      style: TextStyle(
+                        color: isDiscussionActive ? null : Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     if (discussion.points.isEmpty)
                       buildCodeWidget(
                         item: discussion,
-                        isActive: !discussion.finished,
+                        // ==> PERUBAHAN DI SINI <==
+                        isActive: !discussion.finished && isDiscussionActive,
                       ),
 
                     if (discussion.points.isNotEmpty) const Divider(height: 32),
