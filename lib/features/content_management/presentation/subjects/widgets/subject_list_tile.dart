@@ -11,8 +11,8 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final VoidCallback onLinkPath;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onEditIndexFile;
+  final VoidCallback onMove; // ==> TAMBAHKAN CALLBACK BARU
   final bool isFocused;
 
   const SubjectListTile({
@@ -24,8 +24,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onIconChange,
     required this.onToggleVisibility,
     required this.onLinkPath,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     required this.onEditIndexFile,
+    required this.onMove, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.isFocused = false,
   });
 
@@ -117,8 +117,8 @@ class SubjectListTile extends StatelessWidget {
                   if (value == 'change_icon') onIconChange();
                   if (value == 'toggle_visibility') onToggleVisibility();
                   if (value == 'link_path') onLinkPath();
-                  // ==> TAMBAHKAN AKSI BARU <==
                   if (value == 'edit_index') onEditIndexFile();
+                  if (value == 'move') onMove(); // ==> TAMBAHKAN AKSI BARU
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -141,7 +141,6 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
                   if (subject.linkedPath != null &&
                       subject.linkedPath!.isNotEmpty)
                     const PopupMenuItem<String>(
@@ -154,7 +153,6 @@ class SubjectListTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                  // ==> AKHIR PENAMBAHAN <==
                   PopupMenuItem<String>(
                     value: 'link_path',
                     child: Row(
@@ -169,6 +167,18 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+                  const PopupMenuItem<String>(
+                    value: 'move',
+                    child: Row(
+                      children: [
+                        Icon(Icons.move_up_outlined),
+                        SizedBox(width: 8),
+                        Text('Pindahkan'),
+                      ],
+                    ),
+                  ),
+                  // ==> AKHIR PENAMBAHAN <==
                   PopupMenuItem<String>(
                     value: 'toggle_visibility',
                     child: Row(

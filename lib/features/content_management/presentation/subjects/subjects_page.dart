@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import '../../domain/models/subject_model.dart';
+import '../../domain/models/topic_model.dart'; // ==> IMPORT TOPIC MODEL
 import '../../application/discussion_provider.dart';
 import '../../application/subject_provider.dart';
 import '../discussions/discussions_page.dart';
 import 'dialogs/subject_dialogs.dart';
+import 'dialogs/move_subject_dialog.dart'; // ==> IMPORT DIALOG BARU
 import 'widgets/subject_grid_tile.dart';
 import 'widgets/subject_list_tile.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
@@ -122,7 +124,28 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI DIPERBARUI: Sekarang hanya memanggil dialog baru <==
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN SUBJECT <==
+  Future<void> _moveSubject(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+
+    // Tampilkan dialog untuk memilih topik tujuan
+    final destinationTopic = await showMoveSubjectDialog(
+      context,
+      widget.topicName,
+    );
+
+    if (destinationTopic != null && mounted) {
+      try {
+        await provider.moveSubject(subject, destinationTopic);
+        _showSnackBar(
+          'Subject "${subject.name}" berhasil dipindahkan ke topik "${destinationTopic.name}".',
+        );
+      } catch (e) {
+        _showSnackBar('Gagal memindahkan: ${e.toString()}', isError: true);
+      }
+    }
+  }
+
   Future<void> _linkSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final newPath = await showLinkOrCreatePerpuskuDialog(
@@ -143,28 +166,22 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI DIPERBARUI: Alur diubah total <==
   Future<void> _addSubject(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
 
-    // Langkah 1: Minta nama subject RSpace
     await showSubjectTextInputDialog(
       context: context,
       title: 'Tambah Subject Baru (Langkah 1/2)',
       label: 'Nama Subject di RSpace',
       onSave: (name) async {
-        // Langkah 2: Setelah nama didapat, langsung minta untuk menautkan/membuat folder PerpusKu
         final newPath = await showLinkOrCreatePerpuskuDialog(
           context: context,
           forSubjectName: name,
         );
 
-        // Langkah 3: Jika path berhasil didapat, baru buat subject RSpace dan simpan pathnya
         if (newPath != null) {
           try {
-            // Buat subject di RSpace
             await provider.addSubject(name);
-            // Langsung update dengan linkedPath yang baru
             await provider.updateSubjectLinkedPath(name, newPath);
             _showSnackBar(
               'Subject "$name" berhasil ditambahkan dan ditautkan.',
@@ -211,12 +228,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _changeIcon(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showIconPickerDialog(
       context: context,
-      name: subject.name, // Kirim nama subject
+      name: subject.name,
       onIconSelected: (newIcon) async {
         try {
           await provider.updateSubjectIcon(subject.name, newIcon);
@@ -240,8 +256,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI DIPERBARUI: Menangani penautan wajib sebelum navigasi <==
-  // ==> FUNGSI BARU UNTUK MENANGANI AKSI EDIT <==
   Future<void> _editIndexFile(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     try {
@@ -250,8 +264,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
     }
   }
-
-  // ... (sisa fungsi tidak berubah)
 
   Future<void> _navigateToDiscussionsPage(
     BuildContext context,
@@ -264,31 +276,27 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
     String? currentLinkedPath = subject.linkedPath;
 
-    // Jika belum tertaut, paksa pengguna untuk menautkan
     if (currentLinkedPath == null || currentLinkedPath.isEmpty) {
       final newPath = await showLinkOrCreatePerpuskuDialog(
         context: context,
         forSubjectName: subject.name,
       );
 
-      // ==> PERBAIKAN DIMULAI DI SINI <==
-      // Cek apakah widget masih ada setelah dialog ditutup.
       if (!mounted) return;
-      // ==> PERBAIKAN SELESAI DI SINI <==
 
       if (newPath != null) {
         try {
           await subjectProvider.updateSubjectLinkedPath(subject.name, newPath);
-          currentLinkedPath = newPath; // Update path untuk navigasi
+          currentLinkedPath = newPath;
         } catch (e) {
           _showSnackBar(
             'Gagal menautkan subject: ${e.toString()}',
             isError: true,
           );
-          return; // Hentikan navigasi jika penautan gagal
+          return;
         }
       } else {
-        return; // Hentikan navigasi jika pengguna membatalkan dialog
+        return;
       }
     }
 
@@ -297,7 +305,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       '${subject.name}.json',
     );
 
-    // Pastikan untuk menggunakan context yang aman di sini juga.
     if (!mounted) return;
 
     Navigator.push(
@@ -420,8 +427,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
-              // ==> TAMBAHKAN PROPERTI BARU <==
               onEditIndexFile: () => _editIndexFile(context, subject),
+              onMove: () =>
+                  _moveSubject(context, subject), // ==> HUBUNGKAN FUNGSI
             );
           },
         );
@@ -460,8 +468,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
-              // ==> TAMBAHKAN PROPERTI BARU <==
               onEditIndexFile: () => _editIndexFile(context, subject),
+              onMove: () =>
+                  _moveSubject(context, subject), // ==> HUBUNGKAN FUNGSI
             );
           },
         );

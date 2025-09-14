@@ -1,6 +1,7 @@
 // lib/presentation/providers/subject_provider.dart
 import 'package:flutter/material.dart';
 import '../domain/models/subject_model.dart';
+import '../domain/models/topic_model.dart'; // ==> IMPORT TOPIC MODEL
 import '../domain/services/subject_service.dart';
 
 class SubjectProvider with ChangeNotifier {
@@ -124,6 +125,20 @@ class SubjectProvider with ChangeNotifier {
   Future<void> deleteSubject(String subjectName) async {
     await _subjectService.deleteSubject(topicPath, subjectName);
     await fetchSubjects();
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN SUBJECT <==
+  Future<void> moveSubject(Subject subject, Topic newTopic) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _subjectService.moveSubject(subject, topicPath, newTopic);
+      // Muat ulang data setelah berhasil dipindahkan
+      await fetchSubjects();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==

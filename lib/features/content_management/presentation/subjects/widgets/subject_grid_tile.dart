@@ -11,8 +11,8 @@ class SubjectGridTile extends StatelessWidget {
   final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final VoidCallback onLinkPath;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onEditIndexFile;
+  final VoidCallback onMove; // ==> TAMBAHKAN CALLBACK BARU
   final bool isFocused;
 
   const SubjectGridTile({
@@ -24,8 +24,8 @@ class SubjectGridTile extends StatelessWidget {
     required this.onIconChange,
     required this.onToggleVisibility,
     required this.onLinkPath,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     required this.onEditIndexFile,
+    required this.onMove, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.isFocused = false,
   });
 
@@ -87,8 +87,8 @@ class SubjectGridTile extends StatelessWidget {
                       if (value == 'toggle_visibility') onToggleVisibility();
                       if (value == 'delete') onDelete();
                       if (value == 'link_path') onLinkPath();
-                      // ==> TAMBAHKAN AKSI BARU <==
                       if (value == 'edit_index') onEditIndexFile();
+                      if (value == 'move') onMove(); // ==> TAMBAHKAN AKSI BARU
                     },
                     itemBuilder: (context) => [
                       const PopupMenuItem(
@@ -111,7 +111,6 @@ class SubjectGridTile extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
                       if (subject.linkedPath != null &&
                           subject.linkedPath!.isNotEmpty)
                         const PopupMenuItem<String>(
@@ -124,7 +123,6 @@ class SubjectGridTile extends StatelessWidget {
                             ],
                           ),
                         ),
-                      // ==> AKHIR PENAMBAHAN <==
                       PopupMenuItem<String>(
                         value: 'link_path',
                         child: Row(
@@ -139,6 +137,18 @@ class SubjectGridTile extends StatelessWidget {
                           ],
                         ),
                       ),
+                      // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+                      const PopupMenuItem<String>(
+                        value: 'move',
+                        child: Row(
+                          children: [
+                            Icon(Icons.move_up_outlined),
+                            SizedBox(width: 8),
+                            Text('Pindahkan'),
+                          ],
+                        ),
+                      ),
+                      // ==> AKHIR PENAMBAHAN <==
                       PopupMenuItem<String>(
                         value: 'toggle_visibility',
                         child: Row(

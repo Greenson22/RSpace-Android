@@ -1,6 +1,7 @@
 // lib/data/services/subject_service.dart
 import 'dart:io';
 import 'dart:convert';
+import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
 import '../models/subject_model.dart';
@@ -437,6 +438,71 @@ class SubjectService {
       await getSubjects(topicPath);
     } catch (e) {
       throw Exception('Gagal menghapus subject: $e');
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN SUBJECT <==
+  Future<void> moveSubject(
+    Subject subject,
+    String oldTopicPath,
+    Topic newTopic,
+  ) async {
+    final oldJsonPath = await _pathService.getSubjectPath(
+      oldTopicPath,
+      subject.name,
+    );
+    final newJsonPath = await _pathService.getSubjectPath(
+      await _pathService.getTopicPath(newTopic.name),
+      subject.name,
+    );
+
+    final oldJsonFile = File(oldJsonPath);
+    if (!await oldJsonFile.exists()) {
+      throw Exception('File JSON subject sumber tidak ditemukan.');
+    }
+    if (await File(newJsonPath).exists()) {
+      throw Exception(
+        'Subject dengan nama "${subject.name}" sudah ada di topik tujuan.',
+      );
+    }
+
+    // Pindahkan file JSON
+    await oldJsonFile.rename(newJsonPath);
+
+    // Pindahkan folder PerpusKu jika ada
+    if (subject.linkedPath != null && subject.linkedPath!.isNotEmpty) {
+      final perpuskuBasePath = await _pathService.perpuskuDataPath;
+      final perpuskuTopicsPath = path.join(
+        perpuskuBasePath,
+        'file_contents',
+        'topics',
+      );
+
+      final oldLinkedDir = Directory(
+        path.join(perpuskuTopicsPath, subject.linkedPath!),
+      );
+      if (await oldLinkedDir.exists()) {
+        final newLinkedPath = path.join(newTopic.name, subject.name);
+        final newLinkedDir = Directory(
+          path.join(perpuskuTopicsPath, newLinkedPath),
+        );
+
+        if (await newLinkedDir.exists()) {
+          // Jika folder tujuan sudah ada, hapus yang lama dan jangan pindahkan
+          await oldLinkedDir.delete(recursive: true);
+        } else {
+          // Pindahkan folder
+          await oldLinkedDir.rename(newLinkedDir.path);
+          // Update linkedPath di file JSON yang baru
+          final newJsonFile = File(newJsonPath);
+          final metadata = await getSubjectMetadata(newJsonFile);
+          subject.linkedPath = newLinkedPath; // Update path
+          await _saveSubjectMetadata(
+            await _pathService.getTopicPath(newTopic.name),
+            subject,
+          );
+        }
+      }
     }
   }
 
