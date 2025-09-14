@@ -272,8 +272,12 @@ class _MyTasksViewState extends State<_MyTasksView> {
     MyTaskProvider provider,
   ) {
     return ReorderableListView.builder(
+      // ## PERBAIKAN DI SINI: Bungkus widget yang diseret dengan provider-nya ##
       proxyDecorator: (Widget child, int index, Animation<double> animation) {
-        return Material(elevation: 4.0, child: child);
+        return ChangeNotifierProvider.value(
+          value: provider,
+          child: Material(elevation: 4.0, child: child),
+        );
       },
       buildDefaultDragHandles: provider.isCategoryReorderEnabled,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
@@ -309,8 +313,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
     final int middle = (categories.length / 2).ceil();
     final List<TaskCategory> firstHalf = categories.sublist(0, middle);
     final List<TaskCategory> secondHalf = categories.sublist(middle);
-
-    // ## PERBAIKAN: Blok kode yang menyebabkan error telah dihapus dari sini ##
 
     Widget buildColumn(List<TaskCategory> categoryList, int indexOffset) {
       return ListView.builder(
