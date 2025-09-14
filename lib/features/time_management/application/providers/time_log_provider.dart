@@ -83,6 +83,18 @@ class TimeLogProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK MEMPERBARUI URUTAN TUGAS <==
+  Future<void> updateTasksOrder(
+    TimeLogEntry log,
+    List<LoggedTask> newOrderedTasks,
+  ) async {
+    final logIndex = _logs.indexWhere((l) => l.date == log.date);
+    if (logIndex != -1) {
+      _logs[logIndex].tasks = newOrderedTasks;
+      await _saveLogs();
+    }
+  }
+
   Future<int> addTasksFromPresets() async {
     if (_editableLog == null) {
       final date = DateUtils.dateOnly(DateTime.now());

@@ -49,9 +49,14 @@ class DailyLogCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text('Total Durasi: $totalDurationString jam'),
-        trailing: isToday
-            ? null
-            : Row(
+        // ## PERUBAHAN 1: Hapus Tombol "Urutkan Tugas" dari sini ##
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isToday)
+              Container() // Placeholder untuk hari ini agar layout konsisten
+            else
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isEditable && !isToday)
@@ -82,6 +87,8 @@ class DailyLogCard extends StatelessWidget {
                   ),
                 ],
               ),
+          ],
+        ),
         children: [
           if (log == null || log!.tasks.isEmpty)
             Padding(
@@ -93,8 +100,35 @@ class DailyLogCard extends StatelessWidget {
               ),
             )
           else
-            ...log!.tasks.map(
-              (task) => TaskLogTile(task: task, isEditable: isEditable),
+            // ## PERUBAHAN 2: Ganti daftar biasa dengan ReorderableListView ##
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: log!.tasks.length,
+              // Tampilkan handle untuk drag hanya saat mode edit aktif
+              buildDefaultDragHandles: isEditable,
+              itemBuilder: (context, index) {
+                final task = log!.tasks[index];
+                // Key sangat penting untuk ReorderableListView agar berfungsi
+                return TaskLogTile(
+                  key: ValueKey(task.id),
+                  task: task,
+                  isEditable: isEditable,
+                );
+              },
+              onReorder: (oldIndex, newIndex) {
+                // Logika untuk mengatur ulang urutan list
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
+                // Buat salinan list yang bisa diubah
+                final List<LoggedTask> reorderedTasks = List.from(log!.tasks);
+                // Pindahkan item
+                final LoggedTask item = reorderedTasks.removeAt(oldIndex);
+                reorderedTasks.insert(newIndex, item);
+                // Panggil provider untuk menyimpan urutan baru
+                provider.updateTasksOrder(log!, reorderedTasks);
+              },
             ),
           if (isEditable)
             Padding(

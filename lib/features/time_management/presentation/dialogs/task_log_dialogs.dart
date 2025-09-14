@@ -6,6 +6,7 @@ import 'package:my_aplication/features/time_management/domain/models/log_task_pr
 import 'package:my_aplication/features/time_management/domain/models/time_log_model.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
+import 'reorder_tasks_dialog.dart'; // ==> EXPORT DIALOG BARU
 
 // FUNGSI BARU UNTUK KONFIRMASI PENGHAPUSAN
 Future<bool?> showDeleteLogConfirmationDialog(
