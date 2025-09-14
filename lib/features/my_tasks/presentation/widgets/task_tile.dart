@@ -8,14 +8,12 @@ import '../dialogs/task_dialogs.dart';
 class TaskTile extends StatelessWidget {
   final TaskCategory category;
   final MyTask task;
-  final bool isReordering;
   final bool isParentHidden;
 
   const TaskTile({
     super.key,
     required this.category,
     required this.task,
-    required this.isReordering,
     required this.isParentHidden,
   });
 
@@ -27,37 +25,32 @@ class TaskTile extends StatelessWidget {
 
     return ListTile(
       key: key,
-      // --- PERUBAIKAN DI SINI ---
-      leading: isReordering
-          ? ReorderableDragStartListener(
-              index: category.tasks.indexOf(task), // Index item ini
-              child: Icon(Icons.drag_handle, color: textColor),
-            )
-          : Checkbox(
-              value: task.checked,
-              onChanged: isCategoryReorderMode || isParentHidden
-                  ? null
-                  : (bool? value) async {
-                      if (value == true) {
-                        final shouldUpdate = await showToggleConfirmationDialog(
-                          context,
-                        );
-                        if (shouldUpdate == true) {
-                          provider.toggleTaskChecked(
-                            category,
-                            task,
-                            confirmUpdate: true,
-                          );
-                        }
-                      } else {
-                        provider.toggleTaskChecked(
-                          category,
-                          task,
-                          confirmUpdate: false,
-                        );
-                      }
-                    },
-            ),
+      // Hapus logika `isReordering` dari leading
+      leading: Checkbox(
+        value: task.checked,
+        onChanged: isCategoryReorderMode || isParentHidden
+            ? null
+            : (bool? value) async {
+                if (value == true) {
+                  final shouldUpdate = await showToggleConfirmationDialog(
+                    context,
+                  );
+                  if (shouldUpdate == true) {
+                    provider.toggleTaskChecked(
+                      category,
+                      task,
+                      confirmUpdate: true,
+                    );
+                  }
+                } else {
+                  provider.toggleTaskChecked(
+                    category,
+                    task,
+                    confirmUpdate: false,
+                  );
+                }
+              },
+      ),
       title: Text(
         task.name,
         style: TextStyle(
@@ -90,7 +83,8 @@ class TaskTile extends StatelessWidget {
           ],
         ),
       ),
-      trailing: isReordering || isCategoryReorderMode || isParentHidden
+      // Hapus logika `isReordering` dari trailing
+      trailing: isCategoryReorderMode || isParentHidden
           ? null
           : PopupMenuButton<String>(
               onSelected: (value) {

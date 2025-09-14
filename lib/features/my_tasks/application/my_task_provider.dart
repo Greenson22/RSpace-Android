@@ -18,8 +18,9 @@ class MyTaskProvider with ChangeNotifier {
   bool _isCategoryReorderEnabled = false;
   bool get isCategoryReorderEnabled => _isCategoryReorderEnabled;
 
-  String? _reorderingCategoryName;
-  String? get reorderingCategoryName => _reorderingCategoryName;
+  // HAPUS STATE INI KARENA SUDAH TIDAK DIGUNAKAN
+  // String? _reorderingCategoryName;
+  // String? get reorderingCategoryName => _reorderingCategoryName;
 
   bool _showHiddenCategories = false;
   bool get showHiddenCategories => _showHiddenCategories;
@@ -36,6 +37,8 @@ class MyTaskProvider with ChangeNotifier {
     fetchTasks();
   }
 
+  get reorderingCategoryName => null;
+
   void toggleShowHidden() {
     _showHiddenCategories = !_showHiddenCategories;
     notifyListeners();
@@ -43,25 +46,27 @@ class MyTaskProvider with ChangeNotifier {
 
   void toggleCategoryReorder() {
     _isCategoryReorderEnabled = !_isCategoryReorderEnabled;
-    if (_isCategoryReorderEnabled) {
-      _reorderingCategoryName = null;
-    }
+    // HAPUS LOGIKA LAMA
+    // if (_isCategoryReorderEnabled) {
+    //   _reorderingCategoryName = null;
+    // }
     notifyListeners();
   }
 
-  void enableTaskReordering(String categoryName) {
-    _reorderingCategoryName = categoryName;
-    if (_isCategoryReorderEnabled) {
-      _isCategoryReorderEnabled = false;
-    }
-    notifyListeners();
-  }
-
-  void disableReordering() {
-    _reorderingCategoryName = null;
-    _isCategoryReorderEnabled = false;
-    notifyListeners();
-  }
+  // HAPUS FUNGSI INI KARENA SUDAH TIDAK DIGUNAKAN
+  // void enableTaskReordering(String categoryName) {
+  //   _reorderingCategoryName = categoryName;
+  //   if (_isCategoryReorderEnabled) {
+  //     _isCategoryReorderEnabled = false;
+  //   }
+  //   notifyListeners();
+  // }
+  //
+  // void disableReordering() {
+  //   _reorderingCategoryName = null;
+  //   _isCategoryReorderEnabled = false;
+  //   notifyListeners();
+  // }
 
   Future<void> fetchTasks() async {
     _isLoading = true;
@@ -103,9 +108,10 @@ class MyTaskProvider with ChangeNotifier {
   Future<void> renameCategory(TaskCategory category, String newName) async {
     final index = _allCategories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
-      if (_reorderingCategoryName == _allCategories[index].name) {
-        _reorderingCategoryName = newName;
-      }
+      // HAPUS LOGIKA LAMA
+      // if (_reorderingCategoryName == _allCategories[index].name) {
+      //   _reorderingCategoryName = newName;
+      // }
       _allCategories[index] = TaskCategory(
         name: newName,
         icon: category.icon,
@@ -148,18 +154,23 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   // --- Task Management ---
-  Future<void> reorderTasks(
+
+  // FUNGSI BARU UNTUK MENYIMPAN URUTAN DARI DIALOG
+  Future<void> updateTasksOrder(
     TaskCategory category,
-    int oldIndex,
-    int newIndex,
+    List<MyTask> newOrderedTasks,
   ) async {
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final task = _allCategories[categoryIndex].tasks.removeAt(oldIndex);
-      _allCategories[categoryIndex].tasks.insert(newIndex, task);
+      // Ganti list task yang lama dengan yang sudah diurutkan dari dialog
+      _allCategories[categoryIndex] = TaskCategory(
+        name: category.name,
+        icon: category.icon,
+        tasks: newOrderedTasks,
+        isHidden: category.isHidden,
+      );
       await _saveTasks();
     }
   }
@@ -171,7 +182,9 @@ class MyTaskProvider with ChangeNotifier {
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       checked: false,
     );
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
       _allCategories[categoryIndex].tasks.add(newTask);
       await _saveTasks();
@@ -183,9 +196,13 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task,
     String newName,
   ) async {
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
+        (t) => t.id == task.id,
+      );
       if (taskIndex != -1) {
         _allCategories[categoryIndex].tasks[taskIndex].name = newName;
         await _saveTasks();
@@ -194,14 +211,15 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> deleteTask(TaskCategory category, MyTask task) async {
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
-      _allCategories[categoryIndex].tasks.remove(task);
+      _allCategories[categoryIndex].tasks.removeWhere((t) => t.id == task.id);
       await _saveTasks();
     }
   }
 
-  // ==> 3. MODIFIKASI FUNGSI toggleTaskChecked
   Future<void> toggleTaskChecked(
     TaskCategory category,
     MyTask task, {
@@ -220,12 +238,10 @@ class MyTaskProvider with ChangeNotifier {
         currentTask.checked = isChecking;
 
         if (isChecking) {
-          // Logika ini berjalan saat pengguna mencentang kotak di UI My Tasks
           if (confirmUpdate) {
             currentTask.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
             currentTask.count++;
           }
-          // ==> LOGIKA BARU: Panggil fungsi untuk update Time Log
           await _updateTimeLogForTask(currentTask.id);
         }
         await _saveTasks();
@@ -233,24 +249,19 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  // ==> 4. FUNGSI HELPER BARU
   Future<void> _updateTimeLogForTask(String myTaskId) async {
-    // Muat semua data jurnal
     List<TimeLogEntry> allLogs = await _timeLogService.loadTimeLogs();
     bool logChanged = false;
 
-    // Cari tugas di jurnal yang terhubung dengan myTaskId
     for (var logEntry in allLogs) {
       for (var loggedTask in logEntry.tasks) {
         if (loggedTask.linkedTaskIds.contains(myTaskId)) {
-          // Jika ditemukan, tambah durasinya sebanyak 30 menit
           loggedTask.durationMinutes += 30;
           logChanged = true;
         }
       }
     }
 
-    // Jika ada perubahan, simpan kembali semua data jurnal
     if (logChanged) {
       await _timeLogService.saveTimeLogs(allLogs);
     }
@@ -261,9 +272,13 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task,
     DateTime newDate,
   ) async {
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
+        (t) => t.id == task.id,
+      );
       if (taskIndex != -1) {
         _allCategories[categoryIndex].tasks[taskIndex].date = DateFormat(
           'yyyy-MM-dd',
@@ -278,9 +293,13 @@ class MyTaskProvider with ChangeNotifier {
     MyTask task,
     int newCount,
   ) async {
-    final categoryIndex = _allCategories.indexOf(category);
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
     if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexOf(task);
+      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
+        (t) => t.id == task.id,
+      );
       if (taskIndex != -1) {
         _allCategories[categoryIndex].tasks[taskIndex].count = newCount;
         await _saveTasks();

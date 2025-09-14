@@ -7,59 +7,29 @@ import 'task_tile.dart';
 
 class TaskList extends StatelessWidget {
   final TaskCategory category;
-  final bool isReordering;
   final bool isParentHidden;
 
   const TaskList({
     super.key,
     required this.category,
-    required this.isReordering,
     required this.isParentHidden,
   });
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MyTaskProvider>(context, listen: false);
-
-    if (isReordering) {
-      return ReorderableListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: category.tasks.length,
-        buildDefaultDragHandles: false,
-        proxyDecorator: (Widget child, int index, Animation<double> animation) {
-          return Material(elevation: 4.0, child: child);
-        },
-        itemBuilder: (context, index) {
-          final task = category.tasks[index];
-          return TaskTile(
-            // --- PERBAIKAN DI SINI ---
-            key: ValueKey(task.id), // Gunakan ID unik sebagai Kunci
-            category: category,
-            task: task,
-            isReordering: isReordering,
-            isParentHidden: isParentHidden,
-          );
-        },
-        onReorder: (oldIndex, newIndex) {
-          provider.reorderTasks(category, oldIndex, newIndex);
-        },
-      );
-    } else {
-      return Column(
-        children: category.tasks
-            .map(
-              (task) => TaskTile(
-                // --- DAN JUGA DI SINI ---
-                key: ValueKey(task.id), // Gunakan ID unik sebagai Kunci
-                category: category,
-                task: task,
-                isReordering: isReordering,
-                isParentHidden: isParentHidden,
-              ),
-            )
-            .toList(),
-      );
-    }
+    // Hapus semua logika reordering dari sini
+    return Column(
+      children: category.tasks
+          .map(
+            (task) => TaskTile(
+              // Pastikan key yang stabil tetap ada
+              key: ValueKey(task.id),
+              category: category,
+              task: task,
+              isParentHidden: isParentHidden,
+            ),
+          )
+          .toList(),
+    );
   }
 }

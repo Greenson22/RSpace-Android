@@ -26,17 +26,12 @@ class CategoryCard extends StatelessWidget {
     final provider = Provider.of<MyTaskProvider>(context);
     final theme = Theme.of(context);
     final isHidden = category.isHidden;
-    final isThisCategoryReorderingTask =
-        provider.reorderingCategoryName == category.name;
     final isCategoryReorderMode = provider.isCategoryReorderEnabled;
-    final isAnotherTaskReordering =
-        provider.reorderingCategoryName != null &&
-        !isThisCategoryReorderingTask;
-    final isCardDisabled = isCategoryReorderMode || isAnotherTaskReordering;
+    final isCardDisabled = isCategoryReorderMode;
 
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
-        : (isAnotherTaskReordering
+        : (isCardDisabled
               ? theme.disabledColor.withOpacity(0.1)
               : theme.cardColor);
     final Color? textColor = isHidden ? theme.disabledColor : null;
@@ -74,11 +69,13 @@ class CategoryCard extends StatelessWidget {
             color: textColor,
           ),
         ),
-        trailing: isThisCategoryReorderingTask
-            ? TextButton.icon(
-                icon: const Icon(Icons.done),
-                label: const Text('Selesai'),
-                onPressed: () => provider.disableReordering(),
+        trailing: isCategoryReorderMode
+            ? ReorderableDragStartListener(
+                index: provider.categories.indexOf(category),
+                child: const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.drag_handle),
+                ),
               )
             : PopupMenuButton<String>(
                 enabled: !isCardDisabled,
@@ -94,7 +91,8 @@ class CategoryCard extends StatelessWidget {
                   } else if (value == 'add_task') {
                     showAddTaskDialog(context, category);
                   } else if (value == 'reorder_tasks') {
-                    provider.enableTaskReordering(category.name);
+                    // PANGGIL DIALOG BARU
+                    showReorderTasksDialog(context, category);
                   }
                 },
                 itemBuilder: (context) => [
@@ -126,13 +124,7 @@ class CategoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-        children: [
-          TaskList(
-            category: category,
-            isReordering: isThisCategoryReorderingTask,
-            isParentHidden: isHidden,
-          ),
-        ],
+        children: [TaskList(category: category, isParentHidden: isHidden)],
       ),
     );
   }

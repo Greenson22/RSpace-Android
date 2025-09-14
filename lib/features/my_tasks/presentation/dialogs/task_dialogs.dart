@@ -5,6 +5,96 @@ import 'package:my_aplication/features/my_tasks/application/my_task_provider.dar
 import 'package:provider/provider.dart';
 import '../../../content_management/presentation/topics/dialogs/topic_dialogs.dart';
 
+// FUNGSI BARU UNTUK MENAMPILKAN DIALOG PENGURUTAN
+void showReorderTasksDialog(BuildContext context, TaskCategory category) {
+  final provider = Provider.of<MyTaskProvider>(context, listen: false);
+
+  showDialog(
+    context: context,
+    // Pastikan provider di-pass ke dalam konteks dialog
+    builder: (dialogContext) => ChangeNotifierProvider.value(
+      value: provider,
+      child: _ReorderTasksDialog(category: category),
+    ),
+  );
+}
+
+// WIDGET BARU UNTUK DIALOG PENGURUTAN
+class _ReorderTasksDialog extends StatefulWidget {
+  final TaskCategory category;
+
+  const _ReorderTasksDialog({required this.category});
+
+  @override
+  State<_ReorderTasksDialog> createState() => _ReorderTasksDialogState();
+}
+
+class _ReorderTasksDialogState extends State<_ReorderTasksDialog> {
+  late List<MyTask> _tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    // Buat salinan list agar bisa diubah urutannya di dalam state dialog
+    _tasks = List<MyTask>.from(widget.category.tasks);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+
+    return AlertDialog(
+      title: Text('Urutkan Task di "${widget.category.name}"'),
+      content: SizedBox(
+        width: double.maxFinite, // Agar dialog melebar
+        child: ReorderableListView.builder(
+          shrinkWrap: true,
+          itemCount: _tasks.length,
+          itemBuilder: (context, index) {
+            final task = _tasks[index];
+            return Card(
+              key: ValueKey(task.id),
+              margin: const EdgeInsets.symmetric(vertical: 4.0),
+              child: ListTile(
+                title: Text(task.name),
+                trailing: ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle),
+                ),
+              ),
+            );
+          },
+          onReorder: (oldIndex, newIndex) {
+            setState(() {
+              if (newIndex > oldIndex) {
+                newIndex -= 1;
+              }
+              final item = _tasks.removeAt(oldIndex);
+              _tasks.insert(newIndex, item);
+            });
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // Panggil provider untuk menyimpan urutan baru
+            provider.updateTasksOrder(widget.category, _tasks);
+            Navigator.pop(context);
+          },
+          child: const Text('Selesai'),
+        ),
+      ],
+    );
+  }
+}
+
+// --- KODE LAMA DI BAWAH INI TIDAK BERUBAH ---
+
 void showAddTaskDialog(BuildContext context, TaskCategory category) {
   final provider = Provider.of<MyTaskProvider>(context, listen: false);
   showTopicTextInputDialog(
