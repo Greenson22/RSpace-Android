@@ -98,10 +98,7 @@ class TopicProvider with ChangeNotifier {
   }
 
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-
+    // Penyesuaian indeks tidak lagi diperlukan di sini karena ReorderableListView sudah menanganinya
     final Topic item = _allTopics.removeAt(oldIndex);
     _allTopics.insert(newIndex, item);
 

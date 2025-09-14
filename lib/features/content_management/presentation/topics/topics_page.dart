@@ -1,4 +1,4 @@
-// lib/presentation/pages/1_topics_page.dart
+// lib/presentation/pages/topics_page.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -405,6 +405,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         return ReorderableGridView.builder(
           padding: const EdgeInsets.all(16.0),
           itemCount: topicsToShow.length,
+          dragEnabled: isReorderActive, // ==> PERUBAHAN DI SINI <==
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: (MediaQuery.of(context).size.width / 200).floor(),
             crossAxisSpacing: 16,
