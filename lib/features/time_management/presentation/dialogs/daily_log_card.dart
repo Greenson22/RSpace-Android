@@ -1,4 +1,4 @@
-// lib/presentation/pages/time_log_page/widgets/daily_log_card.dart
+// lib/features/time_management/presentation/dialogs/daily_log_card.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/time_management/presentation/widgets/task_log_tile.dart';
@@ -10,13 +10,14 @@ import 'task_log_dialogs.dart';
 class DailyLogCard extends StatelessWidget {
   final TimeLogEntry? log;
   final bool isToday;
-  final bool isEditable;
+  // ==> HAPUS isEditable DARI KONSTRUKTOR <==
+  final bool isReorderMode;
 
   const DailyLogCard({
     super.key,
     required this.log,
     this.isToday = false,
-    required this.isEditable,
+    required this.isReorderMode, // ==> JADIKAN REQUIRED
   });
 
   @override
@@ -33,59 +34,44 @@ class DailyLogCard extends StatelessWidget {
     final totalDurationString =
         '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
 
+    // ==> Logika isEditable sekarang sepenuhnya dikontrol oleh isReorderMode <==
+    final bool isEditable = isReorderMode;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isEditable
+        side:
+            isEditable // Gunakan isEditable lokal
             ? BorderSide(color: theme.primaryColor, width: 2)
             : BorderSide.none,
       ),
       child: ExpansionTile(
         key: PageStorageKey(date.toIso8601String()),
-        initiallyExpanded: isToday,
+        initiallyExpanded: isToday || isEditable,
         title: Text(
           formattedDate,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text('Total Durasi: $totalDurationString jam'),
-        // ## PERUBAHAN 1: Hapus Tombol "Urutkan Tugas" dari sini ##
+        // ==> Hapus tombol edit manual dan sederhanakan UI <==
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isToday)
-              Container() // Placeholder untuk hari ini agar layout konsisten
-            else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isEditable && !isToday)
-                    IconButton(
-                      icon: const Icon(Icons.delete_forever, color: Colors.red),
-                      onPressed: () async {
-                        final confirmed = await showDeleteLogConfirmationDialog(
-                          context,
-                          date,
-                        );
-                        if (confirmed == true && log != null) {
-                          provider.deleteLog(log!);
-                        }
-                      },
-                      tooltip: 'Hapus Jurnal Hari Ini',
-                    ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      backgroundColor: isEditable
-                          ? Colors.green.withOpacity(0.1)
-                          : null,
-                      foregroundColor: isEditable
-                          ? Colors.green.shade800
-                          : null,
-                    ),
-                    onPressed: () => provider.setEditableLog(log),
-                    child: Text(isEditable ? 'Selesai Edit' : 'Aktivasi Edit'),
-                  ),
-                ],
+            // Tombol hapus hanya muncul jika mode urutkan aktif
+            if (isEditable && !isToday)
+              IconButton(
+                icon: const Icon(Icons.delete_forever, color: Colors.red),
+                onPressed: () async {
+                  final confirmed = await showDeleteLogConfirmationDialog(
+                    context,
+                    date,
+                  );
+                  if (confirmed == true && log != null) {
+                    provider.deleteLog(log!);
+                  }
+                },
+                tooltip: 'Hapus Jurnal Hari Ini',
               ),
           ],
         ),
@@ -100,16 +86,13 @@ class DailyLogCard extends StatelessWidget {
               ),
             )
           else
-            // ## PERUBAHAN 2: Ganti daftar biasa dengan ReorderableListView ##
             ReorderableListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: log!.tasks.length,
-              // Tampilkan handle untuk drag hanya saat mode edit aktif
-              buildDefaultDragHandles: isEditable,
+              buildDefaultDragHandles: isEditable, // Kontrol dengan isEditable
               itemBuilder: (context, index) {
                 final task = log!.tasks[index];
-                // Key sangat penting untuk ReorderableListView agar berfungsi
                 return TaskLogTile(
                   key: ValueKey(task.id),
                   task: task,
@@ -117,19 +100,16 @@ class DailyLogCard extends StatelessWidget {
                 );
               },
               onReorder: (oldIndex, newIndex) {
-                // Logika untuk mengatur ulang urutan list
                 if (newIndex > oldIndex) {
                   newIndex -= 1;
                 }
-                // Buat salinan list yang bisa diubah
                 final List<LoggedTask> reorderedTasks = List.from(log!.tasks);
-                // Pindahkan item
                 final LoggedTask item = reorderedTasks.removeAt(oldIndex);
                 reorderedTasks.insert(newIndex, item);
-                // Panggil provider untuk menyimpan urutan baru
                 provider.updateTasksOrder(log!, reorderedTasks);
               },
             ),
+          // Tombol tambah tetap ada, dan muncul jika mode edit/reorder aktif
           if (isEditable)
             Padding(
               padding: const EdgeInsets.all(8.0),

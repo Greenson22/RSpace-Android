@@ -1,4 +1,4 @@
-// lib/presentation/pages/time_log_page/layouts/desktop_layout.dart
+// lib/features/time_management/presentation/layouts/desktop_layout.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/time_management/presentation/dialogs/daily_log_card.dart';
 import 'package:provider/provider.dart';
@@ -6,7 +6,14 @@ import '../../application/providers/time_log_provider.dart';
 
 class DesktopLayout extends StatelessWidget {
   final DateTimeRange? selectedDateRange;
-  const DesktopLayout({super.key, this.selectedDateRange});
+  // ==> TAMBAHKAN PROPERTI BARU <==
+  final bool isReorderMode;
+
+  const DesktopLayout({
+    super.key,
+    this.selectedDateRange,
+    required this.isReorderMode, // ==> JADIKAN REQUIRED
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +54,8 @@ class DesktopLayout extends StatelessWidget {
                 DailyLogCard(
                   log: todayLog,
                   isToday: true,
-                  isEditable: provider.editableLog == todayLog,
+                  // ==> KIRIM isReorderMode KE KARTU <==
+                  isReorderMode: isReorderMode,
                 ),
             ],
           ),
@@ -88,7 +96,8 @@ class DesktopLayout extends StatelessWidget {
                 ...historyLogs.map((log) {
                   return DailyLogCard(
                     log: log,
-                    isEditable: provider.editableLog == log,
+                    // ==> KIRIM isReorderMode KE KARTU <==
+                    isReorderMode: isReorderMode,
                   );
                 }).toList(),
             ],

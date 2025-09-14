@@ -1,5 +1,4 @@
-// lib/presentation/pages/time_log_page.dart
-
+// lib/features/time_management/presentation/pages/time_log_page.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +16,8 @@ class TimeLogPage extends StatefulWidget {
 
 class _TimeLogPageState extends State<TimeLogPage> {
   DateTimeRange? _selectedDateRange;
+  // ==> TAMBAHKAN STATE BARU UNTUK MODE PENGURUTAN <==
+  bool _isReorderMode = false;
 
   Future<void> _selectDateRange(BuildContext context) async {
     final now = DateTime.now();
@@ -48,6 +49,18 @@ class _TimeLogPageState extends State<TimeLogPage> {
             appBar: AppBar(
               title: const Text('Jurnal Aktivitas'),
               actions: [
+                // ==> TAMBAHKAN TOMBOL TOGGLE DI SINI <==
+                IconButton(
+                  icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
+                  onPressed: () {
+                    setState(() {
+                      _isReorderMode = !_isReorderMode;
+                    });
+                  },
+                  tooltip: _isReorderMode
+                      ? 'Selesai Mengurutkan'
+                      : 'Aktifkan Mode Urutkan',
+                ),
                 IconButton(
                   icon: const Icon(Icons.calendar_today),
                   onPressed: () => _selectDateRange(context),
@@ -72,9 +85,17 @@ class _TimeLogPageState extends State<TimeLogPage> {
                 builder: (context, constraints) {
                   const double breakpoint = 800.0;
                   if (constraints.maxWidth > breakpoint) {
-                    return DesktopLayout(selectedDateRange: _selectedDateRange);
+                    return DesktopLayout(
+                      selectedDateRange: _selectedDateRange,
+                      // ==> KIRIM STATE KE LAYOUT <==
+                      isReorderMode: _isReorderMode,
+                    );
                   } else {
-                    return MobileLayout(selectedDateRange: _selectedDateRange);
+                    return MobileLayout(
+                      selectedDateRange: _selectedDateRange,
+                      // ==> KIRIM STATE KE LAYOUT <==
+                      isReorderMode: _isReorderMode,
+                    );
                   }
                 },
               ),
@@ -82,7 +103,11 @@ class _TimeLogPageState extends State<TimeLogPage> {
             floatingActionButton: FloatingActionButton(
               onPressed: () => showAddTaskLogDialog(
                 context,
-                date: provider.editableLog?.date,
+                // Logika ini memastikan tugas baru ditambahkan ke log yang benar
+                // bahkan saat mode pengurutan aktif.
+                date: _isReorderMode
+                    ? (provider.editableLog?.date ?? provider.todayLog?.date)
+                    : provider.editableLog?.date,
               ),
               tooltip: 'Tambah Tugas ke Jurnal Aktif',
               child: const Icon(Icons.add),
