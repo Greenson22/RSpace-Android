@@ -51,12 +51,10 @@ class _MyTasksViewState extends State<_MyTasksView> {
     super.dispose();
   }
 
-  /// Menampilkan dialog untuk memilih kategori tujuan saat memindahkan task.
   void _showMoveTasksDialog(MyTaskProvider provider) async {
     final targetCategoryName = await showDialog<String>(
       context: context,
       builder: (context) {
-        // Ambil kategori yang bukan merupakan kategori asal dari task yang dipilih
         final sourceCategoryNames = provider.selectedTasks.keys.toSet();
         final availableCategories = provider.categories
             .where((cat) => !sourceCategoryNames.contains(cat.name))
@@ -161,9 +159,9 @@ class _MyTasksViewState extends State<_MyTasksView> {
           onWillPop: () async {
             if (taskProvider.isTaskSelectionMode) {
               taskProvider.clearTaskSelection();
-              return false; // Mencegah halaman ditutup
+              return false;
             }
-            return true; // Izinkan halaman ditutup
+            return true;
           },
           child: _buildBody(context, taskProvider),
         ),
@@ -180,7 +178,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
     );
   }
 
-  /// AppBar yang tampil saat mode seleksi task aktif.
   AppBar _buildTaskSelectionAppBar(MyTaskProvider provider) {
     return AppBar(
       title: Text('${provider.totalSelectedTasks} task dipilih'),
@@ -198,7 +195,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
     );
   }
 
-  /// AppBar default yang tampil saat tidak ada task yang dipilih.
   AppBar _buildDefaultAppBar(MyTaskProvider taskProvider, bool isChristmas) {
     return AppBar(
       backgroundColor: isChristmas ? Colors.black.withOpacity(0.2) : null,
@@ -225,7 +221,17 @@ class _MyTasksViewState extends State<_MyTasksView> {
           tooltip: taskProvider.isCategoryReorderEnabled
               ? 'Selesai Mengurutkan'
               : 'Urutkan Kategori',
-          onPressed: () => taskProvider.toggleCategoryReorder(),
+          onPressed: () {
+            // --- PERBAIKAN DIMULAI DI SINI ---
+            // Saat masuk mode urutkan, bersihkan state ekspansi
+            if (!taskProvider.isCategoryReorderEnabled) {
+              setState(() {
+                _expansionState.clear();
+              });
+            }
+            taskProvider.toggleCategoryReorder();
+            // --- AKHIR PERBAIKAN ---
+          },
         ),
         if (!taskProvider.isCategoryReorderEnabled)
           IconButton(
@@ -281,7 +287,11 @@ class _MyTasksViewState extends State<_MyTasksView> {
           key: ValueKey(category.name),
           category: category,
           isFocused: _isKeyboardActive && index == _focusedIndex,
-          isExpanded: _expansionState[category.name] ?? false,
+          // --- PERBAIKAN DI SINI ---
+          // Pastikan ExpansionTile tertutup saat mode reorder
+          isExpanded: provider.isCategoryReorderEnabled
+              ? false
+              : (_expansionState[category.name] ?? false),
           onExpansionChanged: (isExpanded) {
             setState(() {
               _expansionState[category.name] = isExpanded;
@@ -290,9 +300,11 @@ class _MyTasksViewState extends State<_MyTasksView> {
         );
       },
       onReorder: (oldIndex, newIndex) {
-        if (provider.isCategoryReorderEnabled) {
-          provider.reorderCategories(oldIndex, newIndex);
-        }
+        final categoryName = provider.categories[oldIndex].name;
+        provider.reorderCategories(oldIndex, newIndex);
+        setState(() {
+          _expansionState[categoryName] = false;
+        });
       },
     );
   }
@@ -325,7 +337,10 @@ class _MyTasksViewState extends State<_MyTasksView> {
             key: ValueKey(category.name),
             category: category,
             isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
-            isExpanded: _expansionState[category.name] ?? false,
+            // --- PERBAIKAN DI SINI ---
+            isExpanded: provider.isCategoryReorderEnabled
+                ? false
+                : (_expansionState[category.name] ?? false),
             onExpansionChanged: (isExpanded) {
               setState(() {
                 _expansionState[category.name] = isExpanded;
