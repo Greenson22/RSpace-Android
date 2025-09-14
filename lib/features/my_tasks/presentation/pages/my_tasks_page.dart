@@ -218,10 +218,7 @@ class _MyTasksViewState extends State<_MyTasksView> {
       proxyDecorator: (Widget child, int index, Animation<double> animation) {
         // Membungkus item yang di-drag dengan Material memberikan
         // dasar render yang bersih dan mencegah error.
-        return Material(
-          elevation: 4.0,
-          child: ChangeNotifierProvider.value(value: provider, child: child),
-        );
+        return Material(elevation: 4.0, child: child);
       },
       buildDefaultDragHandles: provider.isCategoryReorderEnabled,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),

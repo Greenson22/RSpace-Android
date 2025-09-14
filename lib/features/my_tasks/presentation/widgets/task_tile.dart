@@ -27,8 +27,12 @@ class TaskTile extends StatelessWidget {
 
     return ListTile(
       key: key,
+      // --- PERUBAIKAN DI SINI ---
       leading: isReordering
-          ? Icon(Icons.drag_handle, color: textColor)
+          ? ReorderableDragStartListener(
+              index: category.tasks.indexOf(task), // Index item ini
+              child: Icon(Icons.drag_handle, color: textColor),
+            )
           : Checkbox(
               value: task.checked,
               onChanged: isCategoryReorderMode || isParentHidden

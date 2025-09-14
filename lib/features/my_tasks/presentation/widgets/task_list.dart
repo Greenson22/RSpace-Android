@@ -26,11 +26,15 @@ class TaskList extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: category.tasks.length,
-        buildDefaultDragHandles: true,
+        buildDefaultDragHandles: false,
+        proxyDecorator: (Widget child, int index, Animation<double> animation) {
+          return Material(elevation: 4.0, child: child);
+        },
         itemBuilder: (context, index) {
           final task = category.tasks[index];
           return TaskTile(
-            key: ValueKey(task),
+            // --- PERBAIKAN DI SINI ---
+            key: ValueKey(task.id), // Gunakan ID unik sebagai Kunci
             category: category,
             task: task,
             isReordering: isReordering,
@@ -46,6 +50,8 @@ class TaskList extends StatelessWidget {
         children: category.tasks
             .map(
               (task) => TaskTile(
+                // --- DAN JUGA DI SINI ---
+                key: ValueKey(task.id), // Gunakan ID unik sebagai Kunci
                 category: category,
                 task: task,
                 isReordering: isReordering,

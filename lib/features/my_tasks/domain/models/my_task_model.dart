@@ -1,9 +1,9 @@
 // lib/data/models/my_task_model.dart
-// ==> 1. IMPORT UUID UNTUK MEMBUAT ID UNIK
+// 1. IMPORT UUID UNTUK MEMBUAT ID UNIK
 import 'package:uuid/uuid.dart';
 
 class MyTask {
-  // ==> 2. TAMBAHKAN PROPERTI ID
+  // 2. TAMBAHKAN PROPERTI ID
   final String id;
   String name;
   int count;
@@ -11,17 +11,17 @@ class MyTask {
   bool checked;
 
   MyTask({
-    String? id, // ==> 3. BUAT ID JADI OPSIONAL DI KONSTRUKTOR
+    String? id, // 3. BUAT ID JADI OPSIONAL DI KONSTRUKTOR
     required this.name,
     required this.count,
     required this.date,
     required this.checked,
-    // ==> 4. GENERATE ID JIKA KOSONG (ID BARU AKAN DIBUAT SAAT TUGAS BARU DIBUAT)
+    // 4. GENERATE ID JIKA KOSONG (ID BARU AKAN DIBUAT SAAT TUGAS BARU DIBUAT)
   }) : id = id ?? const Uuid().v4();
 
   factory MyTask.fromJson(Map<String, dynamic> json) {
     return MyTask(
-      // ==> 5. BACA ID DARI JSON, ATAU BUAT YANG BARU JIKA TIDAK ADA (UNTUK KOMPATIBILITAS DATA LAMA)
+      // 5. BACA ID DARI JSON, ATAU BUAT YANG BARU JIKA TIDAK ADA (UNTUK KOMPATIBILITAS DATA LAMA)
       id: json['id'] as String? ?? const Uuid().v4(),
       name: json['name'] ?? 'Untitled Task',
       count: json['count'] ?? 0,
@@ -32,7 +32,7 @@ class MyTask {
 
   Map<String, dynamic> toJson() {
     return {
-      // ==> 6. SIMPAN ID KE JSON
+      // 6. SIMPAN ID KE JSON
       'id': id,
       'name': name,
       'count': count,
