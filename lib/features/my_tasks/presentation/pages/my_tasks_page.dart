@@ -1,4 +1,4 @@
-// lib/presentation/pages/my_tasks_page.dart
+// lib/features/my_tasks/presentation/pages/my_tasks_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -222,15 +222,12 @@ class _MyTasksViewState extends State<_MyTasksView> {
               ? 'Selesai Mengurutkan'
               : 'Urutkan Kategori',
           onPressed: () {
-            // --- PERBAIKAN DIMULAI DI SINI ---
-            // Saat masuk mode urutkan, bersihkan state ekspansi
             if (!taskProvider.isCategoryReorderEnabled) {
               setState(() {
                 _expansionState.clear();
               });
             }
             taskProvider.toggleCategoryReorder();
-            // --- AKHIR PERBAIKAN ---
           },
         ),
         if (!taskProvider.isCategoryReorderEnabled)
@@ -287,8 +284,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
           key: ValueKey(category.name),
           category: category,
           isFocused: _isKeyboardActive && index == _focusedIndex,
-          // --- PERBAIKAN DI SINI ---
-          // Pastikan ExpansionTile tertutup saat mode reorder
           isExpanded: provider.isCategoryReorderEnabled
               ? false
               : (_expansionState[category.name] ?? false),
@@ -315,16 +310,7 @@ class _MyTasksViewState extends State<_MyTasksView> {
     final List<TaskCategory> firstHalf = categories.sublist(0, middle);
     final List<TaskCategory> secondHalf = categories.sublist(middle);
 
-    if (provider.isCategoryReorderEnabled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Provider.of<MyTaskProvider>(
-            context,
-            listen: false,
-          ).toggleCategoryReorder();
-        }
-      });
-    }
+    // ## PERBAIKAN: Blok kode yang menyebabkan error telah dihapus dari sini ##
 
     Widget buildColumn(List<TaskCategory> categoryList, int indexOffset) {
       return ListView.builder(
@@ -337,7 +323,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
             key: ValueKey(category.name),
             category: category,
             isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
-            // --- PERBAIKAN DI SINI ---
             isExpanded: provider.isCategoryReorderEnabled
                 ? false
                 : (_expansionState[category.name] ?? false),

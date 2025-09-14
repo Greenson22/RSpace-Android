@@ -56,7 +56,8 @@ class CategoryCard extends StatelessWidget {
       child: ExpansionTile(
         key: PageStorageKey(category.name),
         initiallyExpanded: isExpanded,
-        onExpansionChanged: onExpansionChanged,
+        // ## PERBAIKAN DI SINI: Nonaktifkan callback saat mode reorder ##
+        onExpansionChanged: isCardDisabled ? null : onExpansionChanged,
         enabled: !isCategoryReorderMode,
         leading: provider.isTaskSelectionMode
             ? Checkbox(
@@ -135,7 +136,9 @@ class CategoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-        children: [TaskList(category: category, isParentHidden: isHidden)],
+        children: provider.isCategoryReorderEnabled
+            ? []
+            : [TaskList(category: category, isParentHidden: isHidden)],
       ),
     );
   }
