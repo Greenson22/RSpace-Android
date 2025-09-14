@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../domain/models/my_task_model.dart';
 import 'my_task_service.dart';
-// ==> 1. IMPORT SERVICE DAN MODEL DARI TIME LOG
 import '../../time_management/application/services/time_log_service.dart';
 import '../../time_management/domain/models/time_log_model.dart';
 
 class MyTaskProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();
-  // ==> 2. BUAT INSTANCE DARI TIMELOGSERVICE
   final TimeLogService _timeLogService = TimeLogService();
 
   bool _isLoading = true;
@@ -17,10 +15,6 @@ class MyTaskProvider with ChangeNotifier {
 
   bool _isCategoryReorderEnabled = false;
   bool get isCategoryReorderEnabled => _isCategoryReorderEnabled;
-
-  // HAPUS STATE INI KARENA SUDAH TIDAK DIGUNAKAN
-  // String? _reorderingCategoryName;
-  // String? get reorderingCategoryName => _reorderingCategoryName;
 
   bool _showHiddenCategories = false;
   bool get showHiddenCategories => _showHiddenCategories;
@@ -33,11 +27,79 @@ class MyTaskProvider with ChangeNotifier {
     return _allCategories.where((c) => !c.isHidden).toList();
   }
 
+  // == STATE BARU UNTUK SELEKSI TASK ==
+  final Map<String, Set<String>> _selectedTasks = {};
+  Map<String, Set<String>> get selectedTasks => _selectedTasks;
+  bool get isTaskSelectionMode =>
+      _selectedTasks.values.any((s) => s.isNotEmpty);
+  int get totalSelectedTasks =>
+      _selectedTasks.values.fold(0, (sum, set) => sum + set.length);
+  // --- AKHIR STATE BARU ---
+
   MyTaskProvider() {
     fetchTasks();
   }
 
-  get reorderingCategoryName => null;
+  // == FUNGSI BARU UNTUK MANAJEMEN SELEKSI TASK ==
+  void toggleTaskSelection(TaskCategory category, MyTask task) {
+    _selectedTasks.putIfAbsent(category.name, () => {});
+    if (_selectedTasks[category.name]!.contains(task.id)) {
+      _selectedTasks[category.name]!.remove(task.id);
+    } else {
+      _selectedTasks[category.name]!.add(task.id);
+    }
+    notifyListeners();
+  }
+
+  void selectAllTasksInCategory(TaskCategory category, bool select) {
+    _selectedTasks.putIfAbsent(category.name, () => {});
+    if (select) {
+      final taskIds = category.tasks.map((t) => t.id).toSet();
+      _selectedTasks[category.name]!.addAll(taskIds);
+    } else {
+      _selectedTasks[category.name]!.clear();
+    }
+    notifyListeners();
+  }
+
+  void clearTaskSelection() {
+    _selectedTasks.clear();
+    notifyListeners();
+  }
+
+  Future<void> moveSelectedTasks(String targetCategoryName) async {
+    final targetCategoryIndex = _allCategories.indexWhere(
+      (c) => c.name == targetCategoryName,
+    );
+    if (targetCategoryIndex == -1) return;
+
+    final List<MyTask> tasksToMove = [];
+
+    // Kumpulkan semua task yang terpilih dan hapus dari kategori asal
+    for (var entry in _selectedTasks.entries) {
+      final sourceCategoryName = entry.key;
+      final selectedIds = entry.value;
+      if (selectedIds.isEmpty) continue;
+
+      final sourceCategoryIndex = _allCategories.indexWhere(
+        (c) => c.name == sourceCategoryName,
+      );
+      if (sourceCategoryIndex != -1) {
+        final sourceCategory = _allCategories[sourceCategoryIndex];
+        tasksToMove.addAll(
+          sourceCategory.tasks.where((t) => selectedIds.contains(t.id)),
+        );
+        sourceCategory.tasks.removeWhere((t) => selectedIds.contains(t.id));
+      }
+    }
+
+    // Tambahkan task ke kategori tujuan
+    _allCategories[targetCategoryIndex].tasks.addAll(tasksToMove);
+
+    clearTaskSelection(); // Membersihkan seleksi setelah dipindah
+    await _saveTasks(); // Menyimpan perubahan ke file
+  }
+  // --- AKHIR FUNGSI BARU ---
 
   void toggleShowHidden() {
     _showHiddenCategories = !_showHiddenCategories;
@@ -46,27 +108,8 @@ class MyTaskProvider with ChangeNotifier {
 
   void toggleCategoryReorder() {
     _isCategoryReorderEnabled = !_isCategoryReorderEnabled;
-    // HAPUS LOGIKA LAMA
-    // if (_isCategoryReorderEnabled) {
-    //   _reorderingCategoryName = null;
-    // }
     notifyListeners();
   }
-
-  // HAPUS FUNGSI INI KARENA SUDAH TIDAK DIGUNAKAN
-  // void enableTaskReordering(String categoryName) {
-  //   _reorderingCategoryName = categoryName;
-  //   if (_isCategoryReorderEnabled) {
-  //     _isCategoryReorderEnabled = false;
-  //   }
-  //   notifyListeners();
-  // }
-  //
-  // void disableReordering() {
-  //   _reorderingCategoryName = null;
-  //   _isCategoryReorderEnabled = false;
-  //   notifyListeners();
-  // }
 
   Future<void> fetchTasks() async {
     _isLoading = true;
@@ -108,10 +151,6 @@ class MyTaskProvider with ChangeNotifier {
   Future<void> renameCategory(TaskCategory category, String newName) async {
     final index = _allCategories.indexWhere((c) => c.name == category.name);
     if (index != -1) {
-      // HAPUS LOGIKA LAMA
-      // if (_reorderingCategoryName == _allCategories[index].name) {
-      //   _reorderingCategoryName = newName;
-      // }
       _allCategories[index] = TaskCategory(
         name: newName,
         icon: category.icon,
@@ -155,7 +194,6 @@ class MyTaskProvider with ChangeNotifier {
 
   // --- Task Management ---
 
-  // FUNGSI BARU UNTUK MENYIMPAN URUTAN DARI DIALOG
   Future<void> updateTasksOrder(
     TaskCategory category,
     List<MyTask> newOrderedTasks,
@@ -164,7 +202,6 @@ class MyTaskProvider with ChangeNotifier {
       (c) => c.name == category.name,
     );
     if (categoryIndex != -1) {
-      // Ganti list task yang lama dengan yang sudah diurutkan dari dialog
       _allCategories[categoryIndex] = TaskCategory(
         name: category.name,
         icon: category.icon,

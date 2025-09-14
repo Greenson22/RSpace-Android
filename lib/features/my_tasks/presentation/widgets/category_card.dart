@@ -9,14 +9,14 @@ import 'task_list.dart';
 
 class CategoryCard extends StatelessWidget {
   final TaskCategory category;
-  final bool isFocused; // Tambahkan properti isFocused
-  final bool isExpanded; // Tambahkan properti isExpanded
-  final ValueChanged<bool> onExpansionChanged; // Tambahkan callback
+  final bool isFocused;
+  final bool isExpanded;
+  final ValueChanged<bool> onExpansionChanged;
 
   const CategoryCard({
     super.key,
     required this.category,
-    this.isFocused = false, // Beri nilai default
+    this.isFocused = false,
     required this.isExpanded,
     required this.onExpansionChanged,
   });
@@ -28,6 +28,11 @@ class CategoryCard extends StatelessWidget {
     final isHidden = category.isHidden;
     final isCategoryReorderMode = provider.isCategoryReorderEnabled;
     final isCardDisabled = isCategoryReorderMode;
+
+    final selectedInCategory = provider.selectedTasks[category.name] ?? {};
+    final areAllTasksSelected =
+        selectedInCategory.length == category.tasks.length &&
+        category.tasks.isNotEmpty;
 
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
@@ -42,7 +47,6 @@ class CategoryCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       elevation: elevation,
       color: cardColor,
-      // Tambahkan shape untuk menampilkan border saat fokus
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
         side: isFocused
@@ -50,17 +54,25 @@ class CategoryCard extends StatelessWidget {
             : BorderSide.none,
       ),
       child: ExpansionTile(
-        key: PageStorageKey(category.name), // Tambahkan key untuk menjaga state
+        key: PageStorageKey(category.name),
         initiallyExpanded: isExpanded,
         onExpansionChanged: onExpansionChanged,
         enabled: !isCategoryReorderMode,
-        leading: Text(
-          category.icon,
-          style: TextStyle(
-            fontSize: 28,
-            color: isHidden ? textColor : theme.primaryColor,
-          ),
-        ),
+        leading: provider.isTaskSelectionMode
+            ? Checkbox(
+                value: areAllTasksSelected,
+                tristate: selectedInCategory.isNotEmpty && !areAllTasksSelected,
+                onChanged: (bool? value) {
+                  provider.selectAllTasksInCategory(category, value ?? false);
+                },
+              )
+            : Text(
+                category.icon,
+                style: TextStyle(
+                  fontSize: 28,
+                  color: isHidden ? textColor : theme.primaryColor,
+                ),
+              ),
         title: Text(
           category.name,
           style: TextStyle(
@@ -91,7 +103,6 @@ class CategoryCard extends StatelessWidget {
                   } else if (value == 'add_task') {
                     showAddTaskDialog(context, category);
                   } else if (value == 'reorder_tasks') {
-                    // PANGGIL DIALOG BARU
                     showReorderTasksDialog(context, category);
                   }
                 },

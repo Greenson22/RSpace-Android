@@ -19,38 +19,67 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MyTaskProvider>(context, listen: false);
+    final provider = Provider.of<MyTaskProvider>(context);
+    final theme = Theme.of(context);
     final isCategoryReorderMode = provider.isCategoryReorderEnabled;
+
+    // == LOGIKA BARU UNTUK UI SELEKSI ==
+    final bool isSelected =
+        provider.selectedTasks[category.name]?.contains(task.id) ?? false;
+    final bool isSelectionMode = provider.isTaskSelectionMode;
+    // --- AKHIR LOGIKA BARU ---
+
     final textColor = isParentHidden || task.checked ? Colors.grey : null;
 
     return ListTile(
       key: key,
-      // Hapus logika `isReordering` dari leading
-      leading: Checkbox(
-        value: task.checked,
-        onChanged: isCategoryReorderMode || isParentHidden
-            ? null
-            : (bool? value) async {
-                if (value == true) {
-                  final shouldUpdate = await showToggleConfirmationDialog(
-                    context,
-                  );
-                  if (shouldUpdate == true) {
-                    provider.toggleTaskChecked(
-                      category,
-                      task,
-                      confirmUpdate: true,
-                    );
-                  }
-                } else {
-                  provider.toggleTaskChecked(
-                    category,
-                    task,
-                    confirmUpdate: false,
-                  );
-                }
-              },
-      ),
+      // == PERUBAHAN PADA onLongPress dan onTap ==
+      onLongPress: () {
+        if (!isCategoryReorderMode) {
+          provider.toggleTaskSelection(category, task);
+        }
+      },
+      onTap: () {
+        if (isSelectionMode) {
+          provider.toggleTaskSelection(category, task);
+        }
+      },
+      // --- AKHIR PERUBAHAN ---
+      // == PERUBAHAN PADA leading WIDGET ==
+      leading: isSelectionMode
+          ? Icon(
+              isSelected
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
+              color: theme.primaryColor,
+            )
+          : Checkbox(
+              value: task.checked,
+              onChanged: isCategoryReorderMode || isParentHidden
+                  ? null
+                  : (bool? value) async {
+                      if (value == true) {
+                        final shouldUpdate = await showToggleConfirmationDialog(
+                          context,
+                        );
+                        if (shouldUpdate == true) {
+                          provider.toggleTaskChecked(
+                            category,
+                            task,
+                            confirmUpdate: true,
+                          );
+                        }
+                      } else {
+                        provider.toggleTaskChecked(
+                          category,
+                          task,
+                          confirmUpdate: false,
+                        );
+                      }
+                    },
+            ),
+      // --- AKHIR PERUBAHAN ---
+      tileColor: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
       title: Text(
         task.name,
         style: TextStyle(
@@ -83,8 +112,7 @@ class TaskTile extends StatelessWidget {
           ],
         ),
       ),
-      // Hapus logika `isReordering` dari trailing
-      trailing: isCategoryReorderMode || isParentHidden
+      trailing: isCategoryReorderMode || isParentHidden || isSelectionMode
           ? null
           : PopupMenuButton<String>(
               onSelected: (value) {

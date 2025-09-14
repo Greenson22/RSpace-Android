@@ -10,8 +10,6 @@ import '../dialogs/category_dialogs.dart';
 import '../dialogs/task_dialogs.dart';
 import '../widgets/category_card.dart';
 
-// --- PERUBAHAN STRUKTUR UTAMA ---
-/// Halaman utama yang sekarang hanya bertugas membuat dan menyediakan MyTaskProvider.
 class MyTasksPage extends StatelessWidget {
   const MyTasksPage({super.key});
 
@@ -19,19 +17,17 @@ class MyTasksPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => MyTaskProvider(),
-      child: const _MyTasksView(), // UI utama dipindahkan ke widget terpisah
+      child: const _MyTasksView(),
     );
   }
 }
 
-/// Widget StatefulWidget internal untuk menangani UI dan state lokal halaman.
 class _MyTasksView extends StatefulWidget {
   const _MyTasksView();
 
   @override
   State<_MyTasksView> createState() => _MyTasksViewState();
 }
-// --- AKHIR PERUBAHAN STRUKTUR ---
 
 class _MyTasksViewState extends State<_MyTasksView> {
   final FocusNode _focusNode = FocusNode();
@@ -53,6 +49,34 @@ class _MyTasksViewState extends State<_MyTasksView> {
     _focusNode.dispose();
     _focusTimer?.cancel();
     super.dispose();
+  }
+
+  /// Menampilkan dialog untuk memilih kategori tujuan saat memindahkan task.
+  void _showMoveTasksDialog(MyTaskProvider provider) async {
+    final targetCategoryName = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        // Ambil kategori yang bukan merupakan kategori asal dari task yang dipilih
+        final sourceCategoryNames = provider.selectedTasks.keys.toSet();
+        final availableCategories = provider.categories
+            .where((cat) => !sourceCategoryNames.contains(cat.name))
+            .toList();
+
+        return SimpleDialog(
+          title: const Text('Pindahkan ke Kategori'),
+          children: availableCategories.map((category) {
+            return SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, category.name),
+              child: Text(category.name),
+            );
+          }).toList(),
+        );
+      },
+    );
+
+    if (targetCategoryName != null) {
+      await provider.moveSelectedTasks(targetCategoryName);
+    }
   }
 
   @override
@@ -119,9 +143,7 @@ class _MyTasksViewState extends State<_MyTasksView> {
       }
     }
 
-    final isAnyReordering =
-        taskProvider.reorderingCategoryName != null ||
-        taskProvider.isCategoryReorderEnabled;
+    final isAnyReordering = taskProvider.isCategoryReorderEnabled;
     final isChristmas = Provider.of<ThemeProvider>(
       context,
       listen: false,
@@ -132,45 +154,21 @@ class _MyTasksViewState extends State<_MyTasksView> {
       onKey: handleKeyEvent,
       child: Scaffold(
         backgroundColor: isChristmas ? Colors.transparent : null,
-        appBar: AppBar(
-          backgroundColor: isChristmas ? Colors.black.withOpacity(0.2) : null,
-          elevation: isChristmas ? 0 : null,
-          title: const Text('My Tasks'),
-          actions: [
-            if (taskProvider.reorderingCategoryName == null) ...[
-              IconButton(
-                icon: Icon(
-                  taskProvider.showHiddenCategories
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                ),
-                tooltip: taskProvider.showHiddenCategories
-                    ? 'Sembunyikan Kategori Tersembunyi'
-                    : 'Tampilkan Kategori Tersembunyi',
-                onPressed: () => taskProvider.toggleShowHidden(),
-              ),
-              IconButton(
-                icon: Icon(
-                  taskProvider.isCategoryReorderEnabled
-                      ? Icons.cancel
-                      : Icons.sort,
-                ),
-                tooltip: taskProvider.isCategoryReorderEnabled
-                    ? 'Selesai Mengurutkan'
-                    : 'Urutkan Kategori',
-                onPressed: () => taskProvider.toggleCategoryReorder(),
-              ),
-            ],
-            if (!isAnyReordering)
-              IconButton(
-                icon: const Icon(Icons.clear_all),
-                tooltip: 'Hapus Semua Centang',
-                onPressed: () => showUncheckAllConfirmationDialog(context),
-              ),
-          ],
+        appBar: taskProvider.isTaskSelectionMode
+            ? _buildTaskSelectionAppBar(taskProvider)
+            : _buildDefaultAppBar(taskProvider, isChristmas),
+        body: WillPopScope(
+          onWillPop: () async {
+            if (taskProvider.isTaskSelectionMode) {
+              taskProvider.clearTaskSelection();
+              return false; // Mencegah halaman ditutup
+            }
+            return true; // Izinkan halaman ditutup
+          },
+          child: _buildBody(context, taskProvider),
         ),
-        body: _buildBody(context, taskProvider),
-        floatingActionButton: isAnyReordering
+        floatingActionButton:
+            isAnyReordering || taskProvider.isTaskSelectionMode
             ? null
             : FloatingActionButton(
                 onPressed: () => showAddCategoryDialog(context),
@@ -179,6 +177,63 @@ class _MyTasksViewState extends State<_MyTasksView> {
               ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
+    );
+  }
+
+  /// AppBar yang tampil saat mode seleksi task aktif.
+  AppBar _buildTaskSelectionAppBar(MyTaskProvider provider) {
+    return AppBar(
+      title: Text('${provider.totalSelectedTasks} task dipilih'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => provider.clearTaskSelection(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.drive_file_move_outline),
+          onPressed: () => _showMoveTasksDialog(provider),
+          tooltip: 'Pindahkan Task',
+        ),
+      ],
+    );
+  }
+
+  /// AppBar default yang tampil saat tidak ada task yang dipilih.
+  AppBar _buildDefaultAppBar(MyTaskProvider taskProvider, bool isChristmas) {
+    return AppBar(
+      backgroundColor: isChristmas ? Colors.black.withOpacity(0.2) : null,
+      elevation: isChristmas ? 0 : null,
+      title: const Text('My Tasks'),
+      actions: [
+        if (!taskProvider.isCategoryReorderEnabled) ...[
+          IconButton(
+            icon: Icon(
+              taskProvider.showHiddenCategories
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+            ),
+            tooltip: taskProvider.showHiddenCategories
+                ? 'Sembunyikan Kategori Tersembunyi'
+                : 'Tampilkan Kategori Tersembunyi',
+            onPressed: () => taskProvider.toggleShowHidden(),
+          ),
+        ],
+        IconButton(
+          icon: Icon(
+            taskProvider.isCategoryReorderEnabled ? Icons.cancel : Icons.sort,
+          ),
+          tooltip: taskProvider.isCategoryReorderEnabled
+              ? 'Selesai Mengurutkan'
+              : 'Urutkan Kategori',
+          onPressed: () => taskProvider.toggleCategoryReorder(),
+        ),
+        if (!taskProvider.isCategoryReorderEnabled)
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            tooltip: 'Hapus Semua Centang',
+            onPressed: () => showUncheckAllConfirmationDialog(context),
+          ),
+      ],
     );
   }
 
@@ -214,10 +269,7 @@ class _MyTasksViewState extends State<_MyTasksView> {
     MyTaskProvider provider,
   ) {
     return ReorderableListView.builder(
-      // --- PERBAIKAN PADA PROXY DECORATOR ---
       proxyDecorator: (Widget child, int index, Animation<double> animation) {
-        // Membungkus item yang di-drag dengan Material memberikan
-        // dasar render yang bersih dan mencegah error.
         return Material(elevation: 4.0, child: child);
       },
       buildDefaultDragHandles: provider.isCategoryReorderEnabled,
