@@ -9,7 +9,6 @@ import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../../core/services/storage_service.dart';
 import '../themes/editor_themes.dart';
-// Import untuk dialog yang dihapus tidak lagi diperlukan
 
 class HtmlEditorPage extends StatefulWidget {
   final Discussion discussion;
@@ -27,6 +26,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   String? _error;
 
   late EditorTheme _selectedTheme;
+
+  // ==> AWAL PENAMBAHAN: Variabel untuk logika hapus tag berpasangan <==
+  String _previousText = '';
+  bool _isAutoEditing = false;
+  // ==> AKHIR PENAMBAHAN <==
 
   @override
   void initState() {
@@ -63,6 +67,8 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   @override
   void dispose() {
+    // ==> PERBAIKAN: Hapus listener sebelum dispose <==
+    _controller?.removeListener(_onTextChanged);
     _controller?.dispose();
     super.dispose();
   }
@@ -79,6 +85,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       );
 
       _controller = CodeController(text: content, language: xml);
+
+      // ==> AWAL PENAMBAHAN: Tambahkan listener ke controller <==
+      _previousText = _controller!.text;
+      _controller!.addListener(_onTextChanged);
+      // ==> AKHIR PENAMBAHAN <==
     } catch (e) {
       setState(() {
         _error = "Gagal memuat file: ${e.toString()}";
@@ -88,6 +99,87 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  // ==> FUNGSI BARU: Listener untuk mendeteksi perubahan teks <==
+  void _onTextChanged() {
+    if (_isAutoEditing) return;
+
+    final currentText = _controller!.text;
+    final currentSelection = _controller!.selection;
+
+    // Cek apakah ada teks yang dihapus
+    if (currentText.length < _previousText.length) {
+      final start = currentSelection.start;
+      final deletedText = _previousText.substring(
+        start,
+        start + (_previousText.length - currentText.length),
+      );
+
+      // Regex untuk mendeteksi tag pembuka (bukan self-closing)
+      final openingTagRegex = RegExp(r'^<([a-zA-Z0-9]+)\s*.*?>$');
+      final selfClosingTags = {'br', 'hr', 'img', 'input', 'meta', 'link'};
+
+      final match = openingTagRegex.firstMatch(deletedText.trim());
+      if (match != null) {
+        final tagName = match.group(1);
+        if (tagName != null &&
+            !selfClosingTags.contains(tagName.toLowerCase())) {
+          _findAndRemoveMatchingTag(tagName, start);
+        }
+      }
+    }
+
+    _previousText = currentText;
+  }
+
+  // ==> FUNGSI BARU: Logika untuk mencari dan menghapus tag penutup <==
+  void _findAndRemoveMatchingTag(String tagName, int deletionStartOffset) {
+    String text = _controller!.text;
+    int searchIndex = deletionStartOffset;
+    int balance = 1; // Mulai dengan 1 karena tag pembuka baru saja dihapus
+
+    while (searchIndex < text.length) {
+      final nextOpeningTag = text.indexOf('<$tagName', searchIndex);
+      final nextClosingTag = text.indexOf('</$tagName>', searchIndex);
+
+      if (nextClosingTag == -1) {
+        // Tidak ada lagi tag penutup, hentikan pencarian
+        break;
+      }
+
+      if (nextOpeningTag != -1 && nextOpeningTag < nextClosingTag) {
+        // Ditemukan tag pembuka lain sebelum tag penutup
+        balance++;
+        searchIndex = nextOpeningTag + 1;
+      } else {
+        // Ditemukan tag penutup
+        balance--;
+        searchIndex = nextClosingTag + 1;
+
+        if (balance == 0) {
+          // Ini adalah tag penutup yang berpasangan
+          _isAutoEditing = true;
+          final newText =
+              text.substring(0, nextClosingTag) +
+              text.substring(nextClosingTag + tagName.length + 3);
+
+          final selection = TextSelection.fromPosition(
+            TextPosition(offset: deletionStartOffset),
+          );
+
+          _controller!.text = newText;
+          _controller!.selection = selection;
+          _previousText = newText;
+
+          // Delay singkat sebelum mengizinkan edit lagi
+          Future.delayed(const Duration(milliseconds: 50), () {
+            _isAutoEditing = false;
+          });
+          return;
+        }
       }
     }
   }
@@ -130,7 +222,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          // ==> Tombol "Hapus Tag" dan logikanya telah dihapus dari sini <==
           DropdownButton<EditorTheme>(
             value: _selectedTheme,
             onChanged: _handleThemeChanged,
