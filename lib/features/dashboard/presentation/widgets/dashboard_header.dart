@@ -427,10 +427,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
               );
             },
           ),
-          if (kDebugMode) ...[
-            const SizedBox(height: 16),
-            const _DashboardPath(),
-          ],
+          const SizedBox(height: 16),
+          const _DashboardPath(),
         ],
       ),
     );
@@ -485,27 +483,45 @@ class _DashboardPath extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final PathService pathService = PathService();
-    return FutureBuilder<String>(
-      future: pathService.contentsPath,
+    return FutureBuilder<String?>(
+      future: pathService.loadCustomStoragePath(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final theme = Theme.of(context);
-        final textStyle = theme.textTheme.bodySmall?.copyWith(
-          color: Colors.amber.shade800,
-          fontWeight: FontWeight.bold,
-        );
-        return Row(
-          children: [
-            const Icon(Icons.folder_outlined, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                snapshot.data!,
-                style: textStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Tampilkan placeholder untuk mencegah layout melompat
+          return const SizedBox(height: 32);
+        }
+
+        final customPath = snapshot.data;
+        final String displayLabel;
+        final String fullPathTooltip;
+
+        if (customPath != null && customPath.isNotEmpty) {
+          fullPathTooltip = customPath;
+          // Menampilkan nama folder sebelum 'RSpace_data'
+          displayLabel = '.../${path.basename(customPath)}/RSpace_data';
+        } else {
+          fullPathTooltip = "Menggunakan lokasi penyimpanan default aplikasi.";
+          displayLabel = "Lokasi: Penyimpanan Default";
+        }
+
+        return Tooltip(
+          message: fullPathTooltip,
+          child: Chip(
+            avatar: Icon(
+              Icons.folder_open_outlined,
+              size: 18,
+              color: Colors.blueGrey[700],
             ),
-          ],
+            label: Text(
+              displayLabel,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.blueGrey[700]),
+              overflow: TextOverflow.ellipsis,
+            ),
+            backgroundColor: Colors.blueGrey[50],
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          ),
         );
       },
     );
