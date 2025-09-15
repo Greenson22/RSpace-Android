@@ -16,6 +16,39 @@ Future<String?> showRemoveTagDialog(
   );
 }
 
+// == KELAS BARU UNTUK MEREPRESENTASIKAN SETIAP ELEMEN ==
+class _TaggableElement {
+  final int id; // ID unik untuk instance ini, berdasarkan hashCode
+  final dom.Element element;
+
+  _TaggableElement(this.element) : id = element.hashCode;
+
+  String get tagName => element.localName!;
+  String get contentPreview {
+    // Membuat pratinjau teks yang bersih
+    final text = element.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (text.isEmpty) {
+      return '(tidak ada konten teks)';
+    }
+    if (text.length > 40) {
+      return '"${text.substring(0, 40)}..."';
+    }
+    return '"$text"';
+  }
+
+  // Digunakan untuk perbandingan di dalam Set
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _TaggableElement &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id;
+}
+// =======================================================
+
 class RemoveTagDialog extends StatefulWidget {
   final String currentHtml;
 
@@ -26,79 +59,78 @@ class RemoveTagDialog extends StatefulWidget {
 }
 
 class _RemoveTagDialogState extends State<RemoveTagDialog> {
-  Set<String> _availableTags = {};
-  final Set<String> _selectedTags = {};
+  // ==> DIUBAH: Menggunakan model data yang baru <==
+  List<_TaggableElement> _availableElements = [];
+  final Set<_TaggableElement> _selectedElements = {};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _parseHtmlAndExtractTags();
+    _parseHtmlAndExtractElements();
   }
 
-  void _parseHtmlAndExtractTags() {
+  // ==> LOGIKA PARSING DIPERBARUI TOTAL <==
+  void _parseHtmlAndExtractElements() {
     Future(() {
-      // ==> PERUBAHAN 1: Gunakan parse() bukan parseFragment() <==
       final document = html_parser.parse(widget.currentHtml);
-      final tags = <String>{};
+      final elements = <_TaggableElement>[];
 
       void traverse(dom.Node node) {
         if (node is dom.Element) {
           if (node.localName != 'body' && node.localName != 'html') {
-            tags.add(node.localName!);
+            elements.add(_TaggableElement(node));
           }
+          // Lanjutkan traversal ke anak-anaknya
           for (var child in node.nodes) {
             traverse(child);
           }
         }
       }
 
-      // ==> PERUBAHAN 2: Mulai traversal dari body <==
       if (document.body != null) {
         traverse(document.body!);
       }
-
       if (mounted) {
         setState(() {
-          _availableTags = tags;
+          _availableElements = elements;
           _isLoading = false;
         });
       }
     });
   }
 
+  // ==> LOGIKA PENGHAPUSAN DIPERBARUI TOTAL <==
   void _handleRemoveTags() {
-    if (_selectedTags.isEmpty) {
+    if (_selectedElements.isEmpty) {
       Navigator.pop(context);
       return;
     }
 
-    // ==> PERUBAHAN 3: Gunakan parse() bukan parseFragment() <==
-    final document = html_parser.parse(widget.currentHtml);
+    // Tidak perlu mem-parsing ulang, kita sudah punya referensi elemennya
+    for (final taggableElement in _selectedElements) {
+      final elementToRemove = taggableElement.element;
+      final parent = elementToRemove.parent;
 
-    void traverseAndRemove(dom.Element element) {
-      final children = List<dom.Node>.from(element.nodes);
-      for (final child in children) {
-        if (child is dom.Element) {
-          traverseAndRemove(child);
-
-          if (_selectedTags.contains(child.localName)) {
-            final childNodes = List<dom.Node>.from(child.nodes);
-            for (final grandChild in childNodes) {
-              child.parent!.insertBefore(grandChild, child);
-            }
-            child.remove();
-          }
+      if (parent != null) {
+        final children = List<dom.Node>.from(elementToRemove.nodes);
+        for (final child in children) {
+          parent.insertBefore(child, elementToRemove);
         }
+        elementToRemove.remove();
       }
     }
 
-    // Pengecekan null untuk keamanan
-    if (document.body != null) {
-      traverseAndRemove(document.body!);
+    // Cari root element (biasanya body) untuk mendapatkan innerHtml terbaru
+    dom.Element? root = _selectedElements.first.element.parent;
+    while (root?.parent != null) {
+      root = root?.parent;
     }
 
-    Navigator.pop(context, document.body!.innerHtml);
+    // Dapatkan innerHTML dari body setelah semua modifikasi
+    final finalHtml = root?.innerHtml ?? widget.currentHtml;
+
+    Navigator.pop(context, finalHtml);
   }
 
   @override
@@ -109,25 +141,33 @@ class _RemoveTagDialogState extends State<RemoveTagDialog> {
         width: double.maxFinite,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _availableTags.isEmpty
-            ? const Center(child: Text('Tidak ada tag yang ditemukan.'))
-            : ListView(
-                children: _availableTags.map((tag) {
-                  final isSelected = _selectedTags.contains(tag);
+            : _availableElements.isEmpty
+            ? const Center(child: Text('Tidak ada tag yang bisa dihapus.'))
+            : ListView.builder(
+                // ==> UI MENGGUNAKAN ListView.builder <==
+                itemCount: _availableElements.length,
+                itemBuilder: (context, index) {
+                  final element = _availableElements[index];
+                  final isSelected = _selectedElements.contains(element);
                   return CheckboxListTile(
-                    title: Text('<$tag>'),
+                    title: Text('<${element.tagName}>'),
+                    subtitle: Text(
+                      element.contentPreview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     value: isSelected,
                     onChanged: (bool? value) {
                       setState(() {
                         if (value == true) {
-                          _selectedTags.add(tag);
+                          _selectedElements.add(element);
                         } else {
-                          _selectedTags.remove(tag);
+                          _selectedElements.remove(element);
                         }
                       });
                     },
                   );
-                }).toList(),
+                },
               ),
       ),
       actions: [
@@ -136,7 +176,7 @@ class _RemoveTagDialogState extends State<RemoveTagDialog> {
           child: const Text('Batal'),
         ),
         ElevatedButton(
-          onPressed: _selectedTags.isEmpty ? null : _handleRemoveTags,
+          onPressed: _selectedElements.isEmpty ? null : _handleRemoveTags,
           child: const Text('Hapus Tag Terpilih'),
         ),
       ],
