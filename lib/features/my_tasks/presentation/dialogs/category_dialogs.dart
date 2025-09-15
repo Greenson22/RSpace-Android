@@ -1,9 +1,11 @@
-// lib/presentation/pages/my_tasks_page/dialogs/category_dialogs.dart
+// lib/features/my_tasks/presentation/dialogs/category_dialogs.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
 import 'package:my_aplication/features/my_tasks/application/my_task_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../content_management/presentation/topics/dialogs/topic_dialogs.dart';
+// Tambahkan impor dengan alias untuk menghindari konflik nama
+import '../../../../core/widgets/icon_picker_dialog.dart' as core_dialogs;
 
 void showAddCategoryDialog(BuildContext context) {
   final provider = Provider.of<MyTaskProvider>(context, listen: false);
@@ -62,41 +64,14 @@ void showDeleteCategoryDialog(BuildContext context, TaskCategory category) {
 
 void showIconPickerDialog(BuildContext context, TaskCategory category) {
   final provider = Provider.of<MyTaskProvider>(context, listen: false);
-  final List<String> icons = ['📝', '💼', '🏠', '🛒', '🎉', '💡', '❤️', '⭐'];
-
-  showDialog(
+  // Panggil dialog ikon yang lebih canggih menggunakan alias
+  core_dialogs.showIconPickerDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Pilih Ikon Baru'),
-      content: Wrap(
-        spacing: 16,
-        runSpacing: 16,
-        alignment: WrapAlignment.center,
-        children: icons.map((iconSymbol) {
-          return InkWell(
-            onTap: () {
-              provider.updateCategoryIcon(category, iconSymbol);
-              Navigator.pop(context);
-              _showSnackBar(
-                context,
-                'Ikon untuk "${category.name}" berhasil diubah.',
-              );
-            },
-            borderRadius: BorderRadius.circular(24),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(iconSymbol, style: const TextStyle(fontSize: 32)),
-            ),
-          );
-        }).toList(),
-      ),
-      actions: [
-        TextButton(
-          child: const Text('Batal'),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    ),
+    name: category.name, // Mengirim nama kategori untuk rekomendasi AI
+    onIconSelected: (newIcon) {
+      provider.updateCategoryIcon(category, newIcon);
+      _showSnackBar(context, 'Ikon untuk "${category.name}" berhasil diubah.');
+    },
   );
 }
 
