@@ -183,21 +183,24 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
   Future<void> _deleteTopic(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
-    await showDeleteTopicConfirmationDialog(
+    final result = await showDeleteTopicConfirmationDialog(
       context: context,
       topicName: topic.name,
-      onDelete: () async {
-        try {
-          await provider.deleteTopic(topic.name);
-          showAppSnackBar(context, 'Topik "${topic.name}" berhasil dihapus.');
-        } catch (e) {
-          showAppSnackBar(context, e.toString(), isError: true);
-        }
-      },
     );
+
+    if (result != null && result['confirmed'] == true) {
+      try {
+        await provider.deleteTopic(
+          topic.name,
+          deletePerpuskuFolder: result['deleteFolder'] ?? false,
+        );
+        showAppSnackBar(context, 'Topik "${topic.name}" berhasil dihapus.');
+      } catch (e) {
+        showAppSnackBar(context, e.toString(), isError: true);
+      }
+    }
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _changeIcon(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showIconPickerDialog(

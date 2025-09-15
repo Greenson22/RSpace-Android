@@ -123,8 +123,14 @@ class TopicProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  Future<void> deleteTopic(String topicName) async {
-    await _topicService.deleteTopic(topicName);
+  Future<void> deleteTopic(
+    String topicName, {
+    bool deletePerpuskuFolder = false,
+  }) async {
+    await _topicService.deleteTopic(
+      topicName,
+      deletePerpuskuFolder: deletePerpuskuFolder,
+    );
     await fetchTopics();
   }
 

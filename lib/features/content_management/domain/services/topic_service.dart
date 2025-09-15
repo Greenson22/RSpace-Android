@@ -1,6 +1,7 @@
 // lib/data/services/topic_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import '../models/topic_model.dart';
 import '../../../../core/services/path_service.dart';
@@ -157,6 +158,7 @@ class TopicService {
     }
 
     try {
+      // 1. Buat folder topik di RSpace
       await directory.create();
       final currentTopics = await getTopics();
       final newPosition = currentTopics.length;
@@ -166,6 +168,27 @@ class TopicService {
         position: newPosition,
       );
       await _saveTopicConfig(newTopic);
+
+      // 2. Buat juga folder yang sesuai di PerpusKu/data/file_contents/topics
+      try {
+        final perpuskuDataPath = await _pathService.perpuskuDataPath;
+        final perpuskuTopicPath = path.join(
+          perpuskuDataPath,
+          'file_contents',
+          'topics',
+          topicName,
+        );
+        final perpuskuDirectory = Directory(perpuskuTopicPath);
+        if (!await perpuskuDirectory.exists()) {
+          await perpuskuDirectory.create(recursive: true);
+        }
+      } catch (e) {
+        // Jika pembuatan folder di PerpusKu gagal, tampilkan pesan error
+        // tapi jangan batalkan pembuatan topik di RSpace.
+        debugPrint(
+          'Gagal membuat folder pendamping di PerpusKu untuk topik "$topicName": $e',
+        );
+      }
     } catch (e) {
       throw Exception('Gagal membuat topik: $e');
     }
@@ -198,14 +221,36 @@ class TopicService {
     }
   }
 
-  Future<void> deleteTopic(String topicName) async {
-    // Menggunakan await untuk mendapatkan topicPath
+  Future<void> deleteTopic(
+    String topicName, {
+    bool deletePerpuskuFolder = false,
+  }) async {
     final topicPath = await _pathService.getTopicPath(topicName);
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
       throw Exception('Topik yang ingin dihapus tidak ditemukan.');
     }
     try {
+      if (deletePerpuskuFolder) {
+        try {
+          final perpuskuDataPath = await _pathService.perpuskuDataPath;
+          final perpuskuTopicPath = path.join(
+            perpuskuDataPath,
+            'file_contents',
+            'topics',
+            topicName,
+          );
+          final perpuskuDirectory = Directory(perpuskuTopicPath);
+          if (await perpuskuDirectory.exists()) {
+            await perpuskuDirectory.delete(recursive: true);
+          }
+        } catch (e) {
+          debugPrint(
+            'Gagal menghapus folder pendamping di PerpusKu untuk topik "$topicName": $e',
+          );
+        }
+      }
+
       await directory.delete(recursive: true);
       final remainingTopics = await getTopics();
       await saveTopicsOrder(remainingTopics);
