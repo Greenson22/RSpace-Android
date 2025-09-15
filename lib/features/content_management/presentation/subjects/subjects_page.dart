@@ -214,18 +214,26 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   Future<void> _deleteSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    await showDeleteConfirmationDialog(
+
+    // Panggil dialog baru dan tunggu hasilnya
+    final result = await showDeleteConfirmationDialog(
       context: context,
       subjectName: subject.name,
-      onDelete: () async {
-        try {
-          await provider.deleteSubject(subject.name);
-          _showSnackBar('Subject "${subject.name}" berhasil dihapus.');
-        } catch (e) {
-          _showSnackBar(e.toString(), isError: true);
-        }
-      },
+      linkedPath: subject.linkedPath, // Kirim linkedPath ke dialog
     );
+
+    // Proses hasil dari dialog
+    if (result != null && result['confirmed'] == true) {
+      try {
+        await provider.deleteSubject(
+          subject.name,
+          deleteLinkedFolder: result['deleteFolder'] ?? false,
+        );
+        _showSnackBar('Subject "${subject.name}" berhasil dihapus.');
+      } catch (e) {
+        _showSnackBar(e.toString(), isError: true);
+      }
+    }
   }
 
   Future<void> _changeIcon(BuildContext context, Subject subject) async {

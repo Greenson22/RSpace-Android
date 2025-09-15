@@ -165,7 +165,7 @@ class _CreatePerpuskuSubjectDialogState
       final metadataFile = File(path.join(newDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode({"content": []}));
 
-      // ==> AWAL PERUBAHAN: Membuat index.html secara otomatis <==
+      // ==> AWAL PENAMBAHAN: Membuat index.html secara otomatis <==
       final indexFile = File(path.join(newDir.path, 'index.html'));
       const htmlTemplate = '''
 <!DOCTYPE html>
@@ -180,7 +180,7 @@ class _CreatePerpuskuSubjectDialogState
 </body>
 </html>''';
       await indexFile.writeAsString(htmlTemplate);
-      // ==> AKHIR PERUBAHAN <==
+      // ==> AKHIR PENAMBAHAN <==
 
       final relativePath = path.join(_selectedTopic, newFolderName);
       if (mounted) Navigator.pop(context, relativePath);
@@ -400,31 +400,69 @@ Future<void> showSubjectTextInputDialog({
 }
 
 // Dialog konfirmasi hapus
-Future<void> showDeleteConfirmationDialog({
+Future<Map<String, bool>?> showDeleteConfirmationDialog({
   required BuildContext context,
   required String subjectName,
-  required VoidCallback onDelete,
+  required String? linkedPath, // Tambahkan parameter ini
 }) async {
-  return showDialog<void>(
+  bool deleteFolder = false;
+  final bool isLinked = linkedPath != null && linkedPath.isNotEmpty;
+
+  return await showDialog<Map<String, bool>?>(
     context: context,
     builder: (context) {
-      return AlertDialog(
-        title: const Text('Hapus Subject'),
-        content: Text('Anda yakin ingin menghapus subject "$subjectName"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              onDelete();
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Hapus'),
-          ),
-        ],
+      // Gunakan StatefulBuilder untuk mengelola state checkbox di dalam dialog
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Hapus Subject'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Anda yakin ingin menghapus subject "$subjectName"?'),
+                const SizedBox(height: 16),
+                // Tampilkan checkbox hanya jika subject memiliki folder tertaut
+                if (isLinked)
+                  CheckboxListTile(
+                    title: const Text(
+                      "Hapus juga folder & isinya di PerpusKu",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      "Lokasi: $linkedPath",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    value: deleteFolder,
+                    onChanged: (bool? value) {
+                      setDialogState(() {
+                        deleteFolder = value ?? false;
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null), // Batal
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Kirim hasil konfirmasi dan pilihan checkbox
+                  Navigator.pop(context, {
+                    'confirmed': true,
+                    'deleteFolder': deleteFolder,
+                  });
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Hapus'),
+              ),
+            ],
+          );
+        },
       );
     },
   );

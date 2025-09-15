@@ -426,16 +426,44 @@ class SubjectService {
     }
   }
 
-  Future<void> deleteSubject(String topicPath, String subjectName) async {
+  Future<void> deleteSubject(
+    String topicPath,
+    String subjectName, {
+    bool deleteLinkedFolder = false,
+  }) async {
     final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
     final file = File(filePath);
     if (!await file.exists()) {
       throw Exception('Subject yang ingin dihapus tidak ditemukan.');
     }
 
+    // Ambil metadata SEBELUM menghapus file json
+    final metadata = await getSubjectMetadata(file);
+    final linkedPath = metadata['linkedPath'] as String?;
+
     try {
+      // Hapus file json subject
       await file.delete();
-      await getSubjects(topicPath);
+
+      // Jika user memilih untuk menghapus folder tertaut
+      if (deleteLinkedFolder && linkedPath != null && linkedPath.isNotEmpty) {
+        final perpuskuBasePath = await _pathService.perpuskuDataPath;
+        final perpuskuTopicsPath = path.join(
+          perpuskuBasePath,
+          'file_contents',
+          'topics',
+        );
+        final folderToDelete = Directory(
+          path.join(perpuskuTopicsPath, linkedPath),
+        );
+        if (await folderToDelete.exists()) {
+          await folderToDelete.delete(recursive: true);
+        }
+      }
+
+      // Perbarui urutan subject yang tersisa
+      final remainingSubjects = await getSubjects(topicPath);
+      await saveSubjectsOrder(topicPath, remainingSubjects);
     } catch (e) {
       throw Exception('Gagal menghapus subject: $e');
     }

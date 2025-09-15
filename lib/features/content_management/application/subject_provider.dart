@@ -122,8 +122,15 @@ class SubjectProvider with ChangeNotifier {
     await fetchSubjects();
   }
 
-  Future<void> deleteSubject(String subjectName) async {
-    await _subjectService.deleteSubject(topicPath, subjectName);
+  Future<void> deleteSubject(
+    String subjectName, {
+    bool deleteLinkedFolder = false,
+  }) async {
+    await _subjectService.deleteSubject(
+      topicPath,
+      subjectName,
+      deleteLinkedFolder: deleteLinkedFolder,
+    );
     await fetchSubjects();
   }
 
