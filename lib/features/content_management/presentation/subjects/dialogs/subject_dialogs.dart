@@ -161,8 +161,26 @@ class _CreatePerpuskuSubjectDialogState
       }
       await newDir.create(recursive: true);
 
+      // Membuat metadata.json (tetap ada)
       final metadataFile = File(path.join(newDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode({"content": []}));
+
+      // ==> AWAL PERUBAHAN: Membuat index.html secara otomatis <==
+      final indexFile = File(path.join(newDir.path, 'index.html'));
+      const htmlTemplate = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="main-container"></div>
+</body>
+</html>''';
+      await indexFile.writeAsString(htmlTemplate);
+      // ==> AKHIR PERUBAHAN <==
 
       final relativePath = path.join(_selectedTopic, newFolderName);
       if (mounted) Navigator.pop(context, relativePath);
