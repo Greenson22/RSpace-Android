@@ -32,6 +32,10 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   bool _isAutoEditing = false;
   // ==> AKHIR PENAMBAHAN <==
 
+  // ==> AWAL PENAMBAHAN: State untuk mode pilih baris <==
+  bool _isLineSelectionMode = false;
+  // ==> AKHIR PENAMBAHAN <==
+
   @override
   void initState() {
     super.initState();
@@ -184,6 +188,34 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
+  // ==> FUNGSI BARU: Logika untuk memilih baris saat diklik <==
+  void _handleLineSelection() {
+    if (!_isLineSelectionMode || _controller == null) return;
+
+    final text = _controller!.text;
+    final offset = _controller!.selection.baseOffset;
+
+    // Cari awal baris
+    int start = offset;
+    while (start > 0 && text[start - 1] != '\n') {
+      start--;
+    }
+
+    // Cari akhir baris
+    int end = offset;
+    while (end < text.length && text[end] != '\n') {
+      end++;
+    }
+
+    setState(() {
+      _controller!.selection = TextSelection(
+        baseOffset: start,
+        extentOffset: end,
+      );
+    });
+  }
+  // ==> AKHIR FUNGSI BARU <==
+
   Future<void> _saveFileContent() async {
     if (_controller == null) return;
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -222,6 +254,30 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          // ==> AWAL PENAMBAHAN: Tombol toggle untuk mode pilih baris <==
+          IconButton(
+            icon: Icon(
+              Icons.select_all,
+              color: _isLineSelectionMode ? Colors.amber : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _isLineSelectionMode = !_isLineSelectionMode;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isLineSelectionMode
+                        ? 'Mode Pilih Baris Aktif'
+                        : 'Mode Pilih Baris Nonaktif',
+                  ),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            tooltip: 'Aktifkan/Nonaktifkan Mode Pilih Baris',
+          ),
+          // ==> AKHIR PENAMBAHAN <==
           DropdownButton<EditorTheme>(
             value: _selectedTheme,
             onChanged: _handleThemeChanged,
@@ -262,6 +318,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
                   controller: _controller!,
                   expands: true,
                   textStyle: const TextStyle(fontFamily: 'monospace'),
+                  // ==> AWAL PENAMBAHAN: Tambahkan callback onTap <==
+                  onTap: _handleLineSelection,
+                  // ==> AKHIR PENAMBAHAN <==
                 ),
               ),
             ),
