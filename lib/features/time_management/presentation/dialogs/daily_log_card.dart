@@ -44,7 +44,7 @@ class DailyLogCard extends StatelessWidget {
             : BorderSide.none,
       ),
       child: ExpansionTile(
-        key: PageStorageKey(date.toIso8601String()),
+        // key: PageStorageKey(date.toIso8601String()), // <-- BARIS INI TELAH DIHAPUS
         initiallyExpanded: isToday || isEditable,
         title: Text(
           formattedDate,
@@ -76,23 +76,24 @@ class DailyLogCard extends StatelessWidget {
               padding: EdgeInsets.all(16.0),
               child: Text('Tidak ada tugas pada tanggal ini.'),
             )
-          else if (isEditable)
-            // ReorderableListView tetap digunakan saat mode edit aktif
+          else
             ReorderableListView.builder(
               primary: false,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: log!.tasks.length,
-              buildDefaultDragHandles: true,
+              buildDefaultDragHandles: isEditable,
               itemBuilder: (context, index) {
                 final task = log!.tasks[index];
                 return TaskLogTile(
                   key: ValueKey(task.id),
                   task: task,
-                  isEditable: true,
+                  isEditable: isEditable,
                 );
               },
               onReorder: (oldIndex, newIndex) {
+                if (!isEditable) return;
+
                 if (newIndex > oldIndex) {
                   newIndex -= 1;
                 }
@@ -101,19 +102,6 @@ class DailyLogCard extends StatelessWidget {
                 reorderedTasks.insert(newIndex, item);
                 provider.updateTasksOrder(log!, reorderedTasks);
               },
-            )
-          else
-            // =========================================================
-            // == PERUBAHAN UTAMA DI SINI: MENGGUNAKAN COLUMN           ==
-            // =========================================================
-            Column(
-              children: log!.tasks.map((task) {
-                return TaskLogTile(
-                  key: ValueKey(task.id),
-                  task: task,
-                  isEditable: false,
-                );
-              }).toList(),
             ),
           if (isEditable)
             Padding(
