@@ -8,6 +8,7 @@ import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../../core/services/storage_service.dart'; // Import service penyimpanan
+import '../dialogs/remove_tag_dialog.dart'; // ==> IMPORT DIALOG BARU
 import '../themes/editor_themes.dart';
 
 class HtmlEditorPage extends StatefulWidget {
@@ -123,6 +124,22 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MEMANGGIL DIALOG PENGHAPUSAN TAG <==
+  Future<void> _openRemoveTagDialog() async {
+    if (_controller == null) return;
+
+    final newHtmlContent = await showRemoveTagDialog(
+      context,
+      _controller!.text,
+    );
+
+    if (newHtmlContent != null) {
+      setState(() {
+        _controller!.text = newHtmlContent;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,6 +149,14 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
+          IconButton(
+            icon: const Icon(Icons.format_clear),
+            onPressed: _isLoading || _controller == null
+                ? null
+                : _openRemoveTagDialog,
+            tooltip: 'Hapus Tag (Unwrap)',
+          ),
           DropdownButton<EditorTheme>(
             value: _selectedTheme,
             onChanged:
