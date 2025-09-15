@@ -27,34 +27,83 @@ class SubMateriDialog extends StatefulWidget {
 class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isReorderMode = false;
 
+  // ==> FUNGSI INI SEKARANG MENAMPILKAN DIALOG PILIHAN POSISI <==
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
     );
-    final controller = TextEditingController();
+
+    // Fungsi helper untuk menampilkan dialog input teks setelah posisi dipilih
+    void showNameInputDialog(SubMateriInsertPosition position) {
+      final controller = TextEditingController();
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Tambah Sub-Materi Baru'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Nama Sub-Materi'),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  provider.addSubMateri(
+                    widget.subject,
+                    controller.text,
+                    position: position, // Kirim posisi yang dipilih
+                  );
+                  Navigator.pop(dialogContext); // Tutup dialog input
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Tampilkan dialog pilihan posisi terlebih dahulu
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Tambah Sub-Materi Baru'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Nama Sub-Materi'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Tambah di Posisi...'),
+        children: [
+          SimpleDialogOption(
             onPressed: () {
-              if (controller.text.isNotEmpty) {
-                provider.addSubMateri(widget.subject, controller.text);
-                Navigator.pop(dialogContext);
-              }
+              Navigator.pop(dialogContext); // Tutup dialog pilihan
+              showNameInputDialog(SubMateriInsertPosition.top);
             },
-            child: const Text('Simpan'),
+            child: const ListTile(
+              leading: Icon(Icons.vertical_align_top),
+              title: Text('Paling Atas'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showNameInputDialog(SubMateriInsertPosition.beforeFinished);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.format_indent_decrease),
+              title: Text('Sebelum Tugas Selesai'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showNameInputDialog(SubMateriInsertPosition.bottom);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.vertical_align_bottom),
+              title: Text('Paling Bawah'),
+            ),
           ),
         ],
       ),
@@ -265,7 +314,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                 );
                               }
                             },
-                            // ==> PERBAIKAN DI SINI <==
                             itemBuilder: (BuildContext context) =>
                                 <PopupMenuEntry<String>>[
                                   const PopupMenuItem<String>(

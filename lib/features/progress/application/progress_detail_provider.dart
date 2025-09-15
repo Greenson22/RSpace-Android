@@ -8,6 +8,9 @@ import '../domain/models/progress_topic_model.dart';
 import 'palette_service.dart';
 import 'progress_service.dart';
 
+// ==> ENUM BARU UNTUK POSISI PENAMBAHAN <==
+enum SubMateriInsertPosition { top, beforeFinished, bottom }
+
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
   final PaletteService _paletteService = PaletteService();
@@ -133,9 +136,33 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addSubMateri(ProgressSubject subject, String name) async {
+  // ==> FUNGSI addSubMateri DIPERBARUI <==
+  Future<void> addSubMateri(
+    ProgressSubject subject,
+    String name, {
+    SubMateriInsertPosition position = SubMateriInsertPosition.bottom,
+  }) async {
     final newSubMateri = SubMateri(namaMateri: name, progress: "belum");
-    subject.subMateri.add(newSubMateri);
+
+    switch (position) {
+      case SubMateriInsertPosition.top:
+        subject.subMateri.insert(0, newSubMateri);
+        break;
+      case SubMateriInsertPosition.beforeFinished:
+        final firstFinishedIndex = subject.subMateri.indexWhere(
+          (s) => s.progress == 'selesai',
+        );
+        if (firstFinishedIndex != -1) {
+          subject.subMateri.insert(firstFinishedIndex, newSubMateri);
+        } else {
+          subject.subMateri.add(newSubMateri); // Fallback ke paling bawah
+        }
+        break;
+      case SubMateriInsertPosition.bottom:
+        subject.subMateri.add(newSubMateri);
+        break;
+    }
+
     _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();
