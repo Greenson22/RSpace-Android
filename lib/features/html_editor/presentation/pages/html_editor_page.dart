@@ -27,14 +27,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   late EditorTheme _selectedTheme;
 
-  // ==> AWAL PENAMBAHAN: Variabel untuk logika hapus tag berpasangan <==
   String _previousText = '';
   bool _isAutoEditing = false;
-  // ==> AKHIR PENAMBAHAN <==
-
-  // ==> AWAL PENAMBAHAN: State untuk mode pilih baris <==
-  bool _isLineSelectionMode = false;
-  // ==> AKHIR PENAMBAHAN <==
+  bool _isLineDeletionMode = false;
 
   @override
   void initState() {
@@ -71,7 +66,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   @override
   void dispose() {
-    // ==> PERBAIKAN: Hapus listener sebelum dispose <==
     _controller?.removeListener(_onTextChanged);
     _controller?.dispose();
     super.dispose();
@@ -89,11 +83,8 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       );
 
       _controller = CodeController(text: content, language: xml);
-
-      // ==> AWAL PENAMBAHAN: Tambahkan listener ke controller <==
       _previousText = _controller!.text;
       _controller!.addListener(_onTextChanged);
-      // ==> AKHIR PENAMBAHAN <==
     } catch (e) {
       setState(() {
         _error = "Gagal memuat file: ${e.toString()}";
@@ -107,14 +98,12 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  // ==> FUNGSI BARU: Listener untuk mendeteksi perubahan teks <==
   void _onTextChanged() {
     if (_isAutoEditing) return;
 
     final currentText = _controller!.text;
     final currentSelection = _controller!.selection;
 
-    // Cek apakah ada teks yang dihapus
     if (currentText.length < _previousText.length) {
       final start = currentSelection.start;
       final deletedText = _previousText.substring(
@@ -122,7 +111,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
         start + (_previousText.length - currentText.length),
       );
 
-      // Regex untuk mendeteksi tag pembuka (bukan self-closing)
       final openingTagRegex = RegExp(r'^<([a-zA-Z0-9]+)\s*.*?>$');
       final selfClosingTags = {'br', 'hr', 'img', 'input', 'meta', 'link'};
 
@@ -139,32 +127,27 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     _previousText = currentText;
   }
 
-  // ==> FUNGSI BARU: Logika untuk mencari dan menghapus tag penutup <==
   void _findAndRemoveMatchingTag(String tagName, int deletionStartOffset) {
     String text = _controller!.text;
     int searchIndex = deletionStartOffset;
-    int balance = 1; // Mulai dengan 1 karena tag pembuka baru saja dihapus
+    int balance = 1;
 
     while (searchIndex < text.length) {
       final nextOpeningTag = text.indexOf('<$tagName', searchIndex);
       final nextClosingTag = text.indexOf('</$tagName>', searchIndex);
 
       if (nextClosingTag == -1) {
-        // Tidak ada lagi tag penutup, hentikan pencarian
         break;
       }
 
       if (nextOpeningTag != -1 && nextOpeningTag < nextClosingTag) {
-        // Ditemukan tag pembuka lain sebelum tag penutup
         balance++;
         searchIndex = nextOpeningTag + 1;
       } else {
-        // Ditemukan tag penutup
         balance--;
         searchIndex = nextClosingTag + 1;
 
         if (balance == 0) {
-          // Ini adalah tag penutup yang berpasangan
           _isAutoEditing = true;
           final newText =
               text.substring(0, nextClosingTag) +
@@ -178,7 +161,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           _controller!.selection = selection;
           _previousText = newText;
 
-          // Delay singkat sebelum mengizinkan edit lagi
           Future.delayed(const Duration(milliseconds: 50), () {
             _isAutoEditing = false;
           });
@@ -188,33 +170,116 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  // ==> FUNGSI BARU: Logika untuk memilih baris saat diklik <==
-  void _handleLineSelection() {
-    if (!_isLineSelectionMode || _controller == null) return;
+  void _handleLineDeletion() {
+    if (!_isLineDeletionMode || _controller == null) return;
 
     final text = _controller!.text;
     final offset = _controller!.selection.baseOffset;
 
-    // Cari awal baris
     int start = offset;
     while (start > 0 && text[start - 1] != '\n') {
       start--;
     }
 
-    // Cari akhir baris
     int end = offset;
     while (end < text.length && text[end] != '\n') {
       end++;
     }
 
-    setState(() {
-      _controller!.selection = TextSelection(
-        baseOffset: start,
-        extentOffset: end,
-      );
-    });
+    if (end < text.length && text[end] == '\n') {
+      end++;
+    } else if (start > 0 && text[start - 1] == '\n') {
+      start--;
+    }
+
+    final newText = text.substring(0, start) + text.substring(end);
+    _controller!.text = newText;
+    _controller!.selection = TextSelection.fromPosition(
+      TextPosition(offset: start),
+    );
   }
-  // ==> AKHIR FUNGSI BARU <==
+
+  void _stripAllHtmlTags() {
+    if (_controller == null) return;
+    final currentText = _controller!.text;
+    final newText = currentText.replaceAll(RegExp(r'<[^>]*>'), '');
+    _controller!.text = newText;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Semua tag HTML telah dihapus.')),
+    );
+  }
+
+  // ==> AWAL PERUBAHAN: Fungsi baru untuk mengekstrak konten body <==
+  void _extractBodyContent() {
+    if (_controller == null) return;
+    final currentText = _controller!.text;
+    final bodyContentRegex = RegExp(
+      r'<body[^>]*>([\s\S]*?)<\/body>',
+      caseSensitive: false,
+      dotAll: true,
+    );
+    final match = bodyContentRegex.firstMatch(currentText);
+    if (match != null && match.group(1) != null) {
+      // Ambil hanya konten di dalam body dan trim spasi/newline yang tidak perlu
+      _controller!.text = match.group(1)!.trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hanya konten <body> yang dipertahankan.'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tag <body> tidak ditemukan.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+  // ==> AKHIR PERUBAHAN <==
+
+  void _stripBodyTags() {
+    if (_controller == null) return;
+    final currentText = _controller!.text;
+    final bodyContentRegex = RegExp(
+      r'<body[^>]*>([\s\S]*?)<\/body>',
+      caseSensitive: false,
+      dotAll: true,
+    );
+    final match = bodyContentRegex.firstMatch(currentText);
+    if (match != null && match.group(1) != null) {
+      final bodyContent = match.group(1)!;
+      final newText = currentText.replaceFirst(bodyContentRegex, bodyContent);
+      _controller!.text = newText;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tag <body> telah dihapus.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tag <body> tidak ditemukan.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  void _stripHead() {
+    if (_controller == null) return;
+    final currentText = _controller!.text;
+    final newText = currentText.replaceAll(
+      RegExp(
+        r'<head[^>]*>[\s\S]*?<\/head>',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      '',
+    );
+    _controller!.text = newText;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Bagian <head> telah dihapus.')),
+    );
+  }
 
   Future<void> _saveFileContent() async {
     if (_controller == null) return;
@@ -254,30 +319,54 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          // ==> AWAL PENAMBAHAN: Tombol toggle untuk mode pilih baris <==
           IconButton(
             icon: Icon(
-              Icons.select_all,
-              color: _isLineSelectionMode ? Colors.amber : null,
+              Icons.delete_sweep_outlined,
+              color: _isLineDeletionMode ? Colors.amber : null,
             ),
             onPressed: () {
               setState(() {
-                _isLineSelectionMode = !_isLineSelectionMode;
+                _isLineDeletionMode = !_isLineDeletionMode;
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    _isLineSelectionMode
-                        ? 'Mode Pilih Baris Aktif'
-                        : 'Mode Pilih Baris Nonaktif',
+                    _isLineDeletionMode
+                        ? 'Mode Hapus Baris Aktif'
+                        : 'Mode Hapus Baris Nonaktif',
                   ),
                   duration: const Duration(seconds: 1),
                 ),
               );
             },
-            tooltip: 'Aktifkan/Nonaktifkan Mode Pilih Baris',
+            tooltip: 'Aktifkan/Nonaktifkan Mode Hapus Baris',
           ),
-          // ==> AKHIR PENAMBAHAN <==
+          PopupMenuButton<VoidCallback>(
+            icon: const Icon(Icons.text_format),
+            tooltip: 'Olah Teks',
+            onSelected: (action) => action(),
+            itemBuilder: (context) => [
+              // ==> AWAL PERUBAHAN: Menambahkan opsi baru <==
+              PopupMenuItem(
+                value: _extractBodyContent,
+                child: const Text('Ekstrak Konten Body'),
+              ),
+              const PopupMenuDivider(),
+              // ==> AKHIR PERUBAHAN <==
+              PopupMenuItem(
+                value: _stripAllHtmlTags,
+                child: const Text('Hapus Semua Tag HTML'),
+              ),
+              PopupMenuItem(
+                value: _stripBodyTags,
+                child: const Text('Hapus Tag Body (Kecuali Isi)'),
+              ),
+              PopupMenuItem(
+                value: _stripHead,
+                child: const Text('Hapus Head & Isinya'),
+              ),
+            ],
+          ),
           DropdownButton<EditorTheme>(
             value: _selectedTheme,
             onChanged: _handleThemeChanged,
@@ -318,9 +407,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
                   controller: _controller!,
                   expands: true,
                   textStyle: const TextStyle(fontFamily: 'monospace'),
-                  // ==> AWAL PENAMBAHAN: Tambahkan callback onTap <==
-                  onTap: _handleLineSelection,
-                  // ==> AKHIR PENAMBAHAN <==
+                  onTap: _handleLineDeletion,
                 ),
               ),
             ),
