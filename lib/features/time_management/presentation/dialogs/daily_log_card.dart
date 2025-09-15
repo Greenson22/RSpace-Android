@@ -10,14 +10,13 @@ import 'task_log_dialogs.dart';
 class DailyLogCard extends StatelessWidget {
   final TimeLogEntry? log;
   final bool isToday;
-  // ==> HAPUS isEditable DARI KONSTRUKTOR <==
   final bool isReorderMode;
 
   const DailyLogCard({
     super.key,
     required this.log,
     this.isToday = false,
-    required this.isReorderMode, // ==> JADIKAN REQUIRED
+    required this.isReorderMode,
   });
 
   @override
@@ -34,15 +33,13 @@ class DailyLogCard extends StatelessWidget {
     final totalDurationString =
         '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
 
-    // ==> Logika isEditable sekarang sepenuhnya dikontrol oleh isReorderMode <==
     final bool isEditable = isReorderMode;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side:
-            isEditable // Gunakan isEditable lokal
+        side: isEditable
             ? BorderSide(color: theme.primaryColor, width: 2)
             : BorderSide.none,
       ),
@@ -54,11 +51,9 @@ class DailyLogCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text('Total Durasi: $totalDurationString jam'),
-        // ==> Hapus tombol edit manual dan sederhanakan UI <==
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Tombol hapus hanya muncul jika mode urutkan aktif
             if (isEditable && !isToday)
               IconButton(
                 icon: const Icon(Icons.delete_forever, color: Colors.red),
@@ -77,26 +72,24 @@ class DailyLogCard extends StatelessWidget {
         ),
         children: [
           if (log == null || log!.tasks.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                isToday
-                    ? 'Belum ada tugas hari ini.'
-                    : 'Tidak ada tugas pada tanggal ini.',
-              ),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Tidak ada tugas pada tanggal ini.'),
             )
-          else
+          else if (isEditable)
+            // ReorderableListView tetap digunakan saat mode edit aktif
             ReorderableListView.builder(
+              primary: false,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: log!.tasks.length,
-              buildDefaultDragHandles: isEditable, // Kontrol dengan isEditable
+              buildDefaultDragHandles: true,
               itemBuilder: (context, index) {
                 final task = log!.tasks[index];
                 return TaskLogTile(
                   key: ValueKey(task.id),
                   task: task,
-                  isEditable: isEditable,
+                  isEditable: true,
                 );
               },
               onReorder: (oldIndex, newIndex) {
@@ -108,8 +101,20 @@ class DailyLogCard extends StatelessWidget {
                 reorderedTasks.insert(newIndex, item);
                 provider.updateTasksOrder(log!, reorderedTasks);
               },
+            )
+          else
+            // =========================================================
+            // == PERUBAHAN UTAMA DI SINI: MENGGUNAKAN COLUMN           ==
+            // =========================================================
+            Column(
+              children: log!.tasks.map((task) {
+                return TaskLogTile(
+                  key: ValueKey(task.id),
+                  task: task,
+                  isEditable: false,
+                );
+              }).toList(),
             ),
-          // Tombol tambah tetap ada, dan muncul jika mode edit/reorder aktif
           if (isEditable)
             Padding(
               padding: const EdgeInsets.all(8.0),
