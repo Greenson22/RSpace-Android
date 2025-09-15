@@ -88,6 +88,11 @@ class SharedPreferencesService {
   Future<String?> loadMotivationalQuotePrompt() =>
       _settingsService.loadMotivationalQuotePrompt();
   // --- AKHIR PENAMBAHAN ---
+  // ==> METODE BARU DITAMBAHKAN
+  Future<void> saveMyTasksLayoutPreference(bool isGridView) =>
+      _settingsService.saveMyTasksLayoutPreference(isGridView);
+  Future<bool> loadMyTasksLayoutPreference() =>
+      _settingsService.loadMyTasksLayoutPreference();
 
   // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>

@@ -1,6 +1,7 @@
 // lib/presentation/providers/my_task_provider.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/core/services/storage_service.dart';
 import '../domain/models/my_task_model.dart';
 import 'my_task_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
@@ -9,6 +10,7 @@ import '../../time_management/domain/models/time_log_model.dart';
 class MyTaskProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();
   final TimeLogService _timeLogService = TimeLogService();
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -18,6 +20,10 @@ class MyTaskProvider with ChangeNotifier {
 
   bool _showHiddenCategories = false;
   bool get showHiddenCategories => _showHiddenCategories;
+
+  // ==> STATE BARU UNTUK LAYOUT <==
+  bool _isGridView = false;
+  bool get isGridView => _isGridView;
 
   List<TaskCategory> _allCategories = [];
   List<TaskCategory> get categories {
@@ -111,11 +117,19 @@ class MyTaskProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK MENGUBAH LAYOUT <==
+  Future<void> toggleLayout() async {
+    _isGridView = !_isGridView;
+    await _prefsService.saveMyTasksLayoutPreference(_isGridView);
+    notifyListeners();
+  }
+
   Future<void> fetchTasks() async {
     _isLoading = true;
     notifyListeners();
     try {
       _allCategories = await _myTaskService.loadMyTasks();
+      _isGridView = await _prefsService.loadMyTasksLayoutPreference();
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -21,6 +21,8 @@ class SettingsService {
   static const String _htmlEditorThemeKey = 'html_editor_theme';
   // KUNCI BARU UNTUK PROMPT MOTIVASI
   static const String _motivationalQuotePromptKey = 'motivational_quote_prompt';
+  // ==> KUNCI BARU UNTUK LAYOUT MY TASKS
+  static const String _myTasksLayoutKey = 'my_tasks_grid_view';
 
   Future<void> saveThemePreference(bool isDarkMode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -196,5 +198,16 @@ class SettingsService {
   Future<String?> loadMotivationalQuotePrompt() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_motivationalQuotePromptKey);
+  }
+
+  // ==> FUNGSI BARU UNTUK LAYOUT MY TASKS <==
+  Future<void> saveMyTasksLayoutPreference(bool isGridView) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_myTasksLayoutKey, isGridView);
+  }
+
+  Future<bool> loadMyTasksLayoutPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_myTasksLayoutKey) ?? false; // Defaultnya list view
   }
 }

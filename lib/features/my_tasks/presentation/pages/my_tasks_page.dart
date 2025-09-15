@@ -8,7 +8,9 @@ import '../../application/my_task_provider.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../dialogs/category_dialogs.dart';
 import '../dialogs/task_dialogs.dart';
+import '../dialogs/task_list_dialog.dart';
 import '../widgets/category_card.dart';
+import '../widgets/category_grid_tile.dart';
 
 class MyTasksPage extends StatelessWidget {
   const MyTasksPage({super.key});
@@ -98,42 +100,45 @@ class _MyTasksViewState extends State<_MyTasksView> {
             if (mounted) setState(() => _isKeyboardActive = false);
           });
 
-          final isTwoColumn = MediaQuery.of(context).size.width > 700.0;
-          final int middle = (totalItems / 2).ceil();
+          final isGridView = taskProvider.isGridView;
+          final screenWidth = MediaQuery.of(context).size.width;
+          final int crossAxisCount = isGridView
+              ? (screenWidth > 600 ? 3 : 2)
+              : (screenWidth > 700 ? 2 : 1);
 
           setState(() {
             if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-              if (isTwoColumn) {
-                if (_focusedIndex < middle - 1 ||
-                    (_focusedIndex >= middle &&
-                        _focusedIndex < totalItems - 1)) {
-                  _focusedIndex++;
-                }
-              } else {
-                if (_focusedIndex < totalItems - 1) _focusedIndex++;
+              int nextIndex = _focusedIndex + crossAxisCount;
+              if (nextIndex < totalItems) {
+                _focusedIndex = nextIndex;
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-              if (_focusedIndex > 0) _focusedIndex--;
+              int prevIndex = _focusedIndex - crossAxisCount;
+              if (prevIndex >= 0) {
+                _focusedIndex = prevIndex;
+              }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-              if (isTwoColumn && _focusedIndex < middle) {
-                int targetIndex = _focusedIndex + middle;
-                _focusedIndex = targetIndex < totalItems
-                    ? targetIndex
-                    : totalItems - 1;
+              if ((_focusedIndex + 1) % crossAxisCount != 0 &&
+                  _focusedIndex < totalItems - 1) {
+                _focusedIndex++;
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-              if (isTwoColumn && _focusedIndex >= middle) {
-                _focusedIndex -= middle;
+              if (_focusedIndex % crossAxisCount != 0 && _focusedIndex > 0) {
+                _focusedIndex--;
               }
             }
           });
         } else if (event.logicalKey == LogicalKeyboardKey.enter) {
           if (_focusedIndex < totalItems) {
-            final categoryName = categories[_focusedIndex].name;
-            setState(() {
-              _expansionState[categoryName] =
-                  !(_expansionState[categoryName] ?? false);
-            });
+            final category = categories[_focusedIndex];
+            if (taskProvider.isGridView) {
+              showTaskListDialog(context, category);
+            } else {
+              setState(() {
+                _expansionState[category.name] =
+                    !(_expansionState[category.name] ?? false);
+              });
+            }
           }
         } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
           Navigator.of(context).pop();
@@ -202,6 +207,14 @@ class _MyTasksViewState extends State<_MyTasksView> {
       title: const Text('My Tasks'),
       actions: [
         if (!taskProvider.isCategoryReorderEnabled) ...[
+          // Tombol Ganti Layout
+          IconButton(
+            icon: Icon(
+              taskProvider.isGridView ? Icons.view_list : Icons.grid_view,
+            ),
+            tooltip: 'Ganti Tampilan',
+            onPressed: () => taskProvider.toggleLayout(),
+          ),
           IconButton(
             icon: Icon(
               taskProvider.showHiddenCategories
@@ -255,6 +268,14 @@ class _MyTasksViewState extends State<_MyTasksView> {
       );
     }
 
+    if (provider.isGridView) {
+      return _buildGridViewLayout(context, provider);
+    } else {
+      return _buildListViewLayout(context, provider);
+    }
+  }
+
+  Widget _buildListViewLayout(BuildContext context, MyTaskProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) {
         const double breakpoint = 700.0;
@@ -267,12 +288,36 @@ class _MyTasksViewState extends State<_MyTasksView> {
     );
   }
 
+  Widget _buildGridViewLayout(BuildContext context, MyTaskProvider provider) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth > 600 ? 3 : 2;
+
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: provider.categories.length,
+      itemBuilder: (context, index) {
+        final category = provider.categories[index];
+        return CategoryGridTile(
+          key: ValueKey(category.name),
+          category: category,
+          isFocused: _isKeyboardActive && index == _focusedIndex,
+          onTap: () => showTaskListDialog(context, category),
+        );
+      },
+    );
+  }
+
   Widget _buildSingleColumnLayout(
     BuildContext context,
     MyTaskProvider provider,
   ) {
     return ReorderableListView.builder(
-      // ## PERBAIKAN DI SINI: Bungkus widget yang diseret dengan provider-nya ##
       proxyDecorator: (Widget child, int index, Animation<double> animation) {
         return ChangeNotifierProvider.value(
           value: provider,
