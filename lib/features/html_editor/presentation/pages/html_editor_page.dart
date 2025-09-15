@@ -7,9 +7,9 @@ import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
-import '../../../../core/services/storage_service.dart'; // Import service penyimpanan
-import '../dialogs/remove_tag_dialog.dart'; // ==> IMPORT DIALOG BARU
+import '../../../../core/services/storage_service.dart';
 import '../themes/editor_themes.dart';
+// Import untuk dialog yang dihapus tidak lagi diperlukan
 
 class HtmlEditorPage extends StatefulWidget {
   final Discussion discussion;
@@ -31,12 +31,10 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   @override
   void initState() {
     super.initState();
-    // Inisialisasi tema default sebelum memuat
     _selectedTheme = editorThemes.first;
     _initializeEditor();
   }
 
-  // Gabungkan pemuatan tema dan konten file
   Future<void> _initializeEditor() async {
     await _loadTheme();
     await _loadFileContent();
@@ -59,7 +57,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       setState(() {
         _selectedTheme = newTheme;
       });
-      // Simpan tema yang baru dipilih
       await _prefsService.saveHtmlEditorTheme(newTheme.name);
     }
   }
@@ -124,22 +121,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMANGGIL DIALOG PENGHAPUSAN TAG <==
-  Future<void> _openRemoveTagDialog() async {
-    if (_controller == null) return;
-
-    final newHtmlContent = await showRemoveTagDialog(
-      context,
-      _controller!.text,
-    );
-
-    if (newHtmlContent != null) {
-      setState(() {
-        _controller!.text = newHtmlContent;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,18 +130,10 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          // ==> TOMBOL BARU DITAMBAHKAN DI SINI <==
-          IconButton(
-            icon: const Icon(Icons.format_clear),
-            onPressed: _isLoading || _controller == null
-                ? null
-                : _openRemoveTagDialog,
-            tooltip: 'Hapus Tag (Unwrap)',
-          ),
+          // ==> Tombol "Hapus Tag" dan logikanya telah dihapus dari sini <==
           DropdownButton<EditorTheme>(
             value: _selectedTheme,
-            onChanged:
-                _handleThemeChanged, // Panggil fungsi baru saat tema berubah
+            onChanged: _handleThemeChanged,
             items: editorThemes.map<DropdownMenuItem<EditorTheme>>((
               EditorTheme theme,
             ) {
