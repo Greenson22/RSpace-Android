@@ -57,6 +57,10 @@ class DiscussionProvider
   List<PointPreset> _pointPresets = [];
   List<PointPreset> get pointPresets => _pointPresets;
 
+  // ==> STATE BARU UNTUK URUTAN KODE <==
+  List<String> _repetitionCodeOrder = [];
+  List<String> get repetitionCodeOrder => _repetitionCodeOrder;
+
   // GETTERS
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
 
@@ -96,6 +100,8 @@ class DiscussionProvider
     notifyListeners();
     try {
       _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
+      // ==> MUAT URUTAN KODE <==
+      _repetitionCodeOrder = await prefsService.loadRepetitionCodeOrder();
       filterAndSortDiscussions();
     } finally {
       _isLoading = false;
@@ -106,6 +112,13 @@ class DiscussionProvider
   @override
   Future<void> saveDiscussions() async {
     await discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN URUTAN KODE <==
+  Future<void> saveRepetitionCodeOrder(List<String> newOrder) async {
+    _repetitionCodeOrder = newOrder;
+    await prefsService.saveRepetitionCodeOrder(newOrder);
+    filterAndSortDiscussions(); // Terapkan urutan baru secara langsung
   }
 
   // PRESET ACTIONS

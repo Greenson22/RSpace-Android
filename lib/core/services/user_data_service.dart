@@ -14,6 +14,8 @@ class UserDataService {
       'excluded_subjects_for_progress';
   // ==> KEY BARU DITAMBAHKAN <==
   static const String _excludedTaskCategoriesKey = 'excluded_task_categories';
+  // ==> KUNCI BARU UNTUK URUTAN KODE REPETISI <==
+  static const String _repetitionCodeOrderKey = 'repetition_code_order';
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
@@ -103,5 +105,16 @@ class UserDataService {
     final List<String> excluded =
         prefs.getStringList(_excludedTaskCategoriesKey) ?? [];
     return excluded.toSet();
+  }
+
+  // ==> FUNGSI BARU UNTUK URUTAN KODE REPETISI <==
+  Future<void> saveRepetitionCodeOrder(List<String> order) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_repetitionCodeOrderKey, order);
+  }
+
+  Future<List<String>> loadRepetitionCodeOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_repetitionCodeOrderKey) ?? [];
   }
 }

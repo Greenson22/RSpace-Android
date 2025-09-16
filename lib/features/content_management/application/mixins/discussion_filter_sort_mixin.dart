@@ -11,6 +11,8 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
   List<Discussion> get allDiscussions;
   List<Discussion> get filteredDiscussions;
   set filteredDiscussions(List<Discussion> value);
+  // ==> TAMBAHKAN DEPENDENSI BARU <==
+  List<String> get repetitionCodeOrder;
 
   // STATE
   String _searchQuery = '';
@@ -103,9 +105,17 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
           );
           break;
         case 'code':
-          result = getRepetitionCodeIndex(
-            infoA['code'] ?? '',
-          ).compareTo(getRepetitionCodeIndex(infoB['code'] ?? ''));
+          // ==> GUNAKAN URUTAN KUSTOM DI SINI <==
+          result =
+              getRepetitionCodeIndex(
+                infoA['code'] ?? '',
+                customOrder: repetitionCodeOrder,
+              ).compareTo(
+                getRepetitionCodeIndex(
+                  infoB['code'] ?? '',
+                  customOrder: repetitionCodeOrder,
+                ),
+              );
           break;
         default:
           final dateA = infoA['date'];
@@ -156,9 +166,17 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
 
     if (visiblePoints.isNotEmpty) {
       visiblePoints.sort((a, b) {
-        int codeComp = getRepetitionCodeIndex(
-          a.repetitionCode,
-        ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
+        // ==> GUNAKAN URUTAN KUSTOM DI SINI <==
+        int codeComp =
+            getRepetitionCodeIndex(
+              a.repetitionCode,
+              customOrder: repetitionCodeOrder,
+            ).compareTo(
+              getRepetitionCodeIndex(
+                b.repetitionCode,
+                customOrder: repetitionCodeOrder,
+              ),
+            );
         if (codeComp != 0) return codeComp;
         try {
           return DateTime.parse(a.date).compareTo(DateTime.parse(b.date));

@@ -30,18 +30,17 @@ int getNeuronRewardForCode(String code) {
   return kNeuronRewards[code] ?? 0;
 }
 
-// Fungsi untuk mendapatkan indeks kode, berguna untuk perbandingan
-int getRepetitionCodeIndex(String code) {
-  // ======================= AWAL PERBAIKAN =======================
-  // Berikan nilai indeks yang sangat besar untuk Finish agar selalu di akhir.
-  if (code == 'Finish') {
-    return 999; // Nilai terbesar, akan selalu berada di paling akhir.
-  }
-  // R0D akan mendapatkan indeks 0 dari list, yang menjadikannya paling atas.
-  // ======================= AKHIR PERBAIKAN =======================
+// FUNGSI INI SEKARANG DIUBAH UNTUK MENERIMA URUTAN KUSTOM
+int getRepetitionCodeIndex(String code, {List<String>? customOrder}) {
+  final order = customOrder != null && customOrder.isNotEmpty
+      ? customOrder
+      : kRepetitionCodes;
 
-  final index = kRepetitionCodes.indexOf(code);
-  // Beri nilai besar jika tidak ditemukan (sebagai fallback sebelum Finish)
+  if (code == 'Finish') {
+    return 999;
+  }
+
+  final index = order.indexOf(code);
   return index == -1 ? 998 : index;
 }
 

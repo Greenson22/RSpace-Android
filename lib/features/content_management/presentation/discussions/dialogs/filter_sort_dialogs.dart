@@ -1,5 +1,7 @@
 // lib/presentation/pages/3_discussions_page/dialogs/filter_sort_dialogs.dart
 import 'package:flutter/material.dart';
+// ==> IMPORT DIALOG BARU <==
+import 'repetition_code_order_dialog.dart';
 
 Future<void> showFilterDialog({
   required BuildContext context,
@@ -180,6 +182,20 @@ Future<void> showSortDialog({
                   groupValue: sortType,
                   onChanged: (value) => setDialogState(() => sortType = value!),
                 ),
+                // ==> TOMBOL BARU UNTUK MENGATUR BOBOT <==
+                if (sortType == 'code')
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.sort_by_alpha),
+                      label: const Text('Atur Bobot Urutan Kode'),
+                      onPressed: () {
+                        // Tutup dialog ini dulu, lalu buka dialog baru
+                        Navigator.pop(context);
+                        showRepetitionCodeOrderDialog(context);
+                      },
+                    ),
+                  ),
                 const Divider(),
                 const Text(
                   'Urutan:',

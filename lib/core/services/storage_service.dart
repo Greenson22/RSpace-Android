@@ -161,6 +161,12 @@ class SharedPreferencesService {
   Future<Set<String>> loadExcludedTaskCategories() =>
       _userDataService.loadExcludedTaskCategories();
 
+  // ==> METODE BARU UNTUK URUTAN KODE REPETISI <==
+  Future<void> saveRepetitionCodeOrder(List<String> order) =>
+      _userDataService.saveRepetitionCodeOrder(order);
+  Future<List<String>> loadRepetitionCodeOrder() =>
+      _userDataService.loadRepetitionCodeOrder();
+
   // Konfigurasi API lama
   static const String _apiDomainKey = 'api_domain';
   static const String _apiKeyKey = 'api_key';
