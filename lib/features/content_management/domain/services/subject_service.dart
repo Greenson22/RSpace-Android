@@ -35,14 +35,27 @@ class SubjectService {
       final discussions = content
           .map((item) => Discussion.fromJson(item))
           .toList();
-      final relevantDiscussionInfo = await _getRelevantDiscussionInfo(
+
+      final discussionsToCount = _getFilteredAndSortedDiscussions(
         discussions,
+        filterPrefs,
         sortPrefs,
         customCodeSortOrder,
       );
 
+      // ==> PERUBAHAN KUNCI DI SINI <==
+      // Sekarang, info relevan (subtitle) juga dihitung dari hasil filter.
+      // Jika hasil filter kosong, subtitle juga akan kosong.
+      final relevantDiscussionInfo = await _getRelevantDiscussionInfo(
+        discussionsToCount,
+        sortPrefs,
+        customCodeSortOrder,
+      );
+
+      // Hitung repetition code dari diskusi yang sudah difilter dan diurutkan.
+      // Jika discussionsToCount kosong, map ini akan tetap kosong.
       final repetitionCodeCounts = <String, int>{};
-      for (final discussion in discussions) {
+      for (final discussion in discussionsToCount) {
         final code = discussion.effectiveRepetitionCode;
         repetitionCodeCounts[code] = (repetitionCodeCounts[code] ?? 0) + 1;
       }
@@ -63,8 +76,6 @@ class SubjectService {
       );
     }
 
-    // **LOGIKA PENGURUTAN TELAH DIHAPUS DARI SINI**
-
     bool needsResave = false;
     for (int i = 0; i < subjects.length; i++) {
       if (subjects[i].position != i) {
@@ -80,6 +91,95 @@ class SubjectService {
     return subjects;
   }
 
+  List<Discussion> _getFilteredAndSortedDiscussions(
+    List<Discussion> allDiscussions,
+    Map<String, String?> filterPrefs,
+    Map<String, dynamic> sortPrefs,
+    List<String> customCodeSortOrder,
+  ) {
+    List<Discussion> filteredDiscussions = allDiscussions.where((discussion) {
+      if (filterPrefs['filterType'] == null) {
+        return !discussion.finished;
+      }
+
+      if (discussion.finished) {
+        return false;
+      }
+
+      final date = discussion.effectiveDate;
+      final code = discussion.effectiveRepetitionCode;
+
+      if (filterPrefs['filterType'] == 'code') {
+        return code == filterPrefs['filterValue'];
+      } else if (filterPrefs['filterType'] == 'date' &&
+          filterPrefs['filterValue'] != null) {
+        try {
+          final dates = filterPrefs['filterValue']!.split('/');
+          final dateRange = DateTimeRange(
+            start: DateTime.parse(dates[0]),
+            end: DateTime.parse(dates[1]),
+          );
+          if (date == null) return false;
+          final dDate = DateTime.parse(date);
+          return !dDate.isBefore(dateRange.start) &&
+              !dDate.isAfter(dateRange.end);
+        } catch (e) {
+          return false;
+        }
+      } else if (filterPrefs['filterType'] == 'date_today_and_before') {
+        if (date == null) return false;
+        try {
+          final dDate = DateTime.parse(date);
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          return !dDate.isAfter(today);
+        } catch (e) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+
+    final sortType = sortPrefs['sortType'] as String;
+    final sortAscending = sortPrefs['sortAscending'] as bool;
+
+    Comparator<Discussion> comparator;
+    switch (sortType) {
+      case 'name':
+        comparator = (a, b) =>
+            a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
+        break;
+      case 'code':
+        comparator = (a, b) =>
+            getRepetitionCodeIndex(
+              a.effectiveRepetitionCode,
+              customOrder: customCodeSortOrder,
+            ).compareTo(
+              getRepetitionCodeIndex(
+                b.effectiveRepetitionCode,
+                customOrder: customCodeSortOrder,
+              ),
+            );
+        break;
+      default:
+        comparator = (a, b) {
+          if (a.effectiveDate == null && b.effectiveDate == null) return 0;
+          if (a.effectiveDate == null) return sortAscending ? 1 : -1;
+          if (b.effectiveDate == null) return sortAscending ? -1 : 1;
+          return DateTime.parse(
+            a.effectiveDate!,
+          ).compareTo(DateTime.parse(b.effectiveDate!));
+        };
+        break;
+    }
+
+    filteredDiscussions.sort(comparator);
+    if (!sortAscending) {
+      return filteredDiscussions.reversed.toList();
+    }
+    return filteredDiscussions;
+  }
+
   Future<Map<String, dynamic>> getSubjectMetadata(
     String subjectJsonPath,
   ) async {
@@ -88,62 +188,18 @@ class SubjectService {
     return jsonData['metadata'] as Map<String, dynamic>? ?? {};
   }
 
+  // ==> PERUBAHAN: Fungsi ini sekarang lebih sederhana dan menerima list yang sudah difilter
   Future<Map<String, String?>> _getRelevantDiscussionInfo(
-    List<Discussion> discussions,
+    List<Discussion> discussionsToConsider,
     Map<String, dynamic> sortPrefs,
     List<String> customCodeSortOrder,
   ) async {
     try {
-      if (discussions.isNotEmpty && discussions.every((d) => d.finished)) {
-        return {'date': null, 'code': 'Finish'};
-      }
-
-      List<Discussion> discussionsToConsider = discussions
-          .where((d) => !d.finished)
-          .toList();
-
       if (discussionsToConsider.isEmpty) {
         return {'date': null, 'code': null};
       }
 
-      final sortType = sortPrefs['sortType'] as String;
-      final sortAscending = sortPrefs['sortAscending'] as bool;
-
-      Comparator<Discussion> comparator;
-      switch (sortType) {
-        case 'name':
-          comparator = (a, b) =>
-              a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
-          break;
-        case 'code':
-          comparator = (a, b) =>
-              getRepetitionCodeIndex(
-                a.effectiveRepetitionCode,
-                customOrder: customCodeSortOrder,
-              ).compareTo(
-                getRepetitionCodeIndex(
-                  b.effectiveRepetitionCode,
-                  customOrder: customCodeSortOrder,
-                ),
-              );
-          break;
-        default: // date
-          comparator = (a, b) {
-            if (a.effectiveDate == null && b.effectiveDate == null) return 0;
-            if (a.effectiveDate == null) return sortAscending ? 1 : -1;
-            if (b.effectiveDate == null) return sortAscending ? -1 : 1;
-            return DateTime.parse(
-              a.effectiveDate!,
-            ).compareTo(DateTime.parse(b.effectiveDate!));
-          };
-          break;
-      }
-
-      discussionsToConsider.sort(comparator);
-      if (!sortAscending) {
-        discussionsToConsider = discussionsToConsider.reversed.toList();
-      }
-
+      // Karena list sudah difilter dan diurutkan, kita hanya perlu mengambil item pertama
       final relevantDiscussion = discussionsToConsider.first;
       return {
         'date': relevantDiscussion.effectiveDate,
