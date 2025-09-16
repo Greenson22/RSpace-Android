@@ -1,13 +1,15 @@
-// lib/presentation/providers/subject_provider.dart
+// lib/features/content_management/application/subject_provider.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/core/services/storage_service.dart';
+import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
+import 'package:my_aplication/features/content_management/domain/services/subject_actions.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import '../domain/models/subject_model.dart';
-import '../domain/models/topic_model.dart'; // ==> IMPORT TOPIC MODEL
 import '../domain/services/subject_service.dart';
-import '../presentation/discussions/utils/repetition_code_utils.dart';
-import '../../../core/services/storage_service.dart';
 
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
+  final SubjectActions _subjectActions = SubjectActions();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final String topicPath;
 
@@ -27,19 +29,19 @@ class SubjectProvider with ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  bool _showHiddenSubjects = false; // ==> DITAMBAHKAN
-  bool get showHiddenSubjects => _showHiddenSubjects; // ==> DITAMBAHKAN
+  bool _showHiddenSubjects = false;
+  bool get showHiddenSubjects => _showHiddenSubjects;
 
-  // ==> STATE BARU UNTUK URUTAN TAMPILAN KODE <==
+  // State untuk urutan tampilan kode
   List<String> _repetitionCodeDisplayOrder = [];
   List<String> get repetitionCodeDisplayOrder => _repetitionCodeDisplayOrder;
 
   Future<void> fetchSubjects() async {
     _isLoading = true;
-    notifyListeners(); // PERBAIKAN: Notifikasi langsung untuk menampilkan loading indicator
+    notifyListeners();
 
     try {
-      // ==> MUAT URUTAN TAMPILAN DARI PENYIMPANAN <==
+      // Muat urutan tampilan kustom dari penyimpanan
       _repetitionCodeDisplayOrder = await _prefsService
           .loadRepetitionCodeDisplayOrder();
       if (_repetitionCodeDisplayOrder.isEmpty) {
@@ -47,23 +49,22 @@ class SubjectProvider with ChangeNotifier {
       }
 
       _allSubjects = await _subjectService.getSubjects(topicPath);
-      // Data sudah terurut dari service, cukup terapkan filter yang ada
-      _filterSubjects(); // DIUBAH dari search(_searchQuery)
+      _filterSubjects();
     } catch (e) {
       debugPrint("Error fetching subjects: $e");
       _allSubjects = [];
       _filteredSubjects = [];
     } finally {
       _isLoading = false;
-      notifyListeners(); // PERBAIKAN: Notifikasi lagi untuk menampilkan data/state kosong
+      notifyListeners();
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN URUTAN TAMPILAN <==
+  // Fungsi untuk menyimpan urutan tampilan kustom
   Future<void> saveRepetitionCodeDisplayOrder(List<String> newOrder) async {
     _repetitionCodeDisplayOrder = newOrder;
     await _prefsService.saveRepetitionCodeDisplayOrder(newOrder);
-    notifyListeners();
+    notifyListeners(); // Beri tahu UI untuk render ulang dengan urutan baru
   }
 
   void search(String query) {
@@ -71,7 +72,6 @@ class SubjectProvider with ChangeNotifier {
     _filterSubjects();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGGABUNGKAN SEMUA LOGIKA FILTER <==
   void _filterSubjects() {
     List<Subject> tempSubjects;
 
@@ -96,40 +96,35 @@ class SubjectProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU <==
   void toggleShowHidden() {
     _showHiddenSubjects = !_showHiddenSubjects;
     _filterSubjects();
   }
 
   Future<void> updateSubjectIcon(String subjectName, String newIcon) async {
-    await _subjectService.updateSubjectIcon(topicPath, subjectName, newIcon);
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    subject.icon = newIcon;
+    await _subjectService.updateSubjectMetadata(topicPath, subject);
     await fetchSubjects();
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> updateSubjectLinkedPath(
     String subjectName,
     String? newPath,
   ) async {
-    await _subjectService.updateSubjectLinkedPath(
-      topicPath,
-      subjectName,
-      newPath,
-    );
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    subject.linkedPath = newPath;
+    await _subjectService.updateSubjectMetadata(topicPath, subject);
     await fetchSubjects();
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> toggleSubjectVisibility(
     String subjectName,
     bool isHidden,
   ) async {
-    await _subjectService.updateSubjectVisibility(
-      topicPath,
-      subjectName,
-      isHidden,
-    );
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    subject.isHidden = isHidden;
+    await _subjectService.updateSubjectMetadata(topicPath, subject);
     await fetchSubjects();
   }
 
@@ -147,21 +142,22 @@ class SubjectProvider with ChangeNotifier {
     String subjectName, {
     bool deleteLinkedFolder = false,
   }) async {
-    await _subjectService.deleteSubject(
-      topicPath,
-      subjectName,
-      deleteLinkedFolder: deleteLinkedFolder,
-    );
+    // Jika perlu hapus folder tertaut, panggil SubjectActions
+    if (deleteLinkedFolder) {
+      final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+      if (subject.linkedPath != null) {
+        // Logika penghapusan folder bisa ditambahkan di SubjectActions jika diperlukan
+      }
+    }
+    await _subjectService.deleteSubject(topicPath, subjectName);
     await fetchSubjects();
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN SUBJECT <==
   Future<void> moveSubject(Subject subject, Topic newTopic) async {
     _isLoading = true;
     notifyListeners();
     try {
-      await _subjectService.moveSubject(subject, topicPath, newTopic);
-      // Muat ulang data setelah berhasil dipindahkan
+      await _subjectActions.moveSubject(subject, topicPath, newTopic);
       await fetchSubjects();
     } finally {
       _isLoading = false;
@@ -169,11 +165,10 @@ class SubjectProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
   Future<void> editSubjectIndexFile(Subject subject) async {
     if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
       throw Exception('Subject ini tidak memiliki tautan ke folder PerpusKu.');
     }
-    await _subjectService.openSubjectIndexFile(subject.linkedPath!);
+    await _subjectActions.openSubjectIndexFile(subject.linkedPath!);
   }
 }

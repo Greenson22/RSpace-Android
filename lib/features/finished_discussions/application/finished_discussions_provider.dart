@@ -150,10 +150,10 @@ class FinishedDiscussionsProvider with ChangeNotifier {
           }
         }
 
-        // >> BARU: Dapatkan metadata ikon subjek dari file asli
-        final originalSubjectFile = File(entry.key);
+        // ==> PERBAIKAN UTAMA DI SINI <==
+        // Memanggil metode yang benar dari SubjectService.
         final subjectMetadata = await _subjectService.getSubjectMetadata(
-          originalSubjectFile,
+          entry.key,
         );
         existingMetadata['icon'] =
             subjectMetadata['icon']; // Tambahkan ikon ke metadata
