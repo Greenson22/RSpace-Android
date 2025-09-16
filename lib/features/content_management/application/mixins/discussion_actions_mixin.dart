@@ -77,20 +77,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     saveDiscussions();
   }
 
-  void updateDiscussionCode(Discussion discussion, String newCode) {
-    discussion.repetitionCode = newCode;
-    if (newCode != 'Finish') {
-      discussion.date = getNewDateForRepetitionCode(newCode);
-      if (discussion.finished) {
-        discussion.finished = false;
-        discussion.finish_date = null;
-      }
-    } else {
-      markAsFinished(discussion);
-    }
-    filterAndSortDiscussions();
-    saveDiscussions();
-  }
+  // This should be implemented by the main provider
+  void updateDiscussionCode(Discussion discussion, String newCode);
 
   void markAsFinished(Discussion discussion) {
     discussion.finished = true;
@@ -126,20 +114,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     saveDiscussions();
   }
 
-  void updatePointCode(Point point, String newCode) {
-    point.repetitionCode = newCode;
-    if (newCode != 'Finish') {
-      point.date = getNewDateForRepetitionCode(newCode);
-      if (point.finished) {
-        point.finished = false;
-        point.finish_date = null;
-      }
-    } else {
-      markPointAsFinished(point);
-    }
-    filterAndSortDiscussions();
-    saveDiscussions();
-  }
+  // This should be implemented by the main provider
+  void updatePointCode(Point point, String newCode);
 
   void markPointAsFinished(Point point) {
     point.finished = true;

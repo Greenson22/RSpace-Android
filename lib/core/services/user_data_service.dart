@@ -1,4 +1,5 @@
 // lib/core/services/user_data_service.dart
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/ai_assistant/domain/models/chat_message_model.dart';
 
@@ -12,13 +13,12 @@ class UserDataService {
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
   static const String _excludedSubjectsForProgressKey =
       'excluded_subjects_for_progress';
-  // ==> KEY BARU DITAMBAHKAN <==
   static const String _excludedTaskCategoriesKey = 'excluded_task_categories';
-  // ==> KUNCI BARU UNTUK URUTAN KODE REPETISI <==
   static const String _repetitionCodeOrderKey = 'repetition_code_order';
-  // ==> KUNCI BARU UNTUK URUTAN TAMPILAN KODE REPETISI <==
   static const String _repetitionCodeDisplayOrderKey =
       'repetition_code_display_order';
+  // ==> KUNCI BARU UNTUK BOBOT HARI <==
+  static const String _repetitionCodeDaysKey = 'repetition_code_days';
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
@@ -97,7 +97,6 @@ class UserDataService {
     return excluded.toSet();
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN <==
   Future<void> saveExcludedTaskCategories(List<String> categoryNames) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_excludedTaskCategoriesKey, categoryNames);
@@ -110,7 +109,6 @@ class UserDataService {
     return excluded.toSet();
   }
 
-  // ==> FUNGSI BARU UNTUK URUTAN KODE REPETISI <==
   Future<void> saveRepetitionCodeOrder(List<String> order) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_repetitionCodeOrderKey, order);
@@ -121,7 +119,6 @@ class UserDataService {
     return prefs.getStringList(_repetitionCodeOrderKey) ?? [];
   }
 
-  // ==> FUNGSI BARU UNTUK URUTAN TAMPILAN KODE REPETISI <==
   Future<void> saveRepetitionCodeDisplayOrder(List<String> order) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_repetitionCodeDisplayOrderKey, order);
@@ -130,5 +127,28 @@ class UserDataService {
   Future<List<String>> loadRepetitionCodeDisplayOrder() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getStringList(_repetitionCodeDisplayOrderKey) ?? [];
+  }
+
+  // ==> FUNGSI BARU UNTUK BOBOT HARI <==
+  Future<void> saveRepetitionCodeDays(Map<String, int> days) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Simpan map sebagai string JSON
+    final jsonString = jsonEncode(
+      days.map((key, value) => MapEntry(key, value.toString())),
+    );
+    await prefs.setString(_repetitionCodeDaysKey, jsonString);
+  }
+
+  Future<Map<String, int>> loadRepetitionCodeDays() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_repetitionCodeDaysKey);
+    if (jsonString == null || jsonString.isEmpty) {
+      return {}; // Kembalikan map kosong jika tidak ada data
+    }
+    // Ubah kembali dari string JSON ke Map
+    final Map<String, dynamic> decodedMap = jsonDecode(jsonString);
+    return decodedMap.map(
+      (key, value) => MapEntry(key, int.tryParse(value) ?? 0),
+    );
   }
 }

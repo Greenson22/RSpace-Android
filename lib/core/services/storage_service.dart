@@ -173,6 +173,12 @@ class SharedPreferencesService {
   Future<List<String>> loadRepetitionCodeDisplayOrder() =>
       _userDataService.loadRepetitionCodeDisplayOrder();
 
+  // ==> METODE BARU UNTUK BOBOT HARI <==
+  Future<void> saveRepetitionCodeDays(Map<String, int> days) =>
+      _userDataService.saveRepetitionCodeDays(days);
+  Future<Map<String, int>> loadRepetitionCodeDays() =>
+      _userDataService.loadRepetitionCodeDays();
+
   // Konfigurasi API lama
   static const String _apiDomainKey = 'api_domain';
   static const String _apiKeyKey = 'api_key';

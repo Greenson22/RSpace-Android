@@ -61,9 +61,11 @@ class DiscussionProvider
   List<PointPreset> _pointPresets = [];
   List<PointPreset> get pointPresets => _pointPresets;
 
-  // ==> STATE BARU UNTUK URUTAN KODE <==
   List<String> _repetitionCodeOrder = [];
   List<String> get repetitionCodeOrder => _repetitionCodeOrder;
+
+  // ==> STATE BARU UNTUK MENYIMPAN BOBOT HARI <==
+  Map<String, int> _repetitionCodeDays = {};
 
   // GETTERS
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
@@ -104,8 +106,9 @@ class DiscussionProvider
     notifyListeners();
     try {
       _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
-      // ==> MUAT URUTAN KODE <==
       _repetitionCodeOrder = await prefsService.loadRepetitionCodeOrder();
+      // ==> MUAT BOBOT HARI <==
+      _repetitionCodeDays = await prefsService.loadRepetitionCodeDays();
       filterAndSortDiscussions();
     } finally {
       _isLoading = false;
@@ -118,11 +121,10 @@ class DiscussionProvider
     await discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN URUTAN KODE <==
   Future<void> saveRepetitionCodeOrder(List<String> newOrder) async {
     _repetitionCodeOrder = newOrder;
     await prefsService.saveRepetitionCodeOrder(newOrder);
-    filterAndSortDiscussions(); // Terapkan urutan baru secara langsung
+    filterAndSortDiscussions();
   }
 
   // PRESET ACTIONS
@@ -177,7 +179,6 @@ class DiscussionProvider
     );
     _allDiscussions.add(newDiscussion);
 
-    // ==> PERUBAHAN DI SINI: Tambahkan 10 neuron setiap membuat diskusi baru <==
     await prefsService.saveNeurons(10);
 
     filterAndSortDiscussions();
@@ -191,7 +192,6 @@ class DiscussionProvider
   }) {
     final newPoint = Point(
       pointText: text,
-      // ==> PERUBAHAN DI SINI: Menggunakan tanggal dari discussion induk <==
       date: discussion.date ?? DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: repetitionCode,
     );
@@ -219,6 +219,42 @@ class DiscussionProvider
 
   void deletePoint(Discussion discussion, Point point) {
     discussion.points.removeWhere((p) => p.hashCode == point.hashCode);
+    filterAndSortDiscussions();
+    saveDiscussions();
+  }
+
+  // ==> PERBARUI FUNGSI YANG MEMANGGIL getNewDateForRepetitionCode <==
+  @override
+  void updateDiscussionCode(Discussion discussion, String newCode) {
+    discussion.repetitionCode = newCode;
+    if (newCode != 'Finish') {
+      discussion.date = getNewDateForRepetitionCode(
+        newCode,
+        _repetitionCodeDays,
+      );
+      if (discussion.finished) {
+        discussion.finished = false;
+        discussion.finish_date = null;
+      }
+    } else {
+      markAsFinished(discussion);
+    }
+    filterAndSortDiscussions();
+    saveDiscussions();
+  }
+
+  @override
+  void updatePointCode(Point point, String newCode) {
+    point.repetitionCode = newCode;
+    if (newCode != 'Finish') {
+      point.date = getNewDateForRepetitionCode(newCode, _repetitionCodeDays);
+      if (point.finished) {
+        point.finished = false;
+        point.finish_date = null;
+      }
+    } else {
+      markPointAsFinished(point);
+    }
     filterAndSortDiscussions();
     saveDiscussions();
   }

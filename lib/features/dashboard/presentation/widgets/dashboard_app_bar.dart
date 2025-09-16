@@ -7,6 +7,7 @@ import '../../../ai_assistant/presentation/pages/chat_page.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../settings/presentation/dialogs/gemini_api_key_dialog.dart';
 import '../../../settings/presentation/dialogs/gemini_prompt_dialog.dart';
+import '../../../settings/presentation/dialogs/repetition_code_settings_dialog.dart';
 import '../../../settings/presentation/dialogs/quick_fab_settings_dialog.dart';
 import '../../../settings/presentation/dialogs/theme_settings_dialog.dart';
 import '../dialogs/progress_settings_dialog.dart';
@@ -74,6 +75,14 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
               if (changed == true) {
                 onRefresh();
               }
+            } else if (value == 'repetition_settings') {
+              final changed = await showDialog<bool>(
+                context: context,
+                builder: (context) => const RepetitionCodeSettingsDialog(),
+              );
+              if (changed == true) {
+                onRefresh();
+              }
             } else if (value == 'api_key') {
               showGeminiApiKeyDialog(context);
             } else if (value == 'prompt') {
@@ -92,52 +101,61 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'theme_settings',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.palette_outlined),
                 title: Text('Pengaturan Tampilan'),
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
+              value: 'repetition_settings',
+              child: const ListTile(
+                // ==> IKON DIGANTI DI SINI <==
+                leading: Icon(Icons.timer_outlined),
+                title: Text('Atur Bobot Repetisi'),
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
               value: 'progress_settings',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.rule_folder_outlined),
                 title: Text('Atur Progres Dashboard'),
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'task_settings',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.playlist_add_check_circle_outlined),
                 title: Text('Atur Tugas Dashboard'),
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'api_key',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.vpn_key_outlined),
                 title: Text('Manajemen API Key'),
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'prompt',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.smart_toy_outlined),
                 title: Text('Manajemen Prompt'),
               ),
             ),
             if (isPathSet)
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'storage_path',
-                child: ListTile(
+                child: const ListTile(
                   leading: Icon(Icons.folder_open_rounded),
                   title: Text('Ubah Penyimpanan Utama'),
                 ),
               ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'quick_fab_settings',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.touch_app_outlined),
                 title: Text('Pengaturan Tombol Cepat'),
               ),
@@ -158,9 +176,9 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
             const PopupMenuDivider(),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'about',
-              child: ListTile(
+              child: const ListTile(
                 leading: Icon(Icons.info_outline),
                 title: Text('Tentang Aplikasi'),
               ),

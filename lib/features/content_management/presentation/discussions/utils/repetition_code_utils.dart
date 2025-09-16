@@ -14,7 +14,6 @@ const List<String> kRepetitionCodes = [
   'Finish',
 ];
 
-// ==> BARU: Peta untuk hadiah neuron <==
 const Map<String, int> kNeuronRewards = {
   'R1D': 1,
   'R3D': 3,
@@ -25,12 +24,10 @@ const Map<String, int> kNeuronRewards = {
   'Finish': 50,
 };
 
-/// Mendapatkan jumlah neuron berdasarkan kode repetisi.
 int getNeuronRewardForCode(String code) {
   return kNeuronRewards[code] ?? 0;
 }
 
-// FUNGSI INI SEKARANG DIUBAH UNTUK MENERIMA URUTAN KUSTOM
 int getRepetitionCodeIndex(String code, {List<String>? customOrder}) {
   final order = customOrder != null && customOrder.isNotEmpty
       ? customOrder
@@ -67,30 +64,32 @@ Color getColorForRepetitionCode(String code) {
   }
 }
 
-String getNewDateForRepetitionCode(String code) {
-  final now = DateTime.now();
-  int daysToAdd;
+// ==> FUNGSI BARU UNTUK MENDAPATKAN NILAI DEFAULT <==
+int getDefaultRepetitionDays(String code) {
   switch (code) {
     case 'R1D':
-      daysToAdd = 1;
-      break;
+      return 1;
     case 'R3D':
-      daysToAdd = 3;
-      break;
-    // ==> PERUBAHAN DI SINI <==
-    // R7D, R7D2, dan R7D3 sekarang semua menambahkan 7 hari.
+      return 3;
     case 'R7D':
     case 'R7D2':
     case 'R7D3':
-      daysToAdd = 7;
-      break;
-    // ==> AKHIR PERUBAHAN <==
+      return 7;
     case 'R30D':
-      daysToAdd = 30;
-      break;
+      return 30;
     default:
-      daysToAdd = 0;
-      break;
+      return 0;
+  }
+}
+
+// ==> FUNGSI INI DIPERBARUI TOTAL <==
+String getNewDateForRepetitionCode(String code, Map<String, int> customDays) {
+  final now = DateTime.now();
+  // Ambil nilai dari pengaturan kustom, jika tidak ada, gunakan default.
+  final daysToAdd = customDays[code] ?? getDefaultRepetitionDays(code);
+
+  if (daysToAdd == 0 && code != 'R0D') {
+    return DateFormat('yyyy-MM-dd').format(now);
   }
   return DateFormat('yyyy-MM-dd').format(now.add(Duration(days: daysToAdd)));
 }
