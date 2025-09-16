@@ -35,6 +35,8 @@ class SubjectService {
 
     final sortPrefs = await _prefsService.loadSortPreferences();
     final filterPrefs = await _prefsService.loadFilterPreference();
+    // ==> 1. MUAT URUTAN BOBOT KUSTOM DARI PENYIMPANAN <==
+    final customCodeSortOrder = await _prefsService.loadRepetitionCodeOrder();
 
     List<Subject> subjects = [];
     for (var file in files) {
@@ -57,6 +59,7 @@ class SubjectService {
         file.path,
         sortPrefs,
         filterPrefs,
+        customCodeSortOrder, // ==> KIRIM URUTAN KUSTOM KE FUNGSI HELPER
       );
 
       subjects.add(
@@ -75,18 +78,30 @@ class SubjectService {
       );
     }
 
+    // ==> 2. TERAPKAN PENGURUTAN UTAMA DI SINI <==
     subjects.sort((a, b) {
       final codeA = a.repetitionCode;
       final codeB = b.repetitionCode;
 
+      // Logika untuk menangani nilai null (subjek tanpa diskusi aktif/jatuh tempo)
+      // Subjek tanpa kode akan selalu berada di akhir.
       if (codeA == null && codeB == null) return 0;
       if (codeA == null) return 1;
       if (codeB == null) return -1;
 
-      final indexA = getRepetitionCodeIndex(codeA);
-      final indexB = getRepetitionCodeIndex(codeB);
+      // Gunakan urutan kustom untuk perbandingan
+      final indexA = getRepetitionCodeIndex(
+        codeA,
+        customOrder: customCodeSortOrder,
+      );
+      final indexB = getRepetitionCodeIndex(
+        codeB,
+        customOrder: customCodeSortOrder,
+      );
+
       return indexA.compareTo(indexB);
     });
+    // ==> AKHIR BLOK PENGURUTAN <==
 
     bool needsResave = false;
     for (int i = 0; i < subjects.length; i++) {
@@ -107,6 +122,7 @@ class SubjectService {
     String subjectJsonPath,
     Map<String, dynamic> sortPrefs,
     Map<String, String?> filterPrefs,
+    List<String> customCodeSortOrder, // ==> TERIMA URUTAN KUSTOM
   ) async {
     try {
       List<Discussion> discussions = await _discussionService.loadDiscussions(
@@ -197,9 +213,16 @@ class SubjectService {
               a.discussion.toLowerCase().compareTo(b.discussion.toLowerCase());
           break;
         case 'code':
-          comparator = (a, b) => getRepetitionCodeIndex(
-            a.effectiveRepetitionCode,
-          ).compareTo(getRepetitionCodeIndex(b.effectiveRepetitionCode));
+          comparator = (a, b) =>
+              getRepetitionCodeIndex(
+                a.effectiveRepetitionCode,
+                customOrder: customCodeSortOrder, // ==> GUNAKAN URUTAN KUSTOM
+              ).compareTo(
+                getRepetitionCodeIndex(
+                  b.effectiveRepetitionCode,
+                  customOrder: customCodeSortOrder,
+                ),
+              );
           break;
         default: // date
           comparator = (a, b) {
