@@ -241,6 +241,7 @@ class SubjectListTile extends StatelessWidget {
 
     final codeEntries = subject.repetitionCodeCounts.entries.toList()
       ..sort((a, b) {
+        // ==> GUNAKAN URUTAN TAMPILAN UNTUK SORTING VISUAL <==
         int indexA = displayOrder.indexOf(a.key);
         int indexB = displayOrder.indexOf(b.key);
         if (indexA == -1) indexA = 999;

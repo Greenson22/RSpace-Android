@@ -99,9 +99,14 @@ class SubjectService {
         customOrder: customCodeSortOrder,
       );
 
+      // Jika kode repetisinya sama, urutkan berdasarkan posisi yang sudah ada
+      if (indexA == indexB) {
+        return a.position.compareTo(b.position);
+      }
+
       return indexA.compareTo(indexB);
     });
-    // ==> AKHIR BLOK PENGURUTAN <==
+    // ==> BLOK PENGURUTAN KEDUA YANG SALAH TELAH DIHAPUS DARI SINI <==
 
     bool needsResave = false;
     for (int i = 0; i < subjects.length; i++) {
