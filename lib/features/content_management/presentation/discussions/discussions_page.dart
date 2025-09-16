@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 import '../../application/discussion_provider.dart';
 import 'dialogs/discussion_dialogs.dart';
@@ -11,6 +12,7 @@ import '../../../../core/widgets/ad_banner_widget.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../domain/models/discussion_model.dart';
+import 'dialogs/add_discussion_from_content_dialog.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -195,6 +197,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       title: 'Tambah Diskusi Baru',
       label: 'Nama Diskusi',
       subjectLinkedPath: widget.linkedPath,
+      discussion: Discussion(discussion: '', repetitionCode: '', points: []),
       onSave: (name, createHtmlFile) async {
         try {
           await provider.addDiscussion(
@@ -274,12 +277,27 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         ),
         floatingActionButton: provider.isSelectionMode
             ? null
-            : FloatingActionButton(
-                onPressed: () => _addDiscussion(provider),
-                tooltip: 'Tambah Diskusi',
-                child: const Icon(Icons.add),
+            : SpeedDial(
+                icon: Icons.add,
+                activeIcon: Icons.close,
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                children: [
+                  SpeedDialChild(
+                    child: const Icon(Icons.title),
+                    label: 'Tambah dari Judul',
+                    onTap: () => _addDiscussion(provider),
+                  ),
+                  SpeedDialChild(
+                    child: const Icon(Icons.article_outlined),
+                    label: 'Tambah dari Konten (AI)',
+                    onTap: () => showAddDiscussionFromContentDialog(
+                      context: context,
+                      subjectLinkedPath: widget.linkedPath,
+                    ),
+                  ),
+                ],
               ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }

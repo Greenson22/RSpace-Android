@@ -360,6 +360,70 @@ Contoh Jawaban:
     }
   }
 
+  // ==> AWAL FUNGSI BARU <==
+  Future<String> generateDiscussionTitle(String htmlContent) async {
+    final apiKey = await _getActiveApiKey();
+    final model =
+        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    final prompt =
+        '''
+    Analisis konten HTML berikut dan buatkan satu judul yang singkat, padat, dan deskriptif dalam Bahasa Indonesia.
+    Aturan Jawaban:
+    1. HANYA kembalikan teks judulnya saja.
+    2. Jangan gunakan tanda kutip atau format tambahan apa pun.
+    3. Judul tidak boleh lebih dari 10 kata.
+
+    Konten HTML:
+    """
+    $htmlContent
+    """
+
+    Judul yang disarankan:
+    ''';
+
+    final apiUrl =
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final textResponse =
+            body['candidates'][0]['content']['parts'][0]['text'] as String? ??
+            'Diskusi Baru';
+        // Membersihkan jika ada karakter yang tidak diinginkan
+        return textResponse.trim().replaceAll('"', '');
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody['error']?['message'] ?? response.body;
+        throw Exception(
+          'Gagal mendapatkan judul dari AI: ${response.statusCode}\nError: $errorMessage',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+  // ==> AKHIR FUNGSI BARU <==
+
   Future<String> getChatCompletion(String query, {String? context}) async {
     final apiKey = await _getActiveApiKey();
     final model =

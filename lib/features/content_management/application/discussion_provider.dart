@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
+import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import '../domain/models/discussion_model.dart';
 import '../domain/models/point_preset_model.dart';
 import '../domain/services/discussion_service.dart';
@@ -64,7 +65,6 @@ class DiscussionProvider
   List<String> _repetitionCodeOrder = [];
   List<String> get repetitionCodeOrder => _repetitionCodeOrder;
 
-  // ==> STATE BARU UNTUK MENYIMPAN BOBOT HARI <==
   Map<String, int> _repetitionCodeDays = {};
 
   // GETTERS
@@ -107,7 +107,6 @@ class DiscussionProvider
     try {
       _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
       _repetitionCodeOrder = await prefsService.loadRepetitionCodeOrder();
-      // ==> MUAT BOBOT HARI <==
       _repetitionCodeDays = await prefsService.loadRepetitionCodeDays();
       filterAndSortDiscussions();
     } finally {
@@ -185,6 +184,42 @@ class DiscussionProvider
     await saveDiscussions();
   }
 
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<String> addDiscussionFromContent(
+    String htmlContent,
+    String subjectLinkedPath,
+  ) async {
+    final geminiService = GeminiService(); // Buat instance service
+    // 1. Dapatkan judul dari AI
+    final generatedTitle = await geminiService.generateDiscussionTitle(
+      htmlContent,
+    );
+
+    // 2. Buat diskusi baru di memori
+    final newDiscussion = Discussion(
+      discussion: generatedTitle,
+      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      repetitionCode: 'R0D',
+      points: [],
+    );
+
+    // 3. Buat file HTML dan tautkan ke diskusi
+    await createAndLinkHtmlFile(newDiscussion, subjectLinkedPath);
+
+    // 4. Tulis konten HTML yang diberikan pengguna ke file yang baru dibuat
+    if (newDiscussion.filePath != null) {
+      await writeHtmlToFile(newDiscussion.filePath!, htmlContent);
+    }
+
+    // 5. Tambahkan diskusi ke daftar dan simpan
+    _allDiscussions.add(newDiscussion);
+    await prefsService.saveNeurons(10);
+    filterAndSortDiscussions();
+    await saveDiscussions();
+
+    return generatedTitle; // Kembalikan judul untuk notifikasi
+  }
+
   void addPoint(
     Discussion discussion,
     String text, {
@@ -223,7 +258,6 @@ class DiscussionProvider
     saveDiscussions();
   }
 
-  // ==> PERBARUI FUNGSI YANG MEMANGGIL getNewDateForRepetitionCode <==
   @override
   void updateDiscussionCode(Discussion discussion, String newCode) {
     discussion.repetitionCode = newCode;

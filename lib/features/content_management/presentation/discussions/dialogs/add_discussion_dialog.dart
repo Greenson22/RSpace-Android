@@ -1,5 +1,6 @@
 // lib/presentation/pages/3_discussions_page/dialogs/add_discussion_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 
 Future<void> showAddDiscussionDialog({
   required BuildContext context,
@@ -7,6 +8,7 @@ Future<void> showAddDiscussionDialog({
   required String label,
   required Function(String, bool) onSave,
   required String? subjectLinkedPath,
+  required Discussion discussion,
 }) async {
   final controller = TextEditingController();
   bool createHtmlFile = false;
