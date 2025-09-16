@@ -167,6 +167,12 @@ class SharedPreferencesService {
   Future<List<String>> loadRepetitionCodeOrder() =>
       _userDataService.loadRepetitionCodeOrder();
 
+  // ==> METODE BARU UNTUK URUTAN TAMPILAN KODE REPETISI <==
+  Future<void> saveRepetitionCodeDisplayOrder(List<String> order) =>
+      _userDataService.saveRepetitionCodeDisplayOrder(order);
+  Future<List<String>> loadRepetitionCodeDisplayOrder() =>
+      _userDataService.loadRepetitionCodeDisplayOrder();
+
   // Konfigurasi API lama
   static const String _apiDomainKey = 'api_domain';
   static const String _apiKeyKey = 'api_key';

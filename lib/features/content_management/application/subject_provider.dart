@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../domain/models/subject_model.dart';
 import '../domain/models/topic_model.dart'; // ==> IMPORT TOPIC MODEL
 import '../domain/services/subject_service.dart';
+import '../presentation/discussions/utils/repetition_code_utils.dart';
+import '../../../core/services/storage_service.dart';
 
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   final String topicPath;
 
   SubjectProvider(this.topicPath) {
@@ -27,11 +30,22 @@ class SubjectProvider with ChangeNotifier {
   bool _showHiddenSubjects = false; // ==> DITAMBAHKAN
   bool get showHiddenSubjects => _showHiddenSubjects; // ==> DITAMBAHKAN
 
+  // ==> STATE BARU UNTUK URUTAN TAMPILAN KODE <==
+  List<String> _repetitionCodeDisplayOrder = [];
+  List<String> get repetitionCodeDisplayOrder => _repetitionCodeDisplayOrder;
+
   Future<void> fetchSubjects() async {
     _isLoading = true;
     notifyListeners(); // PERBAIKAN: Notifikasi langsung untuk menampilkan loading indicator
 
     try {
+      // ==> MUAT URUTAN TAMPILAN DARI PENYIMPANAN <==
+      _repetitionCodeDisplayOrder = await _prefsService
+          .loadRepetitionCodeDisplayOrder();
+      if (_repetitionCodeDisplayOrder.isEmpty) {
+        _repetitionCodeDisplayOrder = List.from(kRepetitionCodes);
+      }
+
       _allSubjects = await _subjectService.getSubjects(topicPath);
       // Data sudah terurut dari service, cukup terapkan filter yang ada
       _filterSubjects(); // DIUBAH dari search(_searchQuery)
@@ -43,6 +57,13 @@ class SubjectProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners(); // PERBAIKAN: Notifikasi lagi untuk menampilkan data/state kosong
     }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN URUTAN TAMPILAN <==
+  Future<void> saveRepetitionCodeDisplayOrder(List<String> newOrder) async {
+    _repetitionCodeDisplayOrder = newOrder;
+    await _prefsService.saveRepetitionCodeDisplayOrder(newOrder);
+    notifyListeners();
   }
 
   void search(String query) {

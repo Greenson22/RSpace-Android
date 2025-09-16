@@ -1,5 +1,7 @@
-// lib/presentation/pages/2_subjects_page/widgets/subject_list_tile.dart
+// lib/features/content_management/presentation/subjects/widgets/subject_list_tile.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../application/subject_provider.dart';
 import '../../../domain/models/subject_model.dart';
 import '../../discussions/utils/repetition_code_utils.dart';
 
@@ -233,13 +235,18 @@ class SubjectListTile extends StatelessWidget {
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 11, color: textColor);
+    // ==> DAPATKAN URUTAN TAMPILAN DARI PROVIDER <==
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final displayOrder = provider.repetitionCodeDisplayOrder;
 
     final codeEntries = subject.repetitionCodeCounts.entries.toList()
-      ..sort(
-        (a, b) => getRepetitionCodeIndex(
-          a.key,
-        ).compareTo(getRepetitionCodeIndex(b.key)),
-      );
+      ..sort((a, b) {
+        int indexA = displayOrder.indexOf(a.key);
+        int indexB = displayOrder.indexOf(b.key);
+        if (indexA == -1) indexA = 999;
+        if (indexB == -1) indexB = 999;
+        return indexA.compareTo(indexB);
+      });
 
     return Row(
       children: [

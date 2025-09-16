@@ -12,6 +12,8 @@ import '../../application/subject_provider.dart';
 import '../discussions/discussions_page.dart';
 import 'dialogs/subject_dialogs.dart';
 import 'dialogs/move_subject_dialog.dart'; // ==> IMPORT DIALOG BARU
+// ==> IMPORT DIALOG BARU UNTUK URUTAN TAMPILAN <==
+import 'dialogs/repetition_code_display_order_dialog.dart';
 import 'widgets/subject_grid_tile.dart';
 import 'widgets/subject_list_tile.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
@@ -367,6 +369,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
               tooltip: provider.showHiddenSubjects
                   ? 'Sembunyikan Subjects Tersembunyi'
                   : 'Tampilkan Subjects Tersembunyi',
+            ),
+            // ==> TOMBOL BARU UNTUK MENGATUR URUTAN TAMPILAN <==
+            IconButton(
+              icon: const Icon(Icons.sort_by_alpha),
+              onPressed: () => showRepetitionCodeDisplayOrderDialog(context),
+              tooltip: 'Atur Urutan Tampilan Kode',
             ),
           ],
           elevation: 0,

@@ -16,6 +16,9 @@ class UserDataService {
   static const String _excludedTaskCategoriesKey = 'excluded_task_categories';
   // ==> KUNCI BARU UNTUK URUTAN KODE REPETISI <==
   static const String _repetitionCodeOrderKey = 'repetition_code_order';
+  // ==> KUNCI BARU UNTUK URUTAN TAMPILAN KODE REPETISI <==
+  static const String _repetitionCodeDisplayOrderKey =
+      'repetition_code_display_order';
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
@@ -116,5 +119,16 @@ class UserDataService {
   Future<List<String>> loadRepetitionCodeOrder() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getStringList(_repetitionCodeOrderKey) ?? [];
+  }
+
+  // ==> FUNGSI BARU UNTUK URUTAN TAMPILAN KODE REPETISI <==
+  Future<void> saveRepetitionCodeDisplayOrder(List<String> order) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_repetitionCodeDisplayOrderKey, order);
+  }
+
+  Future<List<String>> loadRepetitionCodeDisplayOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_repetitionCodeDisplayOrderKey) ?? [];
   }
 }
