@@ -126,11 +126,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN SUBJECT <==
   Future<void> _moveSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
 
-    // Tampilkan dialog untuk memilih topik tujuan
     final destinationTopic = await showMoveSubjectDialog(
       context,
       widget.topicName,
@@ -217,14 +215,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
   Future<void> _deleteSubject(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
 
-    // Panggil dialog baru dan tunggu hasilnya
     final result = await showDeleteConfirmationDialog(
       context: context,
       subjectName: subject.name,
-      linkedPath: subject.linkedPath, // Kirim linkedPath ke dialog
+      linkedPath: subject.linkedPath,
     );
 
-    // Proses hasil dari dialog
     if (result != null && result['confirmed'] == true) {
       try {
         await provider.deleteSubject(
@@ -370,12 +366,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
                   ? 'Sembunyikan Subjects Tersembunyi'
                   : 'Tampilkan Subjects Tersembunyi',
             ),
-            // ==> TOMBOL BARU UNTUK MENGATUR URUTAN TAMPILAN <==
-            IconButton(
-              icon: const Icon(Icons.sort_by_alpha),
-              onPressed: () => showRepetitionCodeDisplayOrderDialog(context),
-              tooltip: 'Atur Urutan Tampilan Kode',
-            ),
+            // **TOMBOL PENGURUTAN DIHAPUS DARI SINI**
           ],
           elevation: 0,
         ),
@@ -444,8 +435,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
               onEditIndexFile: () => _editIndexFile(context, subject),
-              onMove: () =>
-                  _moveSubject(context, subject), // ==> HUBUNGKAN FUNGSI
+              onMove: () => _moveSubject(context, subject),
             );
           },
         );
@@ -485,8 +475,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
               onEditIndexFile: () => _editIndexFile(context, subject),
-              onMove: () =>
-                  _moveSubject(context, subject), // ==> HUBUNGKAN FUNGSI
+              onMove: () => _moveSubject(context, subject),
             );
           },
         );

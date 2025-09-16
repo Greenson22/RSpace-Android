@@ -38,7 +38,6 @@ class SubjectService {
       final relevantDiscussionInfo = await _getRelevantDiscussionInfo(
         discussions,
         sortPrefs,
-        filterPrefs,
         customCodeSortOrder,
       );
 
@@ -64,25 +63,7 @@ class SubjectService {
       );
     }
 
-    subjects.sort((a, b) {
-      final codeA = a.repetitionCode;
-      final codeB = b.repetitionCode;
-      if (codeA == null && codeB == null) return 0;
-      if (codeA == null) return 1;
-      if (codeB == null) return -1;
-      final indexA = getRepetitionCodeIndex(
-        codeA,
-        customOrder: customCodeSortOrder,
-      );
-      final indexB = getRepetitionCodeIndex(
-        codeB,
-        customOrder: customCodeSortOrder,
-      );
-      if (indexA == indexB) {
-        return a.position.compareTo(b.position);
-      }
-      return indexA.compareTo(indexB);
-    });
+    // **LOGIKA PENGURUTAN TELAH DIHAPUS DARI SINI**
 
     bool needsResave = false;
     for (int i = 0; i < subjects.length; i++) {
@@ -99,8 +80,6 @@ class SubjectService {
     return subjects;
   }
 
-  // ==> METODE BARU DITAMBAHKAN DI SINI <==
-  /// Mendapatkan metadata dari file subject berdasarkan path-nya.
   Future<Map<String, dynamic>> getSubjectMetadata(
     String subjectJsonPath,
   ) async {
@@ -112,7 +91,6 @@ class SubjectService {
   Future<Map<String, String?>> _getRelevantDiscussionInfo(
     List<Discussion> discussions,
     Map<String, dynamic> sortPrefs,
-    Map<String, String?> filterPrefs,
     List<String> customCodeSortOrder,
   ) async {
     try {
@@ -120,59 +98,13 @@ class SubjectService {
         return {'date': null, 'code': 'Finish'};
       }
 
-      final today = DateTime.now();
-      final normalizedToday = DateTime(today.year, today.month, today.day);
+      List<Discussion> discussionsToConsider = discussions
+          .where((d) => !d.finished)
+          .toList();
 
-      List<Discussion> dueDiscussions = discussions.where((d) {
-        if (d.finished) return false;
-        if (d.effectiveDate == null) return false;
-        try {
-          final discussionDate = DateTime.parse(d.effectiveDate!);
-          return !discussionDate.isAfter(normalizedToday);
-        } catch (e) {
-          return false;
-        }
-      }).toList();
-
-      if (dueDiscussions.isEmpty) {
+      if (discussionsToConsider.isEmpty) {
         return {'date': null, 'code': null};
       }
-
-      List<Discussion> filteredDiscussions = dueDiscussions.where((discussion) {
-        final filterType = filterPrefs['filterType'];
-        if (filterType == null) return true;
-
-        if (filterType == 'code') {
-          return discussion.effectiveRepetitionCode ==
-              filterPrefs['filterValue'];
-        } else if (filterType == 'date' && filterPrefs['filterValue'] != null) {
-          try {
-            if (discussion.effectiveDate == null) return false;
-            final discussionDate = DateTime.parse(discussion.effectiveDate!);
-            final normalizedDate = DateTime(
-              discussionDate.year,
-              discussionDate.month,
-              discussionDate.day,
-            );
-
-            final dates = filterPrefs['filterValue']!.split('/');
-            final startDate = DateTime.parse(dates[0]);
-            final endDate = DateTime.parse(dates[1]);
-
-            return !normalizedDate.isBefore(startDate) &&
-                !normalizedDate.isAfter(endDate);
-          } catch (e) {
-            return false;
-          }
-        }
-        return true;
-      }).toList();
-
-      if (filteredDiscussions.isEmpty) {
-        return {'date': null, 'code': null};
-      }
-
-      // ==> BLOK KODE YANG MENGABAIKAN R0D DIHAPUS DARI SINI <==
 
       final sortType = sortPrefs['sortType'] as String;
       final sortAscending = sortPrefs['sortAscending'] as bool;
@@ -207,19 +139,12 @@ class SubjectService {
           break;
       }
 
-      if (filteredDiscussions.isEmpty) {
-        filteredDiscussions = dueDiscussions;
-        if (filteredDiscussions.isEmpty) {
-          return {'date': null, 'code': null};
-        }
-      }
-
-      filteredDiscussions.sort(comparator);
+      discussionsToConsider.sort(comparator);
       if (!sortAscending) {
-        filteredDiscussions = filteredDiscussions.reversed.toList();
+        discussionsToConsider = discussionsToConsider.reversed.toList();
       }
 
-      final relevantDiscussion = filteredDiscussions.first;
+      final relevantDiscussion = discussionsToConsider.first;
       return {
         'date': relevantDiscussion.effectiveDate,
         'code': relevantDiscussion.effectiveRepetitionCode,
