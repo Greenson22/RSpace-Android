@@ -140,6 +140,14 @@ class AppTheme {
       foregroundColor: Colors.white,
       elevation: 2,
     ),
+    // ==> AWAL PERBAIKAN <==
+    tabBarTheme: const TabBarThemeData(
+      // DIUBAH DARI TabBarTheme
+      labelColor: Colors.white, // Warna teks tab yang aktif
+      unselectedLabelColor: Colors.white70, // Warna teks tab yang tidak aktif
+      indicatorColor: Colors.white, // Warna garis indikator
+    ),
+    // ==> AKHIR PERBAIKAN <==
     cardTheme: CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -168,6 +176,14 @@ class AppTheme {
       foregroundColor: Colors.white,
       elevation: 2,
     ),
+    // ==> AWAL PERBAIKAN <==
+    tabBarTheme: TabBarThemeData(
+      // DIUBAH DARI TabBarTheme
+      labelColor: primaryColor, // Warna teks tab yang aktif
+      unselectedLabelColor: Colors.grey[400], // Warna teks tab yang tidak aktif
+      indicatorColor: primaryColor, // Warna garis indikator
+    ),
+    // ==> AKHIR PERBAIKAN <==
     cardTheme: CardThemeData(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
