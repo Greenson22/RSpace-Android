@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
 import '../../../domain/models/discussion_model.dart';
+import '../../../domain/models/point_preset_model.dart';
 import '../utils/repetition_code_utils.dart';
+import 'manage_point_presets_dialog.dart';
 
 // Nilai khusus untuk menandakan 'pilih otomatis'
 const String _autoSelectCode = 'AUTO_SELECT';
@@ -58,6 +60,7 @@ class _AddPointDialogContentState extends State<_AddPointDialogContent> {
   final TextEditingController _controller = TextEditingController();
   String _selectedRepetitionCode = _autoSelectCode;
   late String _lowestPointCode;
+  String? _selectedPreset;
 
   @override
   void initState() {
@@ -85,8 +88,9 @@ class _AddPointDialogContentState extends State<_AddPointDialogContent> {
   @override
   Widget build(BuildContext context) {
     // Sekarang kita bisa dengan aman memanggil provider di sini
-    final provider = Provider.of<DiscussionProvider>(context, listen: false);
+    final provider = Provider.of<DiscussionProvider>(context);
     final repetitionCodes = provider.repetitionCodes;
+    final presets = provider.pointPresets;
 
     return AlertDialog(
       title: Text(widget.title),
@@ -95,9 +99,35 @@ class _AddPointDialogContentState extends State<_AddPointDialogContent> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (presets.isNotEmpty) ...[
+              DropdownButtonFormField<String>(
+                value: _selectedPreset,
+                hint: const Text('Pilih dari preset...'),
+                isExpanded: true,
+                items: presets
+                    .map(
+                      (preset) => DropdownMenuItem(
+                        value: preset.name,
+                        child: Text(preset.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPreset = value;
+                    if (value != null) {
+                      _controller.text = value;
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              const Text('Atau tulis manual di bawah ini:'),
+              const SizedBox(height: 16),
+            ],
             TextField(
               controller: _controller,
-              autofocus: true,
+              autofocus: presets.isEmpty,
               decoration: InputDecoration(labelText: widget.label),
             ),
             const SizedBox(height: 24),
@@ -134,6 +164,13 @@ class _AddPointDialogContentState extends State<_AddPointDialogContent> {
                     _selectedRepetitionCode = newValue;
                   });
                 }
+              },
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.edit_note),
+              label: const Text('Kelola Preset Poin'),
+              onPressed: () {
+                showManagePointPresetsDialog(context);
               },
             ),
           ],

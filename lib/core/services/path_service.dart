@@ -188,6 +188,10 @@ class PathService {
   Future<String> get logTaskPresetsPath async =>
       path.join(await contentsPath, 'log_task_presets.json');
 
+  // ==> PENAMBAHAN PATH BARU <==
+  Future<String> get pointPresetsPath async =>
+      path.join(await contentsPath, 'point_presets.json');
+
   Future<String> get feedbackPath async =>
       path.join(await contentsPath, 'feedback.json');
 

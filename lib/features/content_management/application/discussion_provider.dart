@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import '../domain/models/discussion_model.dart';
+import '../domain/models/point_preset_model.dart';
 import '../domain/services/discussion_service.dart';
+import '../domain/services/point_preset_service.dart';
 import '../../../core/services/path_service.dart';
 import '../../../core/services/storage_service.dart';
 import 'mixins/discussion_actions_mixin.dart';
@@ -14,6 +16,7 @@ class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {
   @override
   final DiscussionService discussionService = DiscussionService();
+  final PointPresetService _pointPresetService = PointPresetService();
   @override
   final SharedPreferencesService prefsService = SharedPreferencesService();
   @override
@@ -51,6 +54,9 @@ class DiscussionProvider
   @override
   Set<Discussion> get selectedDiscussions => _selectedDiscussions;
 
+  List<PointPreset> _pointPresets = [];
+  List<PointPreset> get pointPresets => _pointPresets;
+
   // GETTERS
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
 
@@ -72,6 +78,17 @@ class DiscussionProvider
   Future<void> loadInitialData() async {
     await loadPreferences();
     await loadDiscussions();
+    await _loadPointPresets();
+  }
+
+  Future<void> _loadPointPresets() async {
+    _pointPresets = await _pointPresetService.loadPresets();
+    notifyListeners();
+  }
+
+  Future<void> _savePointPresets() async {
+    await _pointPresetService.savePresets(_pointPresets);
+    notifyListeners();
   }
 
   Future<void> loadDiscussions() async {
@@ -89,6 +106,28 @@ class DiscussionProvider
   @override
   Future<void> saveDiscussions() async {
     await discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
+  }
+
+  // PRESET ACTIONS
+  Future<void> addPointPreset(String name) async {
+    final newId =
+        (_pointPresets.isEmpty
+            ? 0
+            : _pointPresets.map((p) => p.id).reduce((a, b) => a > b ? a : b)) +
+        1;
+    _pointPresets.add(PointPreset(id: newId, name: name));
+    await _savePointPresets();
+  }
+
+  Future<void> updatePointPreset(PointPreset preset, String newName) async {
+    final presetToUpdate = _pointPresets.firstWhere((p) => p.id == preset.id);
+    presetToUpdate.name = newName;
+    await _savePointPresets();
+  }
+
+  Future<void> deletePointPreset(PointPreset preset) async {
+    _pointPresets.removeWhere((p) => p.id == preset.id);
+    await _savePointPresets();
   }
 
   // BASIC CRUD (Create, Read, Update, Delete)
