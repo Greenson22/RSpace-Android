@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
 import '../utils/repetition_code_utils.dart';
 
-void showRepetitionCodeOrderDialog(BuildContext context) {
-  final provider = Provider.of<DiscussionProvider>(context, listen: false);
+void showRepetitionCodeOrderDialog(
+  BuildContext context, {
+  required DiscussionProvider provider,
+}) {
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(

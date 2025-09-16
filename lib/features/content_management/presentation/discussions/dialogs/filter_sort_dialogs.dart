@@ -1,5 +1,8 @@
-// lib/presentation/pages/3_discussions_page/dialogs/filter_sort_dialogs.dart
+// lib/features/content_management/presentation/discussions/dialogs/filter_sort_dialogs.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+// ==> IMPORT PROVIDER <==
+import '../../../application/discussion_provider.dart';
 // ==> IMPORT DIALOG BARU <==
 import 'repetition_code_order_dialog.dart';
 
@@ -148,10 +151,12 @@ Future<void> showSortDialog({
 }) async {
   String sortType = initialSortType;
   bool sortAscending = initialSortAscending;
+  // ==> AMBIL INSTANCE PROVIDER DI SINI <==
+  final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
   showDialog(
     context: context,
-    builder: (context) {
+    builder: (dialogContext) {
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -190,9 +195,12 @@ Future<void> showSortDialog({
                       icon: const Icon(Icons.sort_by_alpha),
                       label: const Text('Atur Bobot Urutan Kode'),
                       onPressed: () {
-                        // Tutup dialog ini dulu, lalu buka dialog baru
-                        Navigator.pop(context);
-                        showRepetitionCodeOrderDialog(context);
+                        // ==> PERBAIKAN DI SINI <==
+                        Navigator.pop(dialogContext);
+                        showRepetitionCodeOrderDialog(
+                          context,
+                          provider: provider, // Kirim instance provider
+                        );
                       },
                     ),
                   ),
