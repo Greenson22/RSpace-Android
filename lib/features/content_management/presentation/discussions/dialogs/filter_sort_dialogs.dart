@@ -151,7 +151,6 @@ Future<void> showSortDialog({
 }) async {
   String sortType = initialSortType;
   bool sortAscending = initialSortAscending;
-  // ==> AMBIL INSTANCE PROVIDER DI SINI <==
   final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
   showDialog(
@@ -187,20 +186,23 @@ Future<void> showSortDialog({
                   groupValue: sortType,
                   onChanged: (value) => setDialogState(() => sortType = value!),
                 ),
-                // ==> TOMBOL BARU UNTUK MENGATUR BOBOT <==
+                // ==> PERUBAHAN PADA PEMANGGILAN DIALOG <==
                 if (sortType == 'code')
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0, right: 16.0),
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.sort_by_alpha),
                       label: const Text('Atur Bobot Urutan Kode'),
-                      onPressed: () {
-                        // ==> PERBAIKAN DI SINI <==
-                        Navigator.pop(dialogContext);
-                        showRepetitionCodeOrderDialog(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext); // Tutup dialog sort
+                        final newOrder = await showRepetitionCodeOrderDialog(
                           context,
-                          provider: provider, // Kirim instance provider
+                          initialOrder: provider.repetitionCodeOrder,
                         );
+                        // Jika pengguna menyimpan, panggil provider untuk update
+                        if (newOrder != null) {
+                          provider.saveRepetitionCodeOrder(newOrder);
+                        }
                       },
                     ),
                   ),

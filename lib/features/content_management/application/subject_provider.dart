@@ -32,6 +32,14 @@ class SubjectProvider with ChangeNotifier {
   bool _showHiddenSubjects = false;
   bool get showHiddenSubjects => _showHiddenSubjects;
 
+  // ==> STATE BARU UNTUK SORTING <==
+  String _sortType = 'position'; // Default urutan manual
+  String get sortType => _sortType;
+  bool _sortAscending = true;
+  bool get sortAscending => _sortAscending;
+  List<String> _repetitionCodeSortOrder = [];
+  List<String> get repetitionCodeSortOrder => _repetitionCodeSortOrder;
+
   // State untuk urutan tampilan kode
   List<String> _repetitionCodeDisplayOrder = [];
   List<String> get repetitionCodeDisplayOrder => _repetitionCodeDisplayOrder;
@@ -41,6 +49,11 @@ class SubjectProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Muat preferensi sorting subject
+      await _loadSortPreferences();
+      // Muat urutan bobot custom untuk sorting kode
+      _repetitionCodeSortOrder = await _prefsService.loadRepetitionCodeOrder();
+
       // Muat urutan tampilan kustom dari penyimpanan
       _repetitionCodeDisplayOrder = await _prefsService
           .loadRepetitionCodeDisplayOrder();
@@ -49,7 +62,7 @@ class SubjectProvider with ChangeNotifier {
       }
 
       _allSubjects = await _subjectService.getSubjects(topicPath);
-      _filterSubjects();
+      _filterAndSortSubjects();
     } catch (e) {
       debugPrint("Error fetching subjects: $e");
       _allSubjects = [];
@@ -58,6 +71,31 @@ class SubjectProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _loadSortPreferences() async {
+    // Gunakan key yang berbeda untuk preferensi sort subject
+    // (Untuk saat ini, kita bisa gunakan key yang sama jika ingin sinkron,
+    // atau buat key baru di UserDataService jika ingin terpisah)
+    final sortPrefs = await _prefsService.loadSortPreferences();
+    _sortType = sortPrefs['sortType'] ?? 'position';
+    _sortAscending = sortPrefs['sortAscending'] ?? true;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENERAPKAN SORTING <==
+  Future<void> applySort(String sortType, bool sortAscending) async {
+    _sortType = sortType;
+    _sortAscending = sortAscending;
+    // Simpan preferensi agar diingat
+    await _prefsService.saveSortPreferences(sortType, sortAscending);
+    _filterAndSortSubjects();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN URUTAN BOBOT KODE <==
+  Future<void> saveRepetitionCodeOrder(List<String> newOrder) async {
+    _repetitionCodeSortOrder = newOrder;
+    await _prefsService.saveRepetitionCodeOrder(newOrder);
+    _filterAndSortSubjects(); // Terapkan urutan baru secara langsung
   }
 
   // Fungsi untuk menyimpan urutan tampilan kustom
@@ -69,10 +107,11 @@ class SubjectProvider with ChangeNotifier {
 
   void search(String query) {
     _searchQuery = query.toLowerCase();
-    _filterSubjects();
+    _filterAndSortSubjects();
   }
 
-  void _filterSubjects() {
+  // ==> NAMA FUNGSI DIPERBARUI DAN LOGIKA SORTING DITAMBAHKAN <==
+  void _filterAndSortSubjects() {
     List<Subject> tempSubjects;
 
     // 1. Filter berdasarkan visibilitas
@@ -86,9 +125,47 @@ class SubjectProvider with ChangeNotifier {
 
     // 2. Filter berdasarkan query pencarian
     if (_searchQuery.isNotEmpty) {
-      _filteredSubjects = tempSubjects
+      tempSubjects = tempSubjects
           .where((subject) => subject.name.toLowerCase().contains(_searchQuery))
           .toList();
+    }
+
+    // 3. Terapkan Sorting
+    tempSubjects.sort((a, b) {
+      int result;
+      switch (_sortType) {
+        case 'name':
+          result = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          break;
+        case 'date':
+          final dateA = a.date != null ? DateTime.tryParse(a.date!) : null;
+          final dateB = b.date != null ? DateTime.tryParse(b.date!) : null;
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return 1; // nulls last
+          if (dateB == null) return -1; // nulls last
+          result = dateA.compareTo(dateB);
+          break;
+        case 'code':
+          result =
+              getRepetitionCodeIndex(
+                a.repetitionCode ?? '',
+                customOrder: _repetitionCodeSortOrder,
+              ).compareTo(
+                getRepetitionCodeIndex(
+                  b.repetitionCode ?? '',
+                  customOrder: _repetitionCodeSortOrder,
+                ),
+              );
+          break;
+        default: // 'position'
+          result = a.position.compareTo(b.position);
+          break;
+      }
+      return result;
+    });
+
+    if (!_sortAscending) {
+      _filteredSubjects = tempSubjects.reversed.toList();
     } else {
       _filteredSubjects = tempSubjects;
     }
@@ -98,7 +175,7 @@ class SubjectProvider with ChangeNotifier {
 
   void toggleShowHidden() {
     _showHiddenSubjects = !_showHiddenSubjects;
-    _filterSubjects();
+    _filterAndSortSubjects();
   }
 
   Future<void> updateSubjectIcon(String subjectName, String newIcon) async {
@@ -142,7 +219,6 @@ class SubjectProvider with ChangeNotifier {
     String subjectName, {
     bool deleteLinkedFolder = false,
   }) async {
-    // Jika perlu hapus folder tertaut, panggil SubjectActions
     if (deleteLinkedFolder) {
       final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
       if (subject.linkedPath != null) {

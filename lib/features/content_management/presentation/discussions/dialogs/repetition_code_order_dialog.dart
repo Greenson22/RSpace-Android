@@ -1,25 +1,22 @@
 // lib/features/content_management/presentation/discussions/dialogs/repetition_code_order_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../application/discussion_provider.dart';
 import '../utils/repetition_code_utils.dart';
 
-void showRepetitionCodeOrderDialog(
+// Fungsi diubah untuk menerima 'initialOrder' dan mengembalikan 'Future<List<String>?>'
+Future<List<String>?> showRepetitionCodeOrderDialog(
   BuildContext context, {
-  required DiscussionProvider provider,
+  required List<String> initialOrder,
 }) {
-  showDialog(
+  return showDialog<List<String>>(
     context: context,
-    builder: (_) => ChangeNotifierProvider.value(
-      value: provider,
-      child: const RepetitionCodeOrderDialog(),
-    ),
+    builder: (_) => RepetitionCodeOrderDialog(initialOrder: initialOrder),
   );
 }
 
 class RepetitionCodeOrderDialog extends StatefulWidget {
-  const RepetitionCodeOrderDialog({super.key});
+  final List<String> initialOrder;
+  const RepetitionCodeOrderDialog({super.key, required this.initialOrder});
 
   @override
   State<RepetitionCodeOrderDialog> createState() =>
@@ -32,18 +29,14 @@ class _RepetitionCodeOrderDialogState extends State<RepetitionCodeOrderDialog> {
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<DiscussionProvider>(context, listen: false);
-    // Jika ada urutan kustom, gunakan itu. Jika tidak, gunakan daftar default.
-    final currentOrder = provider.repetitionCodeOrder;
-    _codes = currentOrder.isNotEmpty
-        ? List.from(currentOrder)
+    // Gunakan initialOrder dari parameter widget
+    _codes = widget.initialOrder.isNotEmpty
+        ? List.from(widget.initialOrder)
         : List.from(kRepetitionCodes.where((c) => c != 'Finish'));
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<DiscussionProvider>(context, listen: false);
-
     return AlertDialog(
       title: const Text('Atur Bobot Urutan Kode'),
       content: SizedBox(
@@ -102,8 +95,8 @@ class _RepetitionCodeOrderDialogState extends State<RepetitionCodeOrderDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            provider.saveRepetitionCodeOrder(_codes);
-            Navigator.pop(context);
+            // Kembalikan list yang sudah diurutkan saat tombol Simpan ditekan
+            Navigator.pop(context, _codes);
           },
           child: const Text('Simpan Urutan'),
         ),

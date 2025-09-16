@@ -1,4 +1,4 @@
-// lib/presentation/pages/2_subjects_page.dart
+// lib/features/content_management/presentation/subjects/subjects_page.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -6,13 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import '../../domain/models/subject_model.dart';
-import '../../domain/models/topic_model.dart'; // ==> IMPORT TOPIC MODEL
+import '../../domain/models/topic_model.dart';
 import '../../application/discussion_provider.dart';
 import '../../application/subject_provider.dart';
 import '../discussions/discussions_page.dart';
 import 'dialogs/subject_dialogs.dart';
-import 'dialogs/move_subject_dialog.dart'; // ==> IMPORT DIALOG BARU
-// ==> IMPORT DIALOG BARU UNTUK URUTAN TAMPILAN <==
+import 'dialogs/move_subject_dialog.dart';
+// ==> IMPORT DIALOG SORT BARU <==
+import 'dialogs/subject_sort_dialog.dart';
 import 'dialogs/repetition_code_display_order_dialog.dart';
 import 'widgets/subject_grid_tile.dart';
 import 'widgets/subject_list_tile.dart';
@@ -317,7 +318,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
       context,
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
-          create: (_) => DiscussionProvider(jsonFilePath),
+          create: (_) =>
+              DiscussionProvider(jsonFilePath, linkedPath: currentLinkedPath),
           child: DiscussionsPage(
             subjectName: subject.name,
             linkedPath: currentLinkedPath,
@@ -366,7 +368,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
                   ? 'Sembunyikan Subjects Tersembunyi'
                   : 'Tampilkan Subjects Tersembunyi',
             ),
-            // **TOMBOL PENGURUTAN DIHAPUS DARI SINI**
+            // ==> TOMBOL SORT DITAMBAHKAN DI SINI <==
+            IconButton(
+              icon: const Icon(Icons.sort),
+              tooltip: 'Urutkan Subject',
+              onPressed: () => showSubjectSortDialog(context: context),
+            ),
           ],
           elevation: 0,
         ),
@@ -425,7 +432,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
           itemBuilder: (context, index) {
             final subject = subjectsToShow[index];
             return SubjectListTile(
-              key: ValueKey(subject.name),
+              key: ValueKey(subject.name + subject.position.toString()),
               subject: subject,
               isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: () => _navigateToDiscussionsPage(context, subject),
@@ -465,7 +472,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
           itemBuilder: (context, index) {
             final subject = subjectsToShow[index];
             return SubjectGridTile(
-              key: ValueKey(subject.name),
+              key: ValueKey(subject.name + subject.position.toString()),
               subject: subject,
               isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: () => _navigateToDiscussionsPage(context, subject),

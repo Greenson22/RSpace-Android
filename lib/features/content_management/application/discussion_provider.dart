@@ -26,7 +26,11 @@ class DiscussionProvider
   @override
   final String? sourceSubjectLinkedPath;
 
-  DiscussionProvider(this._jsonFilePath, {this.sourceSubjectLinkedPath}) {
+  DiscussionProvider(
+    this._jsonFilePath, {
+    this.sourceSubjectLinkedPath,
+    String? linkedPath,
+  }) {
     loadInitialData();
   }
 
