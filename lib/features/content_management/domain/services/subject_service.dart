@@ -172,23 +172,7 @@ class SubjectService {
         return {'date': null, 'code': null};
       }
 
-      final activeDiscussions = filteredDiscussions
-          .where((d) => !d.finished)
-          .toList();
-
-      if (activeDiscussions.isNotEmpty) {
-        final hasNonR0D = activeDiscussions.any(
-          (d) => d.effectiveRepetitionCode != 'R0D',
-        );
-
-        if (hasNonR0D) {
-          filteredDiscussions = activeDiscussions
-              .where((d) => d.effectiveRepetitionCode != 'R0D')
-              .toList();
-        } else {
-          filteredDiscussions = activeDiscussions;
-        }
-      }
+      // ==> BLOK KODE YANG MENGABAIKAN R0D DIHAPUS DARI SINI <==
 
       final sortType = sortPrefs['sortType'] as String;
       final sortAscending = sortPrefs['sortAscending'] as bool;
