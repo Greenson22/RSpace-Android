@@ -22,7 +22,12 @@ class GeminiSettingsService {
         final jsonString = await file.readAsString();
         if (jsonString.isNotEmpty) {
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-          return GeminiSettings.fromJson(jsonData);
+          final settings = GeminiSettings.fromJson(jsonData);
+          // Jika tidak ada model sama sekali, tambahkan yang default
+          if (settings.models.isEmpty) {
+            return settings.copyWith(models: _getDefaultModels());
+          }
+          return settings;
         }
       }
     } catch (e) {
@@ -36,6 +41,29 @@ class GeminiSettingsService {
     final file = await _settingsFile;
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(settings.toJson()));
+  }
+
+  // == PERBAIKAN DI FUNGSI INI ==
+  List<GeminiModelInfo> _getDefaultModels() {
+    // 1. Hapus 'const' dari list
+    return [
+      // 2. Hapus 'const' dari objek & ganti 'id' menjadi 'modelId'
+      GeminiModelInfo(
+        name: 'Gemini 1.5 Pro (Default)',
+        modelId: 'gemini-1.5-pro-latest',
+        isDefault: true,
+      ),
+      GeminiModelInfo(
+        name: 'Gemini 1.5 Flash (Default)',
+        modelId: 'gemini-1.5-flash-latest',
+        isDefault: true,
+      ),
+      GeminiModelInfo(
+        name: 'Gemini 1.0 Pro (Default)',
+        modelId: 'gemini-1.0-pro',
+        isDefault: true,
+      ),
+    ];
   }
 
   Prompt _getDefaultPrompt() {
@@ -60,6 +88,9 @@ Ikuti aturan-aturan berikut dengan ketat:
   }
 
   GeminiSettings _createDefaultSettings() {
-    return GeminiSettings(prompts: [_getDefaultPrompt()]);
+    return GeminiSettings(
+      prompts: [_getDefaultPrompt()],
+      models: _getDefaultModels(),
+    );
   }
 }
