@@ -144,7 +144,7 @@ class _AboutPageState extends State<AboutPage>
             child: const CircleAvatar(
               radius: 60,
               backgroundColor: Colors.white,
-              child: Icon(Icons.code_rounded, size: 60, color: Colors.black87),
+              backgroundImage: AssetImage('assets/pictures/profile.jpg'),
             ),
           ),
           const SizedBox(height: 24),
