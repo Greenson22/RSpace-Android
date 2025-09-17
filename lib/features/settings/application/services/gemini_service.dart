@@ -17,7 +17,8 @@ class GeminiService {
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
 
-  // Hapus definisi 'defaultMotivationalPrompt' dari sini
+  // Authority (domain) untuk semua API call Gemini
+  final String _googleApiAuthority = 'generativelanguage.googleapis.com';
 
   Future<String> _getActiveApiKey() async {
     final settings = await _settingsService.loadSettings();
@@ -29,9 +30,18 @@ class GeminiService {
     }
   }
 
-  /// Menghasilkan atau mengambil satu kalimat motivasi belajar.
+  /// Helper untuk membuat URI yang aman
+  Uri _buildApiUri(String model, String apiKey) {
+    return Uri.https(
+      _googleApiAuthority,
+      '/v1beta/models/$model:generateContent',
+      {'key': apiKey},
+    );
+  }
+
+  // --- SEMUA FUNGSI API DIBAWAH INI TELAH DIPERBARUI ---
+
   Future<String> getMotivationalQuote() async {
-    // ... sisa fungsi ini tidak berubah
     const fallbackQuotes = [
       'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.',
       'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.',
@@ -68,12 +78,11 @@ class GeminiService {
 
     final prompt = settings.motivationalQuotePrompt;
     final model = settings.generalModelId;
-    final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -117,7 +126,6 @@ class GeminiService {
     return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
   }
 
-  // ... sisa kode di file ini tetap sama
   Future<ColorPalette> suggestColorPalette({
     required String theme,
     required String paletteName,
@@ -130,6 +138,7 @@ class GeminiService {
       throw Exception('API Key Gemini tidak aktif.');
     }
 
+    // ... (prompt tetap sama)
     final prompt =
         '''
       Buatkan palet warna harmonis untuk UI kartu berdasarkan tema "$theme".
@@ -148,12 +157,11 @@ class GeminiService {
       }
       ''';
 
-    final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -168,6 +176,7 @@ class GeminiService {
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
@@ -220,12 +229,11 @@ Contoh Jawaban:
 ["💡", "📚", "⚙️", "❤️", "⭐"]
 ''';
 
-    final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -269,6 +277,7 @@ Contoh Jawaban:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
+    // ... (prompt tetap sama)
     final fileListString = allFiles
         .map(
           (f) => "- Judul: \"${f['title']}\", Path: \"${f['relativePath']}\"",
@@ -303,12 +312,11 @@ Contoh Jawaban:
       ]
       ''';
 
-    final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -323,6 +331,7 @@ Contoh Jawaban:
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
@@ -358,6 +367,7 @@ Contoh Jawaban:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
+    // ... (prompt tetap sama)
     final prompt =
         '''
     Analisis konten HTML berikut dan buatkan 3 sampai 5 rekomendasi judul yang singkat, padat, dan deskriptif dalam Bahasa Indonesia.
@@ -380,12 +390,11 @@ Contoh Jawaban:
     ]
     ''';
 
-    final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -400,6 +409,7 @@ Contoh Jawaban:
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
@@ -420,12 +430,13 @@ Contoh Jawaban:
   Future<String> generateHtmlTemplate(String themeDescription) async {
     final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model = settings.contentModelId; // Menggunakan model untuk konten
+    final model = settings.contentModelId;
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
     }
 
+    // ... (prompt tetap sama)
     final prompt =
         '''
     Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
@@ -436,12 +447,11 @@ Contoh Jawaban:
     3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
     ''';
 
-    final apiUrl =
-        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -455,6 +465,7 @@ Contoh Jawaban:
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
@@ -490,9 +501,7 @@ Contoh Jawaban:
       );
     }
 
-    final apiUrl =
-        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
-
+    // ... (prompt tetap sama)
     final prompt =
         '''
 Anda adalah "Flo", asisten AI yang terintegrasi di dalam aplikasi bernama RSpace.
@@ -507,9 +516,11 @@ Pertanyaan Pengguna: "$query"
 Jawaban Anda:
 ''';
 
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -523,6 +534,7 @@ Jawaban Anda:
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
@@ -565,12 +577,11 @@ Jawaban Anda:
     );
     final promptText = activePrompt.content.replaceAll('{topic}', topic);
 
-    final apiUrl =
-        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -584,6 +595,7 @@ Jawaban Anda:
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
@@ -625,6 +637,7 @@ Jawaban Anda:
       throw Exception('Materi kuis tidak boleh kosong.');
     }
 
+    // ... (prompt tetap sama)
     final prompt =
         '''
     Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
@@ -652,12 +665,11 @@ Jawaban Anda:
       }
     ]
     ''';
-    final apiUrl =
-        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
+    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        apiUrl, // Perbaikan di sini
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -672,6 +684,7 @@ Jawaban Anda:
       );
 
       if (response.statusCode == 200) {
+        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
