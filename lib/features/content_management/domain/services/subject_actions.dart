@@ -74,6 +74,25 @@ class SubjectActions {
     }
   }
 
+  /// Menyimpan konten HTML baru ke file index.html milik subject.
+  Future<void> generateAndSaveSubjectIndexFile(
+    String subjectLinkedPath,
+    String htmlContent,
+  ) async {
+    final perpuskuBasePath = await _pathService.perpuskuDataPath;
+    final subjectDirectoryPath = path.join(
+      perpuskuBasePath,
+      'file_contents',
+      'topics',
+      subjectLinkedPath,
+    );
+    final indexFilePath = path.join(subjectDirectoryPath, 'index.html');
+    final indexFile = File(indexFilePath);
+
+    // Langsung timpa file yang ada dengan konten baru dari AI
+    await indexFile.writeAsString(htmlContent, flush: true);
+  }
+
   /// Membuka atau membuat file index.html dari subject yang tertaut.
   Future<void> openSubjectIndexFile(String subjectLinkedPath) async {
     final perpuskuBasePath = await _pathService.perpuskuDataPath;

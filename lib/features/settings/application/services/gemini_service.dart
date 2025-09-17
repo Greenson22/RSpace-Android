@@ -417,6 +417,68 @@ Contoh Jawaban:
     }
   }
 
+  Future<String> generateHtmlTemplate(String themeDescription) async {
+    final settings = await _settingsService.loadSettings();
+    final apiKey = await _getActiveApiKey();
+    final model = settings.contentModelId; // Menggunakan model untuk konten
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    final prompt =
+        '''
+    Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
+
+    ATURAN SANGAT PENTING:
+    1.  Gunakan HANYA inline CSS untuk semua styling. JANGAN gunakan tag `<style>` atau file CSS eksternal.
+    2.  Di dalam `<body>`, WAJIB ada sebuah `<div>` kosong dengan id `main-container`. Contoh: `<div id="main-container"></div>`. Ini adalah tempat konten akan dimasukkan nanti.
+    3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
+    ''';
+
+    final apiUrl =
+        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final candidates = body['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final content = candidates[0]['content'] as Map<String, dynamic>?;
+          if (content != null) {
+            final parts = content['parts'] as List<dynamic>?;
+            if (parts != null && parts.isNotEmpty) {
+              return parts[0]['text'] as String? ?? '';
+            }
+          }
+        }
+        throw Exception('Gagal mem-parsing respons dari API Gemini.');
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = errorBody['error']?['message'] ?? response.body;
+        throw Exception(
+          'Gagal menghasilkan template: ${response.statusCode}\nError: $errorMessage',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<String> getChatCompletion(String query, {String? context}) async {
     final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
@@ -429,7 +491,7 @@ Contoh Jawaban:
     }
 
     final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
 
     final prompt =
         '''
@@ -504,7 +566,7 @@ Jawaban Anda:
     final promptText = activePrompt.content.replaceAll('{topic}', topic);
 
     final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
 
     try {
       final response = await http.post(
@@ -591,7 +653,7 @@ Jawaban Anda:
     ]
     ''';
     final apiUrl =
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+        '[https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey](https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey)';
 
     try {
       final response = await http.post(

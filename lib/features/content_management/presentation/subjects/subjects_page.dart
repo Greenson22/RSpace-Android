@@ -12,12 +12,12 @@ import '../../application/subject_provider.dart';
 import '../discussions/discussions_page.dart';
 import 'dialogs/subject_dialogs.dart';
 import 'dialogs/move_subject_dialog.dart';
-// ==> IMPORT DIALOG SORT BARU <==
 import 'dialogs/subject_sort_dialog.dart';
 import 'dialogs/repetition_code_display_order_dialog.dart';
 import 'widgets/subject_grid_tile.dart';
 import 'widgets/subject_list_tile.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
+import 'dialogs/generate_index_template_dialog.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -263,12 +263,54 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  Future<void> _editIndexFile(BuildContext context, Subject subject) async {
+  Future<void> _showEditIndexOptions(
+    BuildContext context,
+    Subject subject,
+  ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    try {
-      await provider.editSubjectIndexFile(subject);
-    } catch (e) {
-      _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
+
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Pilih Metode Edit Template'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'ai'),
+            child: const ListTile(
+              leading: Icon(Icons.auto_awesome),
+              title: Text('Generate dengan AI'),
+              subtitle: Text('Buat template baru berdasarkan tema.'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'manual'),
+            child: const ListTile(
+              leading: Icon(Icons.edit_document),
+              title: Text('Edit Manual'),
+              subtitle: Text('Buka file index.html di editor eksternal.'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (choice == 'ai' && mounted) {
+      final success = await showDialog<bool>(
+        context: context,
+        builder: (_) => ChangeNotifierProvider.value(
+          value: provider,
+          child: GenerateIndexTemplateDialog(subject: subject),
+        ),
+      );
+      if (success == true && mounted) {
+        _showSnackBar('Template baru berhasil dibuat oleh AI!');
+      }
+    } else if (choice == 'manual' && mounted) {
+      try {
+        await provider.editSubjectIndexFile(subject);
+      } catch (e) {
+        _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
+      }
     }
   }
 
@@ -368,7 +410,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
                   ? 'Sembunyikan Subjects Tersembunyi'
                   : 'Tampilkan Subjects Tersembunyi',
             ),
-            // ==> TOMBOL SORT DITAMBAHKAN DI SINI <==
             IconButton(
               icon: const Icon(Icons.sort),
               tooltip: 'Urutkan Subject',
@@ -441,7 +482,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
-              onEditIndexFile: () => _editIndexFile(context, subject),
+              onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
             );
           },
@@ -481,7 +522,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onIconChange: () => _changeIcon(context, subject),
               onToggleVisibility: () => _toggleVisibility(context, subject),
               onLinkPath: () => _linkSubject(context, subject),
-              onEditIndexFile: () => _editIndexFile(context, subject),
+              onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
             );
           },
