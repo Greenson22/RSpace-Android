@@ -33,10 +33,40 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
 
   late TextEditingController _motivationalPromptController;
 
+  // Daftar model diperbarui untuk mencakup semua model dari gambar
   final List<GeminiModelInfo> _models = const [
+    GeminiModelInfo(name: 'Nano Banana', id: 'nano-banana'), // Asumsi ID
+    GeminiModelInfo(name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro'), // Asumsi ID
+    GeminiModelInfo(
+      name: 'Gemini 2.5 Flash',
+      id: 'gemini-2.5-flash',
+    ), // Asumsi ID
+    GeminiModelInfo(
+      name: 'Gemini 2.5 Flash-Lite',
+      id: 'gemini-2.5-flash-lite',
+    ), // Asumsi ID
+    GeminiModelInfo(
+      name: 'Gemini 2.0 Flash',
+      id: 'gemini-2.0-flash',
+    ), // Asumsi ID
+    GeminiModelInfo(
+      name: 'Gemini 2.0 Flash-Lite',
+      id: 'gemini-2.0-flash-lite',
+    ), // Asumsi ID
+    GeminiModelInfo(
+      name: 'LearnLM 2.0 Flash Experimental',
+      id: 'learnlm-2.0-flash',
+    ), // Asumsi ID
+    GeminiModelInfo(name: 'Gemma 3n E2B', id: 'gemma-3n-e2b'), // Asumsi ID
+    GeminiModelInfo(name: 'Gemma 3n E4B', id: 'gemma-3n-e4b'), // Asumsi ID
+    GeminiModelInfo(name: 'Gemma 3 1B', id: 'gemma-3-1b'), // Asumsi ID
+    GeminiModelInfo(name: 'Gemma 3 4B', id: 'gemma-3-4b'), // Asumsi ID
+    GeminiModelInfo(name: 'Gemma 3 12B', id: 'gemma-3-12b'), // Asumsi ID
+    GeminiModelInfo(name: 'Gemma 3 27B', id: 'gemma-3-27b'), // Asumsi ID
+    // Model yang sudah ada sebelumnya
     GeminiModelInfo(name: 'Gemini 1.5 Pro', id: 'gemini-1.5-pro-latest'),
     GeminiModelInfo(name: 'Gemini 1.5 Flash', id: 'gemini-1.5-flash-latest'),
-    GeminiModelInfo(name: 'Gemini 1.0 Pro', id: 'gemini-1.0-pro-latest'),
+    GeminiModelInfo(name: 'Gemini 1.0 Pro', id: 'gemini-1.0-pro'),
   ];
 
   @override
