@@ -65,6 +65,7 @@ class DiscussionProvider
   List<String> _repetitionCodeOrder = [];
   List<String> get repetitionCodeOrder => _repetitionCodeOrder;
 
+  // ==> STATE BARU UNTUK MENYIMPAN BOBOT HARI <==
   Map<String, int> _repetitionCodeDays = {};
 
   // GETTERS
@@ -107,6 +108,7 @@ class DiscussionProvider
     try {
       _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
       _repetitionCodeOrder = await prefsService.loadRepetitionCodeOrder();
+      // ==> MUAT BOBOT HARI <==
       _repetitionCodeDays = await prefsService.loadRepetitionCodeDays();
       filterAndSortDiscussions();
     } finally {
@@ -184,40 +186,39 @@ class DiscussionProvider
     await saveDiscussions();
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
-  Future<String> addDiscussionFromContent(
-    String htmlContent,
-    String subjectLinkedPath,
-  ) async {
-    final geminiService = GeminiService(); // Buat instance service
-    // 1. Dapatkan judul dari AI
-    final generatedTitle = await geminiService.generateDiscussionTitle(
-      htmlContent,
-    );
+  /// Memanggil AI untuk mendapatkan beberapa saran judul berdasarkan konten HTML.
+  Future<List<String>> getTitlesFromContent(String htmlContent) async {
+    final geminiService = GeminiService();
+    return await geminiService.generateDiscussionTitles(htmlContent);
+  }
 
-    // 2. Buat diskusi baru di memori
+  /// Membuat dan menyimpan diskusi baru dengan judul dan konten yang sudah ditentukan.
+  Future<void> addDiscussionWithPredefinedTitle({
+    required String title,
+    required String htmlContent,
+    required String subjectLinkedPath,
+  }) async {
+    // 1. Buat diskusi baru di memori
     final newDiscussion = Discussion(
-      discussion: generatedTitle,
+      discussion: title,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
     );
 
-    // 3. Buat file HTML dan tautkan ke diskusi
+    // 2. Buat file HTML dan tautkan ke diskusi
     await createAndLinkHtmlFile(newDiscussion, subjectLinkedPath);
 
-    // 4. Tulis konten HTML yang diberikan pengguna ke file yang baru dibuat
+    // 3. Tulis konten HTML yang diberikan pengguna ke file yang baru dibuat
     if (newDiscussion.filePath != null) {
       await writeHtmlToFile(newDiscussion.filePath!, htmlContent);
     }
 
-    // 5. Tambahkan diskusi ke daftar dan simpan
+    // 4. Tambahkan diskusi ke daftar dan simpan
     _allDiscussions.add(newDiscussion);
     await prefsService.saveNeurons(10);
     filterAndSortDiscussions();
     await saveDiscussions();
-
-    return generatedTitle; // Kembalikan judul untuk notifikasi
   }
 
   void addPoint(
@@ -258,6 +259,7 @@ class DiscussionProvider
     saveDiscussions();
   }
 
+  // ==> PERBARUI FUNGSI YANG MEMANGGIL getNewDateForRepetitionCode <==
   @override
   void updateDiscussionCode(Discussion discussion, String newCode) {
     discussion.repetitionCode = newCode;

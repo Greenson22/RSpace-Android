@@ -360,9 +360,8 @@ Contoh Jawaban:
     }
   }
 
-  Future<String> generateDiscussionTitle(String htmlContent) async {
+  Future<List<String>> generateDiscussionTitles(String htmlContent) async {
     final apiKey = await _getActiveApiKey();
-    // ==> FUNGSI INI DIPERBARUI <==
     final model =
         await _prefsService.loadGeminiTitleGenerationModel() ??
         'gemini-1.5-flash';
@@ -373,18 +372,24 @@ Contoh Jawaban:
 
     final prompt =
         '''
-    Analisis konten HTML berikut dan buatkan satu judul yang singkat, padat, dan deskriptif dalam Bahasa Indonesia.
+    Analisis konten HTML berikut dan buatkan 3 sampai 5 rekomendasi judul yang singkat, padat, dan deskriptif dalam Bahasa Indonesia.
     Aturan Jawaban:
-    1. HANYA kembalikan teks judulnya saja.
-    2. Jangan gunakan tanda kutip atau format tambahan apa pun.
-    3. Judul tidak boleh lebih dari 10 kata.
+    1. HANYA kembalikan dalam format array JSON yang valid.
+    2. Setiap elemen dalam array HARUS berupa string judul.
+    3. Jangan gunakan tanda kutip di dalam string judul itu sendiri.
+    4. Jangan sertakan penjelasan atau teks lain di luar array JSON.
 
     Konten HTML:
     """
     $htmlContent
     """
 
-    Judul yang disarankan:
+    Contoh Jawaban:
+    [
+      "Judul Rekomendasi Pertama",
+      "Judul Alternatif Kedua",
+      "Pilihan Judul Ketiga"
+    ]
     ''';
 
     final apiUrl =
@@ -402,16 +407,16 @@ Contoh Jawaban:
               ],
             },
           ],
+          'generationConfig': {'responseMimeType': 'application/json'},
         }),
       );
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final textResponse =
-            body['candidates'][0]['content']['parts'][0]['text'] as String? ??
-            'Diskusi Baru';
-        // Membersihkan jika ada karakter yang tidak diinginkan
-        return textResponse.trim().replaceAll('"', '');
+            body['candidates'][0]['content']['parts'][0]['text'];
+        final List<dynamic> jsonResponse = jsonDecode(textResponse);
+        return List<String>.from(jsonResponse);
       } else {
         final errorBody = jsonDecode(response.body);
         final errorMessage = errorBody['error']?['message'] ?? response.body;
