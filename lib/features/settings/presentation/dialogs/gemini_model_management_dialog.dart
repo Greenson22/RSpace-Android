@@ -36,6 +36,17 @@ class _GeminiModelManagementDialogState
   }
 
   Future<void> _addNewOrEditModel({GeminiModelInfo? existingModel}) async {
+    // Mencegah edit pada model default
+    if (existingModel != null && existingModel.isDefault) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Model default tidak dapat diubah.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     final result = await _showAddOrEditModelDialog(
       existingModel: existingModel,
     );
@@ -151,10 +162,19 @@ class _GeminiModelManagementDialogState
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Nonaktifkan tombol edit jika model adalah default
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    tooltip: 'Edit Model',
-                    onPressed: () => _addNewOrEditModel(existingModel: model),
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: model.isDefault ? Colors.grey : null,
+                    ),
+                    tooltip: model.isDefault
+                        ? 'Model default tidak bisa diubah'
+                        : 'Edit Model',
+                    onPressed: model.isDefault
+                        ? null
+                        : () => _addNewOrEditModel(existingModel: model),
                   ),
                   IconButton(
                     icon: Icon(

@@ -25,14 +25,15 @@ class GeminiSettingsService {
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           var settings = GeminiSettings.fromJson(jsonData);
 
-          // Jika tidak ada model sama sekali, tambahkan yang default dari JSON
-          if (settings.models.isEmpty) {
-            final defaultModels = await _loadDefaultModelsFromJson();
-            settings = settings.copyWith(models: defaultModels);
-          }
+          // ==> LOGIKA BARU: Gabungkan model default dengan model kustom <==
+          final defaultModels = await _loadDefaultModelsFromJson();
+          final customModels = settings.models
+              .where((m) => !m.isDefault)
+              .toList();
+          final combinedModels = [...defaultModels, ...customModels];
 
-          // ==> LOGIKA VALIDASI BARU <==
-          // Pastikan model yang dipilih ada di dalam daftar, jika tidak, reset ke default.
+          settings = settings.copyWith(models: combinedModels);
+
           settings = _validateSelectedModels(settings);
 
           return settings;
@@ -41,11 +42,9 @@ class GeminiSettingsService {
     } catch (e) {
       debugPrint("Error loading Gemini settings, returning default: $e");
     }
-    // Return default settings if file doesn't exist or is invalid
     return _createDefaultSettings();
   }
 
-  // ==> FUNGSI BARU UNTUK VALIDASI <==
   GeminiSettings _validateSelectedModels(GeminiSettings settings) {
     final availableModelIds = settings.models.map((m) => m.modelId).toSet();
     if (availableModelIds.isEmpty) return settings;
@@ -74,8 +73,14 @@ class GeminiSettingsService {
 
   Future<void> saveSettings(GeminiSettings settings) async {
     final file = await _settingsFile;
+    // Hanya simpan model yang bukan default
+    final customModelsOnly = settings.models
+        .where((m) => !m.isDefault)
+        .toList();
+    final settingsToSave = settings.copyWith(models: customModelsOnly);
+
     const encoder = JsonEncoder.withIndent('  ');
-    await file.writeAsString(encoder.convert(settings.toJson()));
+    await file.writeAsString(encoder.convert(settingsToSave.toJson()));
   }
 
   Future<List<GeminiModelInfo>> _loadDefaultModelsFromJson() async {
@@ -89,7 +94,6 @@ class GeminiSettingsService {
           .toList();
     } catch (e) {
       debugPrint("Error loading default models from JSON: $e");
-      // Fallback jika file JSON error
       return [
         GeminiModelInfo(
           name: 'Gemini 1.5 Pro (Fallback)',

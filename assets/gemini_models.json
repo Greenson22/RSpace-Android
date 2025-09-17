@@ -21,78 +21,78 @@
     "id": "a1b2c3d4-0001-4000-8000-000000000001",
     "name": "Nano Banana",
     "modelId": "models/gemini-2.5-flash-image-preview",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000005",
     "name": "Gemini 2.5 Pro",
     "modelId": "models/gemini-2.5-pro",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000006",
     "name": "Gemini 2.5 Flash",
     "modelId": "models/gemini-2.5-flash",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000007",
     "name": "Gemini 2.5 Flash-Lite",
     "modelId": "models/gemini-2.5-flash-lite",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000008",
     "name": "Gemini 2.0 Flash",
     "modelId": "models/gemini-2.0-flash",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000009",
     "name": "Gemini 2.0 Flash-Lite",
     "modelId": "models/gemini-2.0-flash-lite",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000010",
     "name": "LearnLM 2.0 Flash (Experimental)",
     "modelId": "models/learnlm-2.0-flash-experimental",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000011",
     "name": "Gemma 3n E2B",
     "modelId": "models/gemma-3n-e2b-it",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000012",
     "name": "Gemma 3n E4B",
     "modelId": "models/gemma-3n-e4b-it",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000013",
     "name": "Gemma 3 1.5B",
     "modelId": "models/gemma-3-1b-it",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000014",
     "name": "Gemma 3 4B",
     "modelId": "models/gemma-3-4b-it",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000015",
     "name": "Gemma 3 12B",
     "modelId": "models/gemma-3-12b-it",
-    "isDefault": false
+    "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000016",
     "name": "Gemma 3 27B",
     "modelId": "models/gemma-3-27b-it",
-    "isDefault": false
+    "isDefault": true
   }
 ]
