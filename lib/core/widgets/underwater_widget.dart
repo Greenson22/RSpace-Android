@@ -115,7 +115,8 @@ class Fish {
   double size;
   double velocityX;
   double velocityY;
-  String body;
+  String bodyRight;
+  String bodyLeft;
   Color color;
   bool isFacingRight;
 
@@ -125,7 +126,8 @@ class Fish {
     required this.size,
     required this.velocityX,
     required this.velocityY,
-    required this.body,
+    required this.bodyRight,
+    required this.bodyLeft,
     required this.color,
     required this.isFacingRight,
   });
@@ -133,7 +135,13 @@ class Fish {
   factory Fish.random(Size size, double speed) {
     final random = Random();
     final isFacingRight = random.nextBool();
-    final fishBodies = ['><(((º>', '<º)))><'];
+    // ==> PERBAIKAN: Definisikan bentuk ikan untuk setiap arah
+    final fishBodies = [
+      {'right': '><(((º>', 'left': '<º)))><'},
+      {'right': '><(((º>', 'left': '<º)))><'},
+      {'right': '(º <', 'left': '> º)'},
+    ];
+    final selectedBody = fishBodies[random.nextInt(fishBodies.length)];
 
     return Fish(
       x: random.nextDouble() * size.width,
@@ -142,7 +150,8 @@ class Fish {
       velocityX:
           (random.nextDouble() * 1.5 + 0.5) * speed * (isFacingRight ? 1 : -1),
       velocityY: (random.nextDouble() - 0.5) * 0.5 * speed,
-      body: fishBodies[random.nextInt(fishBodies.length)],
+      bodyRight: selectedBody['right']!,
+      bodyLeft: selectedBody['left']!,
       color: HSLColor.fromAHSL(
         1.0,
         random.nextDouble() * 360,
@@ -158,7 +167,7 @@ class Fish {
     y += velocityY;
 
     // Bounce off vertical walls
-    if (x < -size.width * 0.1 || x > size.width * 1.1) {
+    if (x < -size.width * 0.2 || x > size.width * 1.2) {
       isFacingRight = !isFacingRight;
       velocityX *= -1;
     }
@@ -171,7 +180,8 @@ class Fish {
   void draw(Canvas canvas) {
     final textPainter = TextPainter(
       text: TextSpan(
-        text: isFacingRight ? body : body.split('').reversed.join(),
+        // ==> PERBAIKAN: Pilih bentuk ikan berdasarkan arah
+        text: isFacingRight ? bodyRight : bodyLeft,
         style: TextStyle(
           color: color,
           fontSize: size,
