@@ -4,12 +4,13 @@ import 'package:my_aplication/features/settings/application/gemini_settings_serv
 import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/prompt_model.dart';
-
-// Kelas GeminiModelInfo dipindahkan ke gemini_settings_model.dart
+// Import dialog baru
+import 'gemini_model_management_dialog.dart';
 
 void showGeminiPromptDialog(BuildContext context) {
   showDialog(
     context: context,
+    useSafeArea: false,
     builder: (context) => const GeminiPromptDialog(),
   );
 }
@@ -27,8 +28,6 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   bool _isLoading = true;
 
   late TextEditingController _motivationalPromptController;
-
-  // Daftar model yang hardcoded dihapus dari sini
 
   @override
   void initState() {
@@ -63,116 +62,6 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         _isLoading = false;
       });
     }
-  }
-
-  // --- Fungsi Manajemen Model ---
-  Future<void> _addNewOrEditModel({GeminiModelInfo? existingModel}) async {
-    final result = await _showAddOrEditModelDialog(
-      existingModel: existingModel,
-    );
-    if (result != null) {
-      final updatedModels = List<GeminiModelInfo>.from(_currentSettings.models);
-      if (existingModel != null) {
-        final index = updatedModels.indexWhere((m) => m.id == result.id);
-        if (index != -1) updatedModels[index] = result;
-      } else {
-        updatedModels.add(result);
-      }
-      setState(() {
-        _currentSettings = _currentSettings.copyWith(models: updatedModels);
-      });
-    }
-  }
-
-  Future<void> _deleteModel(GeminiModelInfo modelToDelete) async {
-    if (modelToDelete.isDefault) return;
-
-    final updatedModels = _currentSettings.models
-        .where((m) => m.id != modelToDelete.id)
-        .toList();
-
-    // Jika model yang dihapus adalah model yang sedang dipilih,
-    // pindahkan pilihan ke model default pertama
-    final modelIds = updatedModels.map((m) => m.modelId).toSet();
-    String newGeneralId = _currentSettings.generalModelId;
-    if (!modelIds.contains(newGeneralId)) {
-      newGeneralId = updatedModels.first.modelId;
-    }
-    // Lakukan hal yang sama untuk model lainnya...
-
-    setState(() {
-      _currentSettings = _currentSettings.copyWith(
-        models: updatedModels,
-        generalModelId: newGeneralId,
-        // ... update juga modelId lainnya jika perlu
-      );
-    });
-  }
-
-  Future<GeminiModelInfo?> _showAddOrEditModelDialog({
-    GeminiModelInfo? existingModel,
-  }) {
-    final isEditing = existingModel != null;
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(
-      text: existingModel?.name ?? '',
-    );
-    final idController = TextEditingController(
-      text: existingModel?.modelId ?? '',
-    );
-
-    return showDialog<GeminiModelInfo>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEditing ? 'Ubah Model AI' : 'Tambah Model AI Baru'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Tampilan Model',
-                ),
-                validator: (val) =>
-                    val!.isEmpty ? 'Nama tidak boleh kosong' : null,
-              ),
-              TextFormField(
-                controller: idController,
-                decoration: const InputDecoration(
-                  labelText: 'ID Model (contoh: gemini-1.5-pro)',
-                ),
-                validator: (val) =>
-                    val!.isEmpty ? 'ID Model tidak boleh kosong' : null,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(
-                  context,
-                  GeminiModelInfo(
-                    id: existingModel?.id,
-                    name: nameController.text.trim(),
-                    modelId: idController.text.trim(),
-                    isDefault: existingModel?.isDefault ?? false,
-                  ),
-                );
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
   }
 
   // --- Fungsi Manajemen Prompt (Tidak Berubah) ---
@@ -322,7 +211,6 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     required String? currentValue,
     required ValueChanged<String?> onChanged,
   }) {
-    // ==> PERBAIKAN DI SINI: Mencegah duplikasi item <==
     final uniqueModels = <String>{};
     final items = _currentSettings.models
         .where((model) => uniqueModels.add(model.modelId))
@@ -339,8 +227,13 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
       ),
-      items: items, // Gunakan items yang sudah unik
+      isExpanded: true,
+      items: items,
       onChanged: onChanged,
     );
   }
@@ -351,243 +244,34 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
       return const Dialog(child: Center(child: CircularProgressIndicator()));
     }
 
-    final activePromptId = _currentSettings.prompts.isEmpty
-        ? ''
-        : _currentSettings.prompts
-              .firstWhere(
-                (p) => p.isActive,
-                orElse: () => _currentSettings.prompts.first,
-              )
-              .id;
-
     return AlertDialog(
       title: const Text('Manajemen Prompt & Model AI'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
+      content: DefaultTabController(
+        length: 2,
+        child: SizedBox(
+          width: double.maxFinite,
+          height: MediaQuery.of(context).size.height * 0.7,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Atur model AI yang akan digunakan untuk setiap fitur dan kelola *prompt* kustom Anda.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const Divider(height: 32),
-
-              // --- BAGIAN MANAJEMEN MODEL ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Manajemen Model AI',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: _addNewOrEditModel,
-                    tooltip: 'Tambah Model Baru',
-                  ),
+              const TabBar(
+                tabs: [
+                  Tab(text: 'Pengaturan Model'),
+                  Tab(text: 'Pengaturan Prompt'),
                 ],
               ),
-              const Divider(height: 8),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _currentSettings.models.length,
-                itemBuilder: (context, index) {
-                  final model = _currentSettings.models[index];
-                  return ListTile(
-                    title: Text(model.name),
-                    subtitle: Text(model.modelId),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          tooltip: 'Edit Model',
-                          onPressed: () =>
-                              _addNewOrEditModel(existingModel: model),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.delete_outline,
-                            color: model.isDefault ? Colors.grey : Colors.red,
-                            size: 20,
-                          ),
-                          tooltip: model.isDefault
-                              ? 'Model default tidak bisa dihapus'
-                              : 'Hapus Model',
-                          onPressed: model.isDefault
-                              ? null
-                              : () => _deleteModel(model),
-                        ),
-                      ],
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  );
-                },
-              ),
-              const Divider(height: 32),
-
-              // --- BAGIAN PEMILIHAN MODEL ---
-              Text(
-                'Pemilihan Model per Fitur',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              _buildModelDropdown(
-                label: 'Model untuk Tugas Umum (Pencarian, dll)',
-                currentValue: _currentSettings.generalModelId,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentSettings = _currentSettings.copyWith(
-                        generalModelId: value,
-                      );
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildModelDropdown(
-                label: 'Model untuk Generate Konten',
-                currentValue: _currentSettings.contentModelId,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentSettings = _currentSettings.copyWith(
-                        contentModelId: value,
-                      );
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildModelDropdown(
-                label: 'Model untuk Chat',
-                currentValue: _currentSettings.chatModelId,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentSettings = _currentSettings.copyWith(
-                        chatModelId: value,
-                      );
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildModelDropdown(
-                label: 'Model untuk Generate Kuis',
-                currentValue: _currentSettings.quizModelId,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentSettings = _currentSettings.copyWith(
-                        quizModelId: value,
-                      );
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildModelDropdown(
-                label: 'Model untuk Generate Judul dari Konten',
-                currentValue: _currentSettings.titleGenerationModelId,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentSettings = _currentSettings.copyWith(
-                        titleGenerationModelId: value,
-                      );
-                    });
-                  }
-                },
-              ),
-              const Divider(height: 32),
-
-              // --- BAGIAN PROMPT ---
-              Text(
-                'Prompt untuk Kata Motivasi',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _motivationalPromptController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Masukkan perintah untuk AI...',
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildModelSettingsTab(),
+                    _buildPromptSettingsTab(),
+                  ],
                 ),
-                maxLines: 4,
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  child: const Text('Gunakan Default'),
-                  onPressed: () {
-                    setState(() {
-                      _motivationalPromptController.text =
-                          defaultMotivationalPrompt;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Prompt Kustom untuk Generate Konten',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const Divider(height: 8),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _currentSettings.prompts.length,
-                itemBuilder: (context, index) {
-                  final prompt = _currentSettings.prompts[index];
-                  return ListTile(
-                    title: Text(prompt.name),
-                    subtitle: prompt.isDefault
-                        ? const Text('Prompt Standar')
-                        : null,
-                    leading: Radio<String>(
-                      value: prompt.id,
-                      groupValue: activePromptId,
-                      onChanged: (val) => _setActivePrompt(prompt),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () =>
-                              _addNewOrEditPrompt(existingPrompt: prompt),
-                        ),
-                        if (!prompt.isDefault)
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            onPressed: () => _deletePrompt(prompt),
-                          ),
-                      ],
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  );
-                },
               ),
             ],
           ),
         ),
       ),
       actions: [
-        OutlinedButton.icon(
-          onPressed: () => _addNewOrEditPrompt(),
-          icon: const Icon(Icons.add),
-          label: const Text('Tambah Prompt Konten'),
-        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Batal'),
@@ -597,6 +281,214 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
           child: const Text('Simpan & Tutup'),
         ),
       ],
+    );
+  }
+
+  Widget _buildModelSettingsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // --- Tombol untuk membuka dialog manajemen model ---
+          ListTile(
+            leading: const Icon(Icons.list_alt),
+            title: const Text('Kelola Daftar Model AI'),
+            subtitle: const Text('Tambah, ubah, atau hapus model kustom.'),
+            onTap: () async {
+              final updatedModels = await showGeminiModelManagementDialog(
+                context,
+                currentModels: _currentSettings.models,
+              );
+              if (updatedModels != null) {
+                // Perbarui state dengan daftar model baru dari dialog
+                setState(() {
+                  _currentSettings = _currentSettings.copyWith(
+                    models: updatedModels,
+                  );
+                });
+              }
+            },
+          ),
+          const Divider(height: 32),
+
+          // --- BAGIAN PEMILIHAN MODEL ---
+          Text(
+            'Pemilihan Model per Fitur',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          _buildModelDropdown(
+            label: 'Tugas Umum (Pencarian, dll)',
+            currentValue: _currentSettings.generalModelId,
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _currentSettings = _currentSettings.copyWith(
+                    generalModelId: value,
+                  );
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildModelDropdown(
+            label: 'Generate Konten',
+            currentValue: _currentSettings.contentModelId,
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _currentSettings = _currentSettings.copyWith(
+                    contentModelId: value,
+                  );
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildModelDropdown(
+            label: 'Chat',
+            currentValue: _currentSettings.chatModelId,
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _currentSettings = _currentSettings.copyWith(
+                    chatModelId: value,
+                  );
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildModelDropdown(
+            label: 'Generate Kuis',
+            currentValue: _currentSettings.quizModelId,
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _currentSettings = _currentSettings.copyWith(
+                    quizModelId: value,
+                  );
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildModelDropdown(
+            label: 'Generate Judul',
+            currentValue: _currentSettings.titleGenerationModelId,
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _currentSettings = _currentSettings.copyWith(
+                    titleGenerationModelId: value,
+                  );
+                });
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromptSettingsTab() {
+    final activePromptId = _currentSettings.prompts.isEmpty
+        ? ''
+        : _currentSettings.prompts
+              .firstWhere(
+                (p) => p.isActive,
+                orElse: () => _currentSettings.prompts.first,
+              )
+              .id;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Prompt untuk Kata Motivasi',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _motivationalPromptController,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Masukkan perintah untuk AI...',
+            ),
+            maxLines: 4,
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              child: const Text('Gunakan Default'),
+              onPressed: () {
+                setState(() {
+                  _motivationalPromptController.text =
+                      defaultMotivationalPrompt;
+                });
+              },
+            ),
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Prompt Kustom (Generate Konten)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => _addNewOrEditPrompt(),
+                tooltip: 'Tambah Prompt Baru',
+              ),
+            ],
+          ),
+          const Divider(height: 8),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _currentSettings.prompts.length,
+            itemBuilder: (context, index) {
+              final prompt = _currentSettings.prompts[index];
+              return ListTile(
+                title: Text(prompt.name),
+                subtitle: prompt.isDefault
+                    ? const Text('Prompt Standar')
+                    : null,
+                leading: Radio<String>(
+                  value: prompt.id,
+                  groupValue: activePromptId,
+                  onChanged: (val) => _setActivePrompt(prompt),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () =>
+                          _addNewOrEditPrompt(existingPrompt: prompt),
+                    ),
+                    if (!prompt.isDefault)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                        onPressed: () => _deletePrompt(prompt),
+                      ),
+                  ],
+                ),
+                contentPadding: EdgeInsets.zero,
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
