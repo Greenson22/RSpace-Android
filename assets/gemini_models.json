@@ -2,73 +2,79 @@
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000001",
     "name": "Nano Banana (Default)",
-    "modelId": "nano-banana",
+    "modelId": "models/gemini-2.5-flash-image-preview",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000002",
-    "name": "Gemini 1.5 Pro (Default)",
-    "modelId": "gemini-1.5-pro-latest",
+    "name": "Gemini 2.5 Pro (Default)",
+    "modelId": "models/gemini-2.5-pro",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000003",
-    "name": "Gemini 1.5 Flash (Default)",
-    "modelId": "gemini-1.5-flash-latest",
+    "name": "Gemini 2.5 Flash (Default)",
+    "modelId": "models/gemini-2.5-flash",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000004",
-    "name": "Gemini 1.0 Flash (Default)",
-    "modelId": "gemini-1.0-flash",
+    "name": "Gemini 2.5 Flash-Lite (Default)",
+    "modelId": "models/gemini-2.5-flash-lite",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000005",
-    "name": "Gemini 1.0 Flash-Lite (Default)",
-    "modelId": "gemini-1.0-flash-lite",
+    "name": "Gemini 2.0 Flash (Default)",
+    "modelId": "models/gemini-2.0-flash",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000006",
-    "name": "LearnLM 2.0 Flash (Experimental)",
-    "modelId": "learnlm-2.0-flash",
+    "name": "Gemini 2.0 Flash-Lite (Default)",
+    "modelId": "models/gemini-2.0-flash-lite",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000007",
-    "name": "Gemma 3n E2B (Default)",
-    "modelId": "gemma-3n-e2b",
+    "name": "LearnLM 2.0 Flash (Experimental)",
+    "modelId": "models/learnlm-2.0-flash-experimental",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000008",
-    "name": "Gemma 3n E4B (Default)",
-    "modelId": "gemma-3n-e4b",
+    "name": "Gemma 3n E2B (Default)",
+    "modelId": "models/gemma-3n-e2b-it",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000009",
-    "name": "Gemma 3 1.5B (Default)",
-    "modelId": "gemma-3-1.5b",
+    "name": "Gemma 3n E4B (Default)",
+    "modelId": "models/gemma-3n-e4b-it",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000010",
-    "name": "Gemma 3 4B (Default)",
-    "modelId": "gemma-3-4b",
+    "name": "Gemma 3 1.5B (Default)",
+    "modelId": "models/gemma-3-1b-it",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000011",
-    "name": "Gemma 3 12B (Default)",
-    "modelId": "gemma-3-12b",
+    "name": "Gemma 3 4B (Default)",
+    "modelId": "models/gemma-3-4b-it",
     "isDefault": true
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000012",
+    "name": "Gemma 3 12B (Default)",
+    "modelId": "models/gemma-3-12b-it",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000013",
     "name": "Gemma 3 27B (Default)",
-    "modelId": "gemma-3-27b",
+    "modelId": "models/gemma-3-27b-it",
     "isDefault": true
   }
 ]
