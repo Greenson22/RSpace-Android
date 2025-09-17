@@ -12,6 +12,7 @@ import 'package:my_aplication/features/time_management/application/providers/tim
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
 import 'package:my_aplication/core/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
+import 'core/widgets/underwater_widget.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
@@ -127,6 +128,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         }
 
         final isChristmas = themeProvider.isChristmasTheme;
+        final isUnderwater = themeProvider.isUnderwaterTheme;
         final bool showFlo = themeProvider.showFloatingCharacter;
         final bool showQuickFab = themeProvider.showQuickFab;
 
@@ -137,10 +139,31 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           theme: themeProvider.currentTheme,
           home: const DashboardPage(),
           builder: (context, navigator) {
-            // Logika Stack disederhanakan, hanya untuk widget overlay
             return Stack(
               children: [
+                // Lapisan 0: Latar Belakang (jika tema aktif)
+                if (isUnderwater)
+                  IgnorePointer(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF003973), Color(0xFF33A1FD)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      child: const UnderwaterWidget(
+                        totalFish: 15,
+                        speed: 1.0,
+                        isRunning: true,
+                      ),
+                    ),
+                  ),
+
+                // Lapisan 1: Konten Utama Aplikasi
                 if (navigator != null) navigator,
+
+                // Lapisan 2: Overlay Tema (Salju atau Ikan di Latar Depan)
                 if (isChristmas)
                   const IgnorePointer(
                     child: SnowWidget(
@@ -150,6 +173,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       snowColor: Colors.white,
                     ),
                   ),
+                if (isUnderwater)
+                  const IgnorePointer(
+                    child: UnderwaterWidget(
+                      totalFish: 5, // Lebih sedikit ikan untuk di depan
+                      speed: 1.3, // Sedikit lebih cepat untuk efek parallax
+                      isRunning: true,
+                    ),
+                  ),
+
+                // Lapisan 3 & 4: Overlay Fungsional (Flo & FAB)
                 if (showFlo)
                   const IgnorePointer(
                     child: FloatingCharacter(isVisible: true),
