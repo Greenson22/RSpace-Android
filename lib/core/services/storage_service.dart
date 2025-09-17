@@ -17,66 +17,6 @@ class SharedPreferencesService {
   Future<int> loadNeurons() => _neuronService.getNeurons();
 
   // Metode untuk Pengaturan
-  Future<void> saveThemePreference(bool isDarkMode) =>
-      _settingsService.saveThemePreference(isDarkMode);
-  Future<bool> loadThemePreference() => _settingsService.loadThemePreference();
-  Future<void> saveChristmasThemePreference(bool isChristmas) =>
-      _settingsService.saveChristmasThemePreference(isChristmas);
-  Future<bool> loadChristmasThemePreference() =>
-      _settingsService.loadChristmasThemePreference();
-  Future<void> savePrimaryColor(int colorValue) =>
-      _settingsService.savePrimaryColor(colorValue);
-  Future<int?> loadPrimaryColor() => _settingsService.loadPrimaryColor();
-  Future<void> saveRecentColors(List<int> colorValues) =>
-      _settingsService.saveRecentColors(colorValues);
-  Future<List<int>> loadRecentColors() => _settingsService.loadRecentColors();
-  Future<void> saveBackgroundImagePath(String path) =>
-      _settingsService.saveBackgroundImagePath(path);
-  Future<String?> loadBackgroundImagePath() =>
-      _settingsService.loadBackgroundImagePath();
-  Future<void> clearBackgroundImagePath() =>
-      _settingsService.clearBackgroundImagePath();
-  Future<void> saveDashboardItemScale(double scale) =>
-      _settingsService.saveDashboardItemScale(scale);
-  Future<double> loadDashboardItemScale() =>
-      _settingsService.loadDashboardItemScale();
-  Future<void> saveShowFloPreference(bool showFlo) =>
-      _settingsService.saveShowFloPreference(showFlo);
-  Future<bool> loadShowFloPreference() =>
-      _settingsService.loadShowFloPreference();
-  Future<void> saveShowQuickFabPreference(bool show) =>
-      _settingsService.saveShowQuickFabPreference(show);
-  Future<bool> loadShowQuickFabPreference() =>
-      _settingsService.loadShowQuickFabPreference();
-  Future<void> saveShowQuickFabIconPreference(String icon) =>
-      _settingsService.saveShowQuickFabIconPreference(icon);
-  Future<String> loadShowQuickFabIconPreference() =>
-      _settingsService.loadShowQuickFabIconPreference();
-  Future<void> saveQuickFabBgOpacity(double opacity) =>
-      _settingsService.saveQuickFabBgOpacity(opacity);
-  Future<double> loadQuickFabBgOpacity() =>
-      _settingsService.loadQuickFabBgOpacity();
-  Future<void> saveQuickFabOverallOpacity(double opacity) =>
-      _settingsService.saveQuickFabOverallOpacity(opacity);
-  Future<double> loadQuickFabOverallOpacity() =>
-      _settingsService.loadQuickFabOverallOpacity();
-  Future<void> saveQuickFabSize(double size) =>
-      _settingsService.saveQuickFabSize(size);
-  Future<double> loadQuickFabSize() => _settingsService.loadQuickFabSize();
-  Future<void> saveFabMenuShowTextPreference(bool showText) =>
-      _settingsService.saveFabMenuShowTextPreference(showText);
-  Future<bool> loadFabMenuShowTextPreference() =>
-      _settingsService.loadFabMenuShowTextPreference();
-  Future<void> saveOpenInAppBrowser(bool openInApp) =>
-      _settingsService.saveOpenInAppBrowser(openInApp);
-  Future<bool> loadOpenInAppBrowser() =>
-      _settingsService.loadOpenInAppBrowser();
-
-  Future<void> saveHtmlEditorTheme(String themeName) =>
-      _settingsService.saveHtmlEditorTheme(themeName);
-  Future<String?> loadHtmlEditorTheme() =>
-      _settingsService.loadHtmlEditorTheme();
-
   Future<void> saveMyTasksLayoutPreference(bool isGridView) =>
       _settingsService.saveMyTasksLayoutPreference(isGridView);
   Future<bool> loadMyTasksLayoutPreference() =>

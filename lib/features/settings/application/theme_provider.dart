@@ -1,61 +1,55 @@
 // lib/features/settings/application/theme_provider.dart
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../../../core/services/storage_service.dart';
+import 'package:my_aplication/features/settings/application/theme_settings_service.dart';
+import 'package:my_aplication/features/settings/domain/models/theme_settings_model.dart';
 import '../../../core/theme/app_theme.dart';
 
 class ThemeProvider with ChangeNotifier {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  final ThemeSettingsService _settingsService = ThemeSettingsService();
+  late ThemeSettings _settings;
 
-  bool _darkTheme = false;
-  bool get darkTheme => _darkTheme;
-
-  Color _primaryColor = AppTheme.selectableColors.first;
-  Color get primaryColor => _primaryColor;
-
-  List<Color> _recentColors = [];
-  List<Color> get recentColors => _recentColors;
-
-  bool _isChristmasTheme = false;
-  bool get isChristmasTheme => _isChristmasTheme;
-
-  String? _backgroundImagePath;
-  String? get backgroundImagePath => _backgroundImagePath;
-
-  double _dashboardItemScale = 1.0;
-  double get dashboardItemScale => _dashboardItemScale;
-
-  // State untuk Flo
-  bool _showFloatingCharacter = true;
-  bool get showFloatingCharacter => _showFloatingCharacter;
-
-  // State untuk FAB Cepat
-  bool _showQuickFab = true;
-  bool get showQuickFab => _showQuickFab;
-  String _quickFabIcon = '➕';
-  String get quickFabIcon => _quickFabIcon;
-  double _quickFabBgOpacity = 1.0;
-  double get quickFabBgOpacity => _quickFabBgOpacity;
-  double _quickFabOverallOpacity = 1.0;
-  double get quickFabOverallOpacity => _quickFabOverallOpacity;
-  double _quickFabSize = 56.0;
-  double get quickFabSize => _quickFabSize;
-  bool _fabMenuShowText = true;
-  bool get fabMenuShowText => _fabMenuShowText;
-
-  // --- TAMBAHKAN STATE BARU UNTUK WEBVIEW ---
-  bool _openInAppBrowser = true;
-  bool get openInAppBrowser => _openInAppBrowser;
+  // Getters that expose settings to the UI
+  bool get darkTheme => _settings.isDarkMode;
+  Color get primaryColor => Color(_settings.primaryColorValue);
+  List<Color> get recentColors =>
+      _settings.recentColorValues.map((v) => Color(v)).toList();
+  bool get isChristmasTheme => _settings.isChristmasTheme;
+  String? get backgroundImagePath => _settings.backgroundImagePath;
+  double get dashboardItemScale => _settings.dashboardItemScale;
+  bool get showFloatingCharacter => _settings.showFloatingCharacter;
+  bool get showQuickFab => _settings.showQuickFab;
+  String get quickFabIcon => _settings.quickFabIcon;
+  double get quickFabBgOpacity => _settings.quickFabBgOpacity;
+  double get quickFabOverallOpacity => _settings.quickFabOverallOpacity;
+  double get quickFabSize => _settings.quickFabSize;
+  bool get fabMenuShowText => _settings.fabMenuShowText;
+  bool get openInAppBrowser => _settings.openInAppBrowser;
+  String? get htmlEditorTheme => _settings.htmlEditorTheme;
 
   ThemeData get currentTheme {
-    if (_isChristmasTheme) {
-      return AppTheme.getChristmasTheme(_darkTheme);
+    if (_settings.isChristmasTheme) {
+      return AppTheme.getChristmasTheme(_settings.isDarkMode);
     }
-    return AppTheme.getTheme(_primaryColor, _darkTheme);
+    return AppTheme.getTheme(
+      Color(_settings.primaryColorValue),
+      _settings.isDarkMode,
+    );
   }
 
   ThemeProvider() {
     _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    _settings = await _settingsService.loadSettings();
+    notifyListeners();
+  }
+
+  Future<void> _saveAndUpdate(ThemeSettings newSettings) async {
+    _settings = newSettings;
+    await _settingsService.saveSettings(_settings);
+    notifyListeners();
   }
 
   void updateTheme({
@@ -64,46 +58,31 @@ class ThemeProvider with ChangeNotifier {
     Color? color,
     double? dashboardScale,
   }) {
-    bool needsNotify = false;
+    _settings = _settings.copyWith(
+      isDarkMode: isDark,
+      isChristmas: isChristmas,
+      primaryColorValue: color?.value,
+      dashboardItemScale: dashboardScale,
+    );
 
-    if (isDark != null && _darkTheme != isDark) {
-      _darkTheme = isDark;
-      _prefsService.saveThemePreference(isDark);
-      needsNotify = true;
-    }
-    if (isChristmas != null && _isChristmasTheme != isChristmas) {
-      _isChristmasTheme = isChristmas;
-      _prefsService.saveChristmasThemePreference(_isChristmasTheme);
-      needsNotify = true;
-    }
-    if (color != null && _primaryColor != color) {
-      _primaryColor = color;
-      _prefsService.savePrimaryColor(color.value);
+    if (color != null) {
       _addRecentColor(color);
-      needsNotify = true;
     }
-    if (dashboardScale != null && _dashboardItemScale != dashboardScale) {
-      _dashboardItemScale = dashboardScale;
-      _prefsService.saveDashboardItemScale(dashboardScale);
-      needsNotify = true;
-    }
-
-    if (needsNotify) {
-      notifyListeners();
-    }
+    _saveAndUpdate(_settings);
   }
 
-  void toggleFloatingCharacter() async {
-    _showFloatingCharacter = !_showFloatingCharacter;
-    await _prefsService.saveShowFloPreference(_showFloatingCharacter);
-    notifyListeners();
+  void toggleFloatingCharacter() {
+    _saveAndUpdate(
+      _settings.copyWith(
+        showFloatingCharacter: !_settings.showFloatingCharacter,
+      ),
+    );
   }
 
-  // --- TAMBAHKAN FUNGSI BARU UNTUK WEBVIEW ---
-  void toggleOpenInAppBrowser() async {
-    _openInAppBrowser = !_openInAppBrowser;
-    await _prefsService.saveOpenInAppBrowser(_openInAppBrowser);
-    notifyListeners();
+  void toggleOpenInAppBrowser() {
+    _saveAndUpdate(
+      _settings.copyWith(openInAppBrowser: !_settings.openInAppBrowser),
+    );
   }
 
   Future<void> updateQuickFabSettings({
@@ -114,40 +93,16 @@ class ThemeProvider with ChangeNotifier {
     double? size,
     bool? showMenuText,
   }) async {
-    bool needsNotify = false;
-    if (show != null && _showQuickFab != show) {
-      _showQuickFab = show;
-      await _prefsService.saveShowQuickFabPreference(_showQuickFab);
-      needsNotify = true;
-    }
-    if (icon != null && _quickFabIcon != icon) {
-      _quickFabIcon = icon;
-      await _prefsService.saveShowQuickFabIconPreference(_quickFabIcon);
-      needsNotify = true;
-    }
-    if (bgOpacity != null && _quickFabBgOpacity != bgOpacity) {
-      _quickFabBgOpacity = bgOpacity;
-      await _prefsService.saveQuickFabBgOpacity(_quickFabBgOpacity);
-      needsNotify = true;
-    }
-    if (overallOpacity != null && _quickFabOverallOpacity != overallOpacity) {
-      _quickFabOverallOpacity = overallOpacity;
-      await _prefsService.saveQuickFabOverallOpacity(_quickFabOverallOpacity);
-      needsNotify = true;
-    }
-    if (size != null && _quickFabSize != size) {
-      _quickFabSize = size;
-      await _prefsService.saveQuickFabSize(_quickFabSize);
-      needsNotify = true;
-    }
-    if (showMenuText != null && _fabMenuShowText != showMenuText) {
-      _fabMenuShowText = showMenuText;
-      await _prefsService.saveFabMenuShowTextPreference(_fabMenuShowText);
-      needsNotify = true;
-    }
-    if (needsNotify) {
-      notifyListeners();
-    }
+    _saveAndUpdate(
+      _settings.copyWith(
+        showQuickFab: show,
+        quickFabIcon: icon,
+        quickFabBgOpacity: bgOpacity,
+        quickFabOverallOpacity: overallOpacity,
+        quickFabSize: size,
+        fabMenuShowText: showMenuText,
+      ),
+    );
   }
 
   Future<void> setBackgroundImage() async {
@@ -156,58 +111,33 @@ class ThemeProvider with ChangeNotifier {
     );
 
     if (result != null && result.files.single.path != null) {
-      _backgroundImagePath = result.files.single.path;
-      await _prefsService.saveBackgroundImagePath(_backgroundImagePath!);
-      notifyListeners();
+      _saveAndUpdate(
+        _settings.copyWith(backgroundImagePath: () => result.files.single.path),
+      );
     }
   }
 
   Future<void> clearBackgroundImagePath() async {
-    _backgroundImagePath = null;
-    await _prefsService.clearBackgroundImagePath();
-    notifyListeners();
+    _saveAndUpdate(_settings.copyWith(backgroundImagePath: () => null));
   }
 
   void _addRecentColor(Color color) {
-    _recentColors.remove(color);
-    _recentColors.insert(0, color);
-    if (_recentColors.length > 6) {
-      _recentColors = _recentColors.sublist(0, 6);
+    final recent = recentColors;
+    recent.remove(color);
+    recent.insert(0, color);
+    if (recent.length > 6) {
+      final sublist = recent.sublist(0, 6);
+      _settings = _settings.copyWith(
+        recentColorValues: sublist.map((c) => c.value).toList(),
+      );
+    } else {
+      _settings = _settings.copyWith(
+        recentColorValues: recent.map((c) => c.value).toList(),
+      );
     }
-    final colorValues = _recentColors.map((c) => c.value).toList();
-    _prefsService.saveRecentColors(colorValues);
   }
 
-  Future<void> _loadTheme() async {
-    _darkTheme = await _prefsService.loadThemePreference();
-    _isChristmasTheme = await _prefsService
-        .loadChristmasThemePreference(); // DITAMBAHKAN
-    final colorValue = await _prefsService.loadPrimaryColor();
-    if (colorValue != null) {
-      _primaryColor = Color(colorValue);
-    }
-
-    final recentColorValues = await _prefsService.loadRecentColors();
-    _recentColors = recentColorValues.map((v) => Color(v)).toList();
-    _backgroundImagePath = await _prefsService.loadBackgroundImagePath();
-
-    _dashboardItemScale = await _prefsService.loadDashboardItemScale();
-
-    _showFloatingCharacter = await _prefsService.loadShowFloPreference();
-
-    _showQuickFab = await _prefsService.loadShowQuickFabPreference();
-
-    _quickFabIcon = await _prefsService.loadShowQuickFabIconPreference();
-
-    _quickFabBgOpacity = await _prefsService.loadQuickFabBgOpacity();
-    _quickFabOverallOpacity = await _prefsService.loadQuickFabOverallOpacity();
-
-    _quickFabSize = await _prefsService.loadQuickFabSize();
-    _fabMenuShowText = await _prefsService.loadFabMenuShowTextPreference();
-
-    // --- MUAT PENGATURAN BARU UNTUK WEBVIEW ---
-    _openInAppBrowser = await _prefsService.loadOpenInAppBrowser();
-
-    notifyListeners();
+  Future<void> saveHtmlEditorTheme(String themeName) async {
+    _saveAndUpdate(_settings.copyWith(htmlEditorTheme: () => themeName));
   }
 }

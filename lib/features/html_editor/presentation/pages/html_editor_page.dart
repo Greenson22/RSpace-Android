@@ -7,7 +7,8 @@ import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
-import '../../../../core/services/storage_service.dart';
+// ==> IMPORT THEME PROVIDER <==
+import '../../../settings/application/theme_provider.dart';
 import '../themes/editor_themes.dart';
 
 class HtmlEditorPage extends StatefulWidget {
@@ -20,7 +21,7 @@ class HtmlEditorPage extends StatefulWidget {
 }
 
 class _HtmlEditorPageState extends State<HtmlEditorPage> {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // SharedPreferencesService dihapus dari sini
   CodeController? _controller;
   bool _isLoading = true;
   String? _error;
@@ -39,12 +40,18 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   }
 
   Future<void> _initializeEditor() async {
+    // Panggil _loadTheme sebelum _loadFileContent
     await _loadTheme();
     await _loadFileContent();
   }
 
+  // ==> FUNGSI _loadTheme DIPERBARUI <==
   Future<void> _loadTheme() async {
-    final themeName = await _prefsService.loadHtmlEditorTheme();
+    // Ambil theme provider
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    // Ambil nama tema dari provider
+    final themeName = themeProvider.htmlEditorTheme;
+
     if (themeName != null) {
       final themeIndex = editorThemes.indexWhere((t) => t.name == themeName);
       if (themeIndex != -1) {
@@ -55,12 +62,15 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
+  // ==> FUNGSI _handleThemeChanged DIPERBARUI <==
   Future<void> _handleThemeChanged(EditorTheme? newTheme) async {
     if (newTheme != null) {
       setState(() {
         _selectedTheme = newTheme;
       });
-      await _prefsService.saveHtmlEditorTheme(newTheme.name);
+      // Panggil provider untuk menyimpan tema baru
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      await themeProvider.saveHtmlEditorTheme(newTheme.name);
     }
   }
 
@@ -98,6 +108,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
+  // ... (sisa fungsi seperti _onTextChanged, _findAndRemoveMatchingTag, _handleLineDeletion, dll. TIDAK BERUBAH) ...
   void _onTextChanged() {
     if (_isAutoEditing) return;
 
@@ -209,7 +220,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     );
   }
 
-  // ==> AWAL PERUBAHAN: Fungsi baru untuk mengekstrak konten body <==
   void _extractBodyContent() {
     if (_controller == null) return;
     final currentText = _controller!.text;
@@ -220,7 +230,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     );
     final match = bodyContentRegex.firstMatch(currentText);
     if (match != null && match.group(1) != null) {
-      // Ambil hanya konten di dalam body dan trim spasi/newline yang tidak perlu
       _controller!.text = match.group(1)!.trim();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -236,7 +245,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       );
     }
   }
-  // ==> AKHIR PERUBAHAN <==
 
   void _stripBodyTags() {
     if (_controller == null) return;
@@ -346,13 +354,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
             tooltip: 'Olah Teks',
             onSelected: (action) => action(),
             itemBuilder: (context) => [
-              // ==> AWAL PERUBAHAN: Menambahkan opsi baru <==
               PopupMenuItem(
                 value: _extractBodyContent,
                 child: const Text('Ekstrak Konten Body'),
               ),
               const PopupMenuDivider(),
-              // ==> AKHIR PERUBAHAN <==
               PopupMenuItem(
                 value: _stripAllHtmlTags,
                 child: const Text('Hapus Semua Tag HTML'),

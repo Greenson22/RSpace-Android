@@ -217,6 +217,9 @@ class PathService {
   Future<String> get geminiSettingsPath async =>
       path.join(await contentsPath, 'gemini_settings.json');
 
+  Future<String> get themeSettingsPath async =>
+      path.join(await contentsPath, 'theme_settings.json');
+
   Future<String> get perpuskuDataPath async {
     String? customPath = await loadPerpuskuDataPath();
     if (customPath != null && customPath.isNotEmpty) {
