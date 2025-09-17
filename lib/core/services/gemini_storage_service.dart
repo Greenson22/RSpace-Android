@@ -11,8 +11,9 @@ class GeminiService {
   static const String _geminiContentModelKey = 'gemini_model';
   static const String _geminiChatModelKey = 'gemini_chat_model';
   static const String _geminiGeneralModelKey = 'gemini_general_model';
-  // ==> TAMBAHKAN KEY BARU <==
   static const String _geminiQuizModelKey = 'gemini_quiz_model';
+  // ==> TAMBAHKAN KEY BARU <==
+  static const String _geminiTitleGenModelKey = 'gemini_title_gen_model';
 
   Future<void> saveApiKeys(List<ApiKey> keys) async {
     final prefs = await SharedPreferences.getInstance();
@@ -77,7 +78,6 @@ class GeminiService {
     return prefs.getString(_geminiGeneralModelKey);
   }
 
-  // ==> TAMBAHKAN FUNGSI BARU UNTUK MODEL KUIS <==
   Future<void> saveGeminiQuizModel(String modelId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_geminiQuizModelKey, modelId);
@@ -86,6 +86,17 @@ class GeminiService {
   Future<String?> loadGeminiQuizModel() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_geminiQuizModelKey);
+  }
+
+  // ==> TAMBAHKAN FUNGSI BARU UNTUK MODEL PEMBUAT JUDUL <==
+  Future<void> saveGeminiTitleGenerationModel(String modelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_geminiTitleGenModelKey, modelId);
+  }
+
+  Future<String?> loadGeminiTitleGenerationModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_geminiTitleGenModelKey);
   }
 
   Future<void> savePrompts(List<Prompt> prompts) async {

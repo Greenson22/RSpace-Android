@@ -360,11 +360,12 @@ Contoh Jawaban:
     }
   }
 
-  // ==> AWAL FUNGSI BARU <==
   Future<String> generateDiscussionTitle(String htmlContent) async {
     final apiKey = await _getActiveApiKey();
+    // ==> FUNGSI INI DIPERBARUI <==
     final model =
-        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+        await _prefsService.loadGeminiTitleGenerationModel() ??
+        'gemini-1.5-flash';
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
@@ -422,7 +423,6 @@ Contoh Jawaban:
       rethrow;
     }
   }
-  // ==> AKHIR FUNGSI BARU <==
 
   Future<String> getChatCompletion(String query, {String? context}) async {
     final apiKey = await _getActiveApiKey();

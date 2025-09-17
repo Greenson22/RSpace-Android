@@ -35,6 +35,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   String? _selectedChatModelId;
   String? _selectedGeneralModelId;
   String? _selectedQuizModelId;
+  String? _selectedTitleGenModelId; // ==> TAMBAHKAN STATE BARU
 
   // ==> 2. TAMBAHKAN CONTROLLER UNTUK PROMPT MOTIVASI
   late TextEditingController _motivationalPromptController;
@@ -72,6 +73,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     final chatModelId = await _prefsService.loadGeminiChatModel();
     final generalModelId = await _prefsService.loadGeminiGeneralModel();
     final quizModelId = await _prefsService.loadGeminiQuizModel();
+    final titleGenModelId = await _prefsService
+        .loadGeminiTitleGenerationModel(); // ==> MUAT MODEL BARU
     // ==> 5. MUAT PROMPT MOTIVASI YANG TERSIMPAN
     final motivationalPrompt = await _prefsService
         .loadMotivationalQuotePrompt();
@@ -97,6 +100,8 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         _selectedChatModelId = chatModelId ?? _models[1].id;
         _selectedGeneralModelId = generalModelId ?? _models[1].id;
         _selectedQuizModelId = quizModelId ?? _models[1].id;
+        _selectedTitleGenModelId =
+            titleGenModelId ?? _models[1].id; // ==> SET STATE BARU
         // ==> 6. SET TEKS CONTROLLER
         _motivationalPromptController.text =
             motivationalPrompt ?? GeminiService.defaultMotivationalPrompt;
@@ -236,6 +241,12 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     if (_selectedQuizModelId != null) {
       await _prefsService.saveGeminiQuizModel(_selectedQuizModelId!);
     }
+    // ==> SIMPAN MODEL BARU <==
+    if (_selectedTitleGenModelId != null) {
+      await _prefsService.saveGeminiTitleGenerationModel(
+        _selectedTitleGenModelId!,
+      );
+    }
 
     // ==> 7. SIMPAN PROMPT MOTIVASI
     await _prefsService.saveMotivationalQuotePrompt(
@@ -360,6 +371,29 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                       onChanged: (value) {
                         setState(() {
                           _selectedQuizModelId = value;
+                        });
+                      },
+                    ),
+                    // ==> TAMBAHKAN DROPDOWN BARU DI SINI <==
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedTitleGenModelId,
+                      decoration: const InputDecoration(
+                        labelText: 'Model untuk Generate Judul dari Konten',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _models.map((model) {
+                        return DropdownMenuItem<String>(
+                          value: model.id,
+                          child: Text(
+                            model.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTitleGenModelId = value;
                         });
                       },
                     ),

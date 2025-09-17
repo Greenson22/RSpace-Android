@@ -133,6 +133,12 @@ class SharedPreferencesService {
   Future<List<Prompt>> loadPrompts() => _geminiService.loadPrompts();
   Future<Prompt> getActivePrompt() => _geminiService.getActivePrompt();
 
+  // ==> METODE BARU DITAMBAHKAN <==
+  Future<void> saveGeminiTitleGenerationModel(String modelId) =>
+      _geminiService.saveGeminiTitleGenerationModel(modelId);
+  Future<String?> loadGeminiTitleGenerationModel() =>
+      _geminiService.loadGeminiTitleGenerationModel();
+
   // Metode untuk Data Pengguna
   Future<void> saveChatHistory(List<ChatMessage> messages) =>
       _userDataService.saveChatHistory(messages);
