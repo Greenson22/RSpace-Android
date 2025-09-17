@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart'; // <-- Import yang diperlukan
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/settings/domain/models/prompt_model.dart';
 import '../domain/models/gemini_settings_model.dart';
@@ -23,9 +24,10 @@ class GeminiSettingsService {
         if (jsonString.isNotEmpty) {
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           final settings = GeminiSettings.fromJson(jsonData);
-          // Jika tidak ada model sama sekali, tambahkan yang default
+          // Jika tidak ada model sama sekali, tambahkan yang default dari JSON
           if (settings.models.isEmpty) {
-            return settings.copyWith(models: _getDefaultModels());
+            final defaultModels = await _loadDefaultModelsFromJson();
+            return settings.copyWith(models: defaultModels);
           }
           return settings;
         }
@@ -43,27 +45,27 @@ class GeminiSettingsService {
     await file.writeAsString(encoder.convert(settings.toJson()));
   }
 
-  // == PERBAIKAN DI FUNGSI INI ==
-  List<GeminiModelInfo> _getDefaultModels() {
-    // 1. Hapus 'const' dari list
-    return [
-      // 2. Hapus 'const' dari objek & ganti 'id' menjadi 'modelId'
-      GeminiModelInfo(
-        name: 'Gemini 1.5 Pro (Default)',
-        modelId: 'gemini-1.5-pro-latest',
-        isDefault: true,
-      ),
-      GeminiModelInfo(
-        name: 'Gemini 1.5 Flash (Default)',
-        modelId: 'gemini-1.5-flash-latest',
-        isDefault: true,
-      ),
-      GeminiModelInfo(
-        name: 'Gemini 1.0 Pro (Default)',
-        modelId: 'gemini-1.0-pro',
-        isDefault: true,
-      ),
-    ];
+  // == PERUBAHAN DI SINI: Memuat model dari file JSON di assets ==
+  Future<List<GeminiModelInfo>> _loadDefaultModelsFromJson() async {
+    try {
+      final jsonString = await rootBundle.loadString(
+        'assets/gemini_models.json',
+      );
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      return jsonList
+          .map((json) => GeminiModelInfo.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint("Error loading default models from JSON: $e");
+      // Fallback jika file JSON error
+      return [
+        GeminiModelInfo(
+          name: 'Gemini 1.5 Pro (Fallback)',
+          modelId: 'gemini-1.5-pro-latest',
+          isDefault: true,
+        ),
+      ];
+    }
   }
 
   Prompt _getDefaultPrompt() {
@@ -87,10 +89,11 @@ Ikuti aturan-aturan berikut dengan ketat:
     );
   }
 
-  GeminiSettings _createDefaultSettings() {
+  // Mengubah _createDefaultSettings menjadi async
+  Future<GeminiSettings> _createDefaultSettings() async {
     return GeminiSettings(
       prompts: [_getDefaultPrompt()],
-      models: _getDefaultModels(),
+      models: await _loadDefaultModelsFromJson(),
     );
   }
 }

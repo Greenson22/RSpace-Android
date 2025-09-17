@@ -1,0 +1,74 @@
+[
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000001",
+    "name": "Nano Banana (Default)",
+    "modelId": "nano-banana",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000002",
+    "name": "Gemini 1.5 Pro (Default)",
+    "modelId": "gemini-1.5-pro-latest",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000003",
+    "name": "Gemini 1.5 Flash (Default)",
+    "modelId": "gemini-1.5-flash-latest",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000004",
+    "name": "Gemini 1.0 Flash (Default)",
+    "modelId": "gemini-1.0-flash",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000005",
+    "name": "Gemini 1.0 Flash-Lite (Default)",
+    "modelId": "gemini-1.0-flash-lite",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000006",
+    "name": "LearnLM 2.0 Flash (Experimental)",
+    "modelId": "learnlm-2.0-flash",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000007",
+    "name": "Gemma 3n E2B (Default)",
+    "modelId": "gemma-3n-e2b",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000008",
+    "name": "Gemma 3n E4B (Default)",
+    "modelId": "gemma-3n-e4b",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000009",
+    "name": "Gemma 3 1.5B (Default)",
+    "modelId": "gemma-3-1.5b",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000010",
+    "name": "Gemma 3 4B (Default)",
+    "modelId": "gemma-3-4b",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000011",
+    "name": "Gemma 3 12B (Default)",
+    "modelId": "gemma-3-12b",
+    "isDefault": true
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000012",
+    "name": "Gemma 3 27B (Default)",
+    "modelId": "gemma-3-27b",
+    "isDefault": true
+  }
+]
