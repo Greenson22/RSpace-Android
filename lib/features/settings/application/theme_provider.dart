@@ -20,6 +20,7 @@ class ThemeProvider with ChangeNotifier {
   List<Color> get recentColors =>
       _settings?.recentColorValues.map((v) => Color(v)).toList() ?? [];
   bool get isChristmasTheme => _settings?.isChristmasTheme ?? false;
+  bool get isUnderwaterTheme => _settings?.isUnderwaterTheme ?? false;
   String? get backgroundImagePath => _settings?.backgroundImagePath;
   double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
   bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
@@ -39,6 +40,9 @@ class ThemeProvider with ChangeNotifier {
     }
     if (_settings!.isChristmasTheme) {
       return AppTheme.getChristmasTheme(_settings!.isDarkMode);
+    }
+    if (_settings!.isUnderwaterTheme) {
+      return AppTheme.getUnderwaterTheme(_settings!.isDarkMode);
     }
     return AppTheme.getTheme(
       Color(_settings!.primaryColorValue),
@@ -65,6 +69,7 @@ class ThemeProvider with ChangeNotifier {
   void updateTheme({
     bool? isDark,
     bool? isChristmas,
+    bool? isUnderwater,
     Color? color,
     double? dashboardScale,
   }) {
@@ -72,6 +77,7 @@ class ThemeProvider with ChangeNotifier {
     _settings = _settings!.copyWith(
       isDarkMode: isDark,
       isChristmasTheme: isChristmas,
+      isUnderwaterTheme: isUnderwater,
       primaryColorValue: color?.value,
       dashboardItemScale: dashboardScale,
     );

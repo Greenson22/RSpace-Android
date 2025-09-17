@@ -6,6 +6,7 @@ import 'package:my_aplication/core/theme/app_theme.dart';
 class ThemeSettings {
   final bool isDarkMode;
   final bool isChristmasTheme;
+  final bool isUnderwaterTheme;
   final int primaryColorValue;
   final List<int> recentColorValues;
   final String? backgroundImagePath;
@@ -23,6 +24,7 @@ class ThemeSettings {
   ThemeSettings({
     this.isDarkMode = false,
     this.isChristmasTheme = false,
+    this.isUnderwaterTheme = false,
     required this.primaryColorValue,
     this.recentColorValues = const [],
     this.backgroundImagePath,
@@ -42,6 +44,7 @@ class ThemeSettings {
     return ThemeSettings(
       isDarkMode: json['isDarkMode'] as bool? ?? false,
       isChristmasTheme: json['isChristmasTheme'] as bool? ?? false,
+      isUnderwaterTheme: json['isUnderwaterTheme'] as bool? ?? false,
       primaryColorValue:
           json['primaryColorValue'] as int? ??
           AppTheme.selectableColors.first.value,
@@ -70,6 +73,7 @@ class ThemeSettings {
     return {
       'isDarkMode': isDarkMode,
       'isChristmasTheme': isChristmasTheme,
+      'isUnderwaterTheme': isUnderwaterTheme,
       'primaryColorValue': primaryColorValue,
       'recentColorValues': recentColorValues,
       'backgroundImagePath': backgroundImagePath,
@@ -89,6 +93,7 @@ class ThemeSettings {
   ThemeSettings copyWith({
     bool? isDarkMode,
     bool? isChristmasTheme,
+    bool? isUnderwaterTheme,
     int? primaryColorValue,
     List<int>? recentColorValues,
     ValueGetter<String?>? backgroundImagePath,
@@ -106,6 +111,7 @@ class ThemeSettings {
     return ThemeSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,
       isChristmasTheme: isChristmasTheme ?? this.isChristmasTheme,
+      isUnderwaterTheme: isUnderwaterTheme ?? this.isUnderwaterTheme,
       primaryColorValue: primaryColorValue ?? this.primaryColorValue,
       recentColorValues: recentColorValues ?? this.recentColorValues,
       backgroundImagePath: backgroundImagePath != null

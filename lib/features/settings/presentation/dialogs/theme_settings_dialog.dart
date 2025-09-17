@@ -24,6 +24,8 @@ class ThemeSettingsDialog extends StatefulWidget {
 class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
   late bool _isDark;
   late bool _isChristmas;
+  // ==> STATE BARU UNTUK TEMA BAWAH AIR <==
+  late bool _isUnderwater;
   late Color _selectedColor;
   // ==> STATE LOKAL BARU UNTUK SLIDER <==
   late double _dashboardScale;
@@ -36,6 +38,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     final provider = Provider.of<ThemeProvider>(context, listen: false);
     _isDark = provider.darkTheme;
     _isChristmas = provider.isChristmasTheme;
+    // ==> INISIALISASI STATE BARU <==
+    _isUnderwater = provider.isUnderwaterTheme;
     _selectedColor = provider.primaryColor;
     // ==> INISIALISASI STATE SLIDER <==
     _dashboardScale = provider.dashboardItemScale;
@@ -49,6 +53,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     provider.updateTheme(
       isDark: _isDark,
       isChristmas: _isChristmas,
+      // ==> KIRIM NILAI BARU <==
+      isUnderwater: _isUnderwater,
       color: _selectedColor,
       // ==> SIMPAN NILAI DARI SLIDER <==
       dashboardScale: _dashboardScale,
@@ -82,6 +88,13 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               secondary: const Icon(Icons.celebration_outlined),
               value: _isChristmas,
               onChanged: (value) => setState(() => _isChristmas = value),
+            ),
+            // ==> SWITCH BARU UNTUK TEMA BAWAH AIR <==
+            SwitchListTile(
+              title: const Text('Tema Spesial Bawah Air'),
+              secondary: const Icon(Icons.pool_outlined),
+              value: _isUnderwater,
+              onChanged: (value) => setState(() => _isUnderwater = value),
             ),
             // --- TAMBAHKAN SWITCH BARU DI SINI ---
             SwitchListTile(

@@ -137,6 +137,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           theme: themeProvider.currentTheme,
           home: const DashboardPage(),
           builder: (context, navigator) {
+            // Logika Stack disederhanakan, hanya untuk widget overlay
             return Stack(
               children: [
                 if (navigator != null) navigator,

@@ -1,4 +1,4 @@
-// lib/presentation/theme/app_theme.dart
+// lib/core/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -127,6 +127,50 @@ class AppTheme {
           foregroundColor: Colors.white,
         ),
       );
+    }
+  }
+
+  // ==> TEMA SPESIAL BAWAH AIR <==
+  static ThemeData getUnderwaterTheme(bool isDark) {
+    // Palet Warna Bawah Air
+    const Color deepBlue = Color(0xFF003973);
+    const Color lightBlue = Color(0xFF33A1FD);
+    const Color sandColor = Color(0xFFE5DDCB);
+
+    if (isDark) {
+      return ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: lightBlue,
+        scaffoldBackgroundColor: const Color(0xFF001f3f), // Biru sangat gelap
+        colorScheme: ColorScheme.dark(
+          primary: lightBlue,
+          secondary: Colors.cyan,
+          surface: const Color(0xFF002a54),
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onSurface: sandColor,
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF002a54).withOpacity(0.8),
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: Colors.white,
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: lightBlue,
+          foregroundColor: Colors.white,
+        ),
+      );
+    } else {
+      // Tema terang untuk bawah air mungkin tidak terlalu masuk akal,
+      // jadi kita buat variasi yang lebih cerah saja.
+      return _lightTheme(lightBlue);
     }
   }
 
