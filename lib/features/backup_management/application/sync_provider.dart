@@ -1,4 +1,4 @@
-// lib/presentation/providers/sync_provider.dart
+// lib/features/backup_management/application/sync_provider.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +8,35 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/services/path_service.dart';
 import '../../../core/services/storage_service.dart';
+
+/// Kelas untuk menampung hasil detail dari proses sinkronisasi.
+class SyncResult {
+  final bool rspaceBackupSuccess;
+  final bool rspaceUploadSuccess;
+  final bool perpuskuBackupSuccess;
+  final bool perpuskuUploadSuccess;
+  final bool isPerpuskuSkipped;
+  final String? errorMessage;
+  final String? rspaceBackupPath;
+  final String? perpuskuBackupPath;
+
+  SyncResult({
+    this.rspaceBackupSuccess = false,
+    this.rspaceUploadSuccess = false,
+    this.perpuskuBackupSuccess = false,
+    this.perpuskuUploadSuccess = false,
+    this.isPerpuskuSkipped = false,
+    this.errorMessage,
+    this.rspaceBackupPath,
+    this.perpuskuBackupPath,
+  });
+
+  bool get overallSuccess =>
+      rspaceBackupSuccess &&
+      rspaceUploadSuccess &&
+      (isPerpuskuSkipped || (perpuskuBackupSuccess && perpuskuUploadSuccess)) &&
+      errorMessage == null;
+}
 
 class SyncProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
@@ -19,63 +48,65 @@ class SyncProvider with ChangeNotifier {
   String _syncStatusMessage = '';
   String get syncStatusMessage => _syncStatusMessage;
 
-  String _finalMessage = '';
-  bool _hasError = false;
+  // Properti _finalMessage dan _hasError dihapus, digantikan oleh SyncResult
 
-  Future<void> performBackupAndUpload() async {
+  Future<SyncResult> performBackupAndUpload() async {
     _isSyncing = true;
-    _hasError = false;
     _syncStatusMessage = 'Memulai proses...';
     notifyListeners();
+
+    bool rspaceBSuccess = false;
+    bool rspaceUSuccess = false;
+    bool perpuskuBSuccess = false;
+    bool perpuskuUSuccess = false;
+    bool perpuskuSkipped = false;
+    String? errorMsg;
+    String? rspacePath;
+    String? perpuskuPath;
 
     try {
       // Langkah 1: Backup & Upload RSpace
       _updateStatus('Membuat backup RSpace...');
       final rspaceFile = await _backupRspace();
+      rspacePath = rspaceFile.path;
+      rspaceBSuccess = true;
 
       _updateStatus('Mengunggah backup RSpace...');
       await _uploadFile(rspaceFile, 'RSpace');
+      rspaceUSuccess = true;
 
       // Langkah 2: Backup & Upload PerpusKu (jika path diatur)
       final perpuskuDataPath = await _prefsService.loadPerpuskuDataPath();
       if (perpuskuDataPath != null && perpuskuDataPath.isNotEmpty) {
         _updateStatus('Membuat backup PerpusKu...');
         final perpuskuFile = await _backupPerpusku();
+        perpuskuPath = perpuskuFile.path;
+        perpuskuBSuccess = true;
 
         _updateStatus('Mengunggah backup PerpusKu...');
         await _uploadFile(perpuskuFile, 'PerpusKu');
+        perpuskuUSuccess = true;
       } else {
         _updateStatus('Melewati backup PerpusKu (path tidak diatur)...');
+        perpuskuSkipped = true;
       }
-
-      _finalMessage = 'Proses Backup & Sync berhasil diselesaikan!';
-      _hasError = false;
     } catch (e) {
-      _finalMessage = 'Terjadi kesalahan: ${e.toString()}';
-      _hasError = true;
+      errorMsg = e.toString();
     } finally {
       _isSyncing = false;
       notifyListeners();
     }
-  }
 
-  void showResultDialog(BuildContext context) {
-    if (_finalMessage.isEmpty) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_hasError ? 'Proses Gagal' : 'Proses Selesai'),
-        content: Text(_finalMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
+    return SyncResult(
+      rspaceBackupSuccess: rspaceBSuccess,
+      rspaceUploadSuccess: rspaceUSuccess,
+      perpuskuBackupSuccess: perpuskuBSuccess,
+      perpuskuUploadSuccess: perpuskuUSuccess,
+      isPerpuskuSkipped: perpuskuSkipped,
+      errorMessage: errorMsg,
+      rspaceBackupPath: rspacePath,
+      perpuskuBackupPath: perpuskuPath,
     );
-    _finalMessage = ''; // Reset pesan setelah ditampilkan
   }
 
   void _updateStatus(String message) {
@@ -87,8 +118,9 @@ class SyncProvider with ChangeNotifier {
     final destinationPath = await _pathService.rspaceBackupPath;
     final contentsPath = await _pathService.contentsPath;
     final sourceDir = Directory(contentsPath);
-    if (!await sourceDir.exists())
+    if (!await sourceDir.exists()) {
       throw Exception('Direktori "contents" RSpace tidak ditemukan.');
+    }
 
     final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
     final zipFileName = 'backup-topics-$timestamp.zip';
@@ -105,8 +137,9 @@ class SyncProvider with ChangeNotifier {
     final destinationPath = await _pathService.perpuskuBackupPath;
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
     final sourceDir = Directory(perpuskuDataPath);
-    if (!await sourceDir.exists())
+    if (!await sourceDir.exists()) {
       throw Exception('Folder sumber data PerpusKu tidak ditemukan.');
+    }
 
     final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
     final zipFileName = 'backup-perpusku-$timestamp.zip';
@@ -124,8 +157,9 @@ class SyncProvider with ChangeNotifier {
     final apiDomain = apiConfig['domain'];
     final apiKey = apiConfig['apiKey'];
 
-    if (apiDomain == null || apiKey == null)
+    if (apiDomain == null || apiKey == null) {
       throw Exception('Konfigurasi API (domain/key) tidak ditemukan.');
+    }
 
     final url = type == 'RSpace'
         ? '$apiDomain/api/rspace/upload'

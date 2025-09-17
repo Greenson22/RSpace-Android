@@ -23,7 +23,7 @@ import 'package:my_aplication/features/backup_management/application/sync_provid
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'features/feedback/application/feedback_provider.dart';
 import 'core/widgets/draggable_fab_view.dart';
-import 'core/providers/neuron_provider.dart'; // Import provider baru
+import 'core/providers/neuron_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -68,12 +68,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BrokenLinkProvider()),
         ChangeNotifierProvider(create: (_) => FinishedDiscussionsProvider()),
         ChangeNotifierProvider(create: (_) => PromptProvider()),
-        ChangeNotifierProvider(
-          create: (_) => NeuronProvider(),
-        ), // Daftarkan provider baru
-        ChangeNotifierProvider(
-          create: (_) => QuizProvider(),
-        ), // Daftarkan provider kuis
+        ChangeNotifierProvider(create: (_) => NeuronProvider()),
+        ChangeNotifierProvider(create: (_) => QuizProvider()),
       ],
       child: const MyApp(),
     ),
@@ -123,6 +119,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
+        // Tampilkan layar loading jika tema belum siap
+        if (themeProvider.isLoading) {
+          return const MaterialApp(
+            home: Scaffold(body: Center(child: CircularProgressIndicator())),
+          );
+        }
+
         final isChristmas = themeProvider.isChristmasTheme;
         final bool showFlo = themeProvider.showFloatingCharacter;
         final bool showQuickFab = themeProvider.showQuickFab;

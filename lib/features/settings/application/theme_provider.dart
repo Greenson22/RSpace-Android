@@ -7,33 +7,42 @@ import '../../../core/theme/app_theme.dart';
 
 class ThemeProvider with ChangeNotifier {
   final ThemeSettingsService _settingsService = ThemeSettingsService();
-  late ThemeSettings _settings;
+  ThemeSettings? _settings;
+  bool _isLoading = true;
 
   // Getters that expose settings to the UI
-  bool get darkTheme => _settings.isDarkMode;
-  Color get primaryColor => Color(_settings.primaryColorValue);
+  bool get isLoading => _isLoading;
+
+  bool get darkTheme => _settings?.isDarkMode ?? false;
+  Color get primaryColor => _settings != null
+      ? Color(_settings!.primaryColorValue)
+      : AppTheme.selectableColors.first;
   List<Color> get recentColors =>
-      _settings.recentColorValues.map((v) => Color(v)).toList();
-  bool get isChristmasTheme => _settings.isChristmasTheme;
-  String? get backgroundImagePath => _settings.backgroundImagePath;
-  double get dashboardItemScale => _settings.dashboardItemScale;
-  bool get showFloatingCharacter => _settings.showFloatingCharacter;
-  bool get showQuickFab => _settings.showQuickFab;
-  String get quickFabIcon => _settings.quickFabIcon;
-  double get quickFabBgOpacity => _settings.quickFabBgOpacity;
-  double get quickFabOverallOpacity => _settings.quickFabOverallOpacity;
-  double get quickFabSize => _settings.quickFabSize;
-  bool get fabMenuShowText => _settings.fabMenuShowText;
-  bool get openInAppBrowser => _settings.openInAppBrowser;
-  String? get htmlEditorTheme => _settings.htmlEditorTheme;
+      _settings?.recentColorValues.map((v) => Color(v)).toList() ?? [];
+  bool get isChristmasTheme => _settings?.isChristmasTheme ?? false;
+  String? get backgroundImagePath => _settings?.backgroundImagePath;
+  double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
+  bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
+  bool get showQuickFab => _settings?.showQuickFab ?? true;
+  String get quickFabIcon => _settings?.quickFabIcon ?? '➕';
+  double get quickFabBgOpacity => _settings?.quickFabBgOpacity ?? 1.0;
+  double get quickFabOverallOpacity => _settings?.quickFabOverallOpacity ?? 1.0;
+  double get quickFabSize => _settings?.quickFabSize ?? 56.0;
+  bool get fabMenuShowText => _settings?.fabMenuShowText ?? true;
+  bool get openInAppBrowser => _settings?.openInAppBrowser ?? true;
+  String? get htmlEditorTheme => _settings?.htmlEditorTheme;
 
   ThemeData get currentTheme {
-    if (_settings.isChristmasTheme) {
-      return AppTheme.getChristmasTheme(_settings.isDarkMode);
+    if (_settings == null) {
+      // Sediakan tema default yang aman selagi memuat
+      return AppTheme.getTheme(AppTheme.selectableColors.first, false);
+    }
+    if (_settings!.isChristmasTheme) {
+      return AppTheme.getChristmasTheme(_settings!.isDarkMode);
     }
     return AppTheme.getTheme(
-      Color(_settings.primaryColorValue),
-      _settings.isDarkMode,
+      Color(_settings!.primaryColorValue),
+      _settings!.isDarkMode,
     );
   }
 
@@ -43,12 +52,13 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> _loadTheme() async {
     _settings = await _settingsService.loadSettings();
+    _isLoading = false;
     notifyListeners();
   }
 
   Future<void> _saveAndUpdate(ThemeSettings newSettings) async {
     _settings = newSettings;
-    await _settingsService.saveSettings(_settings);
+    await _settingsService.saveSettings(_settings!);
     notifyListeners();
   }
 
@@ -58,7 +68,8 @@ class ThemeProvider with ChangeNotifier {
     Color? color,
     double? dashboardScale,
   }) {
-    _settings = _settings.copyWith(
+    if (_settings == null) return;
+    _settings = _settings!.copyWith(
       isDarkMode: isDark,
       isChristmasTheme: isChristmas,
       primaryColorValue: color?.value,
@@ -68,20 +79,22 @@ class ThemeProvider with ChangeNotifier {
     if (color != null) {
       _addRecentColor(color);
     }
-    _saveAndUpdate(_settings);
+    _saveAndUpdate(_settings!);
   }
 
   void toggleFloatingCharacter() {
+    if (_settings == null) return;
     _saveAndUpdate(
-      _settings.copyWith(
-        showFloatingCharacter: !_settings.showFloatingCharacter,
+      _settings!.copyWith(
+        showFloatingCharacter: !_settings!.showFloatingCharacter,
       ),
     );
   }
 
   void toggleOpenInAppBrowser() {
+    if (_settings == null) return;
     _saveAndUpdate(
-      _settings.copyWith(openInAppBrowser: !_settings.openInAppBrowser),
+      _settings!.copyWith(openInAppBrowser: !_settings!.openInAppBrowser),
     );
   }
 
@@ -93,8 +106,9 @@ class ThemeProvider with ChangeNotifier {
     double? size,
     bool? showMenuText,
   }) async {
+    if (_settings == null) return;
     _saveAndUpdate(
-      _settings.copyWith(
+      _settings!.copyWith(
         showQuickFab: show,
         quickFabIcon: icon,
         quickFabBgOpacity: bgOpacity,
@@ -106,38 +120,44 @@ class ThemeProvider with ChangeNotifier {
   }
 
   Future<void> setBackgroundImage() async {
+    if (_settings == null) return;
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
 
     if (result != null && result.files.single.path != null) {
       _saveAndUpdate(
-        _settings.copyWith(backgroundImagePath: () => result.files.single.path),
+        _settings!.copyWith(
+          backgroundImagePath: () => result.files.single.path,
+        ),
       );
     }
   }
 
   Future<void> clearBackgroundImagePath() async {
-    _saveAndUpdate(_settings.copyWith(backgroundImagePath: () => null));
+    if (_settings == null) return;
+    _saveAndUpdate(_settings!.copyWith(backgroundImagePath: () => null));
   }
 
   void _addRecentColor(Color color) {
+    if (_settings == null) return;
     final recent = recentColors;
     recent.remove(color);
     recent.insert(0, color);
     if (recent.length > 6) {
       final sublist = recent.sublist(0, 6);
-      _settings = _settings.copyWith(
+      _settings = _settings!.copyWith(
         recentColorValues: sublist.map((c) => c.value).toList(),
       );
     } else {
-      _settings = _settings.copyWith(
+      _settings = _settings!.copyWith(
         recentColorValues: recent.map((c) => c.value).toList(),
       );
     }
   }
 
   Future<void> saveHtmlEditorTheme(String themeName) async {
-    _saveAndUpdate(_settings.copyWith(htmlEditorTheme: () => themeName));
+    if (_settings == null) return;
+    _saveAndUpdate(_settings!.copyWith(htmlEditorTheme: () => themeName));
   }
 }

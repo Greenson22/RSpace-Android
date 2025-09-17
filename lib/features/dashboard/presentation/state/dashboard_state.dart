@@ -15,6 +15,8 @@ import '../../../statistics/application/statistics_provider.dart';
 import '../../../content_management/application/topic_provider.dart';
 import '../pages/dashboard_page.dart';
 import '../widgets/dashboard_grid.dart';
+// ==> Impor dialog baru
+import '../../../backup_management/presentation/dialogs/sync_result_dialog.dart';
 
 mixin DashboardState on State<DashboardPage> {
   Key dashboardPathKey = UniqueKey();
@@ -38,22 +40,15 @@ mixin DashboardState on State<DashboardPage> {
       _loadBannerAd();
     }
 
+    // Listener tidak perlu diubah, hanya fungsinya saja
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(focusNode);
-      Provider.of<SyncProvider>(
-        context,
-        listen: false,
-      ).addListener(_onSyncStateChanged);
     });
   }
 
   @override
   void dispose() {
     bannerAd?.dispose();
-    Provider.of<SyncProvider>(
-      context,
-      listen: false,
-    ).removeListener(_onSyncStateChanged);
     focusNode.dispose();
     focusTimer?.cancel();
     super.dispose();
@@ -81,21 +76,12 @@ mixin DashboardState on State<DashboardPage> {
     }
   }
 
-  // ==> PERBAIKAN: Hapus garis bawah (_) untuk menjadikannya publik
   void rebuildActions() {
     dashboardActions = buildDashboardActions(
       context,
       onShowStorageDialog: () => showStoragePathDialog(context),
       isPathSet: isPathSet,
     );
-  }
-
-  void _onSyncStateChanged() {
-    final syncProvider = Provider.of<SyncProvider>(context, listen: false);
-    if (!syncProvider.isSyncing) {
-      Navigator.of(context, rootNavigator: true).pop();
-      syncProvider.showResultDialog(context);
-    }
   }
 
   void handleKeyEvent(RawKeyEvent event) {
@@ -167,6 +153,7 @@ mixin DashboardState on State<DashboardPage> {
     }
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> handleBackupAndSync() async {
     final confirmed =
         await showDialog<bool>(
@@ -190,28 +177,37 @@ mixin DashboardState on State<DashboardPage> {
         ) ??
         false;
 
-    if (confirmed && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Consumer<SyncProvider>(
-          builder: (context, provider, child) {
-            return AlertDialog(
-              content: Row(
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(width: 20),
-                  Expanded(child: Text(provider.syncStatusMessage)),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-      Provider.of<SyncProvider>(
-        context,
-        listen: false,
-      ).performBackupAndUpload();
+    if (!confirmed || !mounted) return;
+
+    final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+
+    // Tampilkan dialog progres
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Consumer<SyncProvider>(
+        builder: (context, provider, child) {
+          return AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 20),
+                Expanded(child: Text(provider.syncStatusMessage)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    // Jalankan proses dan tunggu hasilnya
+    final SyncResult result = await syncProvider.performBackupAndUpload();
+
+    if (mounted) {
+      // Tutup dialog progres
+      Navigator.of(context, rootNavigator: true).pop();
+      // Tampilkan dialog hasil yang baru
+      showSyncResultDialog(context, result);
     }
   }
 
