@@ -4,7 +4,6 @@ import 'package:my_aplication/features/settings/application/gemini_settings_serv
 import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/prompt_model.dart';
-import '../../application/services/gemini_service.dart';
 
 // Kelas helper untuk data model
 class GeminiModelInfo {
@@ -357,7 +356,7 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
                   onPressed: () {
                     setState(() {
                       _motivationalPromptController.text =
-                          GeminiService.defaultMotivationalPrompt;
+                          defaultMotivationalPrompt;
                     });
                   },
                 ),

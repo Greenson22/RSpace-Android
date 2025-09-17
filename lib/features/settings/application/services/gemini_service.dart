@@ -17,9 +17,7 @@ class GeminiService {
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
 
-  // Prompt default untuk kata motivasi
-  static const String defaultMotivationalPrompt =
-      'Berikan saya satu kalimat motivasi singkat tentang belajar atau pengetahuan dalam Bahasa Indonesia. Kalimat harus inspiratif dan tidak lebih dari 20 kata. Jangan gunakan tanda kutip di awal dan akhir kalimat.';
+  // Hapus definisi 'defaultMotivationalPrompt' dari sini
 
   Future<String> _getActiveApiKey() async {
     final settings = await _settingsService.loadSettings();
@@ -33,6 +31,7 @@ class GeminiService {
 
   /// Menghasilkan atau mengambil satu kalimat motivasi belajar.
   Future<String> getMotivationalQuote() async {
+    // ... sisa fungsi ini tidak berubah
     const fallbackQuotes = [
       'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.',
       'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.',
@@ -118,6 +117,7 @@ class GeminiService {
     return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
   }
 
+  // ... sisa kode di file ini tetap sama
   Future<ColorPalette> suggestColorPalette({
     required String theme,
     required String paletteName,

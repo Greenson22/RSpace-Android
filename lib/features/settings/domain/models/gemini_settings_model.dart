@@ -1,8 +1,11 @@
 // lib/features/settings/domain/models/gemini_settings_model.dart
 import 'dart:convert';
-import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import 'api_key_model.dart';
 import 'prompt_model.dart';
+
+// Definisikan prompt default di sini sebagai konstanta global
+const String defaultMotivationalPrompt =
+    'Berikan saya satu kalimat motivasi singkat tentang belajar atau pengetahuan dalam Bahasa Indonesia. Kalimat harus inspiratif dan tidak lebih dari 20 kata. Jangan gunakan tanda kutip di awal dan akhir kalimat.';
 
 class GeminiSettings {
   final List<ApiKey> apiKeys;
@@ -17,13 +20,13 @@ class GeminiSettings {
   GeminiSettings({
     this.apiKeys = const [],
     this.prompts = const [],
-    // ==> PERBAIKAN: Menambahkan '-latest' pada nilai default
     this.contentModelId = 'gemini-1.5-flash-latest',
     this.chatModelId = 'gemini-1.5-flash-latest',
     this.generalModelId = 'gemini-1.5-flash-latest',
     this.quizModelId = 'gemini-1.5-flash-latest',
     this.titleGenerationModelId = 'gemini-1.5-flash-latest',
-    this.motivationalQuotePrompt = GeminiService.defaultMotivationalPrompt,
+    this.motivationalQuotePrompt =
+        defaultMotivationalPrompt, // Gunakan konstanta
   });
 
   factory GeminiSettings.fromJson(Map<String, dynamic> json) {
@@ -38,7 +41,6 @@ class GeminiSettings {
               ?.map((e) => Prompt.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      // ==> PERBAIKAN: Menambahkan '-latest' pada nilai fallback
       contentModelId:
           json['contentModelId'] as String? ?? 'gemini-1.5-flash-latest',
       chatModelId: json['chatModelId'] as String? ?? 'gemini-1.5-flash-latest',
@@ -50,7 +52,7 @@ class GeminiSettings {
           'gemini-1.5-flash-latest',
       motivationalQuotePrompt:
           json['motivationalQuotePrompt'] as String? ??
-          GeminiService.defaultMotivationalPrompt,
+          defaultMotivationalPrompt, // Gunakan konstanta
     );
   }
 
