@@ -177,20 +177,127 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
 
   // --- Fungsi Manajemen Prompt (Tidak Berubah) ---
   Future<void> _setActivePrompt(Prompt promptToActivate) async {
-    // ... implementasi tidak berubah
+    final updatedPrompts = _currentSettings.prompts.map((p) {
+      p.isActive = (p.id == promptToActivate.id);
+      return p;
+    }).toList();
+
+    setState(() {
+      _currentSettings = _currentSettings.copyWith(prompts: updatedPrompts);
+    });
   }
+
   Future<void> _deletePrompt(Prompt promptToDelete) async {
-    // ... implementasi tidak berubah
+    if (promptToDelete.isDefault) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Prompt default tidak dapat dihapus.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final updatedPrompts = _currentSettings.prompts
+        .where((p) => p.id != promptToDelete.id)
+        .toList();
+
+    if (promptToDelete.isActive && updatedPrompts.isNotEmpty) {
+      if (!updatedPrompts.any((k) => k.isActive)) {
+        updatedPrompts.first.isActive = true;
+      }
+    }
+
+    setState(() {
+      _currentSettings = _currentSettings.copyWith(prompts: updatedPrompts);
+    });
   }
+
   Future<void> _addNewOrEditPrompt({Prompt? existingPrompt}) async {
-    // ... implementasi tidak berubah
+    final result = await _showAddOrEditPromptDialog(
+      existingPrompt: existingPrompt,
+    );
+    if (result != null) {
+      final updatedPrompts = List<Prompt>.from(_currentSettings.prompts);
+      if (existingPrompt != null) {
+        final index = updatedPrompts.indexWhere((p) => p.id == result.id);
+        if (index != -1) updatedPrompts[index] = result;
+      } else {
+        updatedPrompts.add(result);
+      }
+      setState(() {
+        _currentSettings = _currentSettings.copyWith(prompts: updatedPrompts);
+      });
+    }
   }
+
   Future<Prompt?> _showAddOrEditPromptDialog({Prompt? existingPrompt}) {
-    // ... implementasi tidak berubah
+    final isEditing = existingPrompt != null;
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(
+      text: existingPrompt?.name ?? '',
+    );
+    final contentController = TextEditingController(
+      text: existingPrompt?.content ?? '',
+    );
+
     return showDialog<Prompt>(
       context: context,
-      builder: (context) => Container(),
-    ); // Placeholder
+      builder: (context) => AlertDialog(
+        title: Text(isEditing ? 'Ubah Prompt' : 'Tambah Prompt Baru'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Nama Prompt'),
+                  validator: (val) =>
+                      val!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: contentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Isi Prompt',
+                    hintText: 'Gunakan "{topic}" sebagai placeholder...',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 10,
+                  validator: (val) =>
+                      val!.isEmpty ? 'Isi tidak boleh kosong' : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(
+                  context,
+                  Prompt(
+                    id: existingPrompt?.id ?? const Uuid().v4(),
+                    name: nameController.text.trim(),
+                    content: contentController.text.trim(),
+                    isActive: existingPrompt?.isActive ?? false,
+                    isDefault: existingPrompt?.isDefault ?? false,
+                  ),
+                );
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _saveAllSettings() async {
@@ -215,19 +322,25 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
     required String? currentValue,
     required ValueChanged<String?> onChanged,
   }) {
+    // ==> PERBAIKAN DI SINI: Mencegah duplikasi item <==
+    final uniqueModels = <String>{};
+    final items = _currentSettings.models
+        .where((model) => uniqueModels.add(model.modelId))
+        .map((model) {
+          return DropdownMenuItem<String>(
+            value: model.modelId,
+            child: Text(model.name, overflow: TextOverflow.ellipsis),
+          );
+        })
+        .toList();
+
     return DropdownButtonFormField<String>(
       value: currentValue,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
       ),
-      items: _currentSettings.models.map((model) {
-        // Mengambil dari state
-        return DropdownMenuItem<String>(
-          value: model.modelId,
-          child: Text(model.name, overflow: TextOverflow.ellipsis),
-        );
-      }).toList(),
+      items: items, // Gunakan items yang sudah unik
       onChanged: onChanged,
     );
   }

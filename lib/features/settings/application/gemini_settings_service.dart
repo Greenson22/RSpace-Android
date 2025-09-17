@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart'; // <-- Import yang diperlukan
+import 'package:flutter/services.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/settings/domain/models/prompt_model.dart';
 import '../domain/models/gemini_settings_model.dart';
@@ -23,12 +23,18 @@ class GeminiSettingsService {
         final jsonString = await file.readAsString();
         if (jsonString.isNotEmpty) {
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-          final settings = GeminiSettings.fromJson(jsonData);
+          var settings = GeminiSettings.fromJson(jsonData);
+
           // Jika tidak ada model sama sekali, tambahkan yang default dari JSON
           if (settings.models.isEmpty) {
             final defaultModels = await _loadDefaultModelsFromJson();
-            return settings.copyWith(models: defaultModels);
+            settings = settings.copyWith(models: defaultModels);
           }
+
+          // ==> LOGIKA VALIDASI BARU <==
+          // Pastikan model yang dipilih ada di dalam daftar, jika tidak, reset ke default.
+          settings = _validateSelectedModels(settings);
+
           return settings;
         }
       }
@@ -39,13 +45,39 @@ class GeminiSettingsService {
     return _createDefaultSettings();
   }
 
+  // ==> FUNGSI BARU UNTUK VALIDASI <==
+  GeminiSettings _validateSelectedModels(GeminiSettings settings) {
+    final availableModelIds = settings.models.map((m) => m.modelId).toSet();
+    if (availableModelIds.isEmpty) return settings;
+
+    final firstAvailableModel = settings.models.first.modelId;
+
+    return settings.copyWith(
+      generalModelId: availableModelIds.contains(settings.generalModelId)
+          ? settings.generalModelId
+          : firstAvailableModel,
+      contentModelId: availableModelIds.contains(settings.contentModelId)
+          ? settings.contentModelId
+          : firstAvailableModel,
+      chatModelId: availableModelIds.contains(settings.chatModelId)
+          ? settings.chatModelId
+          : firstAvailableModel,
+      quizModelId: availableModelIds.contains(settings.quizModelId)
+          ? settings.quizModelId
+          : firstAvailableModel,
+      titleGenerationModelId:
+          availableModelIds.contains(settings.titleGenerationModelId)
+          ? settings.titleGenerationModelId
+          : firstAvailableModel,
+    );
+  }
+
   Future<void> saveSettings(GeminiSettings settings) async {
     final file = await _settingsFile;
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(settings.toJson()));
   }
 
-  // == PERUBAHAN DI SINI: Memuat model dari file JSON di assets ==
   Future<List<GeminiModelInfo>> _loadDefaultModelsFromJson() async {
     try {
       final jsonString = await rootBundle.loadString(
@@ -89,7 +121,6 @@ Ikuti aturan-aturan berikut dengan ketat:
     );
   }
 
-  // Mengubah _createDefaultSettings menjadi async
   Future<GeminiSettings> _createDefaultSettings() async {
     return GeminiSettings(
       prompts: [_getDefaultPrompt()],
