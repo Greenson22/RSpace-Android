@@ -17,7 +17,6 @@ class UserDataService {
   static const String _repetitionCodeOrderKey = 'repetition_code_order';
   static const String _repetitionCodeDisplayOrderKey =
       'repetition_code_display_order';
-  // ==> KUNCI BARU UNTUK BOBOT HARI <==
   static const String _repetitionCodeDaysKey = 'repetition_code_days';
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
@@ -129,10 +128,8 @@ class UserDataService {
     return prefs.getStringList(_repetitionCodeDisplayOrderKey) ?? [];
   }
 
-  // ==> FUNGSI BARU UNTUK BOBOT HARI <==
   Future<void> saveRepetitionCodeDays(Map<String, int> days) async {
     final prefs = await SharedPreferences.getInstance();
-    // Simpan map sebagai string JSON
     final jsonString = jsonEncode(
       days.map((key, value) => MapEntry(key, value.toString())),
     );
@@ -143,9 +140,8 @@ class UserDataService {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_repetitionCodeDaysKey);
     if (jsonString == null || jsonString.isEmpty) {
-      return {}; // Kembalikan map kosong jika tidak ada data
+      return {};
     }
-    // Ubah kembali dari string JSON ke Map
     final Map<String, dynamic> decodedMap = jsonDecode(jsonString);
     return decodedMap.map(
       (key, value) => MapEntry(key, int.tryParse(value) ?? 0),

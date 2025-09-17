@@ -188,7 +188,6 @@ class PathService {
   Future<String> get logTaskPresetsPath async =>
       path.join(await contentsPath, 'log_task_presets.json');
 
-  // ==> PENAMBAHAN PATH BARU <==
   Future<String> get pointPresetsPath async =>
       path.join(await contentsPath, 'point_presets.json');
 
@@ -201,23 +200,22 @@ class PathService {
   Future<String> get countdownTimersPath async =>
       path.join(await contentsPath, 'countdown_timers.json');
 
-  Future<String> get progressPath async => // Path baru untuk fitur Progress
+  Future<String> get progressPath async =>
       path.join(await contentsPath, 'progress');
 
-  // ==> TAMBAHKAN PATH BARU UNTUK KUIS <==
   Future<String> get quizPath async => path.join(await contentsPath, 'quizzes');
 
-  // ==> TAMBAHKAN PATH BARU UNTUK FILE PROFIL PENGGUNA
   Future<String> get userProfilePath async =>
       path.join(await contentsPath, 'user_profile.dat');
 
-  // ==> TAMBAHKAN PATH BARU UNTUK BOOKMARK
   Future<String> get bookmarksPath async =>
       path.join(await contentsPath, 'bookmarks.json');
 
-  // ==> TAMBAHKAN PATH BARU UNTUK KATA-KATA MOTIVASI
   Future<String> get motivationalQuotesPath async =>
       path.join(await contentsPath, 'motivational_quotes.json');
+
+  Future<String> get geminiSettingsPath async =>
+      path.join(await contentsPath, 'gemini_settings.json');
 
   Future<String> get perpuskuDataPath async {
     String? customPath = await loadPerpuskuDataPath();

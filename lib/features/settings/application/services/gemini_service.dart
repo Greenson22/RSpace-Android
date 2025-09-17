@@ -7,13 +7,13 @@ import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/settings/application/gemini_settings_service.dart';
 import '../../domain/models/api_key_model.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../link_maintenance/domain/models/link_suggestion_model.dart';
-import '../../../../core/services/storage_service.dart';
 
 class GeminiService {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  final GeminiSettingsService _settingsService = GeminiSettingsService();
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
 
@@ -22,9 +22,9 @@ class GeminiService {
       'Berikan saya satu kalimat motivasi singkat tentang belajar atau pengetahuan dalam Bahasa Indonesia. Kalimat harus inspiratif dan tidak lebih dari 20 kata. Jangan gunakan tanda kutip di awal dan akhir kalimat.';
 
   Future<String> _getActiveApiKey() async {
-    final List<ApiKey> keys = await _prefsService.loadApiKeys();
+    final settings = await _settingsService.loadSettings();
     try {
-      final activeKey = keys.firstWhere((k) => k.isActive);
+      final activeKey = settings.apiKeys.firstWhere((k) => k.isActive);
       return activeKey.key;
     } catch (e) {
       return '';
@@ -41,7 +41,6 @@ class GeminiService {
     ];
     final random = Random();
 
-    // Membaca kutipan yang sudah ada dari file JSON
     List<String> existingQuotes = [];
     final quotesPath = await _pathService.motivationalQuotesPath;
     final quotesFile = File(quotesPath);
@@ -52,16 +51,15 @@ class GeminiService {
           existingQuotes = List<String>.from(jsonDecode(jsonString));
         }
       } else {
-        // Jika file tidak ada, buat file baru dengan array kosong
         await quotesFile.create(recursive: true);
         await quotesFile.writeAsString('[]');
       }
     } catch (e) {
-      // Abaikan jika ada error saat membaca file, akan menggunakan fallback
+      // Abaikan jika ada error saat membaca file
     }
 
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    // Jika tidak ada API key, gunakan kutipan dari cache atau fallback
     if (apiKey.isEmpty) {
       if (existingQuotes.isNotEmpty) {
         return existingQuotes[random.nextInt(existingQuotes.length)];
@@ -69,12 +67,8 @@ class GeminiService {
       return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
     }
 
-    // Gunakan prompt kustom jika ada, jika tidak, gunakan default
-    final customPrompt = await _prefsService.loadMotivationalQuotePrompt();
-    final prompt = customPrompt ?? defaultMotivationalPrompt;
-
-    final model =
-        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+    final prompt = settings.motivationalQuotePrompt;
+    final model = settings.generalModelId;
     final apiUrl =
         'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
 
@@ -90,9 +84,7 @@ class GeminiService {
               ],
             },
           ],
-          'generationConfig': {
-            'temperature': 0.9, // Sedikit lebih kreatif
-          },
+          'generationConfig': {'temperature': 0.9},
         }),
       );
 
@@ -107,9 +99,8 @@ class GeminiService {
               final newQuote = parts[0]['text'] as String? ?? '';
               if (newQuote.isNotEmpty && !existingQuotes.contains(newQuote)) {
                 existingQuotes.add(newQuote);
-                // Jaga agar daftar tidak lebih dari 5
                 if (existingQuotes.length > 5) {
-                  existingQuotes.removeAt(0); // Hapus yang paling lama
+                  existingQuotes.removeAt(0);
                 }
                 await quotesFile.writeAsString(jsonEncode(existingQuotes));
               }
@@ -119,13 +110,11 @@ class GeminiService {
         }
       }
     } catch (e) {
-      // Jika error saat request API, kembalikan dari cache atau fallback
       if (existingQuotes.isNotEmpty) {
         return existingQuotes[random.nextInt(existingQuotes.length)];
       }
     }
 
-    // Fallback terakhir jika semua proses gagal
     return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
   }
 
@@ -133,9 +122,9 @@ class GeminiService {
     required String theme,
     required String paletteName,
   }) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+    final model = settings.generalModelId;
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
@@ -211,9 +200,9 @@ class GeminiService {
   }
 
   Future<List<String>> suggestIcon({required String name}) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+    final model = settings.generalModelId;
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
@@ -272,9 +261,9 @@ Contoh Jawaban:
     required Discussion discussion,
     required List<Map<String, String>> allFiles,
   }) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiGeneralModel() ?? 'gemini-1.5-flash';
+    final model = settings.generalModelId;
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
@@ -361,10 +350,9 @@ Contoh Jawaban:
   }
 
   Future<List<String>> generateDiscussionTitles(String htmlContent) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiTitleGenerationModel() ??
-        'gemini-1.5-flash';
+    final model = settings.titleGenerationModelId;
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');
@@ -430,9 +418,9 @@ Contoh Jawaban:
   }
 
   Future<String> getChatCompletion(String query, {String? context}) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiChatModel() ?? 'gemini-1.5-flash';
+    final model = settings.chatModelId;
 
     if (apiKey.isEmpty) {
       throw Exception(
@@ -499,9 +487,9 @@ Jawaban Anda:
   }
 
   Future<String> generateHtmlContent(String topic) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiContentModel() ?? 'gemini-1.5-flash';
+    final model = settings.contentModelId;
 
     if (apiKey.isEmpty) {
       throw Exception(
@@ -509,7 +497,10 @@ Jawaban Anda:
       );
     }
 
-    final activePrompt = await _prefsService.getActivePrompt();
+    final activePrompt = settings.prompts.firstWhere(
+      (p) => p.isActive,
+      orElse: () => settings.prompts.first,
+    );
     final promptText = activePrompt.content.replaceAll('{topic}', topic);
 
     final apiUrl =
@@ -560,9 +551,9 @@ Jawaban Anda:
     int questionCount = 10,
     QuizDifficulty difficulty = QuizDifficulty.medium,
   }) async {
+    final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
-    final model =
-        await _prefsService.loadGeminiQuizModel() ?? 'gemini-1.5-flash';
+    final model = settings.quizModelId;
 
     if (apiKey.isEmpty) {
       throw Exception('API Key Gemini tidak aktif.');

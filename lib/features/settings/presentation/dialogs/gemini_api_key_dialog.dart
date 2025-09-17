@@ -1,10 +1,11 @@
-// lib/presentation/pages/dashboard_page/dialogs/gemini_api_key_dialog.dart
+// lib/features/settings/presentation/dialogs/gemini_api_key_dialog.dart
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/settings/application/gemini_settings_service.dart';
+import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/api_key_model.dart';
-import '../../../../core/services/storage_service.dart';
 
 void showGeminiApiKeyDialog(BuildContext context) {
   showDialog(
@@ -21,8 +22,8 @@ class GeminiApiKeyDialog extends StatefulWidget {
 }
 
 class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
-  List<ApiKey> _apiKeys = [];
+  final GeminiSettingsService _settingsService = GeminiSettingsService();
+  late GeminiSettings _currentSettings;
   bool _isLoading = true;
 
   @override
@@ -32,22 +33,29 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
   }
 
   Future<void> _loadSavedData() async {
-    final keys = await _prefsService.loadApiKeys();
+    final settings = await _settingsService.loadSettings();
     if (mounted) {
       setState(() {
-        _apiKeys = keys;
+        _currentSettings = settings;
         _isLoading = false;
       });
     }
   }
 
+  Future<void> _saveChanges() async {
+    await _settingsService.saveSettings(_currentSettings);
+  }
+
   Future<void> _setActiveKey(ApiKey keyToActivate) async {
+    final updatedKeys = _currentSettings.apiKeys.map((key) {
+      key.isActive = (key.id == keyToActivate.id);
+      return key;
+    }).toList();
+
     setState(() {
-      for (var key in _apiKeys) {
-        key.isActive = (key.id == keyToActivate.id);
-      }
+      _currentSettings = _currentSettings.copyWith(apiKeys: updatedKeys);
     });
-    await _prefsService.saveApiKeys(_apiKeys);
+    await _saveChanges();
   }
 
   Future<void> _deleteKey(ApiKey keyToDelete) async {
@@ -65,48 +73,57 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
-      setState(() {
-        _apiKeys.removeWhere((key) => key.id == keyToDelete.id);
-        if (keyToDelete.isActive && _apiKeys.isNotEmpty) {
-          if (!_apiKeys.any((k) => k.isActive)) {
-            _apiKeys.first.isActive = true;
-          }
+      final updatedKeys = _currentSettings.apiKeys
+          .where((key) => key.id != keyToDelete.id)
+          .toList();
+
+      if (keyToDelete.isActive && updatedKeys.isNotEmpty) {
+        if (!updatedKeys.any((k) => k.isActive)) {
+          updatedKeys.first.isActive = true;
         }
+      }
+      setState(() {
+        _currentSettings = _currentSettings.copyWith(apiKeys: updatedKeys);
       });
-      await _prefsService.saveApiKeys(_apiKeys);
+      await _saveChanges();
     }
   }
 
   Future<void> _addNewKey() async {
     final newKey = await _showAddOrEditKeyDialog();
     if (newKey != null) {
-      if (_apiKeys.isEmpty) {
+      final updatedKeys = List<ApiKey>.from(_currentSettings.apiKeys);
+      if (updatedKeys.isEmpty) {
         newKey.isActive = true;
       }
+      updatedKeys.add(newKey);
       setState(() {
-        _apiKeys.add(newKey);
+        _currentSettings = _currentSettings.copyWith(apiKeys: updatedKeys);
       });
-      await _prefsService.saveApiKeys(_apiKeys);
+      await _saveChanges();
     }
   }
 
   Future<void> _editKey(ApiKey keyToEdit) async {
     final updatedKey = await _showAddOrEditKeyDialog(existingKey: keyToEdit);
     if (updatedKey != null) {
+      final updatedKeys = List<ApiKey>.from(_currentSettings.apiKeys);
+      final index = updatedKeys.indexWhere((k) => k.id == updatedKey.id);
+      if (index != -1) {
+        updatedKeys[index] = updatedKey;
+      }
       setState(() {
-        final index = _apiKeys.indexWhere((k) => k.id == updatedKey.id);
-        if (index != -1) {
-          _apiKeys[index] = updatedKey;
-        }
+        _currentSettings = _currentSettings.copyWith(apiKeys: updatedKeys);
       });
-      await _prefsService.saveApiKeys(_apiKeys);
+      await _saveChanges();
     }
   }
 
@@ -170,12 +187,14 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final activeKeyId = _apiKeys
-        .firstWhere(
-          (k) => k.isActive,
-          orElse: () => ApiKey(id: '', name: '', key: ''),
-        )
-        .id;
+    final activeKeyId = _isLoading
+        ? ''
+        : _currentSettings.apiKeys
+              .firstWhere(
+                (k) => k.isActive,
+                orElse: () => ApiKey(id: '', name: '', key: ''),
+              )
+              .id;
 
     return AlertDialog(
       title: const Text('Manajemen API Key Gemini'),
@@ -235,7 +254,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                     child: CircularProgressIndicator(),
                   ),
                 )
-              else if (_apiKeys.isEmpty)
+              else if (_currentSettings.apiKeys.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24.0),
                   child: Center(
@@ -249,9 +268,9 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _apiKeys.length,
+                  itemCount: _currentSettings.apiKeys.length,
                   itemBuilder: (context, index) {
-                    final apiKey = _apiKeys[index];
+                    final apiKey = _currentSettings.apiKeys[index];
                     return ListTile(
                       title: Text(apiKey.name),
                       subtitle: Text(

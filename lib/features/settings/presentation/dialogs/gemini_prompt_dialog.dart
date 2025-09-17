@@ -1,9 +1,9 @@
 // lib/features/settings/presentation/dialogs/gemini_prompt_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/settings/application/gemini_settings_service.dart';
+import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/prompt_model.dart';
-import '../../../../core/services/storage_service.dart';
-// ==> 1. IMPORT GEMINI SERVICE UNTUK MENGAMBIL PROMPT DEFAULT
 import '../../application/services/gemini_service.dart';
 
 // Kelas helper untuk data model
@@ -28,39 +28,25 @@ class GeminiPromptDialog extends StatefulWidget {
 }
 
 class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
-  List<Prompt> _prompts = [];
+  final GeminiSettingsService _settingsService = GeminiSettingsService();
+  late GeminiSettings _currentSettings;
   bool _isLoading = true;
-  String? _selectedContentModelId;
-  String? _selectedChatModelId;
-  String? _selectedGeneralModelId;
-  String? _selectedQuizModelId;
-  String? _selectedTitleGenModelId; // ==> TAMBAHKAN STATE BARU
 
-  // ==> 2. TAMBAHKAN CONTROLLER UNTUK PROMPT MOTIVASI
   late TextEditingController _motivationalPromptController;
 
   final List<GeminiModelInfo> _models = const [
-    GeminiModelInfo(name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro'),
-    GeminiModelInfo(name: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash'),
-    GeminiModelInfo(name: 'Gemini 2.5 Flash-Lite', id: 'gemini-2.5-flash-lite'),
-    GeminiModelInfo(name: 'Gemini 2.0 Flash', id: 'gemini-2.0-flash'),
-    GeminiModelInfo(name: 'Gemma 3 27B', id: 'gemma-3-27b-it'),
-    GeminiModelInfo(name: 'Gemma 3 12B', id: 'gemma-3-12b-it'),
-    GeminiModelInfo(name: 'Gemma 3 4B', id: 'gemma-3-4b-it'),
-    GeminiModelInfo(name: 'Gemma 3n E4B', id: 'gemma-3n-e4b-it'),
-    GeminiModelInfo(name: 'Gemma 3n E2B', id: 'gemma-3n-e2b-it'),
+    GeminiModelInfo(name: 'Gemini 1.5 Pro', id: 'gemini-1.5-pro-latest'),
+    GeminiModelInfo(name: 'Gemini 1.5 Flash', id: 'gemini-1.5-flash-latest'),
+    GeminiModelInfo(name: 'Gemini 1.0 Pro', id: 'gemini-1.0-pro-latest'),
   ];
 
   @override
   void initState() {
     super.initState();
-    // ==> 3. INISIALISASI CONTROLLER
     _motivationalPromptController = TextEditingController();
     _loadSavedData();
   }
 
-  // ==> 4. JANGAN LUPA DISPOSE CONTROLLER
   @override
   void dispose() {
     _motivationalPromptController.dispose();
@@ -68,55 +54,37 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   }
 
   Future<void> _loadSavedData() async {
-    var savedPrompts = await _prefsService.loadPrompts();
-    final contentModelId = await _prefsService.loadGeminiContentModel();
-    final chatModelId = await _prefsService.loadGeminiChatModel();
-    final generalModelId = await _prefsService.loadGeminiGeneralModel();
-    final quizModelId = await _prefsService.loadGeminiQuizModel();
-    final titleGenModelId = await _prefsService
-        .loadGeminiTitleGenerationModel(); // ==> MUAT MODEL BARU
-    // ==> 5. MUAT PROMPT MOTIVASI YANG TERSIMPAN
-    final motivationalPrompt = await _prefsService
-        .loadMotivationalQuotePrompt();
+    final settings = await _settingsService.loadSettings();
 
-    if (savedPrompts.isEmpty) {
-      final defaultPrompt = await _prefsService.getActivePrompt();
-      savedPrompts = [defaultPrompt];
-      await _prefsService.savePrompts(savedPrompts);
-    }
-
-    if (savedPrompts.isNotEmpty && !savedPrompts.any((p) => p.isActive)) {
-      final defaultOrFirst = savedPrompts.firstWhere(
+    // Memastikan selalu ada prompt yang aktif
+    if (settings.prompts.isNotEmpty &&
+        !settings.prompts.any((p) => p.isActive)) {
+      final defaultOrFirst = settings.prompts.firstWhere(
         (p) => p.isDefault,
-        orElse: () => savedPrompts.first,
+        orElse: () => settings.prompts.first,
       );
       defaultOrFirst.isActive = true;
     }
 
     if (mounted) {
       setState(() {
-        _prompts = savedPrompts;
-        _selectedContentModelId = contentModelId ?? _models[1].id;
-        _selectedChatModelId = chatModelId ?? _models[1].id;
-        _selectedGeneralModelId = generalModelId ?? _models[1].id;
-        _selectedQuizModelId = quizModelId ?? _models[1].id;
-        _selectedTitleGenModelId =
-            titleGenModelId ?? _models[1].id; // ==> SET STATE BARU
-        // ==> 6. SET TEKS CONTROLLER
+        _currentSettings = settings;
         _motivationalPromptController.text =
-            motivationalPrompt ?? GeminiService.defaultMotivationalPrompt;
+            _currentSettings.motivationalQuotePrompt;
         _isLoading = false;
       });
     }
   }
 
   Future<void> _setActivePrompt(Prompt promptToActivate) async {
+    final updatedPrompts = _currentSettings.prompts.map((p) {
+      p.isActive = (p.id == promptToActivate.id);
+      return p;
+    }).toList();
+
     setState(() {
-      for (var p in _prompts) {
-        p.isActive = (p.id == promptToActivate.id);
-      }
+      _currentSettings = _currentSettings.copyWith(prompts: updatedPrompts);
     });
-    await _prefsService.savePrompts(_prompts);
   }
 
   Future<void> _deletePrompt(Prompt promptToDelete) async {
@@ -130,16 +98,19 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
       return;
     }
 
-    setState(() {
-      _prompts.removeWhere((p) => p.id == promptToDelete.id);
-      if (promptToDelete.isActive && _prompts.isNotEmpty) {
-        _prompts
-                .firstWhere((p) => p.isDefault, orElse: () => _prompts.first)
-                .isActive =
-            true;
+    final updatedPrompts = _currentSettings.prompts
+        .where((p) => p.id != promptToDelete.id)
+        .toList();
+
+    if (promptToDelete.isActive && updatedPrompts.isNotEmpty) {
+      if (!updatedPrompts.any((k) => k.isActive)) {
+        updatedPrompts.first.isActive = true;
       }
+    }
+
+    setState(() {
+      _currentSettings = _currentSettings.copyWith(prompts: updatedPrompts);
     });
-    await _prefsService.savePrompts(_prompts);
   }
 
   Future<void> _addNewOrEditPrompt({Prompt? existingPrompt}) async {
@@ -147,15 +118,16 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
       existingPrompt: existingPrompt,
     );
     if (result != null) {
+      final updatedPrompts = List<Prompt>.from(_currentSettings.prompts);
+      if (existingPrompt != null) {
+        final index = updatedPrompts.indexWhere((p) => p.id == result.id);
+        if (index != -1) updatedPrompts[index] = result;
+      } else {
+        updatedPrompts.add(result);
+      }
       setState(() {
-        if (existingPrompt != null) {
-          final index = _prompts.indexWhere((p) => p.id == result.id);
-          if (index != -1) _prompts[index] = result;
-        } else {
-          _prompts.add(result);
-        }
+        _currentSettings = _currentSettings.copyWith(prompts: updatedPrompts);
       });
-      await _prefsService.savePrompts(_prompts);
     }
   }
 
@@ -229,29 +201,10 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
   }
 
   Future<void> _saveAllSettings() async {
-    if (_selectedContentModelId != null) {
-      await _prefsService.saveGeminiContentModel(_selectedContentModelId!);
-    }
-    if (_selectedChatModelId != null) {
-      await _prefsService.saveGeminiChatModel(_selectedChatModelId!);
-    }
-    if (_selectedGeneralModelId != null) {
-      await _prefsService.saveGeminiGeneralModel(_selectedGeneralModelId!);
-    }
-    if (_selectedQuizModelId != null) {
-      await _prefsService.saveGeminiQuizModel(_selectedQuizModelId!);
-    }
-    // ==> SIMPAN MODEL BARU <==
-    if (_selectedTitleGenModelId != null) {
-      await _prefsService.saveGeminiTitleGenerationModel(
-        _selectedTitleGenModelId!,
-      );
-    }
-
-    // ==> 7. SIMPAN PROMPT MOTIVASI
-    await _prefsService.saveMotivationalQuotePrompt(
-      _motivationalPromptController.text,
+    final settingsToSave = _currentSettings.copyWith(
+      motivationalQuotePrompt: _motivationalPromptController.text.trim(),
     );
+    await _settingsService.saveSettings(settingsToSave);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -260,15 +213,44 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
           backgroundColor: Colors.green,
         ),
       );
+      Navigator.pop(context);
     }
+  }
+
+  Widget _buildModelDropdown({
+    required String label,
+    required String? currentValue,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: currentValue,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      items: _models.map((model) {
+        return DropdownMenuItem<String>(
+          value: model.id,
+          child: Text(model.name, overflow: TextOverflow.ellipsis),
+        );
+      }).toList(),
+      onChanged: onChanged,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final activePromptId = _isLoading || _prompts.isEmpty
+    if (_isLoading) {
+      return const Dialog(child: Center(child: CircularProgressIndicator()));
+    }
+
+    final activePromptId = _currentSettings.prompts.isEmpty
         ? ''
-        : _prompts
-              .firstWhere((p) => p.isActive, orElse: () => _prompts.first)
+        : _currentSettings.prompts
+              .firstWhere(
+                (p) => p.isActive,
+                orElse: () => _currentSettings.prompts.first,
+              )
               .id;
 
     return AlertDialog(
@@ -276,202 +258,157 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Atur model AI yang akan digunakan untuk setiap fitur dan kelola *prompt* kustom Anda.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedGeneralModelId,
-                      decoration: const InputDecoration(
-                        labelText: 'Model untuk Tugas Umum (Pencarian, dll)',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _models.map((model) {
-                        return DropdownMenuItem<String>(
-                          value: model.id,
-                          child: Text(
-                            model.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedGeneralModelId = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedContentModelId,
-                      decoration: const InputDecoration(
-                        labelText: 'Model untuk Generate Konten',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _models.map((model) {
-                        return DropdownMenuItem<String>(
-                          value: model.id,
-                          child: Text(
-                            model.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedContentModelId = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedChatModelId,
-                      decoration: const InputDecoration(
-                        labelText: 'Model untuk Chat',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _models.map((model) {
-                        return DropdownMenuItem<String>(
-                          value: model.id,
-                          child: Text(
-                            model.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedChatModelId = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedQuizModelId,
-                      decoration: const InputDecoration(
-                        labelText: 'Model untuk Generate Kuis',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _models.map((model) {
-                        return DropdownMenuItem<String>(
-                          value: model.id,
-                          child: Text(
-                            model.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedQuizModelId = value;
-                        });
-                      },
-                    ),
-                    // ==> TAMBAHKAN DROPDOWN BARU DI SINI <==
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedTitleGenModelId,
-                      decoration: const InputDecoration(
-                        labelText: 'Model untuk Generate Judul dari Konten',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: _models.map((model) {
-                        return DropdownMenuItem<String>(
-                          value: model.id,
-                          child: Text(
-                            model.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedTitleGenModelId = value;
-                        });
-                      },
-                    ),
-                    const Divider(height: 32),
-                    // ==> 8. TAMBAHKAN UI UNTUK PROMPT MOTIVASI
-                    Text(
-                      'Prompt untuk Kata Motivasi',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _motivationalPromptController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: 'Masukkan perintah untuk AI...',
-                      ),
-                      maxLines: 4,
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        child: const Text('Gunakan Default'),
-                        onPressed: () {
-                          setState(() {
-                            _motivationalPromptController.text =
-                                GeminiService.defaultMotivationalPrompt;
-                          });
-                        },
-                      ),
-                    ),
-                    // --- AKHIR UI BARU ---
-                    const SizedBox(height: 16),
-                    Text(
-                      'Prompt Kustom untuk Generate Konten',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Divider(height: 8),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _prompts.length,
-                      itemBuilder: (context, index) {
-                        final prompt = _prompts[index];
-                        return ListTile(
-                          title: Text(prompt.name),
-                          subtitle: prompt.isDefault
-                              ? const Text('Prompt Standar')
-                              : null,
-                          leading: Radio<String>(
-                            value: prompt.id,
-                            groupValue: activePromptId,
-                            onChanged: (val) => _setActivePrompt(prompt),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 20),
-                                onPressed: () =>
-                                    _addNewOrEditPrompt(existingPrompt: prompt),
-                              ),
-                              if (!prompt.isDefault)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.red,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _deletePrompt(prompt),
-                                ),
-                            ],
-                          ),
-                          contentPadding: EdgeInsets.zero,
-                        );
-                      },
-                    ),
-                  ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Atur model AI yang akan digunakan untuk setiap fitur dan kelola *prompt* kustom Anda.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              _buildModelDropdown(
+                label: 'Model untuk Tugas Umum (Pencarian, dll)',
+                currentValue: _currentSettings.generalModelId,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _currentSettings = _currentSettings.copyWith(
+                        generalModelId: value,
+                      );
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildModelDropdown(
+                label: 'Model untuk Generate Konten',
+                currentValue: _currentSettings.contentModelId,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _currentSettings = _currentSettings.copyWith(
+                        contentModelId: value,
+                      );
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildModelDropdown(
+                label: 'Model untuk Chat',
+                currentValue: _currentSettings.chatModelId,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _currentSettings = _currentSettings.copyWith(
+                        chatModelId: value,
+                      );
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildModelDropdown(
+                label: 'Model untuk Generate Kuis',
+                currentValue: _currentSettings.quizModelId,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _currentSettings = _currentSettings.copyWith(
+                        quizModelId: value,
+                      );
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildModelDropdown(
+                label: 'Model untuk Generate Judul dari Konten',
+                currentValue: _currentSettings.titleGenerationModelId,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _currentSettings = _currentSettings.copyWith(
+                        titleGenerationModelId: value,
+                      );
+                    });
+                  }
+                },
+              ),
+              const Divider(height: 32),
+              Text(
+                'Prompt untuk Kata Motivasi',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _motivationalPromptController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Masukkan perintah untuk AI...',
                 ),
+                maxLines: 4,
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  child: const Text('Gunakan Default'),
+                  onPressed: () {
+                    setState(() {
+                      _motivationalPromptController.text =
+                          GeminiService.defaultMotivationalPrompt;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Prompt Kustom untuk Generate Konten',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const Divider(height: 8),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _currentSettings.prompts.length,
+                itemBuilder: (context, index) {
+                  final prompt = _currentSettings.prompts[index];
+                  return ListTile(
+                    title: Text(prompt.name),
+                    subtitle: prompt.isDefault
+                        ? const Text('Prompt Standar')
+                        : null,
+                    leading: Radio<String>(
+                      value: prompt.id,
+                      groupValue: activePromptId,
+                      onChanged: (val) => _setActivePrompt(prompt),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: () =>
+                              _addNewOrEditPrompt(existingPrompt: prompt),
+                        ),
+                        if (!prompt.isDefault)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            onPressed: () => _deletePrompt(prompt),
+                          ),
+                      ],
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -482,11 +419,11 @@ class _GeminiPromptDialogState extends State<GeminiPromptDialog> {
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Tutup'),
+          child: const Text('Batal'),
         ),
         ElevatedButton(
           onPressed: _saveAllSettings,
-          child: const Text('Simpan Pengaturan'),
+          child: const Text('Simpan & Tutup'),
         ),
       ],
     );

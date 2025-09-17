@@ -1,18 +1,14 @@
 // lib/core/services/storage_service.dart
+import 'package:my_aplication/features/settings/application/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../features/settings/domain/models/api_key_model.dart';
-import '../../features/settings/domain/models/prompt_model.dart';
 import '../../features/ai_assistant/domain/models/chat_message_model.dart';
-import '../../features/settings/application/services/settings_service.dart';
 import 'path_service.dart';
-import 'gemini_storage_service.dart';
 import 'user_data_service.dart';
 import 'neuron_service.dart';
 
 class SharedPreferencesService {
   final SettingsService _settingsService = SettingsService();
   final PathService _pathService = PathService();
-  final GeminiService _geminiService = GeminiService();
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
 
@@ -76,19 +72,11 @@ class SharedPreferencesService {
   Future<bool> loadOpenInAppBrowser() =>
       _settingsService.loadOpenInAppBrowser();
 
-  // FUNGSI BARU UNTUK TEMA EDITOR
   Future<void> saveHtmlEditorTheme(String themeName) =>
       _settingsService.saveHtmlEditorTheme(themeName);
   Future<String?> loadHtmlEditorTheme() =>
       _settingsService.loadHtmlEditorTheme();
 
-  // ==> PENAMBAHAN FUNGSI UNTUK PROMPT MOTIVASI <==
-  Future<void> saveMotivationalQuotePrompt(String prompt) =>
-      _settingsService.saveMotivationalQuotePrompt(prompt);
-  Future<String?> loadMotivationalQuotePrompt() =>
-      _settingsService.loadMotivationalQuotePrompt();
-  // --- AKHIR PENAMBAHAN ---
-  // ==> METODE BARU DITAMBAHKAN
   Future<void> saveMyTasksLayoutPreference(bool isGridView) =>
       _settingsService.saveMyTasksLayoutPreference(isGridView);
   Future<bool> loadMyTasksLayoutPreference() =>
@@ -109,35 +97,6 @@ class SharedPreferencesService {
   Future<void> savePerpuskuDataPath(String path) =>
       _pathService.savePerpuskuDataPath(path);
   Future<String?> loadPerpuskuDataPath() => _pathService.loadPerpuskuDataPath();
-
-  // Metode untuk Gemini
-  Future<void> saveApiKeys(List<ApiKey> keys) =>
-      _geminiService.saveApiKeys(keys);
-  Future<List<ApiKey>> loadApiKeys() => _geminiService.loadApiKeys();
-  Future<void> saveGeminiContentModel(String modelId) =>
-      _geminiService.saveGeminiContentModel(modelId);
-  Future<String?> loadGeminiContentModel() =>
-      _geminiService.loadGeminiContentModel();
-  Future<void> saveGeminiChatModel(String modelId) =>
-      _geminiService.saveGeminiChatModel(modelId);
-  Future<String?> loadGeminiChatModel() => _geminiService.loadGeminiChatModel();
-  Future<void> saveGeminiGeneralModel(String modelId) =>
-      _geminiService.saveGeminiGeneralModel(modelId);
-  Future<String?> loadGeminiGeneralModel() =>
-      _geminiService.loadGeminiGeneralModel();
-  Future<void> saveGeminiQuizModel(String modelId) =>
-      _geminiService.saveGeminiQuizModel(modelId);
-  Future<String?> loadGeminiQuizModel() => _geminiService.loadGeminiQuizModel();
-  Future<void> savePrompts(List<Prompt> prompts) =>
-      _geminiService.savePrompts(prompts);
-  Future<List<Prompt>> loadPrompts() => _geminiService.loadPrompts();
-  Future<Prompt> getActivePrompt() => _geminiService.getActivePrompt();
-
-  // ==> METODE BARU DITAMBAHKAN <==
-  Future<void> saveGeminiTitleGenerationModel(String modelId) =>
-      _geminiService.saveGeminiTitleGenerationModel(modelId);
-  Future<String?> loadGeminiTitleGenerationModel() =>
-      _geminiService.loadGeminiTitleGenerationModel();
 
   // Metode untuk Data Pengguna
   Future<void> saveChatHistory(List<ChatMessage> messages) =>
@@ -161,25 +120,21 @@ class SharedPreferencesService {
   Future<Set<String>> loadExcludedSubjects() =>
       _userDataService.loadExcludedSubjects();
 
-  // ==> METODE BARU DITAMBAHKAN <==
   Future<void> saveExcludedTaskCategories(List<String> categoryNames) =>
       _userDataService.saveExcludedTaskCategories(categoryNames);
   Future<Set<String>> loadExcludedTaskCategories() =>
       _userDataService.loadExcludedTaskCategories();
 
-  // ==> METODE BARU UNTUK URUTAN KODE REPETISI <==
   Future<void> saveRepetitionCodeOrder(List<String> order) =>
       _userDataService.saveRepetitionCodeOrder(order);
   Future<List<String>> loadRepetitionCodeOrder() =>
       _userDataService.loadRepetitionCodeOrder();
 
-  // ==> METODE BARU UNTUK URUTAN TAMPILAN KODE REPETISI <==
   Future<void> saveRepetitionCodeDisplayOrder(List<String> order) =>
       _userDataService.saveRepetitionCodeDisplayOrder(order);
   Future<List<String>> loadRepetitionCodeDisplayOrder() =>
       _userDataService.loadRepetitionCodeDisplayOrder();
 
-  // ==> METODE BARU UNTUK BOBOT HARI <==
   Future<void> saveRepetitionCodeDays(Map<String, int> days) =>
       _userDataService.saveRepetitionCodeDays(days);
   Future<Map<String, int>> loadRepetitionCodeDays() =>
