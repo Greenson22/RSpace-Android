@@ -102,7 +102,6 @@ class ThemeSettings {
     bool? fabMenuShowText,
     bool? openInAppBrowser,
     ValueGetter<String?>? htmlEditorTheme,
-    bool? isChristmas,
   }) {
     return ThemeSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,

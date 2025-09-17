@@ -60,7 +60,7 @@ class ThemeProvider with ChangeNotifier {
   }) {
     _settings = _settings.copyWith(
       isDarkMode: isDark,
-      isChristmas: isChristmas,
+      isChristmasTheme: isChristmas,
       primaryColorValue: color?.value,
       dashboardItemScale: dashboardScale,
     );
