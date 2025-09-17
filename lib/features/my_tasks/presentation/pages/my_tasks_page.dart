@@ -147,16 +147,17 @@ class _MyTasksViewState extends State<_MyTasksView> {
     }
 
     final isAnyReordering = taskProvider.isCategoryReorderEnabled;
-    final isChristmas = Provider.of<ThemeProvider>(
-      context,
-      listen: false,
-    ).isChristmasTheme;
+
+    // ==> PERBAIKAN: Logika tema dipindahkan ke sini <==
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isChristmas = themeProvider.isChristmasTheme;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: handleKeyEvent,
       child: Scaffold(
-        backgroundColor: isChristmas ? Colors.transparent : null,
+        // ==> PERBAIKAN: backgroundColor tidak lagi diatur menjadi transparan <==
+        backgroundColor: null,
         appBar: taskProvider.isTaskSelectionMode
             ? _buildTaskSelectionAppBar(taskProvider)
             : _buildDefaultAppBar(taskProvider, isChristmas),
@@ -202,12 +203,12 @@ class _MyTasksViewState extends State<_MyTasksView> {
 
   AppBar _buildDefaultAppBar(MyTaskProvider taskProvider, bool isChristmas) {
     return AppBar(
-      backgroundColor: isChristmas ? Colors.black.withOpacity(0.2) : null,
+      // ==> PERBAIKAN: backgroundColor tidak lagi diatur secara manual di sini <==
+      backgroundColor: null,
       elevation: isChristmas ? 0 : null,
       title: const Text('My Tasks'),
       actions: [
         if (!taskProvider.isCategoryReorderEnabled) ...[
-          // Tombol Ganti Layout
           IconButton(
             icon: Icon(
               taskProvider.isGridView ? Icons.view_list : Icons.grid_view,
