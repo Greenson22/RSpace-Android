@@ -13,9 +13,10 @@ import '../../../../infrastructure/ads/ad_service.dart';
 import '../../../backup_management/application/sync_provider.dart';
 import '../../../statistics/application/statistics_provider.dart';
 import '../../../content_management/application/topic_provider.dart';
+// ==> IMPORT SERVICE BARU <==
+import '../../../settings/application/services/api_config_service.dart';
 import '../pages/dashboard_page.dart';
 import '../widgets/dashboard_grid.dart';
-// ==> Impor dialog baru
 import '../../../backup_management/presentation/dialogs/sync_result_dialog.dart';
 
 mixin DashboardState on State<DashboardPage> {
@@ -30,14 +31,15 @@ mixin DashboardState on State<DashboardPage> {
   Timer? focusTimer;
   bool isKeyboardActive = false;
   bool isPathSet = false;
-  // ==> TAMBAHKAN STATE BARU UNTUK KONFIGURASI API <==
   bool isApiConfigured = false;
+
+  // ==> GUNAKAN SERVICE BARU <==
+  final ApiConfigService _apiConfigService = ApiConfigService();
 
   @override
   void initState() {
     super.initState();
     _checkPath();
-    // ==> PANGGIL FUNGSI BARU SAAT INIT <==
     _checkApiConfig();
 
     if (Platform.isAndroid || Platform.isIOS) {
@@ -79,10 +81,9 @@ mixin DashboardState on State<DashboardPage> {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGECEK KONFIGURASI API <==
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _checkApiConfig() async {
-    final prefsService = SharedPreferencesService();
-    final apiConfig = await prefsService.loadApiConfig();
+    final apiConfig = await _apiConfigService.loadConfig();
     if (mounted) {
       setState(() {
         isApiConfigured =
@@ -118,17 +119,16 @@ mixin DashboardState on State<DashboardPage> {
         if (totalItems == 0) return;
 
         final screenWidth = MediaQuery.of(context).size.width;
-        int crossAxisCount = screenWidth < 450 ? 2 : 5; // Quick access count
+        int crossAxisCount = screenWidth < 450 ? 2 : 5;
 
         setState(() {
           if (focusedIndex < 5) {
-            // Logic for Quick Access Grid
             if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
               int nextIndex = focusedIndex + crossAxisCount;
               if (nextIndex < 5 && nextIndex < totalItems) {
                 focusedIndex = nextIndex;
               } else {
-                focusedIndex = 5; // Move to the first list item
+                focusedIndex = 5;
               }
             } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
               int prevIndex = focusedIndex - crossAxisCount;
@@ -146,7 +146,6 @@ mixin DashboardState on State<DashboardPage> {
               }
             }
           } else {
-            // Logic for List Items
             if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
               if (focusedIndex < totalItems - 1) {
                 focusedIndex++;
@@ -155,7 +154,6 @@ mixin DashboardState on State<DashboardPage> {
               if (focusedIndex > 5) {
                 focusedIndex--;
               } else {
-                // Try moving up to the grid
                 focusedIndex = 0;
               }
             }

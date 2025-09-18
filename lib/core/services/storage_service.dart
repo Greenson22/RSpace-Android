@@ -1,6 +1,5 @@
 // lib/core/services/storage_service.dart
 import 'package:my_aplication/features/settings/application/services/settings_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/ai_assistant/domain/models/chat_message_model.dart';
 import 'path_service.dart';
 import 'user_data_service.dart';
@@ -80,20 +79,5 @@ class SharedPreferencesService {
   Future<Map<String, int>> loadRepetitionCodeDays() =>
       _userDataService.loadRepetitionCodeDays();
 
-  // Konfigurasi API lama
-  static const String _apiDomainKey = 'api_domain';
-  static const String _apiKeyKey = 'api_key';
-
-  Future<void> saveApiConfig(String domain, String apiKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_apiDomainKey, domain);
-    await prefs.setString(_apiKeyKey, apiKey);
-  }
-
-  Future<Map<String, String?>> loadApiConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    final domain = prefs.getString(_apiDomainKey);
-    final apiKey = prefs.getString(_apiKeyKey);
-    return {'domain': domain, 'apiKey': apiKey};
-  }
+  // ==> SEMUA LOGIKA KONFIGURASI API DIHAPUS DARI SINI <==
 }

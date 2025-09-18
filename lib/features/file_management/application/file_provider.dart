@@ -10,11 +10,15 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
+// ==> IMPORT SERVICE BARU <==
+import '../../settings/application/services/api_config_service.dart';
 import '../domain/models/file_model.dart';
 import '../../../core/services/storage_service.dart';
 
 class FileProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // ==> GUNAKAN SERVICE BARU <==
+  final ApiConfigService _apiConfigService = ApiConfigService();
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -48,7 +52,6 @@ class FileProvider with ChangeNotifier {
   bool _isDownloading = false;
   bool get isDownloading => _isDownloading;
 
-  // ==> STATE BARU UNTUK SELEKSI FILE <==
   final Set<String> _selectedDownloadedFiles = {};
   Set<String> get selectedDownloadedFiles => _selectedDownloadedFiles;
   bool get isSelectionMode => _selectedDownloadedFiles.isNotEmpty;
@@ -71,7 +74,6 @@ class FileProvider with ChangeNotifier {
     _initialize();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGELOLA SELEKSI <==
   void toggleDownloadedFileSelection(File file) {
     if (_selectedDownloadedFiles.contains(file.path)) {
       _selectedDownloadedFiles.remove(file.path);
@@ -107,10 +109,9 @@ class FileProvider with ChangeNotifier {
       }
     }
     _selectedDownloadedFiles.clear();
-    await _scanDownloadedFiles(); // Muat ulang daftar file
+    await _scanDownloadedFiles();
     return '$count file berhasil dihapus.';
   }
-  // --- AKHIR FUNGSI BARU ---
 
   Future<void> _initialize() async {
     await _loadApiConfig();
@@ -125,18 +126,20 @@ class FileProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _loadApiConfig() async {
-    final config = await _prefsService.loadApiConfig();
+    final config = await _apiConfigService.loadConfig();
     _apiDomain = config['domain'];
     _apiKey = config['apiKey'];
     notifyListeners();
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> saveApiConfig(String domain, String apiKey) async {
     if (domain.endsWith('/')) {
       domain = domain.substring(0, domain.length - 1);
     }
-    await _prefsService.saveApiConfig(domain, apiKey);
+    await _apiConfigService.saveConfig(domain, apiKey);
     _apiDomain = domain;
     _apiKey = apiKey;
     notifyListeners();

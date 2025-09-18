@@ -7,7 +7,8 @@ import 'package:archive/archive_io.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/services/path_service.dart';
-import '../../../core/services/storage_service.dart';
+// ==> IMPORT SERVICE BARU & HAPUS STORAGE_SERVICE <==
+import '../../settings/application/services/api_config_service.dart';
 
 /// Kelas untuk menampung hasil detail dari proses sinkronisasi.
 class SyncResult {
@@ -39,7 +40,8 @@ class SyncResult {
 }
 
 class SyncProvider with ChangeNotifier {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // ==> GUNAKAN SERVICE BARU <==
+  final ApiConfigService _apiConfigService = ApiConfigService();
   final PathService _pathService = PathService();
 
   bool _isSyncing = false;
@@ -47,8 +49,6 @@ class SyncProvider with ChangeNotifier {
 
   String _syncStatusMessage = '';
   String get syncStatusMessage => _syncStatusMessage;
-
-  // Properti _finalMessage dan _hasError dihapus, digantikan oleh SyncResult
 
   Future<SyncResult> performBackupAndUpload() async {
     _isSyncing = true;
@@ -76,7 +76,7 @@ class SyncProvider with ChangeNotifier {
       rspaceUSuccess = true;
 
       // Langkah 2: Backup & Upload PerpusKu (jika path diatur)
-      final perpuskuDataPath = await _prefsService.loadPerpuskuDataPath();
+      final perpuskuDataPath = await _pathService.loadPerpuskuDataPath();
       if (perpuskuDataPath != null && perpuskuDataPath.isNotEmpty) {
         _updateStatus('Membuat backup PerpusKu...');
         final perpuskuFile = await _backupPerpusku();
@@ -152,8 +152,9 @@ class SyncProvider with ChangeNotifier {
     return File(zipFilePath);
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _uploadFile(File file, String type) async {
-    final apiConfig = await _prefsService.loadApiConfig();
+    final apiConfig = await _apiConfigService.loadConfig();
     final apiDomain = apiConfig['domain'];
     final apiKey = apiConfig['apiKey'];
 
