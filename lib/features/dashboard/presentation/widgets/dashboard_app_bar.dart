@@ -10,6 +10,8 @@ import '../../../settings/presentation/pages/settings_page.dart';
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isPathSet;
+  // ==> TAMBAHKAN PARAMETER BARU <==
+  final bool isApiConfigured;
   final VoidCallback onShowStorageDialog;
   final VoidCallback onSync;
   final VoidCallback onRefresh;
@@ -17,6 +19,8 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DashboardAppBar({
     super.key,
     required this.isPathSet,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    required this.isApiConfigured,
     required this.onShowStorageDialog,
     required this.onSync,
     required this.onRefresh,
@@ -43,15 +47,16 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             MaterialPageRoute(builder: (_) => const ChatPage()),
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.sync_rounded),
-          tooltip: 'Backup & Sync Otomatis',
-          onPressed: onSync,
-        ),
+        // ==> GUNAKAN KONDISI DI SINI <==
+        if (isApiConfigured)
+          IconButton(
+            icon: const Icon(Icons.sync_rounded),
+            tooltip: 'Backup & Sync Otomatis',
+            onPressed: onSync,
+          ),
         PopupMenuButton<String>(
           tooltip: 'Opsi Lainnya',
           onSelected: (value) async {
-            // ==> LOGIKA DIPERBARUI <==
             if (value == 'settings') {
               Navigator.push(
                 context,
@@ -67,7 +72,6 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            // ==> ITEM MENU UTAMA <==
             const PopupMenuItem<String>(
               value: 'settings',
               child: ListTile(

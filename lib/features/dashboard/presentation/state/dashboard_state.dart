@@ -30,17 +30,20 @@ mixin DashboardState on State<DashboardPage> {
   Timer? focusTimer;
   bool isKeyboardActive = false;
   bool isPathSet = false;
+  // ==> TAMBAHKAN STATE BARU UNTUK KONFIGURASI API <==
+  bool isApiConfigured = false;
 
   @override
   void initState() {
     super.initState();
     _checkPath();
+    // ==> PANGGIL FUNGSI BARU SAAT INIT <==
+    _checkApiConfig();
 
     if (Platform.isAndroid || Platform.isIOS) {
       _loadBannerAd();
     }
 
-    // Listener tidak perlu diubah, hanya fungsinya saja
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(focusNode);
     });
@@ -72,6 +75,19 @@ mixin DashboardState on State<DashboardPage> {
     if (mounted) {
       setState(() {
         isPathSet = path != null && path.isNotEmpty;
+      });
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGECEK KONFIGURASI API <==
+  Future<void> _checkApiConfig() async {
+    final prefsService = SharedPreferencesService();
+    final apiConfig = await prefsService.loadApiConfig();
+    if (mounted) {
+      setState(() {
+        isApiConfigured =
+            (apiConfig['domain'] != null && apiConfig['domain']!.isNotEmpty) &&
+            (apiConfig['apiKey'] != null && apiConfig['apiKey']!.isNotEmpty);
       });
     }
   }
@@ -153,7 +169,6 @@ mixin DashboardState on State<DashboardPage> {
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> handleBackupAndSync() async {
     final confirmed =
         await showDialog<bool>(
@@ -181,7 +196,6 @@ mixin DashboardState on State<DashboardPage> {
 
     final syncProvider = Provider.of<SyncProvider>(context, listen: false);
 
-    // Tampilkan dialog progres
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -200,13 +214,10 @@ mixin DashboardState on State<DashboardPage> {
       ),
     );
 
-    // Jalankan proses dan tunggu hasilnya
     final SyncResult result = await syncProvider.performBackupAndUpload();
 
     if (mounted) {
-      // Tutup dialog progres
       Navigator.of(context, rootNavigator: true).pop();
-      // Tampilkan dialog hasil yang baru
       showSyncResultDialog(context, result);
     }
   }
@@ -263,7 +274,6 @@ mixin DashboardState on State<DashboardPage> {
     await Provider.of<TopicProvider>(context, listen: false).fetchTopics();
     if (mounted) {
       setState(() {
-        // This will trigger a rebuild of DashboardHeader
         dashboardPathKey = UniqueKey();
       });
     }

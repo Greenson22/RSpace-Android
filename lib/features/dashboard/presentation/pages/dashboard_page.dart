@@ -49,6 +49,8 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
                   : null,
               appBar: DashboardAppBar(
                 isPathSet: isPathSet,
+                // ==> BARIS INI YANG MEMPERBAIKI ERROR <==
+                isApiConfigured: isApiConfigured,
                 onShowStorageDialog: () => showStoragePathDialog(context),
                 onSync: handleBackupAndSync,
                 onRefresh: () {},
