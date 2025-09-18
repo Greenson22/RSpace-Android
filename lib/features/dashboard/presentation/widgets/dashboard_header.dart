@@ -18,7 +18,8 @@ import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
-import '../../../../core/services/storage_service.dart';
+// ==> IMPORT SERVICE BARU & HAPUS STORAGE_SERVICE <==
+import '../../../settings/application/services/dashboard_settings_service.dart';
 
 class _HeaderStats {
   final int pendingTasks;
@@ -52,7 +53,8 @@ class DashboardHeader extends StatefulWidget {
 class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // ==> GUNAKAN SERVICE BARU <==
+  final DashboardSettingsService _settingsService = DashboardSettingsService();
   final GeminiService _geminiService = GeminiService();
   late Future<_HeaderStats> _statsFuture;
   String? _motivationalQuote;
@@ -61,7 +63,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
-    _updateAndDisplayQuote(); // Muat kutipan
+    _updateAndDisplayQuote();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -78,14 +80,13 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (mounted) {
         setState(() {
           _statsFuture = _loadHeaderStats();
-          _updateAndDisplayQuote(); // Muat ulang kutipan saat aplikasi kembali
+          _updateAndDisplayQuote();
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
       }
     }
   }
 
-  /// Helper untuk mengambil kutipan acak dari cache lokal.
   Future<String> _getQuoteFromCache() async {
     const fallbackQuote = 'Teruslah belajar setiap hari.';
     final random = Random();
@@ -107,10 +108,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return fallbackQuote;
   }
 
-  /// Memuat kutipan dari cache untuk ditampilkan segera,
-  /// lalu memuat kutipan baru dari Gemini di latar belakang.
   Future<void> _updateAndDisplayQuote() async {
-    // 1. Tampilkan kutipan dari cache terlebih dahulu
     final cachedQuote = await _getQuoteFromCache();
     if (mounted) {
       setState(() {
@@ -118,7 +116,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
       });
     }
 
-    // 2. Minta kutipan baru dari Gemini di latar belakang
     final newQuote = await _geminiService.getMotivationalQuote();
     if (mounted) {
       setState(() {
@@ -135,10 +132,19 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return 'Selamat Malam!';
   }
 
+  // ==> FUNGSI INI DIPERBARUI <==
   Future<_HeaderStats> _loadHeaderStats() async {
+    // Muat pengaturan dari file JSON terlebih dahulu
+    final dashboardSettings = await _settingsService.loadSettings();
+    final excludedTaskCategories =
+        dashboardSettings['excludedTaskCategories'] ?? <String>{};
+    final excludedSubjects =
+        dashboardSettings['excludedSubjects'] ?? <String>{};
+
+    // Jalankan pengambilan data secara paralel dengan pengaturan yang sudah didapat
     final results = await Future.wait([
-      _getTaskStats(),
-      _getDiscussionStats(),
+      _getTaskStats(excludedTaskCategories),
+      _getDiscussionStats(excludedSubjects),
       _getTimeLoggedToday(),
     ]);
     final taskStats = results[0] as Map<String, int>;
@@ -154,10 +160,9 @@ class _DashboardHeaderState extends State<DashboardHeader>
     );
   }
 
-  Future<Map<String, int>> _getTaskStats() async {
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENERIMA PARAMETER <==
+  Future<Map<String, int>> _getTaskStats(Set<String> excludedCategories) async {
     try {
-      final excludedCategories = await _prefsService
-          .loadExcludedTaskCategories();
       final myTaskService = MyTaskService();
       final categories = await myTaskService.loadMyTasks();
       int pendingCount = 0;
@@ -180,9 +185,11 @@ class _DashboardHeaderState extends State<DashboardHeader>
     }
   }
 
-  Future<Map<String, int>> _getDiscussionStats() async {
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENERIMA PARAMETER <==
+  Future<Map<String, int>> _getDiscussionStats(
+    Set<String> excludedSubjects,
+  ) async {
     try {
-      final excludedSubjects = await _prefsService.loadExcludedSubjects();
       final topicsPath = await _pathService.topicsPath;
       final topicsDir = Directory(topicsPath);
       if (!await topicsDir.exists()) return {};
@@ -337,7 +344,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
             ],
           ),
           const SizedBox(height: 12),
-          // --- UI PERUBAHAN UTAMA DI SINI ---
           Text(
             _motivationalQuote == null
                 ? 'Memuat motivasi...'
@@ -487,7 +493,6 @@ class _DashboardPath extends StatelessWidget {
       future: pathService.loadCustomStoragePath(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Tampilkan placeholder untuk mencegah layout melompat
           return const SizedBox(height: 32);
         }
 
@@ -497,7 +502,6 @@ class _DashboardPath extends StatelessWidget {
 
         if (customPath != null && customPath.isNotEmpty) {
           fullPathTooltip = customPath;
-          // Menampilkan nama folder sebelum 'RSpace_data'
           displayLabel = '.../${path.basename(customPath)}/RSpace_data';
         } else {
           fullPathTooltip = "Menggunakan lokasi penyimpanan default aplikasi.";

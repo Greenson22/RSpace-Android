@@ -1,8 +1,9 @@
 // lib/features/dashboard/presentation/dialogs/progress_settings_dialog.dart
 
 import 'package:flutter/material.dart';
+// ==> IMPORT SERVICE BARU <==
+import 'package:my_aplication/features/settings/application/services/dashboard_settings_service.dart';
 import 'package:my_aplication/core/services/path_service.dart';
-import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
@@ -24,7 +25,8 @@ class ProgressSettingsDialog extends StatefulWidget {
 }
 
 class _ProgressSettingsDialogState extends State<ProgressSettingsDialog> {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // ==> GUNAKAN SERVICE BARU <==
+  final DashboardSettingsService _settingsService = DashboardSettingsService();
   final TopicService _topicService = TopicService();
   final SubjectService _subjectService = SubjectService();
   final PathService _pathService = PathService();
@@ -54,7 +56,9 @@ class _ProgressSettingsDialogState extends State<ProgressSettingsDialog> {
         }
       }
 
-      final excluded = await _prefsService.loadExcludedSubjects();
+      // ==> CARA MEMUAT DATA DIPERBARUI <==
+      final settings = await _settingsService.loadSettings();
+      final excluded = settings['excludedSubjects'] ?? {};
 
       if (mounted) {
         setState(() {
@@ -82,7 +86,13 @@ class _ProgressSettingsDialogState extends State<ProgressSettingsDialog> {
   }
 
   Future<void> _saveSettings() async {
-    await _prefsService.saveExcludedSubjects(_excludedSubjectIds.toList());
+    // ==> CARA MENYIMPAN DATA DIPERBARUI <==
+    final currentSettings = await _settingsService.loadSettings();
+    await _settingsService.saveSettings(
+      excludedSubjects: _excludedSubjectIds,
+      excludedTaskCategories:
+          currentSettings['excludedTaskCategories'] ?? <String>{},
+    );
     if (mounted) {
       Navigator.of(context).pop(true); // Return true to indicate a change
     }

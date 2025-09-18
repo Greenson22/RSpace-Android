@@ -220,6 +220,10 @@ class PathService {
   Future<String> get themeSettingsPath async =>
       path.join(await contentsPath, 'theme_settings.json');
 
+  // ==> TAMBAHKAN PATH BARU DI SINI <==
+  Future<String> get dashboardSettingsPath async =>
+      path.join(await contentsPath, 'dashboard_settings.json');
+
   Future<String> get perpuskuDataPath async {
     String? customPath = await loadPerpuskuDataPath();
     if (customPath != null && customPath.isNotEmpty) {

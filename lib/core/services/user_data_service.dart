@@ -11,9 +11,7 @@ class UserDataService {
   static const String _filterValueKey = 'filter_value';
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
-  static const String _excludedSubjectsForProgressKey =
-      'excluded_subjects_for_progress';
-  static const String _excludedTaskCategoriesKey = 'excluded_task_categories';
+  // ==> KUNCI LAMA DIHAPUS <==
   static const String _repetitionCodeOrderKey = 'repetition_code_order';
   static const String _repetitionCodeDisplayOrderKey =
       'repetition_code_display_order';
@@ -84,29 +82,7 @@ class UserDataService {
     return {'sortType': sortType, 'sortAscending': sortAscending};
   }
 
-  Future<void> saveExcludedSubjects(List<String> subjectIds) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_excludedSubjectsForProgressKey, subjectIds);
-  }
-
-  Future<Set<String>> loadExcludedSubjects() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> excluded =
-        prefs.getStringList(_excludedSubjectsForProgressKey) ?? [];
-    return excluded.toSet();
-  }
-
-  Future<void> saveExcludedTaskCategories(List<String> categoryNames) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_excludedTaskCategoriesKey, categoryNames);
-  }
-
-  Future<Set<String>> loadExcludedTaskCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> excluded =
-        prefs.getStringList(_excludedTaskCategoriesKey) ?? [];
-    return excluded.toSet();
-  }
+  // ==> FUNGSI-FUNGSI DI BAWAH INI DIHAPUS <==
 
   Future<void> saveRepetitionCodeOrder(List<String> order) async {
     final prefs = await SharedPreferences.getInstance();

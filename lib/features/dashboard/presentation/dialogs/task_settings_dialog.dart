@@ -1,7 +1,8 @@
 // lib/features/dashboard/presentation/dialogs/task_settings_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/core/services/storage_service.dart';
+// ==> IMPORT SERVICE BARU <==
+import 'package:my_aplication/features/settings/application/services/dashboard_settings_service.dart';
 import 'package:my_aplication/features/my_tasks/application/my_task_service.dart';
 import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
 
@@ -20,7 +21,8 @@ class TaskSettingsDialog extends StatefulWidget {
 }
 
 class _TaskSettingsDialogState extends State<TaskSettingsDialog> {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
+  // ==> GUNAKAN SERVICE BARU <==
+  final DashboardSettingsService _settingsService = DashboardSettingsService();
   final MyTaskService _myTaskService = MyTaskService();
 
   bool _isLoading = true;
@@ -37,7 +39,9 @@ class _TaskSettingsDialogState extends State<TaskSettingsDialog> {
     setState(() => _isLoading = true);
     try {
       final categories = await _myTaskService.loadMyTasks();
-      final excluded = await _prefsService.loadExcludedTaskCategories();
+      // ==> CARA MEMUAT DATA DIPERBARUI <==
+      final settings = await _settingsService.loadSettings();
+      final excluded = settings['excludedTaskCategories'] ?? {};
 
       if (mounted) {
         setState(() {
@@ -65,8 +69,11 @@ class _TaskSettingsDialogState extends State<TaskSettingsDialog> {
   }
 
   Future<void> _saveSettings() async {
-    await _prefsService.saveExcludedTaskCategories(
-      _excludedCategoryIds.toList(),
+    // ==> CARA MENYIMPAN DATA DIPERBARUI <==
+    final currentSettings = await _settingsService.loadSettings();
+    await _settingsService.saveSettings(
+      excludedSubjects: currentSettings['excludedSubjects'] ?? <String>{},
+      excludedTaskCategories: _excludedCategoryIds,
     );
     if (mounted) {
       Navigator.of(context).pop(true); // Return true to indicate a change

@@ -54,15 +54,8 @@ class SharedPreferencesService {
       _userDataService.saveBackupSortPreferences(sortType, sortAscending);
   Future<Map<String, dynamic>> loadBackupSortPreferences() =>
       _userDataService.loadBackupSortPreferences();
-  Future<void> saveExcludedSubjects(List<String> subjectIds) =>
-      _userDataService.saveExcludedSubjects(subjectIds);
-  Future<Set<String>> loadExcludedSubjects() =>
-      _userDataService.loadExcludedSubjects();
 
-  Future<void> saveExcludedTaskCategories(List<String> categoryNames) =>
-      _userDataService.saveExcludedTaskCategories(categoryNames);
-  Future<Set<String>> loadExcludedTaskCategories() =>
-      _userDataService.loadExcludedTaskCategories();
+  // ==> FUNGSI UNTUK EXCLUDED SUBJECTS & TASKS DIHAPUS DARI SINI <==
 
   Future<void> saveRepetitionCodeOrder(List<String> order) =>
       _userDataService.saveRepetitionCodeOrder(order);
@@ -78,6 +71,4 @@ class SharedPreferencesService {
       _userDataService.saveRepetitionCodeDays(days);
   Future<Map<String, int>> loadRepetitionCodeDays() =>
       _userDataService.loadRepetitionCodeDays();
-
-  // ==> SEMUA LOGIKA KONFIGURASI API DIHAPUS DARI SINI <==
 }
