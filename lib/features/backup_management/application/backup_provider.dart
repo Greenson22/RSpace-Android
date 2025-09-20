@@ -35,10 +35,7 @@ class BackupProvider with ChangeNotifier {
       'http://rikal.kecmobar.my.id/api/perpusku/upload';
   final String _apiKey = 'frendygerung1234567890';
 
-  String? _backupPath;
-  String? get backupPath => _backupPath;
-
-  // Properti perpuskuDataPath dihapus dari sini
+  // Properti _backupPath dan getternya dihapus
 
   List<File> _rspaceBackupFiles = [];
   List<File> get rspaceBackupFiles => _rspaceBackupFiles;
@@ -46,13 +43,11 @@ class BackupProvider with ChangeNotifier {
   List<File> _perpuskuBackupFiles = [];
   List<File> get perpuskuBackupFiles => _perpuskuBackupFiles;
 
-  // ==> STATE BARU UNTUK SELEKSI FILE <==
   final Set<String> _selectedFiles = {};
   Set<String> get selectedFiles => _selectedFiles;
 
   bool get isSelectionMode => _selectedFiles.isNotEmpty;
 
-  // ==> STATE BARU UNTUK SORTING <==
   String _sortType = 'date';
   String get sortType => _sortType;
 
@@ -63,7 +58,6 @@ class BackupProvider with ChangeNotifier {
     loadBackupData();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGELOLA SELEKSI <==
   void toggleFileSelection(File file) {
     if (_selectedFiles.contains(file.path)) {
       _selectedFiles.remove(file.path);
@@ -91,15 +85,13 @@ class BackupProvider with ChangeNotifier {
           await file.delete();
         }
       } catch (e) {
-        // Abaikan error jika file tidak dapat dihapus
+        // Abaikan error
       }
     }
     _selectedFiles.clear();
-    await listBackupFiles(); // Muat ulang daftar file setelah penghapusan
+    await listBackupFiles();
   }
-  // --- AKHIR FUNGSI BARU ---
 
-  // ==> FUNGSI BARU UNTUK SORTING <==
   void applySort(String sortType, bool sortAscending) {
     _sortType = sortType;
     _sortAscending = sortAscending;
@@ -129,7 +121,6 @@ class BackupProvider with ChangeNotifier {
       _perpuskuBackupFiles = _perpuskuBackupFiles.reversed.toList();
     }
   }
-  // --- AKHIR FUNGSI SORTING ---
 
   Future<void> loadBackupData() async {
     _isLoading = true;
@@ -139,27 +130,14 @@ class BackupProvider with ChangeNotifier {
     _sortType = sortPrefs['sortType'];
     _sortAscending = sortPrefs['sortAscending'];
 
-    // ==> DIUBAH: Memuat path backup yang terpisah <==
-    _backupPath = await _prefsService.loadCustomBackupPath();
-    // Path PerpusKu tidak perlu diload lagi
-
-    if (_backupPath != null && _backupPath!.isNotEmpty) {
-      await listBackupFiles();
-    }
+    // Pemuatan _backupPath dihapus
+    await listBackupFiles();
 
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> setBackupPath(String newPath) async {
-    // ==> DIUBAH: Menyimpan ke preferensi backup yang terpisah <==
-    await _prefsService.saveCustomBackupPath(newPath);
-    _backupPath = newPath;
-    await listBackupFiles();
-    notifyListeners();
-  }
-
-  // Fungsi setPerpuskuDataPath dihapus
+  // Metode setBackupPath dihapus
 
   Future<String> backupPerpuskuContents() async {
     _isBackingUp = true;
@@ -171,7 +149,7 @@ class BackupProvider with ChangeNotifier {
 
       if (!await sourceDir.exists()) {
         throw Exception(
-          'Folder sumber data PerpusKu yang dipilih tidak ditemukan. Pastikan path sudah benar: $perpuskuDataPath',
+          'Folder sumber data PerpusKu tidak ditemukan: $perpuskuDataPath',
         );
       }
 
@@ -198,10 +176,7 @@ class BackupProvider with ChangeNotifier {
     _rspaceBackupFiles = [];
     _perpuskuBackupFiles = [];
 
-    if (_backupPath == null || _backupPath!.isEmpty) {
-      notifyListeners();
-      return;
-    }
+    // Pemeriksaan null untuk _backupPath dihapus
 
     try {
       final rspaceDir = Directory(await _pathService.rspaceBackupPath);
@@ -237,7 +212,7 @@ class BackupProvider with ChangeNotifier {
       // Abaikan
     }
 
-    _sortBackupFiles(); // ==> PANGGIL FUNGSI SORTING DI SINI <==
+    _sortBackupFiles();
     notifyListeners();
   }
 

@@ -26,15 +26,13 @@ class SharedPreferencesService {
       _pathService.saveCustomStoragePath(path);
   Future<String?> loadCustomStoragePath() =>
       _pathService.loadCustomStoragePath();
-  Future<void> saveCustomBackupPath(String path) =>
-      _pathService.saveCustomBackupPath(path);
-  Future<String?> loadCustomBackupPath() => _pathService.loadCustomBackupPath();
+
+  // Fungsi untuk save/load customBackupPath dihapus
+
   Future<void> saveCustomDownloadPath(String path) =>
       _pathService.saveCustomDownloadPath(path);
   Future<String?> loadCustomDownloadPath() =>
       _pathService.loadCustomDownloadPath();
-
-  // Fungsi untuk save/load perpuskuDataPath telah dihapus
 
   // Metode untuk Data Pengguna
   Future<void> saveChatHistory(List<ChatMessage> messages) =>

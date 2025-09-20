@@ -10,13 +10,11 @@ class PathService {
   // Kunci SharedPreferences dipindahkan ke sini
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
-  static const String _customBackupPathKey = 'custom_backup_path';
-  static const String _customBackupPathKeyDebug = 'custom_backup_path_debug';
   static const String _customDownloadPathKey = 'custom_download_path';
   static const String _customDownloadPathKeyDebug =
       'custom_download_path_debug';
 
-  // Kunci dan fungsi untuk PerpusKu Path dihapus
+  // Kunci dan fungsi untuk Backup Path dihapus
 
   // Metode dari path_service_2.dart digabungkan ke sini
   Future<void> saveCustomStoragePath(String path) async {
@@ -28,18 +26,6 @@ class PathService {
   Future<String?> loadCustomStoragePath() async {
     final prefs = await SharedPreferences.getInstance();
     final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
-    return prefs.getString(key);
-  }
-
-  Future<void> saveCustomBackupPath(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = kDebugMode ? _customBackupPathKeyDebug : _customBackupPathKey;
-    await prefs.setString(key, path);
-  }
-
-  Future<String?> loadCustomBackupPath() async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = kDebugMode ? _customBackupPathKeyDebug : _customBackupPathKey;
     return prefs.getString(key);
   }
 
@@ -128,9 +114,7 @@ class PathService {
     return defaultAppDir.path;
   }
 
-  Future<String?> get _baseBackupPath async {
-    return await loadCustomBackupPath();
-  }
+  // Metode _baseBackupPath dihapus dan diganti dengan _appBasePath
 
   Future<String> get finishedDiscussionsExportPath async {
     final basePath = await _appBasePath;
@@ -142,10 +126,7 @@ class PathService {
   }
 
   Future<String> get rspaceBackupPath async {
-    final basePath = await _baseBackupPath;
-    if (basePath == null || basePath.isEmpty) {
-      throw Exception('Folder backup utama belum diatur.');
-    }
+    final basePath = await _appBasePath; // Menggunakan base path utama
     final backupDir = Directory(path.join(basePath, 'RSpace_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
@@ -154,10 +135,7 @@ class PathService {
   }
 
   Future<String> get perpuskuBackupPath async {
-    final basePath = await _baseBackupPath;
-    if (basePath == null || basePath.isEmpty) {
-      throw Exception('Folder backup utama belum diatur.');
-    }
+    final basePath = await _appBasePath; // Menggunakan base path utama
     final backupDir = Directory(path.join(basePath, 'PerpusKu_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
@@ -208,7 +186,6 @@ class PathService {
   Future<String> get themeSettingsPath async =>
       path.join(await contentsPath, 'theme_settings.json');
 
-  // ==> TAMBAHKAN PATH BARU DI SINI <==
   Future<String> get dashboardSettingsPath async =>
       path.join(await contentsPath, 'dashboard_settings.json');
 

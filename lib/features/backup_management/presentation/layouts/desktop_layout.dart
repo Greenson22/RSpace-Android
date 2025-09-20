@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/backup_provider.dart';
 import '../widgets/backup_section.dart';
-import '../widgets/path_info_card.dart';
-// Import PerpuskuPathCard dihapus
+// import '../widgets/path_info_card.dart'; // Dihapus
 import '../utils/backup_actions.dart';
 
 class DesktopLayout extends StatelessWidget {
@@ -18,24 +17,7 @@ class DesktopLayout extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!provider.isSelectionMode)
-          Expanded(
-            flex: 2,
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                Text(
-                  "Pengaturan Folder",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 16),
-                const PathInfoCard(),
-                const SizedBox(height: 16),
-                // PerpuskuPathCard dihapus dari sini
-              ],
-            ),
-          ),
-        if (!provider.isSelectionMode) const VerticalDivider(width: 1),
+        // Kolom pengaturan folder dihapus seluruhnya untuk menyederhanakan
         Expanded(
           flex: 3,
           child: ListView(

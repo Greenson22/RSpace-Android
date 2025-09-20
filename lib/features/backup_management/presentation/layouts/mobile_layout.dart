@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/backup_provider.dart';
 import '../widgets/backup_section.dart';
-import '../widgets/path_info_card.dart';
-// Import PerpuskuPathCard dihapus
+// import '../widgets/path_info_card.dart'; // Dihapus
 import '../utils/backup_actions.dart';
 
 class MobileLayout extends StatelessWidget {
@@ -18,11 +17,7 @@ class MobileLayout extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(8.0),
       children: [
-        if (!provider.isSelectionMode) ...[
-          const PathInfoCard(),
-          const SizedBox(height: 8),
-          // PerpuskuPathCard dihapus dari sini
-        ],
+        // PathInfoCard dihapus dari sini
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

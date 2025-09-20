@@ -9,37 +9,12 @@ import '../../../../core/utils/scaffold_messenger_utils.dart';
 import 'backup_dialogs.dart';
 import 'package:path/path.dart' as path;
 
-Future<void> selectBackupFolder(BuildContext context) async {
-  final provider = Provider.of<BackupProvider>(context, listen: false);
-  String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-    dialogTitle: 'Pilih Folder Tujuan Backup',
-  );
-
-  if (selectedDirectory != null) {
-    await provider.setBackupPath(selectedDirectory);
-    if (context.mounted) {
-      showAppSnackBar(context, 'Folder tujuan backup berhasil diatur.');
-    }
-  } else {
-    if (context.mounted) {
-      showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
-    }
-  }
-}
-
-// Fungsi selectPerpuskuDataFolder telah dihapus dari sini
+// Fungsi selectBackupFolder telah dihapus dari sini
 
 Future<void> backupContents(BuildContext context, String type) async {
   final provider = Provider.of<BackupProvider>(context, listen: false);
-  if (provider.backupPath == null || provider.backupPath!.isEmpty) {
-    showAppSnackBar(
-      context,
-      'Folder tujuan backup belum ditentukan.',
-      isError: true,
-    );
-    return;
-  }
 
+  // Pengecekan backupPath dihapus karena sekarang path sudah otomatis
   showAppSnackBar(context, 'Memulai proses backup $type...');
   try {
     String message;
@@ -83,8 +58,6 @@ Future<void> importSpecificFile(
     return;
   }
 
-  // PERBAIKAN: Buat instance BackupProvider secara langsung untuk menghindari error
-  // karena fungsi ini sekarang dipanggil dari halaman yang tidak memiliki provider ini.
   final provider = BackupProvider();
   showAppSnackBar(context, 'Memulai proses import...');
   try {
