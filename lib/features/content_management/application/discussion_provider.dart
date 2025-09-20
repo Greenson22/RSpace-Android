@@ -27,11 +27,8 @@ class DiscussionProvider
   @override
   final String? sourceSubjectLinkedPath;
 
-  DiscussionProvider(
-    this._jsonFilePath, {
-    this.sourceSubjectLinkedPath,
-    String? linkedPath,
-  }) {
+  DiscussionProvider(this._jsonFilePath, {String? linkedPath})
+    : sourceSubjectLinkedPath = linkedPath {
     loadInitialData();
   }
 
@@ -63,6 +60,7 @@ class DiscussionProvider
   List<PointPreset> get pointPresets => _pointPresets;
 
   List<String> _repetitionCodeOrder = [];
+  @override
   List<String> get repetitionCodeOrder => _repetitionCodeOrder;
 
   // ==> STATE BARU UNTUK MENYIMPAN BOBOT HARI <==
