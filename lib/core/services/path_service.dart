@@ -14,8 +14,6 @@ class PathService {
   static const String _customDownloadPathKeyDebug =
       'custom_download_path_debug';
 
-  // Kunci dan fungsi untuk Backup Path dihapus
-
   // Metode dari path_service_2.dart digabungkan ke sini
   Future<void> saveCustomStoragePath(String path) async {
     final prefs = await SharedPreferences.getInstance();
@@ -114,7 +112,15 @@ class PathService {
     return defaultAppDir.path;
   }
 
-  // Metode _baseBackupPath dihapus dan diganti dengan _appBasePath
+  // ==> GETTER BARU UNTUK FOLDER BACKUP UTAMA <==
+  Future<String> get _baseBackupPath async {
+    final appBase = await _appBasePath;
+    final backupDir = Directory(path.join(appBase, 'Backup'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir.path;
+  }
 
   Future<String> get finishedDiscussionsExportPath async {
     final basePath = await _appBasePath;
@@ -126,7 +132,7 @@ class PathService {
   }
 
   Future<String> get rspaceBackupPath async {
-    final basePath = await _appBasePath; // Menggunakan base path utama
+    final basePath = await _baseBackupPath; // Menggunakan base path backup baru
     final backupDir = Directory(path.join(basePath, 'RSpace_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
@@ -135,7 +141,7 @@ class PathService {
   }
 
   Future<String> get perpuskuBackupPath async {
-    final basePath = await _appBasePath; // Menggunakan base path utama
+    final basePath = await _baseBackupPath; // Menggunakan base path backup baru
     final backupDir = Directory(path.join(basePath, 'PerpusKu_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
