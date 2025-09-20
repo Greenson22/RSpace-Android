@@ -7,7 +7,6 @@ import 'package:archive/archive_io.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/services/path_service.dart';
-// ==> IMPORT SERVICE BARU & HAPUS STORAGE_SERVICE <==
 import '../../settings/application/services/api_config_service.dart';
 
 /// Kelas untuk menampung hasil detail dari proses sinkronisasi.
@@ -16,7 +15,7 @@ class SyncResult {
   final bool rspaceUploadSuccess;
   final bool perpuskuBackupSuccess;
   final bool perpuskuUploadSuccess;
-  final bool isPerpuskuSkipped;
+  // Properti isPerpuskuSkipped dihapus karena sudah tidak relevan
   final String? errorMessage;
   final String? rspaceBackupPath;
   final String? perpuskuBackupPath;
@@ -26,7 +25,6 @@ class SyncResult {
     this.rspaceUploadSuccess = false,
     this.perpuskuBackupSuccess = false,
     this.perpuskuUploadSuccess = false,
-    this.isPerpuskuSkipped = false,
     this.errorMessage,
     this.rspaceBackupPath,
     this.perpuskuBackupPath,
@@ -35,12 +33,12 @@ class SyncResult {
   bool get overallSuccess =>
       rspaceBackupSuccess &&
       rspaceUploadSuccess &&
-      (isPerpuskuSkipped || (perpuskuBackupSuccess && perpuskuUploadSuccess)) &&
+      perpuskuBackupSuccess && // Tidak ada lagi pengecekan isPerpuskuSkipped
+      perpuskuUploadSuccess &&
       errorMessage == null;
 }
 
 class SyncProvider with ChangeNotifier {
-  // ==> GUNAKAN SERVICE BARU <==
   final ApiConfigService _apiConfigService = ApiConfigService();
   final PathService _pathService = PathService();
 
@@ -59,7 +57,6 @@ class SyncProvider with ChangeNotifier {
     bool rspaceUSuccess = false;
     bool perpuskuBSuccess = false;
     bool perpuskuUSuccess = false;
-    bool perpuskuSkipped = false;
     String? errorMsg;
     String? rspacePath;
     String? perpuskuPath;
@@ -75,21 +72,15 @@ class SyncProvider with ChangeNotifier {
       await _uploadFile(rspaceFile, 'RSpace');
       rspaceUSuccess = true;
 
-      // Langkah 2: Backup & Upload PerpusKu (jika path diatur)
-      final perpuskuDataPath = await _pathService.loadPerpuskuDataPath();
-      if (perpuskuDataPath != null && perpuskuDataPath.isNotEmpty) {
-        _updateStatus('Membuat backup PerpusKu...');
-        final perpuskuFile = await _backupPerpusku();
-        perpuskuPath = perpuskuFile.path;
-        perpuskuBSuccess = true;
+      // Langkah 2: Backup & Upload PerpusKu (Selalu dijalankan)
+      _updateStatus('Membuat backup PerpusKu...');
+      final perpuskuFile = await _backupPerpusku();
+      perpuskuPath = perpuskuFile.path;
+      perpuskuBSuccess = true;
 
-        _updateStatus('Mengunggah backup PerpusKu...');
-        await _uploadFile(perpuskuFile, 'PerpusKu');
-        perpuskuUSuccess = true;
-      } else {
-        _updateStatus('Melewati backup PerpusKu (path tidak diatur)...');
-        perpuskuSkipped = true;
-      }
+      _updateStatus('Mengunggah backup PerpusKu...');
+      await _uploadFile(perpuskuFile, 'PerpusKu');
+      perpuskuUSuccess = true;
     } catch (e) {
       errorMsg = e.toString();
     } finally {
@@ -102,7 +93,7 @@ class SyncProvider with ChangeNotifier {
       rspaceUploadSuccess: rspaceUSuccess,
       perpuskuBackupSuccess: perpuskuBSuccess,
       perpuskuUploadSuccess: perpuskuUSuccess,
-      isPerpuskuSkipped: perpuskuSkipped,
+      // isPerpuskuSkipped dihapus
       errorMessage: errorMsg,
       rspaceBackupPath: rspacePath,
       perpuskuBackupPath: perpuskuPath,
@@ -152,7 +143,6 @@ class SyncProvider with ChangeNotifier {
     return File(zipFilePath);
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _uploadFile(File file, String type) async {
     final apiConfig = await _apiConfigService.loadConfig();
     final apiDomain = apiConfig['domain'];

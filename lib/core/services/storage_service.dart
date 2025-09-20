@@ -33,9 +33,8 @@ class SharedPreferencesService {
       _pathService.saveCustomDownloadPath(path);
   Future<String?> loadCustomDownloadPath() =>
       _pathService.loadCustomDownloadPath();
-  Future<void> savePerpuskuDataPath(String path) =>
-      _pathService.savePerpuskuDataPath(path);
-  Future<String?> loadPerpuskuDataPath() => _pathService.loadPerpuskuDataPath();
+
+  // Fungsi untuk save/load perpuskuDataPath telah dihapus
 
   // Metode untuk Data Pengguna
   Future<void> saveChatHistory(List<ChatMessage> messages) =>
@@ -54,8 +53,6 @@ class SharedPreferencesService {
       _userDataService.saveBackupSortPreferences(sortType, sortAscending);
   Future<Map<String, dynamic>> loadBackupSortPreferences() =>
       _userDataService.loadBackupSortPreferences();
-
-  // ==> FUNGSI UNTUK EXCLUDED SUBJECTS & TASKS DIHAPUS DARI SINI <==
 
   Future<void> saveRepetitionCodeOrder(List<String> order) =>
       _userDataService.saveRepetitionCodeOrder(order);

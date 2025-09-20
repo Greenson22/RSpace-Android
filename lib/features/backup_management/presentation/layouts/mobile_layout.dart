@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../application/backup_provider.dart';
 import '../widgets/backup_section.dart';
 import '../widgets/path_info_card.dart';
-import '../widgets/perpusku_path_card.dart';
+// Import PerpuskuPathCard dihapus
 import '../utils/backup_actions.dart';
 
 class MobileLayout extends StatelessWidget {
@@ -21,8 +21,7 @@ class MobileLayout extends StatelessWidget {
         if (!provider.isSelectionMode) ...[
           const PathInfoCard(),
           const SizedBox(height: 8),
-          const PerpuskuPathCard(),
-          const SizedBox(height: 8),
+          // PerpuskuPathCard dihapus dari sini
         ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,

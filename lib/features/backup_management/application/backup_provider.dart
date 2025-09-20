@@ -38,8 +38,7 @@ class BackupProvider with ChangeNotifier {
   String? _backupPath;
   String? get backupPath => _backupPath;
 
-  String? _perpuskuDataPath;
-  String? get perpuskuDataPath => _perpuskuDataPath;
+  // Properti perpuskuDataPath dihapus dari sini
 
   List<File> _rspaceBackupFiles = [];
   List<File> get rspaceBackupFiles => _rspaceBackupFiles;
@@ -142,7 +141,7 @@ class BackupProvider with ChangeNotifier {
 
     // ==> DIUBAH: Memuat path backup yang terpisah <==
     _backupPath = await _prefsService.loadCustomBackupPath();
-    _perpuskuDataPath = await _prefsService.loadPerpuskuDataPath();
+    // Path PerpusKu tidak perlu diload lagi
 
     if (_backupPath != null && _backupPath!.isNotEmpty) {
       await listBackupFiles();
@@ -160,11 +159,7 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setPerpuskuDataPath(String newPath) async {
-    await _prefsService.savePerpuskuDataPath(newPath);
-    _perpuskuDataPath = newPath;
-    notifyListeners();
-  }
+  // Fungsi setPerpuskuDataPath dihapus
 
   Future<String> backupPerpuskuContents() async {
     _isBackingUp = true;

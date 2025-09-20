@@ -55,22 +55,15 @@ class SyncResultDialog extends StatelessWidget {
               success: result.rspaceUploadSuccess,
             ),
             const Divider(height: 24),
-            if (result.isPerpuskuSkipped)
-              const ListTile(
-                leading: Icon(Icons.info_outline, color: Colors.blue),
-                title: Text('Proses PerpusKu dilewati'),
-                subtitle: Text('Folder sumber data tidak diatur.'),
-              )
-            else ...[
-              _buildStepTile(
-                title: 'Backup Data PerpusKu',
-                success: result.perpuskuBackupSuccess,
-              ),
-              _buildStepTile(
-                title: 'Unggah Data PerpusKu',
-                success: result.perpuskuUploadSuccess,
-              ),
-            ],
+            // Bagian 'isPerpuskuSkipped' dihapus
+            _buildStepTile(
+              title: 'Backup Data PerpusKu',
+              success: result.perpuskuBackupSuccess,
+            ),
+            _buildStepTile(
+              title: 'Unggah Data PerpusKu',
+              success: result.perpuskuUploadSuccess,
+            ),
             if (result.errorMessage != null) ...[
               const Divider(height: 24),
               Text(

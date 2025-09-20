@@ -37,10 +37,8 @@ class BackupSection extends StatelessWidget {
     final theme = Theme.of(context);
 
     final isPerpuskuBackup = title.contains('PerpusKu');
-    final isPerpuskuPathSet =
-        provider.perpuskuDataPath != null &&
-        provider.perpuskuDataPath!.isNotEmpty;
-    final isPerpuskuBackupDisabled = isPerpuskuBackup && !isPerpuskuPathSet;
+
+    // Logika pengecekan path PerpusKu dihapus dari sini
 
     final buttonPadding = isCompact
         ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
@@ -73,9 +71,9 @@ class BackupSection extends StatelessWidget {
                     label: provider.isBackingUp && !isPerpuskuBackup
                         ? _loadingIndicator()
                         : const Text('Backup'),
-                    onPressed: isActionInProgress || isPerpuskuBackupDisabled
+                    onPressed: isActionInProgress
                         ? null
-                        : onBackup,
+                        : onBackup, // Pengecekan isPerpuskuBackupDisabled dihapus
                     style: ElevatedButton.styleFrom(
                       padding: buttonPadding,
                       shape: RoundedRectangleBorder(
@@ -101,16 +99,7 @@ class BackupSection extends StatelessWidget {
                   ),
                 ],
               ),
-            if (isPerpuskuBackupDisabled)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  'Tentukan folder sumber data PerpusKu untuk mengaktifkan backup.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.orange.shade800,
-                  ),
-                ),
-              ),
+            // Widget peringatan untuk PerpusKu path dihapus
             const SizedBox(height: 16),
             Text(
               'File Tersimpan',

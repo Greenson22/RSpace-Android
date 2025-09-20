@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../application/backup_provider.dart';
 import '../widgets/backup_section.dart';
 import '../widgets/path_info_card.dart';
-import '../widgets/perpusku_path_card.dart';
+// Import PerpuskuPathCard dihapus
 import '../utils/backup_actions.dart';
 
 class DesktopLayout extends StatelessWidget {
@@ -31,7 +31,7 @@ class DesktopLayout extends StatelessWidget {
                 const SizedBox(height: 16),
                 const PathInfoCard(),
                 const SizedBox(height: 16),
-                const PerpuskuPathCard(),
+                // PerpuskuPathCard dihapus dari sini
               ],
             ),
           ),

@@ -1,10 +1,8 @@
 // lib/presentation/pages/3_discussions_page/dialogs/html_file_picker_dialog.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import '../../../../../core/services/storage_service.dart';
 
 // Fungsi helper untuk menampilkan dialog
 Future<String?> showHtmlFilePicker(
@@ -18,10 +16,6 @@ Future<String?> showHtmlFilePicker(
         HtmlFilePickerDialog(basePath: basePath, initialPath: initialPath),
   );
 
-  // Jika hasilnya adalah 'RELOAD_WITH_NEW_PATH', panggil dialog lagi
-  if (result == 'RELOAD_WITH_NEW_PATH') {
-    return showHtmlFilePicker(context, basePath, initialPath: initialPath);
-  }
   return result;
 }
 
@@ -81,13 +75,13 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         final parts = path.split(fullInitialPath);
 
         if (parts.length > 2) {
-          final subjectDirName = parts[parts.length - 1];
-          final topicDirName = parts[parts.length - 2];
+          final subjectDirName = parts[parts.length - 2];
+          final topicDirName = parts[parts.length - 3];
 
           _selectedTopic = topicDirName;
           _selectedSubject = subjectDirName;
 
-          await _loadFiles(fullInitialPath);
+          await _loadFiles(path.dirname(fullInitialPath));
           setState(() {
             _currentView = _PickerViewState.files;
           });
@@ -169,7 +163,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
       final topicsDir = Directory(widget.basePath);
       if (!await topicsDir.exists()) {
         throw Exception(
-          "Direktori base PerpusKu tidak ditemukan.\nPastikan Anda telah memilih folder 'PerpusKu/data' yang benar di pengaturan backup atau pilih ulang melalui tombol di bawah.",
+          "Direktori base PerpusKu tidak ditemukan.\nPastikan folder 'PerpusKu' ada di dalam folder utama aplikasi Anda.",
         );
       }
       final items = topicsDir.listSync();
@@ -252,20 +246,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     }
   }
 
-  Future<void> _selectPerpuskuDataFolder() async {
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Pilih Folder Sumber Data PerpusKu (PerpusKu/data)',
-    );
-
-    if (selectedDirectory != null) {
-      final prefs = SharedPreferencesService();
-      await prefs.savePerpuskuDataPath(selectedDirectory);
-
-      if (mounted) {
-        Navigator.of(context).pop('RELOAD_WITH_NEW_PATH');
-      }
-    }
-  }
+  // Fungsi _selectPerpuskuDataFolder dihapus
 
   Widget _buildGlobalSearchView() {
     if (_filteredGlobalFiles.isEmpty) {
@@ -457,11 +438,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         ),
       ),
       actions: [
-        ElevatedButton.icon(
-          icon: const Icon(Icons.folder_open),
-          label: const Text('Pilih Folder PerpusKu'),
-          onPressed: _selectPerpuskuDataFolder,
-        ),
+        // Tombol untuk memilih folder PerpusKu dihapus
         if (_currentView != _PickerViewState.topics || _searchQuery.isNotEmpty)
           TextButton(onPressed: _onBackPressed, child: const Text('Kembali')),
         TextButton(

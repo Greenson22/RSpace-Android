@@ -27,23 +27,7 @@ Future<void> selectBackupFolder(BuildContext context) async {
   }
 }
 
-Future<void> selectPerpuskuDataFolder(BuildContext context) async {
-  final provider = Provider.of<BackupProvider>(context, listen: false);
-  String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-    dialogTitle: 'Pilih Folder Sumber Data PerpusKu',
-  );
-
-  if (selectedDirectory != null) {
-    await provider.setPerpuskuDataPath(selectedDirectory);
-    if (context.mounted) {
-      showAppSnackBar(context, 'Folder sumber data PerpusKu berhasil diatur.');
-    }
-  } else {
-    if (context.mounted) {
-      showAppSnackBar(context, 'Pemilihan folder dibatalkan.');
-    }
-  }
-}
+// Fungsi selectPerpuskuDataFolder telah dihapus dari sini
 
 Future<void> backupContents(BuildContext context, String type) async {
   final provider = Provider.of<BackupProvider>(context, listen: false);
