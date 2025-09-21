@@ -9,6 +9,7 @@ import '../dialogs/generate_quiz_from_text_dialog.dart';
 import '../dialogs/generate_prompt_from_subject_dialog.dart';
 import '../dialogs/import_quiz_from_json_dialog.dart';
 import '../../domain/models/quiz_model.dart';
+import '../dialogs/generate_prompt_from_text_dialog.dart'; // ==> IMPORT DIALOG BARU
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -90,7 +91,6 @@ class QuizDetailPage extends StatelessWidget {
               ),
             ),
           ),
-          // ==> PERUBAHAN DI SINI: Tampilkan Impor JSON di kedua mode
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
@@ -106,7 +106,18 @@ class QuizDetailPage extends StatelessWidget {
               ),
             ),
           ),
-          if (!isAddingQuestions)
+          if (!isAddingQuestions) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 4.0),
+              child: Text(
+                'Opsi Lanjutan (Manual)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
             SimpleDialogOption(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -118,6 +129,19 @@ class QuizDetailPage extends StatelessWidget {
                 subtitle: Text('Salin prompt untuk digunakan di Gemini.'),
               ),
             ),
+            // ==> OPSI BARU DITAMBAHKAN DI SINI
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                showGeneratePromptFromTextDialog(context);
+              },
+              child: const ListTile(
+                leading: Icon(Icons.edit_document),
+                title: Text('Buat Prompt dari Teks Manual'),
+                subtitle: Text('Salin prompt dari teks yang Anda buat.'),
+              ),
+            ),
+          ],
         ],
       ),
     );
