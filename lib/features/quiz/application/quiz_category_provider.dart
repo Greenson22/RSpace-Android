@@ -29,5 +29,15 @@ class QuizCategoryProvider with ChangeNotifier {
     await fetchCategories();
   }
 
+  // ==> FUNGSI BARU UNTUK MENGUBAH IKON
+  Future<void> editCategoryIcon(QuizCategory category, String newIcon) async {
+    final categoryToUpdate = _categories.firstWhere(
+      (c) => c.name == category.name,
+    );
+    categoryToUpdate.icon = newIcon;
+    await _quizService.saveCategory(categoryToUpdate);
+    notifyListeners();
+  }
+
   // Add reorder, edit, delete methods here
 }

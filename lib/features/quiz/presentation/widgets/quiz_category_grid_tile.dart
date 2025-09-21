@@ -7,6 +7,7 @@ class QuizCategoryGridTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onIconChange; // ==> TAMBAHKAN CALLBACK BARU
 
   const QuizCategoryGridTile({
     super.key,
@@ -14,6 +15,7 @@ class QuizCategoryGridTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    required this.onIconChange, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -67,6 +69,9 @@ class QuizCategoryGridTile extends StatelessWidget {
                       onEdit();
                     } else if (value == 'delete') {
                       onDelete();
+                    } else if (value == 'icon') {
+                      // ==> TAMBAHKAN KONDISI BARU
+                      onIconChange();
                     }
                   },
                   itemBuilder: (BuildContext context) =>
@@ -76,6 +81,14 @@ class QuizCategoryGridTile extends StatelessWidget {
                           child: ListTile(
                             leading: Icon(Icons.edit_outlined),
                             title: Text('Edit Nama'),
+                          ),
+                        ),
+                        // ==> TAMBAHKAN ITEM MENU BARU DI SINI
+                        const PopupMenuItem<String>(
+                          value: 'icon',
+                          child: ListTile(
+                            leading: Icon(Icons.emoji_emotions_outlined),
+                            title: Text('Ubah Ikon'),
                           ),
                         ),
                         const PopupMenuDivider(),

@@ -2,9 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_category_provider.dart';
+import '../../domain/models/quiz_model.dart';
 import '../widgets/quiz_category_grid_tile.dart';
 import 'quiz_page.dart';
-import '../../domain/models/quiz_model.dart';
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart'; // ==> IMPORT DIALOG IKON
 
 class QuizCategoryPage extends StatelessWidget {
   const QuizCategoryPage({super.key});
@@ -27,6 +28,18 @@ class _QuizCategoryView extends StatefulWidget {
 
 class _QuizCategoryViewState extends State<_QuizCategoryView> {
   // Add state for reorder mode if needed in the future
+
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG IKON
+  void _showEditIconDialog(BuildContext context, QuizCategory category) {
+    final provider = Provider.of<QuizCategoryProvider>(context, listen: false);
+    showIconPickerDialog(
+      context: context,
+      name: category.name,
+      onIconSelected: (newIcon) {
+        provider.editCategoryIcon(category, newIcon);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +75,8 @@ class _QuizCategoryViewState extends State<_QuizCategoryView> {
                   },
                   onEdit: () {}, // Implement edit dialog
                   onDelete: () {}, // Implement delete dialog
+                  // ==> SAMBUNGKAN FUNGSI KE WIDGET
+                  onIconChange: () => _showEditIconDialog(context, category),
                 );
               },
             ),
