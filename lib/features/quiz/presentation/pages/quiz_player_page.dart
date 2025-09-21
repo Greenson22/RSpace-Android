@@ -103,16 +103,30 @@ class QuizPlayerPage extends StatelessWidget {
             );
           }).toList(),
           const Spacer(),
-          // ==> PERUBAHAN DI SINI: Tombol navigasi dihilangkan <==
-          if (provider.currentIndex == provider.questions.length - 1 &&
-              !provider.topic.autoAdvanceNextQuestion)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: provider.finishQuiz,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text('Selesai'),
-              ),
+          // ==> PERUBAHAN LOGIKA PENAMPILAN TOMBOL DI SINI <==
+          if (!provider.topic.autoAdvanceNextQuestion)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (provider.currentIndex > 0)
+                  OutlinedButton(
+                    onPressed: provider.previousQuestion,
+                    child: const Text('Sebelumnya'),
+                  ),
+                if (provider.currentIndex < provider.questions.length - 1)
+                  ElevatedButton(
+                    onPressed: provider.nextQuestion,
+                    child: const Text('Berikutnya'),
+                  ),
+                if (provider.currentIndex == provider.questions.length - 1)
+                  ElevatedButton(
+                    onPressed: provider.finishQuiz,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                    child: const Text('Selesai'),
+                  ),
+              ],
             ),
         ],
       ),
