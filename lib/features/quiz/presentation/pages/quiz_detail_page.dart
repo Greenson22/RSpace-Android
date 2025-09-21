@@ -3,13 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
-import '../dialogs/add_questions_dialog.dart';
-import '../dialogs/add_quiz_dialog.dart';
+import '../dialogs/add_quiz_dialog.dart'; // HAPUS add_questions_dialog.dart
 import '../dialogs/quiz_settings_dialog.dart';
-// ==> IMPORT DIALOG BARU
 import '../dialogs/generate_quiz_from_text_dialog.dart';
 import '../dialogs/generate_prompt_from_subject_dialog.dart';
 import '../dialogs/import_quiz_from_json_dialog.dart';
+import '../../domain/models/quiz_model.dart'; // IMPORT MODEL
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -27,10 +26,10 @@ class QuizDetailPage extends StatelessWidget {
             onPressed: () => showQuizSettingsDialog(context),
             tooltip: 'Pengaturan Sesi Kuis',
           ),
-          // ==> PERBARUI TOMBOL TAMBAH UNTUK MEMBERI PILIHAN <==
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => _showAddOptions(context),
+            onPressed: () =>
+                _showAddOptions(context, null), // Kirim null untuk membuat baru
             tooltip: 'Buat Set Kuis Baru',
           ),
         ],
@@ -51,59 +50,74 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG PILIHAN <==
-  void _showAddOptions(BuildContext context) {
+  // ==> FUNGSI INI SEKARANG MENERIMA QUIZSET OPSIONAL
+  void _showAddOptions(BuildContext context, QuizSet? quizSet) {
+    final isAddingQuestions = quizSet != null;
     showDialog(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('Pilih Metode Pembuatan Kuis'),
+        title: Text(
+          isAddingQuestions
+              ? 'Tambah Pertanyaan dari...'
+              : 'Pilih Metode Pembuatan Kuis',
+        ),
         children: [
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              showAddQuizDialog(context);
+              // ==> KIRIM quizSet KE DIALOG
+              showAddQuizDialog(context, existingQuizSet: quizSet);
             },
-            child: const ListTile(
-              leading: Icon(Icons.topic_outlined),
-              title: Text('Dari Subject (Otomatis)'),
-              subtitle: Text('AI akan langsung membuat soal.'),
+            child: ListTile(
+              leading: const Icon(Icons.topic_outlined),
+              title: const Text('Dari Subject'),
+              subtitle: Text(
+                isAddingQuestions
+                    ? 'Generate pertanyaan tambahan dari subject.'
+                    : 'AI akan langsung membuat soal.',
+              ),
             ),
           ),
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              showGenerateQuizFromTextDialog(context);
+              // Implementasi untuk text dialog
             },
-            child: const ListTile(
-              leading: Icon(Icons.text_fields_outlined),
-              title: Text('Dari Teks Manual (Otomatis)'),
-              subtitle: Text('AI akan membuat soal dari teks Anda.'),
+            child: ListTile(
+              leading: const Icon(Icons.text_fields_outlined),
+              title: const Text('Dari Teks Manual'),
+              subtitle: Text(
+                isAddingQuestions
+                    ? 'Generate pertanyaan dari teks manual.'
+                    : 'AI akan membuat soal dari teks Anda.',
+              ),
             ),
           ),
-          // ==> OPSI BARU UNTUK GENERATE PROMPT
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              showGeneratePromptFromSubjectDialog(context);
-            },
-            child: const ListTile(
-              leading: Icon(Icons.copy_all_outlined),
-              title: Text('Buat Prompt dari Subject'),
-              subtitle: Text('Salin prompt untuk digunakan di Gemini.'),
+          // Sembunyikan opsi yang tidak relevan saat menambah pertanyaan
+          if (!isAddingQuestions) ...[
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                showGeneratePromptFromSubjectDialog(context);
+              },
+              child: const ListTile(
+                leading: Icon(Icons.copy_all_outlined),
+                title: Text('Buat Prompt dari Subject'),
+                subtitle: Text('Salin prompt untuk digunakan di Gemini.'),
+              ),
             ),
-          ),
-          // ==> OPSI BARU UNTUK IMPOR JSON
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              showImportQuizFromJsonDialog(context);
-            },
-            child: const ListTile(
-              leading: Icon(Icons.file_upload_outlined),
-              title: Text('Impor Kuis dari JSON'),
-              subtitle: Text('Masukkan hasil JSON dari Gemini.'),
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                showImportQuizFromJsonDialog(context);
+              },
+              child: const ListTile(
+                leading: Icon(Icons.file_upload_outlined),
+                title: Text('Impor Kuis dari JSON'),
+                subtitle: Text('Masukkan hasil JSON dari Gemini.'),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -138,8 +152,9 @@ class QuizDetailPage extends StatelessWidget {
               subtitle: Text('${quizSet.questions.length} pertanyaan'),
               trailing: PopupMenuButton<String>(
                 onSelected: (value) async {
+                  // ==> PERUBAHAN DI SINI
                   if (value == 'add') {
-                    showAddQuestionsDialog(context, quizSet);
+                    _showAddOptions(context, quizSet); // Panggil dialog pilihan
                   } else if (value == 'delete') {
                     final confirmed = await showDialog<bool>(
                       context: context,

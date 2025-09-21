@@ -202,7 +202,8 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addQuestionsToQuizSet({
+  // ==> UBAH NAMA FUNGSI INI AGAR LEBIH SPESIFIK
+  Future<void> addQuestionsToQuizSetFromSubject({
     required String quizSetName,
     required String subjectJsonPath,
     required int questionCount,

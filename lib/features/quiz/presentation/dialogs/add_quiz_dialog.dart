@@ -11,20 +11,24 @@ import '../../application/quiz_detail_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/services.dart'; // Import untuk input formatter
 
-void showAddQuizDialog(BuildContext context) {
+// ==> FUNGSI DIPERBARUI UNTUK MENERIMA QUIZSET OPSIONAL
+void showAddQuizDialog(BuildContext context, {QuizSet? existingQuizSet}) {
   final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
-      child: const AddQuizDialog(),
+      // ==> KIRIM QUIZSET KE DIALOG
+      child: AddQuizDialog(existingQuizSet: existingQuizSet),
     ),
   );
 }
 
 class AddQuizDialog extends StatefulWidget {
-  const AddQuizDialog({super.key});
+  // ==> TAMBAHKAN PROPERTI BARU
+  final QuizSet? existingQuizSet;
+  const AddQuizDialog({super.key, this.existingQuizSet});
 
   @override
   State<AddQuizDialog> createState() => _AddQuizDialogState();
@@ -42,16 +46,22 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
   );
   String? _selectedTopicName;
   String? _selectedSubjectName;
-  // ==> TAMBAHKAN STATE BARU UNTUK KESULITAN <==
   QuizDifficulty _selectedDifficulty = QuizDifficulty.medium;
   List<String> _topicNames = [];
   List<Subject> _subjects = [];
   bool _isLoadingSubjects = false;
 
+  // ==> TENTUKAN APAKAH INI MODE TAMBAH PERTANYAAN
+  bool get isAddingQuestionsMode => widget.existingQuizSet != null;
+
   @override
   void initState() {
     super.initState();
     _loadTopics();
+    // Jika dalam mode edit, isi nama set kuis secara otomatis
+    if (isAddingQuestionsMode) {
+      _quizSetNameController.text = widget.existingQuizSet!.name;
+    }
   }
 
   @override
@@ -111,20 +121,37 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
     Navigator.of(context).pop();
 
     try {
-      await provider.addQuizSetFromSubject(
-        quizSetName,
-        subjectJsonPath,
-        questionCount,
-        // ==> KIRIM TINGKAT KESULITAN KE PROVIDER <==
-        _selectedDifficulty,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kuis baru berhasil dibuat!'),
-            backgroundColor: Colors.green,
-          ),
+      // ==> GUNAKAN LOGIKA KONDISIONAL DI SINI
+      if (isAddingQuestionsMode) {
+        await provider.addQuestionsToQuizSetFromSubject(
+          quizSetName: quizSetName,
+          subjectJsonPath: subjectJsonPath,
+          questionCount: questionCount,
+          difficulty: _selectedDifficulty,
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pertanyaan baru berhasil ditambahkan!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        await provider.addQuizSetFromSubject(
+          quizSetName,
+          subjectJsonPath,
+          questionCount,
+          _selectedDifficulty,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Kuis baru berhasil dibuat!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -140,8 +167,13 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // ==> SESUAIKAN JUDUL DIALOG
+    final dialogTitle = isAddingQuestionsMode
+        ? 'Tambah Pertanyaan ke "${widget.existingQuizSet!.name}"'
+        : 'Buat Kuis dengan AI';
+
     return AlertDialog(
-      title: const Text('Buat Kuis dengan AI'),
+      title: Text(dialogTitle),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -149,24 +181,27 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Pilih materi dari "Topics" untuk dibuatkan soal kuis secara otomatis oleh AI.',
+              Text(
+                isAddingQuestionsMode
+                    ? 'Pilih sumber materi untuk pertanyaan tambahan.'
+                    : 'Pilih materi dari "Topics" untuk dibuatkan soal kuis secara otomatis oleh AI.',
               ),
               const SizedBox(height: 24),
-              TextFormField(
-                controller: _quizSetNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Set Kuis (contoh: Kuis Bab 1)',
+              // ==> SEMBUNYIKAN INPUT NAMA JIKA MODE TAMBAH PERTANYAAN
+              if (!isAddingQuestionsMode)
+                TextFormField(
+                  controller: _quizSetNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Set Kuis (contoh: Kuis Bab 1)',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nama set kuis tidak boleh kosong.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Nama set kuis tidak boleh kosong.';
-                  }
-                  return null;
-                },
-              ),
               const SizedBox(height: 16),
-              // ==> TAMBAHKAN DROPDOWN UNTUK TINGKAT KESULITAN <==
               DropdownButtonFormField<QuizDifficulty>(
                 value: _selectedDifficulty,
                 decoration: const InputDecoration(
@@ -187,8 +222,10 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _questionCountController,
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah Pertanyaan',
+                decoration: InputDecoration(
+                  labelText: isAddingQuestionsMode
+                      ? 'Jumlah Pertanyaan Tambahan'
+                      : 'Jumlah Pertanyaan',
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -267,7 +304,10 @@ class _AddQuizDialogState extends State<AddQuizDialog> {
         ),
         ElevatedButton(
           onPressed: _handleGenerate,
-          child: const Text('Buat Pertanyaan'),
+          // ==> SESUAIKAN TEKS TOMBOL
+          child: Text(
+            isAddingQuestionsMode ? 'Generate & Tambahkan' : 'Buat Pertanyaan',
+          ),
         ),
       ],
     );
