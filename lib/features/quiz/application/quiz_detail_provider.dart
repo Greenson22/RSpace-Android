@@ -5,14 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import 'quiz_service.dart';
-// ==> IMPORT TAMBAHAN
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:uuid/uuid.dart';
 
 class QuizDetailProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
   final GeminiService _geminiService = GeminiService();
-  // ==> TAMBAHKAN DISCUSSION SERVICE
   final DiscussionService _discussionService = DiscussionService();
 
   QuizTopic topic;
@@ -29,7 +28,6 @@ class QuizDetailProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat mengambil data topik
       topic = await _quizService.getTopic(topic.categoryName, topic.name);
       quizSets = await _quizService.getQuizSetsInTopic(
         topic.categoryName,
@@ -265,6 +263,52 @@ class QuizDetailProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> addQuestion(
+    QuizSet quizSet,
+    String questionText,
+    List<QuizOption> options,
+  ) async {
+    final newQuestion = QuizQuestion(
+      questionText: questionText,
+      options: options,
+    );
+    quizSet.questions.add(newQuestion);
+    await _quizService.saveQuizSet(topic.categoryName, topic.name, quizSet);
+    notifyListeners();
+  }
+
+  Future<void> updateQuestion(
+    QuizSet quizSet,
+    QuizQuestion question,
+    String newText,
+    List<QuizOption> newOptions,
+  ) async {
+    question.questionText = newText;
+    question.options = newOptions;
+    await _quizService.saveQuizSet(topic.categoryName, topic.name, quizSet);
+    notifyListeners();
+  }
+
+  Future<void> deleteQuestion(QuizSet quizSet, QuizQuestion question) async {
+    quizSet.questions.removeWhere((q) => q.id == question.id);
+    await _quizService.saveQuizSet(topic.categoryName, topic.name, quizSet);
+    notifyListeners();
+  }
+
+  Future<void> reorderQuestions(
+    QuizSet quizSet,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = quizSet.questions.removeAt(oldIndex);
+    quizSet.questions.insert(newIndex, item);
+    await _quizService.saveQuizSet(topic.categoryName, topic.name, quizSet);
+    notifyListeners();
   }
 
   Future<void> updateShuffle(bool value) async {
