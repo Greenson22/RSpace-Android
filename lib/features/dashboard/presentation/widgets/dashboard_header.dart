@@ -1,4 +1,5 @@
 // lib/features/dashboard/presentation/widgets/dashboard_header.dart
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -63,7 +64,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
-    _updateAndDisplayQuote();
+    // >> UBAH PEMANGGILAN FUNGSI
+    _displayQuoteFromCache();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -80,46 +82,26 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (mounted) {
         setState(() {
           _statsFuture = _loadHeaderStats();
-          _updateAndDisplayQuote();
+          // >> UBAH PEMANGGILAN FUNGSI
+          _displayQuoteFromCache();
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
       }
     }
   }
 
-  Future<String> _getQuoteFromCache() async {
+  // >> NAMA FUNGSI DIUBAH DAN LOGIKA DIPERBARUI
+  Future<void> _displayQuoteFromCache() async {
     const fallbackQuote = 'Teruslah belajar setiap hari.';
     final random = Random();
-    try {
-      final quotesPath = await _pathService.motivationalQuotesPath;
-      final quotesFile = File(quotesPath);
-      if (await quotesFile.exists()) {
-        final jsonString = await quotesFile.readAsString();
-        if (jsonString.isNotEmpty) {
-          final existingQuotes = List<String>.from(jsonDecode(jsonString));
-          if (existingQuotes.isNotEmpty) {
-            return existingQuotes[random.nextInt(existingQuotes.length)];
-          }
+    final quotes = await _geminiService.getSavedMotivationalQuotes();
+    if (mounted) {
+      setState(() {
+        if (quotes.isNotEmpty) {
+          _motivationalQuote = quotes[random.nextInt(quotes.length)];
+        } else {
+          _motivationalQuote = fallbackQuote;
         }
-      }
-    } catch (e) {
-      // Abaikan error dan kembalikan fallback
-    }
-    return fallbackQuote;
-  }
-
-  Future<void> _updateAndDisplayQuote() async {
-    final cachedQuote = await _getQuoteFromCache();
-    if (mounted) {
-      setState(() {
-        _motivationalQuote = cachedQuote;
-      });
-    }
-
-    final newQuote = await _geminiService.getMotivationalQuote();
-    if (mounted) {
-      setState(() {
-        _motivationalQuote = newQuote;
       });
     }
   }

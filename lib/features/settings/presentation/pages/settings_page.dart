@@ -1,3 +1,5 @@
+// lib/features/settings/presentation/pages/settings_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/settings/application/theme_provider.dart';
@@ -8,6 +10,7 @@ import '../dialogs/gemini_prompt_dialog.dart';
 import '../dialogs/repetition_code_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/progress_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/task_settings_dialog.dart';
+import '../dialogs/motivational_quotes_dialog.dart'; // IMPORT DIALOG BARU
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -46,6 +49,14 @@ class SettingsPage extends StatelessWidget {
           ),
           const Divider(),
           _buildCategoryHeader(context, 'Fungsionalitas'),
+          // >> TAMBAHKAN ITEM MENU BARU DI SINI <<
+          _buildSettingsTile(
+            context,
+            icon: Icons.format_quote_outlined,
+            title: 'Kata Motivasi',
+            subtitle: 'Kelola dan buat daftar kata-kata motivasi harian.',
+            onTap: () => showMotivationalQuotesDialog(context),
+          ),
           _buildSettingsTile(
             context,
             icon: Icons.timer_outlined,

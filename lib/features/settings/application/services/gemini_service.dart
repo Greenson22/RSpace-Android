@@ -1,4 +1,5 @@
 // lib/features/settings/application/services/gemini_service.dart
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -39,93 +40,86 @@ class GeminiService {
     );
   }
 
-  // --- SEMUA FUNGSI API DIBAWAH INI TELAH DIPERBARUI ---
+  // --- FUNGSI-FUNGSI BARU UNTUK MANAJEMEN KUTIPAN MOTIVASI ---
 
-  Future<String> getMotivationalQuote() async {
-    const fallbackQuotes = [
-      'Mulailah dari mana kau berada. Gunakan apa yang kau punya. Lakukan apa yang kau bisa.',
-      'Pendidikan adalah senjata paling ampuh untuk mengubah dunia.',
-      'Satu-satunya sumber pengetahuan adalah pengalaman.',
-      'Belajar adalah proses seumur hidup, bukan hanya di sekolah.',
-    ];
-    final random = Random();
-
-    List<String> existingQuotes = [];
-    final quotesPath = await _pathService.motivationalQuotesPath;
-    final quotesFile = File(quotesPath);
+  /// Membaca semua kutipan motivasi yang tersimpan di file lokal.
+  Future<List<String>> getSavedMotivationalQuotes() async {
     try {
+      final quotesPath = await _pathService.motivationalQuotesPath;
+      final quotesFile = File(quotesPath);
       if (await quotesFile.exists()) {
         final jsonString = await quotesFile.readAsString();
         if (jsonString.isNotEmpty) {
-          existingQuotes = List<String>.from(jsonDecode(jsonString));
-        }
-      } else {
-        await quotesFile.create(recursive: true);
-        await quotesFile.writeAsString('[]');
-      }
-    } catch (e) {
-      // Abaikan jika ada error saat membaca file
-    }
-
-    final settings = await _settingsService.loadSettings();
-    final apiKey = await _getActiveApiKey();
-    if (apiKey.isEmpty) {
-      if (existingQuotes.isNotEmpty) {
-        return existingQuotes[random.nextInt(existingQuotes.length)];
-      }
-      return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
-    }
-
-    final prompt = settings.motivationalQuotePrompt;
-    final model = settings.generalModelId;
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
-
-    try {
-      final response = await http.post(
-        apiUrl, // Perbaikan di sini
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt},
-              ],
-            },
-          ],
-          'generationConfig': {'temperature': 0.9},
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        final candidates = body['candidates'] as List<dynamic>?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'] as Map<String, dynamic>?;
-          if (content != null) {
-            final parts = content['parts'] as List<dynamic>?;
-            if (parts != null && parts.isNotEmpty) {
-              final newQuote = parts[0]['text'] as String? ?? '';
-              if (newQuote.isNotEmpty && !existingQuotes.contains(newQuote)) {
-                existingQuotes.add(newQuote);
-                if (existingQuotes.length > 5) {
-                  existingQuotes.removeAt(0);
-                }
-                await quotesFile.writeAsString(jsonEncode(existingQuotes));
-              }
-              return newQuote;
-            }
-          }
+          return List<String>.from(jsonDecode(jsonString));
         }
       }
     } catch (e) {
-      if (existingQuotes.isNotEmpty) {
-        return existingQuotes[random.nextInt(existingQuotes.length)];
-      }
+      // Abaikan error dan kembalikan list kosong
     }
-
-    return fallbackQuotes[random.nextInt(fallbackQuotes.length)];
+    return [];
   }
 
+  /// Menghapus satu kutipan spesifik dari file simpanan.
+  Future<void> deleteMotivationalQuote(String quoteToDelete) async {
+    final quotesPath = await _pathService.motivationalQuotesPath;
+    final quotesFile = File(quotesPath);
+    final currentQuotes = await getSavedMotivationalQuotes();
+    currentQuotes.remove(quoteToDelete);
+    await quotesFile.writeAsString(jsonEncode(currentQuotes));
+  }
+
+  /// Menghasilkan daftar kutipan baru dari AI dan menimpa file simpanan.
+  Future<void> generateAndSaveMotivationalQuotes({int count = 10}) async {
+    final settings = await _settingsService.loadSettings();
+    final apiKey = await _getActiveApiKey();
+    if (apiKey.isEmpty) throw Exception('API Key Gemini tidak aktif.');
+
+    final model = settings.generalModelId;
+    final prompt = settings.motivationalQuotePrompt.replaceAll(
+      'satu kalimat',
+      '$count kalimat',
+    );
+
+    final apiUrl = _buildApiUri(model, apiKey);
+
+    final response = await http.post(
+      apiUrl,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': prompt},
+            ],
+          },
+        ],
+        'generationConfig': {
+          'temperature': 0.9,
+          'responseMimeType': 'application/json',
+        },
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      final textResponse = body['candidates'][0]['content']['parts'][0]['text'];
+      final List<dynamic> jsonResponse = jsonDecode(textResponse);
+      final newQuotes = List<String>.from(jsonResponse);
+
+      final quotesPath = await _pathService.motivationalQuotesPath;
+      final quotesFile = File(quotesPath);
+      await quotesFile.writeAsString(jsonEncode(newQuotes));
+    } else {
+      final errorBody = jsonDecode(response.body);
+      final errorMessage = errorBody['error']?['message'] ?? response.body;
+      throw Exception(
+        'Gagal mendapatkan respons: ${response.statusCode}\nError: $errorMessage',
+      );
+    }
+  }
+
+  // Fungsi getMotivationalQuote yang lama telah dihapus dan digantikan oleh fungsi-fungsi di atas.
+  // Sisa dari file ini (fungsi lain seperti suggestColorPalette, suggestIcon, dll.) tidak berubah.
   Future<ColorPalette> suggestColorPalette({
     required String theme,
     required String paletteName,
