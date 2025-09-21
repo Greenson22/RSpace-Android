@@ -8,6 +8,8 @@ import '../dialogs/add_quiz_dialog.dart';
 import '../dialogs/quiz_settings_dialog.dart';
 // ==> IMPORT DIALOG BARU
 import '../dialogs/generate_quiz_from_text_dialog.dart';
+import '../dialogs/generate_prompt_from_subject_dialog.dart';
+import '../dialogs/import_quiz_from_json_dialog.dart';
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -54,7 +56,7 @@ class QuizDetailPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('Pilih Sumber Materi'),
+        title: const Text('Pilih Metode Pembuatan Kuis'),
         children: [
           SimpleDialogOption(
             onPressed: () {
@@ -63,7 +65,8 @@ class QuizDetailPage extends StatelessWidget {
             },
             child: const ListTile(
               leading: Icon(Icons.topic_outlined),
-              title: Text('Dari Subject yang Ada'),
+              title: Text('Dari Subject (Otomatis)'),
+              subtitle: Text('AI akan langsung membuat soal.'),
             ),
           ),
           SimpleDialogOption(
@@ -73,7 +76,32 @@ class QuizDetailPage extends StatelessWidget {
             },
             child: const ListTile(
               leading: Icon(Icons.text_fields_outlined),
-              title: Text('Dari Teks Manual'),
+              title: Text('Dari Teks Manual (Otomatis)'),
+              subtitle: Text('AI akan membuat soal dari teks Anda.'),
+            ),
+          ),
+          // ==> OPSI BARU UNTUK GENERATE PROMPT
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showGeneratePromptFromSubjectDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.copy_all_outlined),
+              title: Text('Buat Prompt dari Subject'),
+              subtitle: Text('Salin prompt untuk digunakan di Gemini.'),
+            ),
+          ),
+          // ==> OPSI BARU UNTUK IMPOR JSON
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showImportQuizFromJsonDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.file_upload_outlined),
+              title: Text('Impor Kuis dari JSON'),
+              subtitle: Text('Masukkan hasil JSON dari Gemini.'),
             ),
           ),
         ],
