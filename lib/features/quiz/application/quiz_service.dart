@@ -21,6 +21,8 @@ class QuizService {
     return dirPath;
   }
 
+  // ... (fungsi getTopic, getQuizSetsInTopic, getAllQuestionsInTopic, dll tidak berubah) ...
+
   Future<QuizTopic> getTopic(String categoryName, String topicName) async {
     final quizzesPath = await _quizPath;
     final topicPath = path.join(quizzesPath, categoryName, topicName);
@@ -178,6 +180,32 @@ class QuizService {
     if (await directory.exists()) throw Exception('Kategori sudah ada');
     await directory.create();
     await saveCategory(QuizCategory(name: categoryName));
+  }
+
+  // >> FUNGSI BARU UNTUK RENAME <<
+  Future<void> renameCategory(QuizCategory oldCategory, String newName) async {
+    final quizzesPath = await _quizPath;
+    final oldPath = path.join(quizzesPath, oldCategory.name);
+    final newPath = path.join(quizzesPath, newName);
+
+    final oldDir = Directory(oldPath);
+    if (!await oldDir.exists()) {
+      throw Exception('Kategori yang ingin diubah tidak ditemukan.');
+    }
+    if (await Directory(newPath).exists()) {
+      throw Exception('Kategori dengan nama "$newName" sudah ada.');
+    }
+    await oldDir.rename(newPath);
+  }
+
+  // >> FUNGSI BARU UNTUK DELETE <<
+  Future<void> deleteCategory(QuizCategory category) async {
+    final quizzesPath = await _quizPath;
+    final categoryPath = path.join(quizzesPath, category.name);
+    final directory = Directory(categoryPath);
+    if (await directory.exists()) {
+      await directory.delete(recursive: true);
+    }
   }
 
   Future<void> saveTopicsOrder(

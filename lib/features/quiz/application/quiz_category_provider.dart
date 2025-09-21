@@ -39,5 +39,15 @@ class QuizCategoryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Add reorder, edit, delete methods here
+  // >> FUNGSI BARU UNTUK RENAME <<
+  Future<void> editCategoryName(QuizCategory category, String newName) async {
+    await _quizService.renameCategory(category, newName);
+    await fetchCategories();
+  }
+
+  // >> FUNGSI BARU UNTUK DELETE <<
+  Future<void> deleteCategory(QuizCategory category) async {
+    await _quizService.deleteCategory(category);
+    await fetchCategories();
+  }
 }

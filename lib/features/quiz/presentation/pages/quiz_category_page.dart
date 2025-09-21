@@ -5,7 +5,10 @@ import '../../application/quiz_category_provider.dart';
 import '../../domain/models/quiz_model.dart';
 import '../widgets/quiz_category_grid_tile.dart';
 import 'quiz_page.dart';
-import 'package:my_aplication/core/widgets/icon_picker_dialog.dart'; // ==> IMPORT DIALOG IKON
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
+import '../dialogs/add_category_dialog.dart';
+// ==> IMPORT DIALOGS BARU
+import '../dialogs/category_dialogs.dart';
 
 class QuizCategoryPage extends StatelessWidget {
   const QuizCategoryPage({super.key});
@@ -27,9 +30,6 @@ class _QuizCategoryView extends StatefulWidget {
 }
 
 class _QuizCategoryViewState extends State<_QuizCategoryView> {
-  // Add state for reorder mode if needed in the future
-
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG IKON
   void _showEditIconDialog(BuildContext context, QuizCategory category) {
     final provider = Provider.of<QuizCategoryProvider>(context, listen: false);
     showIconPickerDialog(
@@ -71,18 +71,22 @@ class _QuizCategoryViewState extends State<_QuizCategoryView> {
                       MaterialPageRoute(
                         builder: (_) => QuizPage(category: category),
                       ),
-                    );
+                    ).then((_) {
+                      // Muat ulang data saat kembali dari halaman detail
+                      provider.fetchCategories();
+                    });
                   },
-                  onEdit: () {}, // Implement edit dialog
-                  onDelete: () {}, // Implement delete dialog
-                  // ==> SAMBUNGKAN FUNGSI KE WIDGET
+                  // >> SAMBUNGKAN FUNGSI KE CALLBACK <<
+                  onEdit: () => showEditQuizCategoryDialog(context, category),
+                  onDelete: () =>
+                      showDeleteQuizCategoryDialog(context, category),
                   onIconChange: () => _showEditIconDialog(context, category),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Implement add category dialog
+          showAddQuizCategoryDialog(context);
         },
         child: const Icon(Icons.add),
       ),
