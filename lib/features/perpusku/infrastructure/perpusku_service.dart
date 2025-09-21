@@ -8,12 +8,14 @@ import '../domain/models/perpusku_models.dart';
 
 class PerpuskuService {
   final PathService _pathService = PathService();
+  static const String _defaultIcon = '📁'; // Default ikon jika config tidak ada
 
   Future<String> get _perpuskuBasePath async {
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
     return path.join(perpuskuDataPath, 'file_contents', 'topics');
   }
 
+  // >> FUNGSI INI DIPERBARUI TOTAL <<
   Future<List<PerpuskuTopic>> getTopics() async {
     final basePath = await _perpuskuBasePath;
     final directory = Directory(basePath);
@@ -22,12 +24,32 @@ class PerpuskuService {
     }
 
     final entities = directory.listSync().whereType<Directory>().toList();
-    return entities
-        .map(
-          (dir) => PerpuskuTopic(name: path.basename(dir.path), path: dir.path),
-        )
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final List<PerpuskuTopic> topics = [];
+
+    for (final dir in entities) {
+      final topicName = path.basename(dir.path);
+      String topicIcon = _defaultIcon;
+
+      // Coba baca file config dari direktori RSpace
+      try {
+        final configPath = await _pathService.getTopicConfigPath(topicName);
+        final configFile = File(configPath);
+        if (await configFile.exists()) {
+          final jsonString = await configFile.readAsString();
+          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+          topicIcon = jsonData['icon'] ?? _defaultIcon;
+        }
+      } catch (e) {
+        // Abaikan jika gagal membaca, gunakan ikon default
+      }
+
+      topics.add(
+        PerpuskuTopic(name: topicName, path: dir.path, icon: topicIcon),
+      );
+    }
+
+    topics.sort((a, b) => a.name.compareTo(b.name));
+    return topics;
   }
 
   Future<List<PerpuskuSubject>> getSubjects(String topicPath) async {

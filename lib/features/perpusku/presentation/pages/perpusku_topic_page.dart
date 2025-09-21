@@ -35,7 +35,11 @@ class _PerpuskuTopicView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final topic = provider.topics[index];
                 return ListTile(
-                  leading: const Icon(Icons.folder_open_outlined),
+                  // >> PERUBAHAN DI SINI: Gunakan Text widget untuk menampilkan emoji ikon <<
+                  leading: Text(
+                    topic.icon,
+                    style: const TextStyle(fontSize: 24),
+                  ),
                   title: Text(topic.name),
                   onTap: () {
                     Navigator.push(

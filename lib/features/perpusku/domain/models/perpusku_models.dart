@@ -3,10 +3,13 @@
 class PerpuskuTopic {
   final String name;
   final String path;
-  // Jika Anda menyimpan ikon untuk topik Perpusku, bisa ditambahkan di sini
-  // final String icon;
+  final String icon; // ==> PROPERTI BARU DITAMBAHKAN
 
-  PerpuskuTopic({required this.name, required this.path});
+  PerpuskuTopic({
+    required this.name,
+    required this.path,
+    required this.icon, // ==> TAMBAHKAN DI KONSTRUKTOR
+  });
 }
 
 class PerpuskuSubject {
