@@ -20,8 +20,39 @@ class QuizDetailProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+  // State untuk seleksi pertanyaan
+  final Set<String> _selectedQuestionIds = {};
+  Set<String> get selectedQuestionIds => _selectedQuestionIds;
+  bool get isQuestionSelectionMode => _selectedQuestionIds.isNotEmpty;
+
   QuizDetailProvider(this.topic) {
     fetchQuizSets();
+  }
+
+  // ==> METODE MANAJEMEN SELEKSI
+  void toggleQuestionSelection(String questionId) {
+    if (_selectedQuestionIds.contains(questionId)) {
+      _selectedQuestionIds.remove(questionId);
+    } else {
+      _selectedQuestionIds.add(questionId);
+    }
+    notifyListeners();
+  }
+
+  void selectAllQuestions(QuizSet quizSet) {
+    _selectedQuestionIds.addAll(quizSet.questions.map((q) => q.id));
+    notifyListeners();
+  }
+
+  void clearQuestionSelection() {
+    _selectedQuestionIds.clear();
+    notifyListeners();
+  }
+
+  Future<void> deleteSelectedQuestions(QuizSet quizSet) async {
+    quizSet.questions.removeWhere((q) => _selectedQuestionIds.contains(q.id));
+    await _quizService.saveQuizSet(topic.categoryName, topic.name, quizSet);
+    clearQuestionSelection();
   }
 
   Future<void> fetchQuizSets() async {
