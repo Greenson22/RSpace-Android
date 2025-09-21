@@ -29,7 +29,7 @@ class QuizDetailProvider with ChangeNotifier {
     fetchQuizSets();
   }
 
-  // ==> METODE MANAJEMEN SELEKSI
+  // METODE MANAJEMEN SELEKSI
   void toggleQuestionSelection(String questionId) {
     if (_selectedQuestionIds.contains(questionId)) {
       _selectedQuestionIds.remove(questionId);
@@ -52,7 +52,7 @@ class QuizDetailProvider with ChangeNotifier {
   Future<void> deleteSelectedQuestions(QuizSet quizSet) async {
     quizSet.questions.removeWhere((q) => _selectedQuestionIds.contains(q.id));
     await _quizService.saveQuizSet(topic.categoryName, topic.name, quizSet);
-    clearQuestionSelection();
+    clearQuestionSelection(); // Otomatis membersihkan seleksi setelah hapus
   }
 
   Future<void> fetchQuizSets() async {
@@ -286,6 +286,25 @@ class QuizDetailProvider with ChangeNotifier {
         topic.categoryName,
         topic.name,
         existingSet,
+      );
+      await fetchQuizSets();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> addEmptyQuizSet(String quizSetName) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final newQuizSet = QuizSet(name: quizSetName, questions: []);
+      await _quizService.saveQuizSet(
+        topic.categoryName,
+        topic.name,
+        newQuizSet,
       );
       await fetchQuizSets();
     } catch (e) {

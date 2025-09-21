@@ -1,7 +1,6 @@
 // lib/features/quiz/presentation/pages/quiz_detail_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/quiz/presentation/dialogs/generate_prompt_from_text_dialog.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
 import '../dialogs/add_quiz_dialog.dart';
@@ -10,7 +9,10 @@ import '../dialogs/generate_quiz_from_text_dialog.dart';
 import '../dialogs/generate_prompt_from_subject_dialog.dart';
 import '../dialogs/import_quiz_from_json_dialog.dart';
 import '../../domain/models/quiz_model.dart';
-import 'quiz_question_list_page.dart'; // ==> IMPORT HALAMAN BARU
+import 'quiz_question_list_page.dart';
+import '../dialogs/add_empty_quiz_set_dialog.dart';
+// ==> PERBAIKAN DI SINI: Tambahkan import yang hilang
+import '../dialogs/generate_prompt_from_text_dialog.dart';
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -62,6 +64,18 @@ class QuizDetailPage extends StatelessWidget {
               : 'Pilih Metode Pembuatan Kuis',
         ),
         children: [
+          if (!isAddingQuestions)
+            SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                showAddEmptyQuizSetDialog(context);
+              },
+              child: const ListTile(
+                leading: Icon(Icons.note_add_outlined),
+                title: Text('Buat Set Kosong (Manual)'),
+                subtitle: Text('Anda bisa menambahkan soal nanti.'),
+              ),
+            ),
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
@@ -149,7 +163,6 @@ class QuizDetailPage extends StatelessWidget {
 
   Widget _buildQuizSetList(BuildContext context, QuizDetailProvider provider) {
     return ListView.builder(
-      // ==> UBAH MENJADI BUILDER
       itemCount: provider.quizSets.length,
       itemBuilder: (context, index) {
         final quizSet = provider.quizSets[index];
@@ -174,7 +187,6 @@ class QuizDetailPage extends StatelessWidget {
                 if (value == 'add') {
                   _showAddOptions(context, quizSet);
                 } else if (value == 'edit_questions') {
-                  // ==> OPSI BARU
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -217,9 +229,8 @@ class QuizDetailPage extends StatelessWidget {
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 'add',
-                  child: Text('Tambah Pertanyaan (AI)'),
+                  child: Text('Tambah Pertanyaan'),
                 ),
-                // ==> ITEM MENU BARU
                 const PopupMenuItem(
                   value: 'edit_questions',
                   child: Text('Edit Soal Manual'),
