@@ -27,8 +27,9 @@ class QuizSettingsDialog extends StatefulWidget {
 class _QuizSettingsDialogState extends State<QuizSettingsDialog> {
   late final TextEditingController _limitController;
   late final TextEditingController _delayController;
-  // ==> CONTROLLER BARU UNTUK DURASI TIMER
   late final TextEditingController _timerDurationController;
+  // ==> CONTROLLER BARU UNTUK TIMER KESELURUHAN
+  late final TextEditingController _overallTimerDurationController;
 
   @override
   void initState() {
@@ -42,9 +43,12 @@ class _QuizSettingsDialogState extends State<QuizSettingsDialog> {
     _delayController = TextEditingController(
       text: provider.topic.autoAdvanceDelay.toString(),
     );
-    // ==> INISIALISASI CONTROLLER TIMER
     _timerDurationController = TextEditingController(
       text: provider.topic.timerDuration.toString(),
+    );
+    // ==> INISIALISASI CONTROLLER BARU
+    _overallTimerDurationController = TextEditingController(
+      text: provider.topic.overallTimerDuration.toString(),
     );
   }
 
@@ -52,7 +56,8 @@ class _QuizSettingsDialogState extends State<QuizSettingsDialog> {
   void dispose() {
     _limitController.dispose();
     _delayController.dispose();
-    _timerDurationController.dispose(); // ==> JANGAN LUPA DISPOSE
+    _timerDurationController.dispose();
+    _overallTimerDurationController.dispose(); // ==> JANGAN LUPA DISPOSE
     super.dispose();
   }
 
@@ -121,7 +126,6 @@ class _QuizSettingsDialogState extends State<QuizSettingsDialog> {
                       ],
                     ),
                   ),
-                // ==> KONTROL BARU UNTUK TIMER
                 const Divider(),
                 SwitchListTile(
                   dense: true,
@@ -158,8 +162,49 @@ class _QuizSettingsDialogState extends State<QuizSettingsDialog> {
                       ],
                     ),
                   ),
+                // ==> KONTROL BARU UNTUK TIMER KESELURUHAN
                 const Divider(),
-                // ==> AKHIR KONTROL BARU
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Aktifkan Timer Kuis'),
+                  subtitle: const Text(
+                    'Kuis akan berakhir jika waktu habis.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: provider.topic.isOverallTimerEnabled,
+                  onChanged: (value) =>
+                      provider.updateOverallTimerEnabled(value),
+                ),
+                if (provider.topic.isOverallTimerEnabled)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Durasi Total Kuis')),
+                        SizedBox(
+                          width: 80,
+                          child: TextFormField(
+                            controller: _overallTimerDurationController,
+                            textAlign: TextAlign.center,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                              suffixText: 'mnt',
+                            ),
+                            onFieldSubmitted: (value) {
+                              final duration = int.tryParse(value) ?? 10;
+                              provider.updateOverallTimerDuration(duration);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Row(

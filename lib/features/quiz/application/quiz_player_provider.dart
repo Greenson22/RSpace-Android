@@ -28,11 +28,14 @@ class QuizPlayerProvider with ChangeNotifier {
       _revealedAnswers.contains(questionId);
 
   Timer? _autoAdvanceTimer;
-
-  // ==> STATE BARU UNTUK TIMER PERTANYAAN
   Timer? _questionTimer;
   int _remainingTime = 0;
   int get remainingTime => _remainingTime;
+
+  // ==> STATE BARU UNTUK TIMER KESELURUHAN
+  Timer? _overallTimer;
+  Duration _overallRemainingTime = Duration.zero;
+  Duration get overallRemainingTime => _overallRemainingTime;
 
   int get score {
     int correctAnswers = 0;
@@ -51,13 +54,13 @@ class QuizPlayerProvider with ChangeNotifier {
   @override
   void dispose() {
     _autoAdvanceTimer?.cancel();
-    _questionTimer?.cancel(); // ==> BERSIHKAN TIMER
+    _questionTimer?.cancel();
+    _overallTimer?.cancel(); // ==> BERSIHKAN TIMER
     super.dispose();
   }
 
-  // ==> FUNGSI BARU UNTUK MEMULAI TIMER
   void _startQuestionTimer() {
-    _questionTimer?.cancel(); // Selalu batalkan timer sebelumnya
+    _questionTimer?.cancel();
     if (topic.isTimerEnabled) {
       _remainingTime = topic.timerDuration;
       notifyListeners();
@@ -67,14 +70,31 @@ class QuizPlayerProvider with ChangeNotifier {
           _remainingTime--;
           notifyListeners();
         } else {
-          // Waktu habis, pindah ke pertanyaan berikutnya
           _handleTimeUp();
         }
       });
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENANGANI WAKTU HABIS
+  // ==> FUNGSI BARU UNTUK MEMULAI TIMER KESELURUHAN
+  void _startOverallTimer() {
+    _overallTimer?.cancel();
+    if (topic.isOverallTimerEnabled) {
+      _overallRemainingTime = Duration(minutes: topic.overallTimerDuration);
+      notifyListeners();
+
+      _overallTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_overallRemainingTime.inSeconds > 0) {
+          _overallRemainingTime -= const Duration(seconds: 1);
+          notifyListeners();
+        } else {
+          // Waktu keseluruhan habis, akhiri kuis
+          finishQuiz();
+        }
+      });
+    }
+  }
+
   void _handleTimeUp() {
     _questionTimer?.cancel();
     if (currentIndex < _questions.length - 1) {
@@ -94,7 +114,8 @@ class QuizPlayerProvider with ChangeNotifier {
       _revealedAnswers.clear();
       _currentIndex = 0;
       _state = QuizState.playing;
-      _startQuestionTimer(); // ==> MULAI TIMER UNTUK PERTANYAAN PERTAMA
+      _startQuestionTimer();
+      _startOverallTimer(); // ==> MULAI TIMER KESELURUHAN
     } catch (e) {
       _questions = [];
       _state = QuizState.finished;
@@ -103,7 +124,7 @@ class QuizPlayerProvider with ChangeNotifier {
   }
 
   void answerQuestion(QuizQuestion question, QuizOption option) {
-    _questionTimer?.cancel(); // ==> HENTIKAN TIMER SAAT MENJAWAB
+    _questionTimer?.cancel();
     _userAnswers[question.id] = option;
     if (topic.showCorrectAnswer) {
       _revealedAnswers.add(question.id);
@@ -125,7 +146,7 @@ class QuizPlayerProvider with ChangeNotifier {
     _autoAdvanceTimer?.cancel();
     if (_currentIndex < _questions.length - 1) {
       _currentIndex++;
-      _startQuestionTimer(); // ==> MULAI TIMER UNTUK PERTANYAAN BARU
+      _startQuestionTimer();
       notifyListeners();
     }
   }
@@ -134,14 +155,15 @@ class QuizPlayerProvider with ChangeNotifier {
     _autoAdvanceTimer?.cancel();
     if (_currentIndex > 0) {
       _currentIndex--;
-      _startQuestionTimer(); // ==> MULAI TIMER UNTUK PERTANYAAN BARU
+      _startQuestionTimer();
       notifyListeners();
     }
   }
 
   void finishQuiz() {
     _autoAdvanceTimer?.cancel();
-    _questionTimer?.cancel(); // ==> HENTIKAN TIMER
+    _questionTimer?.cancel();
+    _overallTimer?.cancel(); // ==> HENTIKAN TIMER KESELURUHAN
     _state = QuizState.finished;
     notifyListeners();
   }

@@ -2,10 +2,8 @@
 
 import 'package:uuid/uuid.dart';
 
-//==> TAMBAHKAN ENUM BARU UNTUK TINGKAT KESULITAN <==
 enum QuizDifficulty { ringan, medium, susah, hots }
 
-//==> TAMBAHKAN FUNGSI HELPER UNTUK MENDAPATKAN NAMA YANG MUDAH DIBACA <==
 extension QuizDifficultyExtension on QuizDifficulty {
   String get displayName {
     switch (this) {
@@ -21,7 +19,6 @@ extension QuizDifficultyExtension on QuizDifficulty {
   }
 }
 
-// Model untuk Pilihan Jawaban (Tidak Berubah)
 class QuizOption {
   String text;
   bool isCorrect;
@@ -36,7 +33,6 @@ class QuizOption {
   Map<String, dynamic> toJson() => {'text': text, 'isCorrect': isCorrect};
 }
 
-// Model untuk satu Pertanyaan (Tidak Berubah)
 class QuizQuestion {
   final String id;
   String questionText;
@@ -65,9 +61,8 @@ class QuizQuestion {
   };
 }
 
-// Model untuk satu file JSON kuis (satu set kuis)
 class QuizSet {
-  String name; // Nama file JSON tanpa ekstensi
+  String name;
   List<QuizQuestion> questions;
 
   QuizSet({required this.name, this.questions = const []});
@@ -93,14 +88,16 @@ class QuizTopic {
 
   // Pengaturan Kuis
   bool shuffleQuestions;
-  int questionLimit; // 0 berarti tanpa batas
+  int questionLimit;
   List<String> includedQuizSets;
   bool showCorrectAnswer;
   bool autoAdvanceNextQuestion;
   int autoAdvanceDelay;
-  // ==> FIELD BARU UNTUK TIMER <==
   bool isTimerEnabled;
-  int timerDuration; // Dalam detik
+  int timerDuration;
+  // ==> FIELD BARU UNTUK TIMER KESELURUHAN <==
+  bool isOverallTimerEnabled;
+  int overallTimerDuration; // Dalam menit
 
   QuizTopic({
     required this.name,
@@ -113,8 +110,10 @@ class QuizTopic {
     this.showCorrectAnswer = false,
     this.autoAdvanceNextQuestion = false,
     this.autoAdvanceDelay = 2,
-    this.isTimerEnabled = false, // Default nonaktif
-    this.timerDuration = 30, // Default 30 detik
+    this.isTimerEnabled = false,
+    this.timerDuration = 30,
+    this.isOverallTimerEnabled = false, // Default nonaktif
+    this.overallTimerDuration = 10, // Default 10 menit
   });
 
   factory QuizTopic.fromConfig(
@@ -134,9 +133,12 @@ class QuizTopic {
       autoAdvanceNextQuestion:
           configJson['autoAdvanceNextQuestion'] as bool? ?? false,
       autoAdvanceDelay: configJson['autoAdvanceDelay'] as int? ?? 2,
-      // ==> BACA DATA TIMER DARI JSON
       isTimerEnabled: configJson['isTimerEnabled'] as bool? ?? false,
       timerDuration: configJson['timerDuration'] as int? ?? 30,
+      // ==> BACA DATA TIMER KESELURUHAN DARI JSON
+      isOverallTimerEnabled:
+          configJson['isOverallTimerEnabled'] as bool? ?? false,
+      overallTimerDuration: configJson['overallTimerDuration'] as int? ?? 10,
     );
   }
 
@@ -150,14 +152,15 @@ class QuizTopic {
       'showCorrectAnswer': showCorrectAnswer,
       'autoAdvanceNextQuestion': autoAdvanceNextQuestion,
       'autoAdvanceDelay': autoAdvanceDelay,
-      // ==> SIMPAN DATA TIMER KE JSON
       'isTimerEnabled': isTimerEnabled,
       'timerDuration': timerDuration,
+      // ==> SIMPAN DATA TIMER KESELURUHAN KE JSON
+      'isOverallTimerEnabled': isOverallTimerEnabled,
+      'overallTimerDuration': overallTimerDuration,
     };
   }
 }
 
-// Kelas QuizCategory tidak berubah
 class QuizCategory {
   String name;
   String icon;

@@ -38,6 +38,13 @@ class QuizPlayerPage extends StatelessWidget {
     return shouldPop ?? false;
   }
 
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -50,6 +57,28 @@ class QuizPlayerPage extends StatelessWidget {
               appBar: AppBar(
                 title: Text('Kuis: ${topic.name}'),
                 actions: [
+                  if (provider.state == QuizState.playing &&
+                      provider.topic.isOverallTimerEnabled)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Chip(
+                        avatar: Icon(
+                          Icons.alarm,
+                          color: provider.overallRemainingTime.inSeconds <= 60
+                              ? Colors.red
+                              : null,
+                        ),
+                        label: Text(
+                          _formatDuration(provider.overallRemainingTime),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: provider.overallRemainingTime.inSeconds <= 60
+                                ? Colors.red
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
                   if (provider.state == QuizState.playing &&
                       provider.topic.isTimerEnabled)
                     Padding(
