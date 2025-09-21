@@ -3,21 +3,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
+import '../../domain/models/quiz_model.dart'; // Import model
 
-// Fungsi untuk menampilkan dialog
-void showImportQuizFromJsonDialog(BuildContext context) {
+// ==> FUNGSI DIPERBARUI UNTUK MENERIMA QUIZSET OPSIONAL
+void showImportQuizFromJsonDialog(
+  BuildContext context, {
+  QuizSet? existingQuizSet,
+}) {
   final provider = Provider.of<QuizDetailProvider>(context, listen: false);
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
-      child: const ImportQuizFromJsonDialog(),
+      child: ImportQuizFromJsonDialog(existingQuizSet: existingQuizSet),
     ),
   );
 }
 
 class ImportQuizFromJsonDialog extends StatefulWidget {
-  const ImportQuizFromJsonDialog({super.key});
+  // ==> TAMBAHKAN PROPERTI BARU
+  final QuizSet? existingQuizSet;
+  const ImportQuizFromJsonDialog({super.key, this.existingQuizSet});
 
   @override
   State<ImportQuizFromJsonDialog> createState() =>
@@ -28,6 +34,18 @@ class _ImportQuizFromJsonDialogState extends State<ImportQuizFromJsonDialog> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _quizSetNameController = TextEditingController();
   final TextEditingController _jsonContentController = TextEditingController();
+
+  // ==> TENTUKAN APAKAH INI MODE TAMBAH PERTANYAAN
+  bool get isAddingQuestionsMode => widget.existingQuizSet != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Jika dalam mode edit, isi nama set kuis secara otomatis
+    if (isAddingQuestionsMode) {
+      _quizSetNameController.text = widget.existingQuizSet!.name;
+    }
+  }
 
   @override
   void dispose() {
@@ -48,17 +66,33 @@ class _ImportQuizFromJsonDialogState extends State<ImportQuizFromJsonDialog> {
     Navigator.of(context).pop();
 
     try {
-      await provider.addQuizSetFromJson(
-        quizSetName: quizSetName,
-        jsonContent: jsonContent,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kuis dari JSON berhasil diimpor!'),
-            backgroundColor: Colors.green,
-          ),
+      // ==> GUNAKAN LOGIKA KONDISIONAL DI SINI
+      if (isAddingQuestionsMode) {
+        await provider.addQuestionsToQuizSetFromJson(
+          quizSetName: quizSetName,
+          jsonContent: jsonContent,
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pertanyaan dari JSON berhasil ditambahkan!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        await provider.addQuizSetFromJson(
+          quizSetName: quizSetName,
+          jsonContent: jsonContent,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Kuis dari JSON berhasil diimpor!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -74,8 +108,13 @@ class _ImportQuizFromJsonDialogState extends State<ImportQuizFromJsonDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // ==> SESUAIKAN JUDUL DIALOG
+    final dialogTitle = isAddingQuestionsMode
+        ? 'Tambah Pertanyaan dari JSON'
+        : 'Impor Kuis dari JSON';
+
     return AlertDialog(
-      title: const Text('Impor Kuis dari JSON'),
+      title: Text(dialogTitle),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -83,18 +122,20 @@ class _ImportQuizFromJsonDialogState extends State<ImportQuizFromJsonDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                controller: _quizSetNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Set Kuis Baru',
+              // ==> SEMBUNYIKAN INPUT NAMA JIKA MODE TAMBAH PERTANYAAN
+              if (!isAddingQuestionsMode)
+                TextFormField(
+                  controller: _quizSetNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Set Kuis Baru',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Nama set kuis tidak boleh kosong.';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Nama set kuis tidak boleh kosong.';
-                  }
-                  return null;
-                },
-              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _jsonContentController,
@@ -122,7 +163,8 @@ class _ImportQuizFromJsonDialogState extends State<ImportQuizFromJsonDialog> {
         ),
         ElevatedButton(
           onPressed: _handleImport,
-          child: const Text('Impor Kuis'),
+          // ==> SESUAIKAN TEKS TOMBOL
+          child: Text(isAddingQuestionsMode ? 'Tambahkan' : 'Impor Kuis'),
         ),
       ],
     );

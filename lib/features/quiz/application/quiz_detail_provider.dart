@@ -140,6 +140,45 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENAMBAH PERTANYAAN DARI JSON
+  Future<void> addQuestionsToQuizSetFromJson({
+    required String quizSetName,
+    required String jsonContent,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final List<dynamic> jsonResponse = jsonDecode(jsonContent);
+      final newQuestions = jsonResponse.map((item) {
+        final optionsList = (item['options'] as List<dynamic>).cast<String>();
+        final correctIndex = item['correctAnswerIndex'] as int;
+        final options = List.generate(optionsList.length, (i) {
+          return QuizOption(text: optionsList[i], isCorrect: i == correctIndex);
+        });
+        return QuizQuestion(
+          questionText: item['questionText'] as String,
+          options: options,
+        );
+      }).toList();
+
+      final existingSet = quizSets.firstWhere((qs) => qs.name == quizSetName);
+      existingSet.questions.addAll(newQuestions);
+      await _quizService.saveQuizSet(
+        topic.categoryName,
+        topic.name,
+        existingSet,
+      );
+      await fetchQuizSets();
+    } catch (e) {
+      throw Exception(
+        'Gagal mem-parsing JSON. Pastikan formatnya benar. Error: $e',
+      );
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> addQuizSetFromSubject(
     String quizSetName,
     String subjectJsonPath,
@@ -156,7 +195,6 @@ class QuizDetailProvider with ChangeNotifier {
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
-      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menyimpan
       await _quizService.saveQuizSet(
         topic.categoryName,
         topic.name,
@@ -187,7 +225,6 @@ class QuizDetailProvider with ChangeNotifier {
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
-      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menyimpan
       await _quizService.saveQuizSet(
         topic.categoryName,
         topic.name,
@@ -202,7 +239,6 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> UBAH NAMA FUNGSI INI AGAR LEBIH SPESIFIK
   Future<void> addQuestionsToQuizSetFromSubject({
     required String quizSetName,
     required String subjectJsonPath,
@@ -220,7 +256,6 @@ class QuizDetailProvider with ChangeNotifier {
 
       final existingSet = quizSets.firstWhere((qs) => qs.name == quizSetName);
       existingSet.questions.addAll(newQuestions);
-      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menyimpan
       await _quizService.saveQuizSet(
         topic.categoryName,
         topic.name,
@@ -279,7 +314,6 @@ class QuizDetailProvider with ChangeNotifier {
 
   Future<void> deleteQuizSet(String quizSetName) async {
     topic.includedQuizSets.remove(quizSetName);
-    // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menghapus
     await _quizService.deleteQuizSet(
       topic.categoryName,
       topic.name,

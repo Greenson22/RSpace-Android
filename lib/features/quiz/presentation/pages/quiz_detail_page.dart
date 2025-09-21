@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_detail_provider.dart';
-import '../dialogs/add_quiz_dialog.dart'; // HAPUS add_questions_dialog.dart
+import '../dialogs/add_quiz_dialog.dart';
 import '../dialogs/quiz_settings_dialog.dart';
 import '../dialogs/generate_quiz_from_text_dialog.dart';
 import '../dialogs/generate_prompt_from_subject_dialog.dart';
 import '../dialogs/import_quiz_from_json_dialog.dart';
-import '../../domain/models/quiz_model.dart'; // IMPORT MODEL
+import '../../domain/models/quiz_model.dart';
 
 class QuizDetailPage extends StatelessWidget {
   const QuizDetailPage({super.key});
@@ -28,8 +28,7 @@ class QuizDetailPage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () =>
-                _showAddOptions(context, null), // Kirim null untuk membuat baru
+            onPressed: () => _showAddOptions(context, null),
             tooltip: 'Buat Set Kuis Baru',
           ),
         ],
@@ -50,7 +49,6 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI INI SEKARANG MENERIMA QUIZSET OPSIONAL
   void _showAddOptions(BuildContext context, QuizSet? quizSet) {
     final isAddingQuestions = quizSet != null;
     showDialog(
@@ -65,7 +63,6 @@ class QuizDetailPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              // ==> KIRIM quizSet KE DIALOG
               showAddQuizDialog(context, existingQuizSet: quizSet);
             },
             child: ListTile(
@@ -81,7 +78,7 @@ class QuizDetailPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              // Implementasi untuk text dialog
+              // TODO: Implement this dialog to handle both cases
             },
             child: ListTile(
               leading: const Icon(Icons.text_fields_outlined),
@@ -93,8 +90,23 @@ class QuizDetailPage extends StatelessWidget {
               ),
             ),
           ),
-          // Sembunyikan opsi yang tidak relevan saat menambah pertanyaan
-          if (!isAddingQuestions) ...[
+          // ==> PERUBAHAN DI SINI: Tampilkan Impor JSON di kedua mode
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showImportQuizFromJsonDialog(context, existingQuizSet: quizSet);
+            },
+            child: ListTile(
+              leading: const Icon(Icons.file_upload_outlined),
+              title: const Text('Impor Kuis dari JSON'),
+              subtitle: Text(
+                isAddingQuestions
+                    ? 'Tambahkan pertanyaan dari format JSON.'
+                    : 'Masukkan hasil JSON dari Gemini.',
+              ),
+            ),
+          ),
+          if (!isAddingQuestions)
             SimpleDialogOption(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -106,18 +118,6 @@ class QuizDetailPage extends StatelessWidget {
                 subtitle: Text('Salin prompt untuk digunakan di Gemini.'),
               ),
             ),
-            SimpleDialogOption(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                showImportQuizFromJsonDialog(context);
-              },
-              child: const ListTile(
-                leading: Icon(Icons.file_upload_outlined),
-                title: Text('Impor Kuis dari JSON'),
-                subtitle: Text('Masukkan hasil JSON dari Gemini.'),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -152,9 +152,8 @@ class QuizDetailPage extends StatelessWidget {
               subtitle: Text('${quizSet.questions.length} pertanyaan'),
               trailing: PopupMenuButton<String>(
                 onSelected: (value) async {
-                  // ==> PERUBAHAN DI SINI
                   if (value == 'add') {
-                    _showAddOptions(context, quizSet); // Panggil dialog pilihan
+                    _showAddOptions(context, quizSet);
                   } else if (value == 'delete') {
                     final confirmed = await showDialog<bool>(
                       context: context,
@@ -188,7 +187,7 @@ class QuizDetailPage extends StatelessWidget {
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: 'add',
-                    child: Text('Tambah Pertanyaan (AI)'),
+                    child: Text('Tambah Pertanyaan'),
                   ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
