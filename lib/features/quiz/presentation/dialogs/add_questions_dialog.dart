@@ -42,7 +42,6 @@ class _AddQuestionsDialogState extends State<AddQuestionsDialog> {
   );
   String? _selectedTopicName;
   String? _selectedSubjectName;
-  // ==> TAMBAHKAN STATE BARU UNTUK KESULITAN <==
   QuizDifficulty _selectedDifficulty = QuizDifficulty.medium;
   List<String> _topicNames = [];
   List<Subject> _subjects = [];
@@ -109,11 +108,12 @@ class _AddQuestionsDialogState extends State<AddQuestionsDialog> {
     Navigator.of(context).pop();
 
     try {
-      await provider.addQuestionsToQuizSet(
+      // ==> PERUBAIKAN DI SINI <==
+      // Nama metode diubah dari addQuestionsToQuizSet menjadi addQuestionsToQuizSetFromSubject
+      await provider.addQuestionsToQuizSetFromSubject(
         quizSetName: widget.quizSet.name,
         subjectJsonPath: subjectJsonPath,
         questionCount: questionCount,
-        // ==> KIRIM TINGKAT KESULITAN KE PROVIDER <==
         difficulty: _selectedDifficulty,
       );
       if (mounted) {
@@ -149,7 +149,6 @@ class _AddQuestionsDialogState extends State<AddQuestionsDialog> {
             children: [
               const Text('Pilih sumber materi untuk dibuatkan pertanyaan.'),
               const SizedBox(height: 24),
-              // ==> TAMBAHKAN DROPDOWN UNTUK TINGKAT KESULITAN <==
               DropdownButtonFormField<QuizDifficulty>(
                 value: _selectedDifficulty,
                 decoration: const InputDecoration(
