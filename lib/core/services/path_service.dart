@@ -10,9 +10,8 @@ class PathService {
   // Kunci SharedPreferences dipindahkan ke sini
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
-  static const String _customDownloadPathKey = 'custom_download_path';
-  static const String _customDownloadPathKeyDebug =
-      'custom_download_path_debug';
+
+  // Kunci dan fungsi untuk Download Path dihapus
 
   // Metode dari path_service_2.dart digabungkan ke sini
   Future<void> saveCustomStoragePath(String path) async {
@@ -24,22 +23,6 @@ class PathService {
   Future<String?> loadCustomStoragePath() async {
     final prefs = await SharedPreferences.getInstance();
     final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
-    return prefs.getString(key);
-  }
-
-  Future<void> saveCustomDownloadPath(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = kDebugMode
-        ? _customDownloadPathKeyDebug
-        : _customDownloadPathKey;
-    await prefs.setString(key, path);
-  }
-
-  Future<String?> loadCustomDownloadPath() async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = kDebugMode
-        ? _customDownloadPathKeyDebug
-        : _customDownloadPathKey;
     return prefs.getString(key);
   }
 
@@ -112,7 +95,6 @@ class PathService {
     return defaultAppDir.path;
   }
 
-  // ==> GETTER BARU UNTUK FOLDER BACKUP UTAMA <==
   Future<String> get _baseBackupPath async {
     final appBase = await _appBasePath;
     final backupDir = Directory(path.join(appBase, 'Backup'));
@@ -120,6 +102,16 @@ class PathService {
       await backupDir.create(recursive: true);
     }
     return backupDir.path;
+  }
+
+  // ==> GETTER BARU UNTUK FOLDER DOWNLOAD UTAMA <==
+  Future<String> get downloadsPath async {
+    final appBase = await _appBasePath;
+    final downloadsDir = Directory(path.join(appBase, 'Downloads'));
+    if (!await downloadsDir.exists()) {
+      await downloadsDir.create(recursive: true);
+    }
+    return downloadsDir.path;
   }
 
   Future<String> get finishedDiscussionsExportPath async {
@@ -132,7 +124,7 @@ class PathService {
   }
 
   Future<String> get rspaceBackupPath async {
-    final basePath = await _baseBackupPath; // Menggunakan base path backup baru
+    final basePath = await _baseBackupPath;
     final backupDir = Directory(path.join(basePath, 'RSpace_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
@@ -141,7 +133,7 @@ class PathService {
   }
 
   Future<String> get perpuskuBackupPath async {
-    final basePath = await _baseBackupPath; // Menggunakan base path backup baru
+    final basePath = await _baseBackupPath;
     final backupDir = Directory(path.join(basePath, 'PerpusKu_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);

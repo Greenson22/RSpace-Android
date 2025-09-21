@@ -1,7 +1,6 @@
 // lib/features/file_management/presentation/layouts/desktop_layout.dart
 
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
 import 'package:open_file/open_file.dart';
@@ -29,8 +28,7 @@ class DesktopLayout extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             children: [
               ApiConfigCard(),
-              const SizedBox(height: 16),
-              _buildPathInfoCard(context),
+              // PathInfoCard dihapus dari sini
             ],
           ),
         ),
@@ -78,19 +76,7 @@ class DesktopLayout extends StatelessWidget {
     );
   }
 
-  Future<void> _selectDownloadFolder(BuildContext context) async {
-    final provider = Provider.of<FileProvider>(context, listen: false);
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Pilih Folder Tujuan Download',
-    );
-
-    if (selectedDirectory != null) {
-      await provider.setDownloadPath(selectedDirectory);
-      if (context.mounted) {
-        showAppSnackBar(context, 'Folder tujuan download berhasil diatur.');
-      }
-    }
-  }
+  // Fungsi _selectDownloadFolder dihapus
 
   Future<void> _uploadFile(BuildContext context, bool isRspaceFile) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
@@ -198,49 +184,7 @@ class DesktopLayout extends StatelessWidget {
         false;
   }
 
-  Widget _buildPathInfoCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Folder Tujuan Download',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Consumer<FileProvider>(
-              builder: (context, provider, child) {
-                final theme = Theme.of(context);
-                final String displayText =
-                    provider.downloadPath ?? 'Folder belum ditentukan.';
-                final TextStyle? textStyle = theme.textTheme.bodyMedium
-                    ?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: kDebugMode && provider.downloadPath != null
-                          ? FontWeight.bold
-                          : null,
-                    );
-                return Text(displayText, style: textStyle);
-              },
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Ubah Folder Tujuan'),
-                onPressed: () => _selectDownloadFolder(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildPathInfoCard dihapus
 
   Widget _buildFileSection(
     BuildContext context, {
@@ -309,14 +253,7 @@ class DesktopLayout extends StatelessWidget {
           ),
         ),
         const Divider(thickness: 2),
-        if (provider.downloadPath == null || provider.downloadPath!.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24.0),
-            child: Center(
-              child: Text('Folder tujuan download belum ditentukan.'),
-            ),
-          )
-        else if (files.isEmpty)
+        if (files.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24.0),
             child: Center(child: Text('Tidak ada file yang telah diunduh.')),

@@ -10,15 +10,15 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
-// ==> IMPORT SERVICE BARU <==
 import '../../settings/application/services/api_config_service.dart';
 import '../domain/models/file_model.dart';
-import '../../../core/services/storage_service.dart';
+// PathService di-import untuk mendapatkan path download otomatis
+import '../../../core/services/path_service.dart';
 
 class FileProvider with ChangeNotifier {
-  final SharedPreferencesService _prefsService = SharedPreferencesService();
-  // ==> GUNAKAN SERVICE BARU <==
+  // SharedPreferencesService dihapus karena tidak lagi digunakan untuk path
   final ApiConfigService _apiConfigService = ApiConfigService();
+  final PathService _pathService = PathService(); // PathService ditambahkan
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -37,8 +37,7 @@ class FileProvider with ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  String? _downloadPath;
-  String? get downloadPath => _downloadPath;
+  // Properti dan metode terkait _downloadPath dihapus
 
   final Map<String, double> _downloadProgress = {};
   double getDownloadProgress(String uniqueName) =>
@@ -105,7 +104,7 @@ class FileProvider with ChangeNotifier {
           await file.delete();
         }
       } catch (e) {
-        // Abaikan error jika file tidak dapat dihapus
+        // Abaikan error
       }
     }
     _selectedDownloadedFiles.clear();
@@ -115,7 +114,7 @@ class FileProvider with ChangeNotifier {
 
   Future<void> _initialize() async {
     await _loadApiConfig();
-    await _loadDownloadPath();
+    // Panggilan ke _loadDownloadPath dihapus
     if (_apiDomain != null && _apiKey != null) {
       await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
     } else {
@@ -126,7 +125,6 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _loadApiConfig() async {
     final config = await _apiConfigService.loadConfig();
     _apiDomain = config['domain'];
@@ -134,7 +132,6 @@ class FileProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> saveApiConfig(String domain, String apiKey) async {
     if (domain.endsWith('/')) {
       domain = domain.substring(0, domain.length - 1);
@@ -146,28 +143,14 @@ class FileProvider with ChangeNotifier {
     await fetchFiles();
   }
 
-  Future<void> _loadDownloadPath() async {
-    _downloadPath = await _prefsService.loadCustomDownloadPath();
-    notifyListeners();
-  }
-
-  Future<void> setDownloadPath(String newPath) async {
-    await _prefsService.saveCustomDownloadPath(newPath);
-    _downloadPath = newPath;
-    await _scanDownloadedFiles();
-    notifyListeners();
-  }
+  // Metode _loadDownloadPath dan setDownloadPath dihapus
 
   Future<void> _scanDownloadedFiles() async {
-    if (_downloadPath == null || _downloadPath!.isEmpty) {
-      _downloadedRspaceFiles = [];
-      _downloadedPerpuskuFiles = [];
-      notifyListeners();
-      return;
-    }
+    // Menggunakan _pathService untuk mendapatkan path download secara dinamis
+    final downloadPath = await _pathService.downloadsPath;
 
     try {
-      final rspaceDir = Directory(path.join(_downloadPath!, 'rspace_download'));
+      final rspaceDir = Directory(path.join(downloadPath, 'rspace_download'));
       if (await rspaceDir.exists()) {
         _downloadedRspaceFiles = rspaceDir
             .listSync()
@@ -178,7 +161,7 @@ class FileProvider with ChangeNotifier {
       }
 
       final perpuskuDir = Directory(
-        path.join(_downloadPath!, 'perpusku_download'),
+        path.join(downloadPath, 'perpusku_download'),
       );
       if (await perpuskuDir.exists()) {
         _downloadedPerpuskuFiles = perpuskuDir
@@ -336,10 +319,6 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<void> downloadAndImportAll(BuildContext context) async {
-    if (_downloadPath == null || _downloadPath!.isEmpty) {
-      throw Exception('Folder tujuan download belum ditentukan.');
-    }
-
     _isDownloading = true;
     notifyListeners();
 
@@ -415,8 +394,9 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<File> _downloadSingleFile(FileItem file, bool isRspaceFile) async {
+    final downloadPath = await _pathService.downloadsPath;
     final subfolder = isRspaceFile ? 'rspace_download' : 'perpusku_download';
-    final downloadsDir = Directory(path.join(_downloadPath!, subfolder));
+    final downloadsDir = Directory(path.join(downloadPath, subfolder));
     if (!await downloadsDir.exists()) {
       await downloadsDir.create(recursive: true);
     }
@@ -438,10 +418,6 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<String> downloadFile(FileItem file, bool isRspaceFile) async {
-    if (_downloadPath == null || _downloadPath!.isEmpty) {
-      throw Exception('Folder tujuan download belum ditentukan.');
-    }
-
     if (Platform.isAndroid) {
       final status = await Permission.manageExternalStorage.request();
       if (!status.isGranted) {
@@ -449,8 +425,9 @@ class FileProvider with ChangeNotifier {
       }
     }
 
+    final downloadPath = await _pathService.downloadsPath;
     final subfolder = isRspaceFile ? 'rspace_download' : 'perpusku_download';
-    final downloadsDir = Directory(path.join(_downloadPath!, subfolder));
+    final downloadsDir = Directory(path.join(downloadPath, subfolder));
 
     if (!await downloadsDir.exists()) {
       await downloadsDir.create(recursive: true);
