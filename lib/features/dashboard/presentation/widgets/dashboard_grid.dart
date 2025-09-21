@@ -1,6 +1,7 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart'; // IMPORT BARU
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:provider/provider.dart';
 import '../../../settings/application/theme_provider.dart';
@@ -27,6 +28,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
+    ),
+    // ==> TAMBAHKAN NAVIGASI BARU DI SINI (SESUAIKAN URUTAN JIKA PERLU)
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PerpuskuTopicPage()),
     ),
     () => Navigator.push(
       context,
@@ -109,6 +115,13 @@ class DashboardGrid extends StatelessWidget {
             'label': 'Topics',
             'subtitle': 'Kelola semua materi Anda',
             'colors': AppTheme.gradientColors1,
+          },
+          // ==> TAMBAHKAN ITEM BARU DI SINI
+          {
+            'icon': Icons.menu_book_outlined,
+            'label': 'Perpusku',
+            'subtitle': 'Jelajahi file materi Anda',
+            'colors': AppTheme.gradientColors8,
           },
           {
             'icon': Icons.task_alt,

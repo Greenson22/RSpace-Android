@@ -1,0 +1,29 @@
+// lib/features/perpusku/domain/models/perpusku_models.dart
+
+class PerpuskuTopic {
+  final String name;
+  final String path;
+  // Jika Anda menyimpan ikon untuk topik Perpusku, bisa ditambahkan di sini
+  // final String icon;
+
+  PerpuskuTopic({required this.name, required this.path});
+}
+
+class PerpuskuSubject {
+  final String name;
+  final String path;
+
+  PerpuskuSubject({required this.name, required this.path});
+}
+
+class PerpuskuFile {
+  final String title;
+  final String fileName;
+  final String path;
+
+  PerpuskuFile({
+    required this.title,
+    required this.fileName,
+    required this.path,
+  });
+}
