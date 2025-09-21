@@ -5,14 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import 'quiz_service.dart';
-// ==> IMPORT TAMBAHAN
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 
 class QuizDetailProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
   final GeminiService _geminiService = GeminiService();
-  // ==> TAMBAHKAN DISCUSSION SERVICE
   final DiscussionService _discussionService = DiscussionService();
 
   QuizTopic topic;
@@ -29,7 +27,6 @@ class QuizDetailProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat mengambil data topik
       topic = await _quizService.getTopic(topic.categoryName, topic.name);
       quizSets = await _quizService.getQuizSetsInTopic(
         topic.categoryName,
@@ -46,7 +43,6 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT PROMPT
   Future<String> generatePromptFromSubject({
     required String subjectJsonPath,
     required int questionCount,
@@ -101,7 +97,6 @@ class QuizDetailProvider with ChangeNotifier {
     return prompt;
   }
 
-  // ==> FUNGSI BARU UNTUK IMPOR JSON
   Future<void> addQuizSetFromJson({
     required String quizSetName,
     required String jsonContent,
@@ -140,7 +135,6 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMBAH PERTANYAAN DARI JSON
   Future<void> addQuestionsToQuizSetFromJson({
     required String quizSetName,
     required String jsonContent,
@@ -296,6 +290,18 @@ class QuizDetailProvider with ChangeNotifier {
 
   Future<void> updateQuestionLimit(int limit) async {
     topic.questionLimit = limit;
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  Future<void> updateTimerEnabled(bool value) async {
+    topic.isTimerEnabled = value;
+    await _quizService.saveTopic(topic);
+    notifyListeners();
+  }
+
+  Future<void> updateTimerDuration(int duration) async {
+    topic.timerDuration = duration > 0 ? duration : 30;
     await _quizService.saveTopic(topic);
     notifyListeners();
   }

@@ -89,27 +89,32 @@ class QuizTopic {
   String name;
   String icon;
   int position;
-  String categoryName; // ==> FIELD BARU
+  String categoryName;
 
   // Pengaturan Kuis
   bool shuffleQuestions;
   int questionLimit; // 0 berarti tanpa batas
-  List<String> includedQuizSets; // Menyimpan nama file dari QuizSet
+  List<String> includedQuizSets;
   bool showCorrectAnswer;
   bool autoAdvanceNextQuestion;
-  int autoAdvanceDelay; // Dalam detik
+  int autoAdvanceDelay;
+  // ==> FIELD BARU UNTUK TIMER <==
+  bool isTimerEnabled;
+  int timerDuration; // Dalam detik
 
   QuizTopic({
     required this.name,
     this.icon = '❓',
     this.position = -1,
-    required this.categoryName, // ==> JADIKAN REQUIRED
+    required this.categoryName,
     this.shuffleQuestions = true,
     this.questionLimit = 0,
     this.includedQuizSets = const [],
     this.showCorrectAnswer = false,
     this.autoAdvanceNextQuestion = false,
     this.autoAdvanceDelay = 2,
+    this.isTimerEnabled = false, // Default nonaktif
+    this.timerDuration = 30, // Default 30 detik
   });
 
   factory QuizTopic.fromConfig(
@@ -119,7 +124,7 @@ class QuizTopic {
   ) {
     return QuizTopic(
       name: name,
-      categoryName: categoryName, // ==> TAMBAHKAN
+      categoryName: categoryName,
       icon: configJson['icon'] as String? ?? '❓',
       position: configJson['position'] as int? ?? -1,
       shuffleQuestions: configJson['shuffleQuestions'] as bool? ?? true,
@@ -129,6 +134,9 @@ class QuizTopic {
       autoAdvanceNextQuestion:
           configJson['autoAdvanceNextQuestion'] as bool? ?? false,
       autoAdvanceDelay: configJson['autoAdvanceDelay'] as int? ?? 2,
+      // ==> BACA DATA TIMER DARI JSON
+      isTimerEnabled: configJson['isTimerEnabled'] as bool? ?? false,
+      timerDuration: configJson['timerDuration'] as int? ?? 30,
     );
   }
 
@@ -142,15 +150,14 @@ class QuizTopic {
       'showCorrectAnswer': showCorrectAnswer,
       'autoAdvanceNextQuestion': autoAdvanceNextQuestion,
       'autoAdvanceDelay': autoAdvanceDelay,
+      // ==> SIMPAN DATA TIMER KE JSON
+      'isTimerEnabled': isTimerEnabled,
+      'timerDuration': timerDuration,
     };
-  }
-
-  Map<String, dynamic> toFullJson() {
-    return {'name': name, 'metadata': toConfigJson()};
   }
 }
 
-// ==> KELAS BARU UNTUK KATEGORI
+// Kelas QuizCategory tidak berubah
 class QuizCategory {
   String name;
   String icon;

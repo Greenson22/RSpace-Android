@@ -8,11 +8,9 @@ class QuizPlayerPage extends StatelessWidget {
   final QuizTopic topic;
   const QuizPlayerPage({super.key, required this.topic});
 
-  // ==> FUNGSI BARU UNTUK KONFIRMASI KELUAR <==
   Future<bool> _onWillPop(BuildContext context) async {
     final provider = Provider.of<QuizPlayerProvider>(context, listen: false);
 
-    // Izinkan keluar tanpa konfirmasi jika kuis sudah selesai atau belum mulai
     if (provider.state != QuizState.playing) {
       return true;
     }
@@ -43,14 +41,39 @@ class QuizPlayerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => QuizPlayerProvider(topic: topic, topicName: topic.name),
+      create: (_) => QuizPlayerProvider(topic: topic),
       child: Consumer<QuizPlayerProvider>(
         builder: (context, provider, child) {
-          // ==> BUNGKUS SCAFFOLD DENGAN WILLPOPSCOPE <==
           return WillPopScope(
             onWillPop: () => _onWillPop(context),
             child: Scaffold(
-              appBar: AppBar(title: Text('Kuis: ${topic.name}')),
+              appBar: AppBar(
+                title: Text('Kuis: ${topic.name}'),
+                actions: [
+                  if (provider.state == QuizState.playing &&
+                      provider.topic.isTimerEnabled)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16.0),
+                      child: Chip(
+                        avatar: Icon(
+                          Icons.timer_outlined,
+                          color: provider.remainingTime <= 10
+                              ? Colors.red
+                              : null,
+                        ),
+                        label: Text(
+                          provider.remainingTime.toString(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: provider.remainingTime <= 10
+                                ? Colors.red
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               body: _buildBody(context, provider),
             ),
           );
@@ -139,21 +162,18 @@ class QuizPlayerPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Tombol Sebelumnya hanya muncul jika bukan pertanyaan pertama
                 if (provider.currentIndex > 0)
                   OutlinedButton(
                     onPressed: provider.previousQuestion,
                     child: const Text('Sebelumnya'),
                   ),
-                // Spacer untuk mendorong tombol berikutnya ke kanan jika tombol sebelumnya tidak ada
-                if (provider.currentIndex == 0) const Spacer(),
-                // Tombol Berikutnya hanya muncul jika bukan pertanyaan terakhir
+                if (provider.currentIndex == 0 && provider.questions.length > 1)
+                  const Spacer(),
                 if (provider.currentIndex < provider.questions.length - 1)
                   ElevatedButton(
                     onPressed: provider.nextQuestion,
                     child: const Text('Berikutnya'),
                   ),
-                // Tombol Selesai hanya muncul di pertanyaan terakhir
                 if (provider.currentIndex == provider.questions.length - 1)
                   ElevatedButton(
                     onPressed: provider.finishQuiz,
