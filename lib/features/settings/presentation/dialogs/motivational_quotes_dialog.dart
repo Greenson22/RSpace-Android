@@ -1,6 +1,7 @@
 // lib/features/settings/presentation/dialogs/motivational_quotes_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 
@@ -22,6 +23,10 @@ class MotivationalQuotesDialog extends StatefulWidget {
 
 class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
   final GeminiService _geminiService = GeminiService();
+  // Controller untuk input jumlah kutipan
+  final TextEditingController _countController = TextEditingController(
+    text: '10',
+  );
   late Future<List<String>> _quotesFuture;
   bool _isGenerating = false;
 
@@ -31,6 +36,12 @@ class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
     _quotesFuture = _geminiService.getSavedMotivationalQuotes();
   }
 
+  @override
+  void dispose() {
+    _countController.dispose();
+    super.dispose();
+  }
+
   void _refreshQuotes() {
     setState(() {
       _quotesFuture = _geminiService.getSavedMotivationalQuotes();
@@ -38,12 +49,21 @@ class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
   }
 
   Future<void> _generateNewQuotes() async {
+    final count = int.tryParse(_countController.text) ?? 10;
+    if (count <= 0) {
+      showAppSnackBar(context, 'Jumlah harus lebih dari 0.', isError: true);
+      return;
+    }
+
     setState(() => _isGenerating = true);
     try {
-      await _geminiService.generateAndSaveMotivationalQuotes(count: 10);
+      await _geminiService.generateAndSaveMotivationalQuotes(count: count);
       _refreshQuotes();
       if (mounted) {
-        showAppSnackBar(context, '10 kutipan motivasi baru berhasil dibuat!');
+        showAppSnackBar(
+          context,
+          '$count kutipan motivasi baru berhasil dibuat!',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -94,6 +114,7 @@ class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
                   }
                   final quotes = snapshot.data!;
                   return ListView.builder(
+                    shrinkWrap: true,
                     itemCount: quotes.length,
                     itemBuilder: (context, index) {
                       final quote = quotes[index];
@@ -117,25 +138,39 @@ class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
           ],
         ),
       ),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 70,
+              child: TextField(
+                controller: _countController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _isGenerating
+                ? const CircularProgressIndicator()
+                : ElevatedButton.icon(
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Buat Baru'),
+                    onPressed: _generateNewQuotes,
+                  ),
+          ],
+        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Tutup'),
         ),
-        _isGenerating
-            ? const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.0),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : ElevatedButton.icon(
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Buat Daftar Baru (AI)'),
-                onPressed: _generateNewQuotes,
-              ),
       ],
     );
   }
