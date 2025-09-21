@@ -5,20 +5,54 @@ import '../../application/quiz_player_provider.dart';
 import '../../domain/models/quiz_model.dart';
 
 class QuizPlayerPage extends StatelessWidget {
-  // ==> DIUBAH: Terima objek QuizTopic, bukan hanya String
   final QuizTopic topic;
   const QuizPlayerPage({super.key, required this.topic});
+
+  // ==> FUNGSI BARU UNTUK KONFIRMASI KELUAR <==
+  Future<bool> _onWillPop(BuildContext context) async {
+    final provider = Provider.of<QuizPlayerProvider>(context, listen: false);
+
+    // Izinkan keluar tanpa konfirmasi jika kuis sudah selesai atau belum mulai
+    if (provider.state != QuizState.playing) {
+      return true;
+    }
+
+    final shouldPop = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Keluar dari Kuis?'),
+        content: const Text('Progres kuis Anda saat ini akan hilang.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Ya, Keluar'),
+          ),
+        ],
+      ),
+    );
+    return shouldPop ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // ==> DIPERBAIKI: Berikan seluruh objek 'topic' ke provider
-      create: (_) => QuizPlayerProvider(topic: topic, topicName: ''),
+      create: (_) => QuizPlayerProvider(topic: topic, topicName: topic.name),
       child: Consumer<QuizPlayerProvider>(
         builder: (context, provider, child) {
-          return Scaffold(
-            appBar: AppBar(title: Text('Kuis: ${topic.name}')),
-            body: _buildBody(context, provider),
+          // ==> BUNGKUS SCAFFOLD DENGAN WILLPOPSCOPE <==
+          return WillPopScope(
+            onWillPop: () => _onWillPop(context),
+            child: Scaffold(
+              appBar: AppBar(title: Text('Kuis: ${topic.name}')),
+              body: _buildBody(context, provider),
+            ),
           );
         },
       ),
@@ -50,7 +84,6 @@ class QuizPlayerPage extends StatelessWidget {
   Widget _buildQuestionView(BuildContext context, QuizPlayerProvider provider) {
     final question = provider.questions[provider.currentIndex];
     final userAnswer = provider.userAnswers[question.id];
-    // ==> DAPATKAN STATUS APAKAH JAWABAN SUDAH DITAMPILKAN
     final isRevealed = provider.isAnswerRevealed(question.id);
 
     return Padding(
@@ -79,12 +112,11 @@ class QuizPlayerPage extends StatelessWidget {
           ...question.options.map((option) {
             bool isSelected = userAnswer == option;
             Color? cardColor;
-            // ==> LOGIKA UNTUK MEWARNAI JAWABAN
             if (isRevealed) {
               if (option.isCorrect) {
-                cardColor = Colors.green.withOpacity(0.3); // Jawaban benar
+                cardColor = Colors.green.withOpacity(0.3);
               } else if (isSelected && !option.isCorrect) {
-                cardColor = Colors.red.withOpacity(0.3); // Jawaban salah
+                cardColor = Colors.red.withOpacity(0.3);
               }
             } else if (isSelected) {
               cardColor = Theme.of(context).primaryColor.withOpacity(0.3);
@@ -95,7 +127,7 @@ class QuizPlayerPage extends StatelessWidget {
               child: ListTile(
                 title: Text(option.text),
                 onTap: isRevealed
-                    ? null // Jangan biarkan pengguna mengubah jawaban jika sudah ditampilkan
+                    ? null
                     : () {
                         provider.answerQuestion(question, option);
                       },
@@ -103,21 +135,25 @@ class QuizPlayerPage extends StatelessWidget {
             );
           }).toList(),
           const Spacer(),
-          // ==> PERUBAHAN LOGIKA PENAMPILAN TOMBOL DI SINI <==
           if (!provider.topic.autoAdvanceNextQuestion)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Tombol Sebelumnya hanya muncul jika bukan pertanyaan pertama
                 if (provider.currentIndex > 0)
                   OutlinedButton(
                     onPressed: provider.previousQuestion,
                     child: const Text('Sebelumnya'),
                   ),
+                // Spacer untuk mendorong tombol berikutnya ke kanan jika tombol sebelumnya tidak ada
+                if (provider.currentIndex == 0) const Spacer(),
+                // Tombol Berikutnya hanya muncul jika bukan pertanyaan terakhir
                 if (provider.currentIndex < provider.questions.length - 1)
                   ElevatedButton(
                     onPressed: provider.nextQuestion,
                     child: const Text('Berikutnya'),
                   ),
+                // Tombol Selesai hanya muncul di pertanyaan terakhir
                 if (provider.currentIndex == provider.questions.length - 1)
                   ElevatedButton(
                     onPressed: provider.finishQuiz,
