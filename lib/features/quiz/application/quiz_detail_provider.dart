@@ -23,8 +23,12 @@ class QuizDetailProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      topic = await _quizService.getTopic(topic.name);
-      quizSets = await _quizService.getQuizSetsInTopic(topic.name);
+      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat mengambil data topik
+      topic = await _quizService.getTopic(topic.categoryName, topic.name);
+      quizSets = await _quizService.getQuizSetsInTopic(
+        topic.categoryName,
+        topic.name,
+      );
 
       if (topic.includedQuizSets.isEmpty && quizSets.isNotEmpty) {
         topic.includedQuizSets = quizSets.map((e) => e.name).toList();
@@ -52,7 +56,12 @@ class QuizDetailProvider with ChangeNotifier {
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
-      await _quizService.saveQuizSet(topic.name, newQuizSet);
+      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menyimpan
+      await _quizService.saveQuizSet(
+        topic.categoryName,
+        topic.name,
+        newQuizSet,
+      );
       await fetchQuizSets();
     } catch (e) {
       rethrow;
@@ -78,7 +87,12 @@ class QuizDetailProvider with ChangeNotifier {
       );
       final newQuizSet = QuizSet(name: quizSetName, questions: newQuestions);
 
-      await _quizService.saveQuizSet(topic.name, newQuizSet);
+      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menyimpan
+      await _quizService.saveQuizSet(
+        topic.categoryName,
+        topic.name,
+        newQuizSet,
+      );
       await fetchQuizSets();
     } catch (e) {
       rethrow;
@@ -105,7 +119,12 @@ class QuizDetailProvider with ChangeNotifier {
 
       final existingSet = quizSets.firstWhere((qs) => qs.name == quizSetName);
       existingSet.questions.addAll(newQuestions);
-      await _quizService.saveQuizSet(topic.name, existingSet);
+      // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menyimpan
+      await _quizService.saveQuizSet(
+        topic.categoryName,
+        topic.name,
+        existingSet,
+      );
       await fetchQuizSets();
     } catch (e) {
       rethrow;
@@ -159,7 +178,12 @@ class QuizDetailProvider with ChangeNotifier {
 
   Future<void> deleteQuizSet(String quizSetName) async {
     topic.includedQuizSets.remove(quizSetName);
-    await _quizService.deleteQuizSet(topic.name, quizSetName);
+    // ==> PERUBAHAN DI SINI: Sertakan categoryName saat menghapus
+    await _quizService.deleteQuizSet(
+      topic.categoryName,
+      topic.name,
+      quizSetName,
+    );
     await _quizService.saveTopic(topic);
     await fetchQuizSets();
   }

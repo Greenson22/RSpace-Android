@@ -11,19 +11,21 @@ import '../../application/quiz_detail_provider.dart';
 import 'quiz_player_page.dart';
 
 class QuizPage extends StatelessWidget {
-  const QuizPage({super.key});
+  final QuizCategory category;
+  const QuizPage({super.key, required this.category});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => QuizProvider(),
-      child: const _QuizView(),
+      create: (_) => QuizProvider(category.name), // Pass category name
+      child: _QuizView(category: category),
     );
   }
 }
 
 class _QuizView extends StatefulWidget {
-  const _QuizView();
+  final QuizCategory category;
+  const _QuizView({required this.category});
 
   @override
   State<_QuizView> createState() => _QuizViewState();
@@ -45,7 +47,7 @@ class _QuizViewState extends State<_QuizView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Topik Kuis'),
+        title: Text('Topik Kuis: ${widget.category.name}'),
         actions: [
           IconButton(
             icon: Icon(_isReorderMode ? Icons.check : Icons.sort),

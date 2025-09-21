@@ -89,6 +89,7 @@ class QuizTopic {
   String name;
   String icon;
   int position;
+  String categoryName; // ==> FIELD BARU
 
   // Pengaturan Kuis
   bool shuffleQuestions;
@@ -102,6 +103,7 @@ class QuizTopic {
     required this.name,
     this.icon = '❓',
     this.position = -1,
+    required this.categoryName, // ==> JADIKAN REQUIRED
     this.shuffleQuestions = true,
     this.questionLimit = 0,
     this.includedQuizSets = const [],
@@ -110,9 +112,14 @@ class QuizTopic {
     this.autoAdvanceDelay = 2,
   });
 
-  factory QuizTopic.fromConfig(String name, Map<String, dynamic> configJson) {
+  factory QuizTopic.fromConfig(
+    String name,
+    String categoryName,
+    Map<String, dynamic> configJson,
+  ) {
     return QuizTopic(
       name: name,
+      categoryName: categoryName, // ==> TAMBAHKAN
       icon: configJson['icon'] as String? ?? '❓',
       position: configJson['position'] as int? ?? -1,
       shuffleQuestions: configJson['shuffleQuestions'] as bool? ?? true,
@@ -140,5 +147,26 @@ class QuizTopic {
 
   Map<String, dynamic> toFullJson() {
     return {'name': name, 'metadata': toConfigJson()};
+  }
+}
+
+// ==> KELAS BARU UNTUK KATEGORI
+class QuizCategory {
+  String name;
+  String icon;
+  int position;
+
+  QuizCategory({required this.name, this.icon = '🗂️', this.position = -1});
+
+  factory QuizCategory.fromJson(String name, Map<String, dynamic> json) {
+    return QuizCategory(
+      name: name,
+      icon: json['icon'] as String? ?? '🗂️',
+      position: json['position'] as int? ?? -1,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'icon': icon, 'position': position};
   }
 }

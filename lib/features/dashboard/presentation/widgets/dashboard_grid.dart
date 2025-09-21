@@ -15,7 +15,7 @@ import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
-import 'package:my_aplication/features/quiz/presentation/pages/quiz_page.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_category_page.dart'; // UBAH IMPORT
 import '../../../webview_page/presentation/pages/webview_page.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -46,7 +46,9 @@ List<VoidCallback> buildDashboardActions(
     ),
     () => Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const QuizPage()),
+      MaterialPageRoute(
+        builder: (_) => const QuizCategoryPage(),
+      ), // UBAH NAVIGASI
     ),
     () => Navigator.push(
       context,

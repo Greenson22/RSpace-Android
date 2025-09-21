@@ -6,6 +6,7 @@ import 'quiz_service.dart';
 
 class QuizProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
+  final String categoryName;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -13,20 +14,20 @@ class QuizProvider with ChangeNotifier {
   List<QuizTopic> _topics = [];
   List<QuizTopic> get topics => _topics;
 
-  QuizProvider() {
+  QuizProvider(this.categoryName) {
     fetchTopics();
   }
 
   Future<void> fetchTopics() async {
     _isLoading = true;
     notifyListeners();
-    _topics = await _quizService.getAllTopics();
+    _topics = await _quizService.getAllTopics(categoryName);
     _isLoading = false;
     notifyListeners();
   }
 
   Future<void> addTopic(String name) async {
-    await _quizService.addTopic(name);
+    await _quizService.addTopic(categoryName, name);
     await fetchTopics();
   }
 
@@ -37,7 +38,7 @@ class QuizProvider with ChangeNotifier {
     final item = _topics.removeAt(oldIndex);
     _topics.insert(newIndex, item);
 
-    await _quizService.saveTopicsOrder(_topics);
+    await _quizService.saveTopicsOrder(categoryName, _topics);
     notifyListeners();
   }
 
@@ -51,6 +52,7 @@ class QuizProvider with ChangeNotifier {
     final topicToUpdate = _topics.firstWhere((t) => t.name == topic.name);
     topicToUpdate.icon = newIcon;
     await _quizService.saveTopicsOrder(
+      categoryName,
       _topics,
     ); // saveTopicsOrder akan menyimpan config individual
     notifyListeners();

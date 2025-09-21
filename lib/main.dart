@@ -6,7 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/core/providers/debug_provider.dart';
-import 'package:my_aplication/features/quiz/application/quiz_provider.dart';
+import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart'; // IMPORT BARU
 import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
@@ -70,7 +70,10 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FinishedDiscussionsProvider()),
         ChangeNotifierProvider(create: (_) => PromptProvider()),
         ChangeNotifierProvider(create: (_) => NeuronProvider()),
-        ChangeNotifierProvider(create: (_) => QuizProvider()),
+        // ==> PERUBAHAN DI SINI <==
+        // QuizProvider dihapus dari sini karena sekarang bergantung pada kategori
+        // QuizCategoryProvider ditambahkan
+        ChangeNotifierProvider(create: (_) => QuizCategoryProvider()),
       ],
       child: const MyApp(),
     ),
