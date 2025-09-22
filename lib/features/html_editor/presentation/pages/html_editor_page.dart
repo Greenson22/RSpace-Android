@@ -80,9 +80,8 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     });
     try {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
-      final content = await provider.readHtmlFromFile(
-        widget.discussion.filePath!,
-      );
+      // ==> PERBAIKAN: Kirim seluruh objek discussion, bukan hanya filePath
+      final content = await provider.readHtmlFromFile(widget.discussion);
 
       _controller = CodeController(text: content, language: xml);
       _previousText = _controller!.text;
@@ -284,10 +283,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     if (_controller == null) return;
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     try {
-      await provider.writeHtmlToFile(
-        widget.discussion.filePath!,
-        _controller!.text,
-      );
+      final correctPath = provider.allDiscussions
+          .firstWhere((d) => d.hashCode == widget.discussion.hashCode)
+          .filePath!;
+
+      await provider.writeHtmlToFile(correctPath, _controller!.text);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -32,6 +32,28 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   Future<void> saveDiscussions();
   void internalNotifyListeners();
 
+  // ==> AWAL PERBAIKAN: Fungsi helper terpusat untuk merekonstruksi path
+  String _getCorrectRelativePath(Discussion discussion) {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+      throw Exception('Path file untuk diskusi ini kosong atau tidak ada.');
+    }
+
+    // Cek jika path sudah lengkap (berisi separator direktori)
+    if (discussion.filePath!.contains('/')) {
+      return discussion.filePath!;
+    }
+
+    // Jika path tidak lengkap (hanya nama file), coba rekonstruksi
+    if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
+      throw Exception(
+        'Gagal merekonstruksi path file: Subject sumber tidak tertaut ke folder PerpusKu.',
+      );
+    }
+
+    return path.join(sourceSubjectLinkedPath!, discussion.filePath!);
+  }
+  // <== AKHIR PERBAIKAN
+
   List<String> get repetitionCodes => kRepetitionCodes;
 
   void toggleSelection(Discussion discussion) {
@@ -154,9 +176,11 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
-  Future<String> readHtmlFromFile(String relativeFilePath) async {
+  // ==> PERBAIKAN: Fungsi ini sekarang menerima objek Discussion untuk mendapatkan konteks path
+  Future<String> readHtmlFromFile(Discussion discussion) async {
+    final String finalRelativePath = _getCorrectRelativePath(discussion);
     final basePath = await getPerpuskuHtmlBasePath();
-    final fullPath = path.join(basePath, relativeFilePath);
+    final fullPath = path.join(basePath, finalRelativePath);
     final file = File(fullPath);
     if (!await file.exists()) {
       throw Exception("File tidak ditemukan: $fullPath");
@@ -195,27 +219,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
         if (targetSubjectLinkedPath != null) {
           try {
-            // ==> AWAL PERBAIKAN: Rekonstruksi path sumber sebelum memindahkan
-            String sourceRelativePath;
-            if (!discussion.filePath!.contains('/')) {
-              // Jika path tidak lengkap, coba rekonstruksi dari path subject sumber
-              if (sourceSubjectLinkedPath != null &&
-                  sourceSubjectLinkedPath!.isNotEmpty) {
-                sourceRelativePath = path.join(
-                  sourceSubjectLinkedPath!,
-                  discussion.filePath!,
-                );
-              } else {
-                // Jika path subject sumber juga tidak ada, lewati pemindahan file
-                log.writeln(
-                  '  > GAGAL: Tidak dapat merekonstruksi path file sumber.',
-                );
-                continue;
-              }
-            } else {
-              sourceRelativePath = discussion.filePath!;
-            }
-            // <== AKHIR PERBAIKAN
+            final sourceRelativePath = _getCorrectRelativePath(discussion);
 
             final newFileName = await discussionService.moveDiscussionFile(
               perpuskuBasePath: perpuskuBasePath,
@@ -223,7 +227,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
               targetSubjectLinkedPath: targetSubjectLinkedPath,
             );
 
-            // ==> PERBAIKAN: Tambahkan null check untuk mencegah error
             if (newFileName != null) {
               discussion.filePath = path.join(
                 targetSubjectLinkedPath,
@@ -298,26 +301,9 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
-      throw Exception('Path tidak lengkap atau tidak ada.');
-    }
+    final finalRelativePath = _getCorrectRelativePath(discussion);
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-
-    String finalRelativePath;
-    if (!discussion.filePath!.contains('/')) {
-      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
-        throw Exception(
-          'Tidak dapat menemukan file karena path subject tidak tertaut.',
-        );
-      }
-      finalRelativePath = path.join(
-        sourceSubjectLinkedPath!,
-        discussion.filePath!,
-      );
-    } else {
-      finalRelativePath = discussion.filePath!;
-    }
     final contentPath = path.join(basePath, finalRelativePath);
 
     final subjectPath = path.dirname(contentPath);
@@ -442,16 +428,15 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   }
 
   Future<void> _openFileWithExternalEditor(Discussion discussion) async {
-    if (discussion.filePath == null) {
-      throw Exception('Path tidak lengkap atau tidak ada.');
-    }
+    // ==> PERBAIKAN: Gunakan helper untuk path yang benar
+    final finalRelativePath = _getCorrectRelativePath(discussion);
 
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-    final contentPath = path.join(basePath, discussion.filePath!);
+    final contentPath = path.join(basePath, finalRelativePath);
 
     if (!await File(contentPath).exists()) {
-      throw Exception('File tidak ditemukan.');
+      throw Exception('File tidak ditemukan: $contentPath');
     }
 
     if (Platform.isLinux) {
