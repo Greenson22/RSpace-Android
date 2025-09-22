@@ -95,9 +95,8 @@ class QuizTopic {
   int autoAdvanceDelay;
   bool isTimerEnabled;
   int timerDuration;
-  // ==> FIELD BARU UNTUK TIMER KESELURUHAN <==
   bool isOverallTimerEnabled;
-  int overallTimerDuration; // Dalam menit
+  int overallTimerDuration;
 
   QuizTopic({
     required this.name,
@@ -112,8 +111,8 @@ class QuizTopic {
     this.autoAdvanceDelay = 2,
     this.isTimerEnabled = false,
     this.timerDuration = 30,
-    this.isOverallTimerEnabled = false, // Default nonaktif
-    this.overallTimerDuration = 10, // Default 10 menit
+    this.isOverallTimerEnabled = false,
+    this.overallTimerDuration = 10,
   });
 
   factory QuizTopic.fromConfig(
@@ -135,7 +134,6 @@ class QuizTopic {
       autoAdvanceDelay: configJson['autoAdvanceDelay'] as int? ?? 2,
       isTimerEnabled: configJson['isTimerEnabled'] as bool? ?? false,
       timerDuration: configJson['timerDuration'] as int? ?? 30,
-      // ==> BACA DATA TIMER KESELURUHAN DARI JSON
       isOverallTimerEnabled:
           configJson['isOverallTimerEnabled'] as bool? ?? false,
       overallTimerDuration: configJson['overallTimerDuration'] as int? ?? 10,
@@ -154,7 +152,6 @@ class QuizTopic {
       'autoAdvanceDelay': autoAdvanceDelay,
       'isTimerEnabled': isTimerEnabled,
       'timerDuration': timerDuration,
-      // ==> SIMPAN DATA TIMER KESELURUHAN KE JSON
       'isOverallTimerEnabled': isOverallTimerEnabled,
       'overallTimerDuration': overallTimerDuration,
     };
@@ -165,8 +162,15 @@ class QuizCategory {
   String name;
   String icon;
   int position;
+  // ==> TAMBAHKAN PROPERTI BARU (TIDAK DISIMPAN DI JSON)
+  List<QuizTopic> topics;
 
-  QuizCategory({required this.name, this.icon = '🗂️', this.position = -1});
+  QuizCategory({
+    required this.name,
+    this.icon = '🗂️',
+    this.position = -1,
+    this.topics = const [], // ==> TAMBAHKAN DI KONSTRUKTOR
+  });
 
   factory QuizCategory.fromJson(String name, Map<String, dynamic> json) {
     return QuizCategory(

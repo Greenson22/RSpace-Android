@@ -19,7 +19,12 @@ class QuizCategoryProvider with ChangeNotifier {
   Future<void> fetchCategories() async {
     _isLoading = true;
     notifyListeners();
+    // Ambil kategori dasar terlebih dahulu
     _categories = await _quizService.getAllCategories();
+    // ==> PERUBAHAN DI SINI: Muat topik untuk setiap kategori
+    for (var category in _categories) {
+      category.topics = await _quizService.getAllTopics(category.name);
+    }
     _isLoading = false;
     notifyListeners();
   }
@@ -39,7 +44,6 @@ class QuizCategoryProvider with ChangeNotifier {
     await fetchCategories();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH IKON
   Future<void> editCategoryIcon(QuizCategory category, String newIcon) async {
     final categoryToUpdate = _categories.firstWhere(
       (c) => c.name == category.name,
@@ -49,13 +53,11 @@ class QuizCategoryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // >> FUNGSI BARU UNTUK RENAME <<
   Future<void> editCategoryName(QuizCategory category, String newName) async {
     await _quizService.renameCategory(category, newName);
     await fetchCategories();
   }
 
-  // >> FUNGSI BARU UNTUK DELETE <<
   Future<void> deleteCategory(QuizCategory category) async {
     await _quizService.deleteCategory(category);
     await fetchCategories();

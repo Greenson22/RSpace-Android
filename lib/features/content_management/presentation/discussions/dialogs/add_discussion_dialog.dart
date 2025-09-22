@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
-import 'package:my_aplication/features/quiz/application/quiz_provider.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart'; // Pastikan model ini diimpor
 import 'package:provider/provider.dart';
 
 // Tipe data untuk hasil dialog
@@ -71,6 +69,11 @@ class _AddDiscussionDialogContentState
     final bool canCreateHtml =
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
+
+    // Set default link type jika tidak bisa membuat HTML
+    if (!canCreateHtml && _linkType == DiscussionLinkType.html) {
+      _linkType = DiscussionLinkType.quiz;
+    }
 
     return AlertDialog(
       title: Text(widget.title),
@@ -168,15 +171,8 @@ class _AddDiscussionDialogContentState
         // Kita secara eksplisit mendeklarasikan tipe variabel `items`.
         final List<DropdownMenuItem<String>> items = provider.categories.expand(
           (category) {
-            // Pertama, kita ambil semua QuizTopic dari provider
-            final quizProvider = Provider.of<QuizProvider>(
-              context,
-              listen: false,
-            );
-            final List<QuizTopic> topics = quizProvider.topics;
-
-            // Kemudian kita map menjadi DropdownMenuItem
-            return topics.map((topic) {
+            // Sekarang kita bisa langsung mengambil `topics` dari `category`
+            return category.topics.map((topic) {
               final path = '${category.name}/${topic.name}';
               return DropdownMenuItem<String>(
                 value: path,
