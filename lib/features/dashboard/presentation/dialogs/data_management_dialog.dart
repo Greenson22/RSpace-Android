@@ -6,9 +6,10 @@ import '../../../finished_discussions/presentation/pages/finished_discussions_pa
 import '../../../link_maintenance/presentation/pages/orphaned_files_page.dart';
 import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
 import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
-// >> 1. IMPORT HALAMAN BARU
 import '../../../exported_discussions_archive/presentation/pages/exported_discussions_page.dart';
-import '../../../progress/presentation/pages/progress_page.dart'; // Import halaman baru
+import '../../../progress/presentation/pages/progress_page.dart';
+// >> IMPORT HALAMAN BARU <<
+import '../../../link_maintenance/presentation/pages/file_path_correction_page.dart';
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {
@@ -57,6 +58,7 @@ class DataManagementDialog extends StatelessWidget {
     return SimpleDialog(
       title: const Text('Kelola & Perawatan Data'),
       children: <Widget>[
+        // >> TAMBAHKAN OPSI MENU BARU DI SINI (SAYA LETAKKAN DI BAWAH) <<
         _buildDialogOption(
           icon: Icons.auto_fix_high_outlined,
           title: 'Tautkan Diskusi Massal',
@@ -70,7 +72,6 @@ class DataManagementDialog extends StatelessWidget {
             );
           },
         ),
-        // >> 2. TAMBAHKAN OPSI MENU BARU DI SINI
         _buildDialogOption(
           icon: Icons.inventory_2_outlined,
           title: 'Lihat Arsip Ekspor',
@@ -147,6 +148,19 @@ class DataManagementDialog extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const BrokenLinksPage()),
+            );
+          },
+        ),
+        // >> INI DIA MENU BARUNYA <<
+        _buildDialogOption(
+          icon: Icons.build_outlined,
+          title: 'Perbaiki Path File Lama',
+          subtitle: 'Migrasikan format filePath lama ke format yang baru.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FilePathCorrectionPage()),
             );
           },
         ),
