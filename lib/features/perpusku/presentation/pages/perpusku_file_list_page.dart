@@ -2,8 +2,10 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
+import 'package:open_file/open_file.dart';
+import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
 import '../../domain/models/perpusku_models.dart';
 
@@ -27,6 +29,7 @@ class _PerpuskuFileListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(title: Text(subject.name)),
@@ -45,16 +48,36 @@ class _PerpuskuFileListView extends StatelessWidget {
                   title: Text(file.title),
                   subtitle: Text(file.fileName),
                   onTap: () async {
-                    final fileContent = await File(file.path).readAsString();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WebViewPage(
-                          title: file.title,
-                          htmlContent: fileContent,
+                    try {
+                      // Logika baru untuk membuka file
+                      if (Platform.isAndroid &&
+                          themeProvider.openInAppBrowser) {
+                        final fileContent = await File(
+                          file.path,
+                        ).readAsString();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => WebViewPage(
+                              title: file.title,
+                              htmlContent: fileContent,
+                            ),
+                          ),
+                        );
+                      } else {
+                        final result = await OpenFile.open(file.path);
+                        if (result.type != ResultType.done) {
+                          throw Exception(result.message);
+                        }
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Gagal membuka file: $e'),
+                          backgroundColor: Colors.red,
                         ),
-                      ),
-                    );
+                      );
+                    }
                   },
                 );
               },
