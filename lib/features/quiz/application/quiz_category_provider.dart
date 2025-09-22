@@ -24,6 +24,16 @@ class QuizCategoryProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reorderCategories(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = _categories.removeAt(oldIndex);
+    _categories.insert(newIndex, item);
+    await _quizService.saveCategoriesOrder(_categories);
+    notifyListeners();
+  }
+
   Future<void> addCategory(String name) async {
     await _quizService.addCategory(name);
     await fetchCategories();

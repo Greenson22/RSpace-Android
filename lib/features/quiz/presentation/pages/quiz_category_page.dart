@@ -1,6 +1,7 @@
 // lib/features/quiz/presentation/pages/quiz_category_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/quiz_category_provider.dart';
 import '../../domain/models/quiz_model.dart';
 import '../widgets/quiz_category_grid_tile.dart';
@@ -30,6 +31,8 @@ class _QuizCategoryView extends StatefulWidget {
 }
 
 class _QuizCategoryViewState extends State<_QuizCategoryView> {
+  bool _isReorderMode = false;
+
   void _showEditIconDialog(BuildContext context, QuizCategory category) {
     final provider = Provider.of<QuizCategoryProvider>(context, listen: false);
     showIconPickerDialog(
@@ -46,12 +49,27 @@ class _QuizCategoryViewState extends State<_QuizCategoryView> {
     final provider = Provider.of<QuizCategoryProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kategori Kuis')),
+      appBar: AppBar(
+        title: const Text('Kategori Kuis'),
+        actions: [
+          IconButton(
+            icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
+            onPressed: () {
+              setState(() {
+                _isReorderMode = !_isReorderMode;
+              });
+            },
+            tooltip: _isReorderMode
+                ? 'Selesai Mengurutkan'
+                : 'Urutkan Kategori',
+          ),
+        ],
+      ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : provider.categories.isEmpty
           ? const Center(child: Text('Belum ada kategori kuis.'))
-          : GridView.builder(
+          : ReorderableGridView.builder(
               padding: const EdgeInsets.all(12.0),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -60,21 +78,27 @@ class _QuizCategoryViewState extends State<_QuizCategoryView> {
                 childAspectRatio: 1.1,
               ),
               itemCount: provider.categories.length,
+              dragEnabled: _isReorderMode,
+              onReorder: (oldIndex, newIndex) {
+                provider.reorderCategories(oldIndex, newIndex);
+              },
               itemBuilder: (context, index) {
                 final category = provider.categories[index];
                 return QuizCategoryGridTile(
                   key: ValueKey(category.name),
                   category: category,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => QuizPage(category: category),
-                      ),
-                    ).then((_) {
-                      // Muat ulang data saat kembali dari halaman detail
-                      provider.fetchCategories();
-                    });
+                    if (!_isReorderMode) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuizPage(category: category),
+                        ),
+                      ).then((_) {
+                        // Muat ulang data saat kembali dari halaman detail
+                        provider.fetchCategories();
+                      });
+                    }
                   },
                   // >> SAMBUNGKAN FUNGSI KE CALLBACK <<
                   onEdit: () => showEditQuizCategoryDialog(context, category),
@@ -84,12 +108,14 @@ class _QuizCategoryViewState extends State<_QuizCategoryView> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showAddQuizCategoryDialog(context);
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _isReorderMode
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                showAddQuizCategoryDialog(context);
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }

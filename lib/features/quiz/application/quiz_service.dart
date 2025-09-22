@@ -154,8 +154,45 @@ class QuizService {
       final config = await _getCategoryConfig(categoryName);
       categories.add(QuizCategory.fromJson(categoryName, config));
     }
-    // ... (sorting logic for categories)
-    return categories;
+
+    final positioned = categories.where((c) => c.position != -1).toList();
+    final unpositioned = categories.where((c) => c.position == -1).toList();
+
+    positioned.sort((a, b) => a.position.compareTo(b.position));
+    int maxPosition = positioned.isNotEmpty
+        ? positioned.map((c) => c.position).reduce((a, b) => a > b ? a : b)
+        : -1;
+
+    for (final category in unpositioned) {
+      maxPosition++;
+      category.position = maxPosition;
+      await saveCategory(category);
+    }
+
+    final allCategories = [...positioned, ...unpositioned];
+    allCategories.sort((a, b) => a.position.compareTo(b.position));
+
+    bool needsResave = false;
+    for (int i = 0; i < allCategories.length; i++) {
+      if (allCategories[i].position != i) {
+        allCategories[i].position = i;
+        needsResave = true;
+      }
+    }
+
+    if (needsResave) {
+      await saveCategoriesOrder(allCategories);
+    }
+
+    return allCategories;
+  }
+
+  Future<void> saveCategoriesOrder(List<QuizCategory> categories) async {
+    for (int i = 0; i < categories.length; i++) {
+      final category = categories[i];
+      category.position = i;
+      await saveCategory(category);
+    }
   }
 
   Future<void> saveCategory(QuizCategory category) async {
@@ -179,7 +216,10 @@ class QuizService {
     final directory = Directory(newCategoryPath);
     if (await directory.exists()) throw Exception('Kategori sudah ada');
     await directory.create();
-    await saveCategory(QuizCategory(name: categoryName));
+    final currentCategories = await getAllCategories();
+    await saveCategory(
+      QuizCategory(name: categoryName, position: currentCategories.length),
+    );
   }
 
   // >> FUNGSI BARU UNTUK RENAME <<
