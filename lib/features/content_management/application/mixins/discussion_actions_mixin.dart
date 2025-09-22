@@ -195,18 +195,48 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
         if (targetSubjectLinkedPath != null) {
           try {
+            // ==> AWAL PERBAIKAN: Rekonstruksi path sumber sebelum memindahkan
+            String sourceRelativePath;
+            if (!discussion.filePath!.contains('/')) {
+              // Jika path tidak lengkap, coba rekonstruksi dari path subject sumber
+              if (sourceSubjectLinkedPath != null &&
+                  sourceSubjectLinkedPath!.isNotEmpty) {
+                sourceRelativePath = path.join(
+                  sourceSubjectLinkedPath!,
+                  discussion.filePath!,
+                );
+              } else {
+                // Jika path subject sumber juga tidak ada, lewati pemindahan file
+                log.writeln(
+                  '  > GAGAL: Tidak dapat merekonstruksi path file sumber.',
+                );
+                continue;
+              }
+            } else {
+              sourceRelativePath = discussion.filePath!;
+            }
+            // <== AKHIR PERBAIKAN
+
             final newFileName = await discussionService.moveDiscussionFile(
               perpuskuBasePath: perpuskuBasePath,
-              sourceRelativePath: discussion.filePath!,
+              sourceRelativePath: sourceRelativePath,
               targetSubjectLinkedPath: targetSubjectLinkedPath,
             );
-            discussion.filePath = path.join(
-              targetSubjectLinkedPath,
-              newFileName!,
-            );
-            log.writeln(
-              '  > File HTML dipindahkan ke "$targetSubjectLinkedPath".',
-            );
+
+            // ==> PERBAIKAN: Tambahkan null check untuk mencegah error
+            if (newFileName != null) {
+              discussion.filePath = path.join(
+                targetSubjectLinkedPath,
+                newFileName,
+              );
+              log.writeln(
+                '  > File HTML dipindahkan ke "$targetSubjectLinkedPath".',
+              );
+            } else {
+              log.writeln(
+                '  > GAGAL memindahkan file HTML: File sumber tidak ditemukan.',
+              );
+            }
           } catch (e) {
             log.writeln('  > GAGAL memindahkan file HTML: $e');
           }
@@ -274,7 +304,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
 
-    // ==> AWAL PERBAIKAN: Logika baru untuk merekonstruksi path
     String finalRelativePath;
     if (!discussion.filePath!.contains('/')) {
       if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
@@ -290,7 +319,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       finalRelativePath = discussion.filePath!;
     }
     final contentPath = path.join(basePath, finalRelativePath);
-    // <== AKHIR PERBAIKAN
 
     final subjectPath = path.dirname(contentPath);
     final indexPath = path.join(subjectPath, 'index.html');
