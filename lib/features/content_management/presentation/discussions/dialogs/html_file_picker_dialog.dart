@@ -71,17 +71,17 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   Future<void> _initializeDialog() async {
     if (widget.initialPath != null && widget.initialPath!.isNotEmpty) {
       try {
-        final fullInitialPath = path.join(widget.basePath, widget.initialPath!);
-        final parts = path.split(fullInitialPath);
+        final parts = path.split(widget.initialPath!);
 
-        if (parts.length > 2) {
-          final subjectDirName = parts[parts.length - 2];
-          final topicDirName = parts[parts.length - 3];
+        if (parts.length >= 2) {
+          _selectedTopic = parts[parts.length - 2];
+          _selectedSubject = parts.last;
 
-          _selectedTopic = topicDirName;
-          _selectedSubject = subjectDirName;
-
-          await _loadFiles(path.dirname(fullInitialPath));
+          final subjectFullPath = path.join(
+            widget.basePath,
+            widget.initialPath!,
+          );
+          await _loadFiles(subjectFullPath);
           setState(() {
             _currentView = _PickerViewState.files;
           });
@@ -245,8 +245,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
       }).toList();
     }
   }
-
-  // Fungsi _selectPerpuskuDataFolder dihapus
 
   Widget _buildGlobalSearchView() {
     if (_filteredGlobalFiles.isEmpty) {
@@ -438,7 +436,6 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
         ),
       ),
       actions: [
-        // Tombol untuk memilih folder PerpusKu dihapus
         if (_currentView != _PickerViewState.topics || _searchQuery.isNotEmpty)
           TextButton(onPressed: _onBackPressed, child: const Text('Kembali')),
         TextButton(

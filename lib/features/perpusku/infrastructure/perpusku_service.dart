@@ -105,7 +105,6 @@ class PerpuskuService {
     return results;
   }
 
-  // >> FUNGSI INI DIPERBARUI UNTUK MENERIMA PARAMETER showHidden <<
   Future<List<PerpuskuTopic>> getTopics({bool showHidden = false}) async {
     final basePath = await _perpuskuBasePath;
     final directory = Directory(basePath);
@@ -134,7 +133,6 @@ class PerpuskuService {
         // Abaikan
       }
 
-      // >> LOGIKA FILTER DITERAPKAN DI SINI <<
       if (showHidden || !isHidden) {
         topics.add(
           PerpuskuTopic(name: topicName, path: dir.path, icon: topicIcon),
