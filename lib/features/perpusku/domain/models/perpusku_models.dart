@@ -3,20 +3,21 @@
 class PerpuskuTopic {
   final String name;
   final String path;
-  final String icon; // ==> PROPERTI BARU DITAMBAHKAN
+  final String icon;
 
-  PerpuskuTopic({
-    required this.name,
-    required this.path,
-    required this.icon, // ==> TAMBAHKAN DI KONSTRUKTOR
-  });
+  PerpuskuTopic({required this.name, required this.path, required this.icon});
 }
 
 class PerpuskuSubject {
   final String name;
   final String path;
+  final String icon; // ==> PROPERTI BARU DITAMBAHKAN
 
-  PerpuskuSubject({required this.name, required this.path});
+  PerpuskuSubject({
+    required this.name,
+    required this.path,
+    required this.icon, // ==> TAMBAHKAN DI KONSTRUKTOR
+  });
 }
 
 class PerpuskuFile {

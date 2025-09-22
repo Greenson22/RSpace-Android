@@ -8,14 +8,14 @@ import '../domain/models/perpusku_models.dart';
 
 class PerpuskuService {
   final PathService _pathService = PathService();
-  static const String _defaultIcon = '📁'; // Default ikon jika config tidak ada
+  static const String _defaultIcon = '📁';
+  static const String _defaultSubjectIcon = '📄'; // Default ikon untuk subjek
 
   Future<String> get _perpuskuBasePath async {
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
     return path.join(perpuskuDataPath, 'file_contents', 'topics');
   }
 
-  // >> FUNGSI INI DIPERBARUI TOTAL <<
   Future<List<PerpuskuTopic>> getTopics() async {
     final basePath = await _perpuskuBasePath;
     final directory = Directory(basePath);
@@ -30,7 +30,6 @@ class PerpuskuService {
       final topicName = path.basename(dir.path);
       String topicIcon = _defaultIcon;
 
-      // Coba baca file config dari direktori RSpace
       try {
         final configPath = await _pathService.getTopicConfigPath(topicName);
         final configFile = File(configPath);
@@ -52,20 +51,47 @@ class PerpuskuService {
     return topics;
   }
 
+  // >> FUNGSI INI DIPERBARUI TOTAL <<
   Future<List<PerpuskuSubject>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
       return [];
     }
 
-    final entities = directory.listSync().whereType<Directory>().toList();
-    return entities
-        .map(
-          (dir) =>
-              PerpuskuSubject(name: path.basename(dir.path), path: dir.path),
-        )
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final entities = directory.listSync().whereType<Directory>();
+    final List<PerpuskuSubject> subjects = [];
+
+    for (final dir in entities) {
+      final subjectName = path.basename(dir.path);
+      String subjectIcon = _defaultSubjectIcon;
+
+      // Coba baca file config dari direktori RSpace
+      try {
+        final topicName = path.basename(topicPath);
+        final subjectJsonPath = await _pathService.getSubjectPath(
+          await _pathService.getTopicPath(topicName),
+          subjectName,
+        );
+        final subjectFile = File(subjectJsonPath);
+        if (await subjectFile.exists()) {
+          final jsonString = await subjectFile.readAsString();
+          if (jsonString.isNotEmpty) {
+            final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+            final metadata = jsonData['metadata'] as Map<String, dynamic>?;
+            subjectIcon = metadata?['icon'] ?? _defaultSubjectIcon;
+          }
+        }
+      } catch (e) {
+        // Abaikan jika gagal membaca, gunakan ikon default
+      }
+
+      subjects.add(
+        PerpuskuSubject(name: subjectName, path: dir.path, icon: subjectIcon),
+      );
+    }
+
+    subjects.sort((a, b) => a.name.compareTo(b.name));
+    return subjects;
   }
 
   Future<List<PerpuskuFile>> getFiles(String subjectPath) async {

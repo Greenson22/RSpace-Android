@@ -38,7 +38,10 @@ class _PerpuskuSubjectView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final subject = provider.subjects[index];
                 return ListTile(
-                  leading: const Icon(Icons.folder_outlined),
+                  leading: Text(
+                    subject.icon,
+                    style: const TextStyle(fontSize: 24),
+                  ),
                   title: Text(subject.name),
                   onTap: () {
                     Navigator.push(
