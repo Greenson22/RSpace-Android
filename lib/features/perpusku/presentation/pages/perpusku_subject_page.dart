@@ -33,60 +33,78 @@ class _PerpuskuSubjectView extends StatefulWidget {
 
 class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
   final TextEditingController _searchController = TextEditingController();
+  // ==> TAMBAHKAN VARIABEL UNTUK MENYIMPAN INSTANCE PROVIDER
+  late PerpuskuProvider _provider;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      Provider.of<PerpuskuProvider>(
-        context,
-        listen: false,
-      ).searchInTopic(widget.topic.path, _searchController.text);
+    // ==> INISIALISASI PROVIDER DI SINI
+    _provider = Provider.of<PerpuskuProvider>(context, listen: false);
+    _provider.addListener(_filterList);
+    _searchController.addListener(_filterList);
+  }
+
+  void _filterList() {
+    // Logika filter tidak perlu diubah, tapi kita bisa panggil _provider
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _provider.clearSearch();
+      } else {
+        _provider.searchInTopic(widget.topic.path, query);
+      }
     });
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_filterList);
     _searchController.dispose();
+    // ==> GUNAKAN INSTANCE PROVIDER YANG SUDAH DISIMPAN
+    _provider.removeListener(_filterList);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<PerpuskuProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.topic.name)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Cari file di dalam topik ini...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+    // Kita bisa menggunakan Consumer di sini agar UI tetap reaktif
+    return Consumer<PerpuskuProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.topic.name)),
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    labelText: 'Cari file di dalam topik ini...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () => _searchController.clear(),
+                          )
+                        : null,
+                  ),
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => _searchController.clear(),
-                      )
-                    : null,
               ),
-            ),
+              Expanded(
+                child: provider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : provider.isSearching
+                    ? _buildSearchResults(context, provider)
+                    : _buildSubjectList(context, provider),
+              ),
+            ],
           ),
-          Expanded(
-            child: provider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : provider.isSearching
-                ? _buildSearchResults(context, provider)
-                : _buildSubjectList(context, provider),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
