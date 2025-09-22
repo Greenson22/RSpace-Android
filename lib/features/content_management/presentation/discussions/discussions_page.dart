@@ -88,7 +88,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     bool isError = false,
     bool isLong = false,
   }) {
-    // Cek mounted di sini untuk keamanan
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -191,33 +190,32 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
   }
 
-  void _addDiscussion(DiscussionProvider provider) {
-    showAddDiscussionDialog(
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
+  void _addDiscussion(DiscussionProvider provider) async {
+    // Panggil dialog baru yang mengembalikan AddDiscussionResult
+    final result = await showAddDiscussionDialog(
       context: context,
       title: 'Tambah Diskusi Baru',
       label: 'Nama Diskusi',
       subjectLinkedPath: widget.linkedPath,
-      discussion: Discussion(discussion: '', repetitionCode: '', points: []),
-      onSave: (name, createHtmlFile) async {
-        try {
-          await provider.addDiscussion(
-            name,
-            createHtmlFile: createHtmlFile,
-            subjectLinkedPath: widget.linkedPath,
-          );
-          if (mounted) {
-            _showSnackBar('Diskusi "$name" berhasil ditambahkan.');
-            await Provider.of<NeuronProvider>(
-              context,
-              listen: false,
-            ).addNeurons(10);
-            showNeuronRewardSnackBar(context, 10);
-          }
-        } catch (e) {
-          _showSnackBar("Gagal: ${e.toString()}", isError: true);
-        }
-      },
     );
+
+    // Proses hasilnya jika dialog tidak dibatalkan
+    if (result != null && mounted) {
+      try {
+        // Panggil provider dengan objek result
+        await provider.addDiscussion(result);
+
+        _showSnackBar('Diskusi "${result.name}" berhasil ditambahkan.');
+        await Provider.of<NeuronProvider>(
+          context,
+          listen: false,
+        ).addNeurons(10);
+        showNeuronRewardSnackBar(context, 10);
+      } catch (e) {
+        _showSnackBar("Gagal: ${e.toString()}", isError: true);
+      }
+    }
   }
 
   void _deleteDiscussion(DiscussionProvider provider, Discussion discussion) {
@@ -235,7 +233,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
           final bool success = await neuronProvider.spendNeurons(15);
 
-          if (!mounted) return; // Cek mounted setelah await
+          if (!mounted) return;
 
           if (success) {
             await provider.deleteDiscussion(discussion);
@@ -284,8 +282,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 foregroundColor: Colors.white,
                 children: [
                   SpeedDialChild(
-                    child: const Icon(Icons.title),
-                    label: 'Tambah dari Judul',
+                    child: const Icon(Icons.note_add_outlined),
+                    label: 'Tambah Diskusi Manual',
                     onTap: () => _addDiscussion(provider),
                   ),
                   SpeedDialChild(

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import 'package:path/path.dart' as path;
@@ -68,9 +69,7 @@ class DiscussionProvider
 
   // GETTERS
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
-
   int get totalDiscussionCount => _allDiscussions.length;
-
   int get finishedDiscussionCount =>
       _allDiscussions.where((d) => d.finished).length;
 
@@ -148,33 +147,36 @@ class DiscussionProvider
   }
 
   // BASIC CRUD (Create, Read, Update, Delete)
-  Future<void> addDiscussion(
-    String name, {
-    bool createHtmlFile = false,
-    String? subjectLinkedPath,
-  }) async {
+  Future<void> addDiscussion(AddDiscussionResult result) async {
     String? newFileName;
-    if (createHtmlFile) {
-      if (subjectLinkedPath == null || subjectLinkedPath.isEmpty) {
+    // Cek jika tipe link adalah HTML dan data link menandakan pembuatan file baru
+    if (result.linkType == DiscussionLinkType.html &&
+        result.linkData == 'create_new') {
+      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
         throw Exception(
           "Tidak dapat membuat file HTML karena Subject ini belum ditautkan ke folder PerpusKu.",
         );
       }
       final createdFileName = await discussionService.createDiscussionFile(
         perpuskuBasePath: await getPerpuskuHtmlBasePath(),
-        subjectLinkedPath: subjectLinkedPath,
-        discussionName: name,
+        subjectLinkedPath: sourceSubjectLinkedPath!,
+        discussionName: result.name,
       );
-      // Simpan path relatif lengkap
-      newFileName = path.join(subjectLinkedPath, createdFileName);
+      // Buat path relatif yang lengkap untuk disimpan
+      newFileName = path.join(sourceSubjectLinkedPath!, createdFileName);
     }
 
     final newDiscussion = Discussion(
-      discussion: name,
+      discussion: result.name,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
-      filePath: newFileName,
+      // Gunakan data dari objek result
+      linkType: result.linkType,
+      filePath: newFileName, // Mungkin null jika bukan link HTML baru
+      quizTopicPath: result.linkType == DiscussionLinkType.quiz
+          ? result.linkData
+          : null,
     );
     _allDiscussions.add(newDiscussion);
 
@@ -197,13 +199,12 @@ class DiscussionProvider
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
+      linkType: DiscussionLinkType.html,
     );
 
-    // createAndLinkHtmlFile sudah menangani pembuatan path relatif yang benar
     await createAndLinkHtmlFile(newDiscussion, subjectLinkedPath);
 
     if (newDiscussion.filePath != null) {
-      // writeHtmlToFile juga menerima path relatif lengkap
       await writeHtmlToFile(newDiscussion.filePath!, htmlContent);
     }
 
@@ -228,7 +229,6 @@ class DiscussionProvider
   }
 
   Future<void> deleteDiscussion(Discussion discussion) async {
-    // ==> AWAL PERBAIKAN: Rekonstruksi path sebelum menghapus
     String? fullPathToDelete;
     if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
       if (!discussion.filePath!.contains('/')) {
@@ -243,14 +243,12 @@ class DiscussionProvider
         fullPathToDelete = discussion.filePath;
       }
     }
-    // <== AKHIR PERBAIKAN
 
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
     filterAndSortDiscussions();
 
     try {
       await saveDiscussions();
-      // Gunakan path yang sudah diperbaiki
       await discussionService.deleteLinkedFile(fullPathToDelete);
     } catch (e) {
       debugPrint("Error during discussion deletion process: $e");

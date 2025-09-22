@@ -1,5 +1,8 @@
-// lib/data/models/discussion_model.dart
+// lib/features/content_management/domain/models/discussion_model.dart
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
+
+// BARU: Enum untuk tipe tautan diskusi
+enum DiscussionLinkType { html, quiz }
 
 class Point {
   String pointText;
@@ -45,8 +48,11 @@ class Discussion {
   bool finished;
   String? finish_date;
   String? filePath;
-  // >> BARU: Field sementara untuk menampung konten HTML dari arsip
   String? archivedHtmlContent;
+
+  // ==> FIELD BARU DITAMBAHKAN
+  final DiscussionLinkType linkType;
+  final String? quizTopicPath; // Format: "CategoryName/TopicName"
 
   Discussion({
     required this.discussion,
@@ -56,7 +62,10 @@ class Discussion {
     this.finished = false,
     this.finish_date,
     this.filePath,
-    this.archivedHtmlContent, // Tambahkan di konstruktor
+    this.archivedHtmlContent,
+    // ==> TAMBAHAN DI KONSTRUKTOR
+    this.linkType = DiscussionLinkType.html, // Default ke html
+    this.quizTopicPath,
   });
 
   Point? get _pointWithMinRepetitionCode {
@@ -64,11 +73,7 @@ class Discussion {
     if (activePoints.isEmpty) {
       return null;
     }
-
-    // >> PERBAIKAN: Logika diubah untuk memprioritaskan kode terkecil (R0D)
-    // Tidak ada lagi logika pemisahan R0D. Semua poin aktif diurutkan.
     activePoints.sort((a, b) {
-      // Urutan pertama berdasarkan indeks kode repetisi (R0D akan menjadi yang terkecil)
       int codeComparison = getRepetitionCodeIndex(
         a.repetitionCode,
       ).compareTo(getRepetitionCodeIndex(b.repetitionCode));
@@ -77,13 +82,11 @@ class Discussion {
         return codeComparison;
       }
 
-      // Jika kodenya sama, urutkan berdasarkan tanggal (yang lebih dulu lebih utama)
       try {
         final dateA = DateTime.parse(a.date);
         final dateB = DateTime.parse(b.date);
         return dateA.compareTo(dateB);
       } catch (e) {
-        // Jika tanggal tidak valid, anggap sama
         return 0;
       }
     });
@@ -115,6 +118,9 @@ class Discussion {
       finished: json['finished'] ?? false,
       finish_date: json['finish_date'],
       filePath: json['filePath'],
+      // ==> MEMBACA DATA BARU DARI JSON
+      linkType: DiscussionLinkType.values[json['linkType'] as int? ?? 0],
+      quizTopicPath: json['quizTopicPath'] as String?,
     );
   }
 
@@ -127,6 +133,9 @@ class Discussion {
       'finished': finished,
       'finish_date': finish_date,
       'filePath': filePath,
+      // ==> MENYIMPAN DATA BARU KE JSON
+      'linkType': linkType.index,
+      'quizTopicPath': quizTopicPath,
     };
   }
 }

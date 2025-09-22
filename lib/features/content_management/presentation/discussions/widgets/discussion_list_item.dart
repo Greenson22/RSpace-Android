@@ -5,6 +5,8 @@ import 'package:my_aplication/features/content_management/presentation/discussio
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/edit_dialogs.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/html_file_picker_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/move_discussion_dialog.dart';
+import 'package:my_aplication/features/quiz/application/quiz_service.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
@@ -23,7 +25,7 @@ class DiscussionListItem extends StatelessWidget {
   final Function(int) onToggleVisibility;
   final String subjectName;
   final String? subjectLinkedPath;
-  final VoidCallback onDelete; // Parameter untuk callback delete
+  final VoidCallback onDelete;
 
   const DiscussionListItem({
     super.key,
@@ -34,7 +36,7 @@ class DiscussionListItem extends StatelessWidget {
     required this.onToggleVisibility,
     required this.subjectName,
     this.subjectLinkedPath,
-    required this.onDelete, // Tambahkan di constructor
+    required this.onDelete,
   });
 
   void _showSnackBar(
@@ -59,10 +61,24 @@ class DiscussionListItem extends StatelessWidget {
     final isFinished = discussion.finished;
     final hasFile =
         discussion.filePath != null && discussion.filePath!.isNotEmpty;
+    // ==> VARIABEL BARU
+    final isQuizLink = discussion.linkType == DiscussionLinkType.quiz;
+    final iconColor = isFinished
+        ? Colors.green
+        : (isSelected ? theme.primaryColor : null);
 
-    IconData iconData = isFinished
-        ? Icons.check_circle
-        : (hasFile ? Icons.link : Icons.chat_bubble_outline);
+    // ==> LOGIKA IKON DIPERBARUI
+    IconData iconData;
+    if (isFinished) {
+      iconData = Icons.check_circle;
+    } else if (isQuizLink) {
+      iconData = Icons.quiz_outlined;
+    } else if (hasFile) {
+      iconData = Icons.link;
+    } else {
+      iconData = Icons.chat_bubble_outline;
+    }
+
     if (isSelected) {
       iconData = Icons.check_circle_outline;
     }
@@ -89,16 +105,18 @@ class DiscussionListItem extends StatelessWidget {
               provider.toggleSelection(discussion);
             },
             leading: IconButton(
-              icon: Icon(
-                iconData,
-                color: isFinished
-                    ? Colors.green
-                    : (isSelected ? theme.primaryColor : null),
-              ),
-              onPressed: hasFile
-                  ? () => provider.openDiscussionFile(discussion, context)
-                  : null,
-              tooltip: hasFile ? 'Buka File' : null,
+              icon: Icon(iconData, color: iconColor),
+              // ==> LOGIKA ONPRESSED DIPERBARUI
+              onPressed: () {
+                if (isQuizLink) {
+                  _startQuiz(context);
+                } else if (hasFile) {
+                  provider.openDiscussionFile(discussion, context);
+                }
+              },
+              tooltip: isQuizLink
+                  ? 'Mulai Kuis'
+                  : (hasFile ? 'Buka File' : null),
             ),
             title: Text(
               discussion.discussion,
@@ -143,7 +161,7 @@ class DiscussionListItem extends StatelessWidget {
                     onFinish: () => _markAsFinished(context, provider),
                     onReactivate: () =>
                         _reactivateDiscussion(context, provider),
-                    onDelete: onDelete, // Gunakan callback dari parameter
+                    onDelete: onDelete,
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
@@ -170,8 +188,31 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // --- PRIVATE HELPER METHODS FOR ACTIONS ---
+  // --- FUNGSI BARU UNTUK MEMULAI KUIS ---
+  void _startQuiz(BuildContext context) async {
+    if (discussion.quizTopicPath == null) return;
+    final pathParts = discussion.quizTopicPath!.split('/');
+    if (pathParts.length != 2) return;
 
+    final categoryName = pathParts[0];
+    final topicName = pathParts[1];
+
+    try {
+      final quizService = QuizService();
+      final topic = await quizService.getTopic(categoryName, topicName);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => QuizPlayerPage(topic: topic)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal memuat kuis: $e")));
+    }
+  }
+
+  // --- PRIVATE HELPER METHODS FOR ACTIONS (TIDAK BERUBAH) ---
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
       context: context,
