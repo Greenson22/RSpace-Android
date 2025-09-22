@@ -1,12 +1,16 @@
 // lib/features/settings/application/theme_provider.dart
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/settings/application/theme_settings_service.dart';
 import 'package:my_aplication/features/settings/domain/models/theme_settings_model.dart';
 import '../../../core/theme/app_theme.dart';
+import 'package:path/path.dart' as path;
 
 class ThemeProvider with ChangeNotifier {
   final ThemeSettingsService _settingsService = ThemeSettingsService();
+  final PathService _pathService = PathService();
   ThemeSettings? _settings;
   bool _isLoading = true;
 
@@ -132,9 +136,22 @@ class ThemeProvider with ChangeNotifier {
     );
 
     if (result != null && result.files.single.path != null) {
+      final sourceFile = File(result.files.single.path!);
+      final assetsPath = await _pathService.assetsPath;
+      final fileExtension = path.extension(sourceFile.path);
+      final destinationPath = path.join(
+        assetsPath,
+        'dashboard_background$fileExtension',
+      );
+      final destinationFile = File(destinationPath);
+
+      // Salin file yang dipilih ke folder assets aplikasi
+      await sourceFile.copy(destinationFile.path);
+
       _saveAndUpdate(
         _settings!.copyWith(
-          backgroundImagePath: () => result.files.single.path,
+          // Simpan path relatif di dalam data aplikasi
+          backgroundImagePath: () => destinationFile.path,
         ),
       );
     }
@@ -142,6 +159,15 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> clearBackgroundImagePath() async {
     if (_settings == null) return;
+
+    // Hapus juga file fisik dari folder assets
+    if (_settings!.backgroundImagePath != null) {
+      final file = File(_settings!.backgroundImagePath!);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
     _saveAndUpdate(_settings!.copyWith(backgroundImagePath: () => null));
   }
 

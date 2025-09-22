@@ -143,6 +143,17 @@ class PathService {
 
   Future<String> get contentsPath async =>
       path.join(await _baseDataPath, 'contents');
+
+  // ==> PENAMBAHAN BARU <==
+  Future<String> get assetsPath async {
+    final dataPath = await _baseDataPath;
+    final assetsDir = Directory(path.join(dataPath, 'assets'));
+    if (!await assetsDir.exists()) {
+      await assetsDir.create(recursive: true);
+    }
+    return assetsDir.path;
+  }
+
   Future<String> get topicsPath async =>
       path.join(await contentsPath, 'topics');
   Future<String> get myTasksPath async =>
