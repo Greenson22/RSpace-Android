@@ -1,6 +1,10 @@
 // lib/features/perpusku/presentation/pages/perpusku_subject_page.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/settings/application/theme_provider.dart';
+import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
+import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
 import '../../domain/models/perpusku_models.dart';
@@ -29,51 +33,27 @@ class _PerpuskuSubjectView extends StatefulWidget {
 
 class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
   final TextEditingController _searchController = TextEditingController();
-  List<PerpuskuSubject> _filteredSubjects = [];
 
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<PerpuskuProvider>(context, listen: false);
-    provider.addListener(_filterList);
-    _searchController.addListener(_filterList);
-  }
-
-  void _filterList() {
-    final provider = Provider.of<PerpuskuProvider>(context, listen: false);
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredSubjects = provider.subjects;
-      } else {
-        _filteredSubjects = provider.subjects
-            .where((s) => s.name.toLowerCase().contains(query))
-            .toList();
-      }
+    _searchController.addListener(() {
+      Provider.of<PerpuskuProvider>(
+        context,
+        listen: false,
+      ).searchInTopic(widget.topic.path, _searchController.text);
     });
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterList);
     _searchController.dispose();
-    Provider.of<PerpuskuProvider>(
-      context,
-      listen: false,
-    ).removeListener(_filterList);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
-
-    // Panggil _filterList saat build pertama kali
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _searchController.text.isEmpty) {
-        _filteredSubjects = provider.subjects;
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.topic.name)),
@@ -84,7 +64,7 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Cari subjek di dalam topik ini...',
+                labelText: 'Cari file di dalam topik ini...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
@@ -101,33 +81,83 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
           Expanded(
             child: provider.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredSubjects.isEmpty
-                ? const Center(child: Text('Tidak ada subjek ditemukan.'))
-                : ListView.builder(
-                    itemCount: _filteredSubjects.length,
-                    itemBuilder: (context, index) {
-                      final subject = _filteredSubjects[index];
-                      return ListTile(
-                        leading: Text(
-                          subject.icon,
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                        title: Text(subject.name),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  PerpuskuFileListPage(subject: subject),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                : provider.isSearching
+                ? _buildSearchResults(context, provider)
+                : _buildSubjectList(context, provider),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSubjectList(BuildContext context, PerpuskuProvider provider) {
+    if (provider.subjects.isEmpty) {
+      return const Center(child: Text('Tidak ada subjek di dalam topik ini.'));
+    }
+    return ListView.builder(
+      itemCount: provider.subjects.length,
+      itemBuilder: (context, index) {
+        final subject = provider.subjects[index];
+        return ListTile(
+          leading: Text(subject.icon, style: const TextStyle(fontSize: 24)),
+          title: Text(subject.name),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PerpuskuFileListPage(subject: subject),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchResults(BuildContext context, PerpuskuProvider provider) {
+    if (provider.searchResults.isEmpty) {
+      return const Center(child: Text('File tidak ditemukan.'));
+    }
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    return ListView.builder(
+      itemCount: provider.searchResults.length,
+      itemBuilder: (context, index) {
+        final file = provider.searchResults[index];
+        return ListTile(
+          leading: const Icon(Icons.description_outlined),
+          title: Text(file.title),
+          subtitle: Text(file.path),
+          onTap: () async {
+            try {
+              if (Platform.isAndroid && themeProvider.openInAppBrowser) {
+                final fileContent = await File(file.path).readAsString();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WebViewPage(
+                      title: file.title,
+                      htmlContent: fileContent,
+                    ),
+                  ),
+                );
+              } else {
+                final result = await OpenFile.open(file.path);
+                if (result.type != ResultType.done) {
+                  throw Exception(result.message);
+                }
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Gagal membuka file: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        );
+      },
     );
   }
 }

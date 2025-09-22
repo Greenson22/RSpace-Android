@@ -10,7 +10,6 @@ class PerpuskuProvider with ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  // State untuk pencarian
   bool _isSearching = false;
   bool get isSearching => _isSearching;
 
@@ -23,7 +22,6 @@ class PerpuskuProvider with ChangeNotifier {
   List<PerpuskuFile> _files = [];
   List<PerpuskuFile> get files => _files;
 
-  // State untuk hasil pencarian
   List<PerpuskuFile> _searchResults = [];
   List<PerpuskuFile> get searchResults => _searchResults;
 
@@ -45,7 +43,6 @@ class PerpuskuProvider with ChangeNotifier {
     _setLoading(false);
   }
 
-  // Metode baru untuk melakukan pencarian
   Future<void> search(String query) async {
     if (query.isEmpty) {
       clearSearch();
@@ -57,7 +54,18 @@ class PerpuskuProvider with ChangeNotifier {
     _setLoading(false);
   }
 
-  // Metode untuk membersihkan hasil pencarian
+  // Metode baru untuk pencarian di dalam topik
+  Future<void> searchInTopic(String topicPath, String query) async {
+    if (query.isEmpty) {
+      clearSearch();
+      return;
+    }
+    _isSearching = true;
+    _setLoading(true);
+    _searchResults = await _service.searchFilesInTopic(topicPath, query);
+    _setLoading(false);
+  }
+
   void clearSearch() {
     _isSearching = false;
     _searchResults = [];

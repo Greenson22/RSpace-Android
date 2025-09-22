@@ -16,7 +16,51 @@ class PerpuskuService {
     return path.join(perpuskuDataPath, 'file_contents', 'topics');
   }
 
-  // >> FUNGSI BARU UNTUK PENCARIAN GLOBAL <<
+  // >> FUNGSI BARU UNTUK PENCARIAN DI DALAM TOPIK SPESIFIK <<
+  Future<List<PerpuskuFile>> searchFilesInTopic(
+    String topicPath,
+    String query,
+  ) async {
+    final List<PerpuskuFile> results = [];
+    final topicDir = Directory(topicPath);
+    final lowerCaseQuery = query.toLowerCase();
+
+    if (!await topicDir.exists()) return [];
+
+    final subjectDirs = topicDir.listSync().whereType<Directory>();
+
+    for (final subjectDir in subjectDirs) {
+      final metadataFile = File(path.join(subjectDir.path, 'metadata.json'));
+      Map<String, String> currentTitles = {};
+      if (await metadataFile.exists()) {
+        final jsonString = await metadataFile.readAsString();
+        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        final content = jsonData['content'] as List<dynamic>? ?? [];
+        currentTitles = {
+          for (var item in content)
+            item['nama_file'] as String: item['judul'] as String,
+        };
+      }
+
+      final htmlFiles = subjectDir.listSync().whereType<File>().where(
+        (f) => f.path.toLowerCase().endsWith('.html'),
+      );
+
+      for (final file in htmlFiles) {
+        final fileName = path.basename(file.path);
+        final title = currentTitles[fileName] ?? fileName;
+
+        if (fileName.toLowerCase().contains(lowerCaseQuery) ||
+            title.toLowerCase().contains(lowerCaseQuery)) {
+          results.add(
+            PerpuskuFile(fileName: fileName, title: title, path: file.path),
+          );
+        }
+      }
+    }
+    return results;
+  }
+
   Future<List<PerpuskuFile>> searchAllFiles(String query) async {
     final List<PerpuskuFile> results = [];
     final basePath = await _perpuskuBasePath;
@@ -53,11 +97,7 @@ class PerpuskuService {
           if (fileName.toLowerCase().contains(lowerCaseQuery) ||
               title.toLowerCase().contains(lowerCaseQuery)) {
             results.add(
-              PerpuskuFile(
-                fileName: fileName,
-                title: title,
-                path: file.path, // Path absolut untuk navigasi
-              ),
+              PerpuskuFile(fileName: fileName, title: title, path: file.path),
             );
           }
         }
@@ -107,7 +147,7 @@ class PerpuskuService {
       return [];
     }
 
-    final entities = directory.listSync().whereType<Directory>();
+    final entities = directory.listSync().whereType<Directory>().toList();
     final List<PerpuskuSubject> subjects = [];
 
     for (final dir in entities) {
