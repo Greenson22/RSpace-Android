@@ -9,11 +9,61 @@ import '../domain/models/perpusku_models.dart';
 class PerpuskuService {
   final PathService _pathService = PathService();
   static const String _defaultIcon = '📁';
-  static const String _defaultSubjectIcon = '📄'; // Default ikon untuk subjek
+  static const String _defaultSubjectIcon = '📄';
 
   Future<String> get _perpuskuBasePath async {
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
     return path.join(perpuskuDataPath, 'file_contents', 'topics');
+  }
+
+  // >> FUNGSI BARU UNTUK PENCARIAN GLOBAL <<
+  Future<List<PerpuskuFile>> searchAllFiles(String query) async {
+    final List<PerpuskuFile> results = [];
+    final basePath = await _perpuskuBasePath;
+    final topicsDir = Directory(basePath);
+    final lowerCaseQuery = query.toLowerCase();
+
+    if (!await topicsDir.exists()) return [];
+
+    final topicDirs = topicsDir.listSync().whereType<Directory>();
+
+    for (final topicDir in topicDirs) {
+      final subjectDirs = topicDir.listSync().whereType<Directory>();
+      for (final subjectDir in subjectDirs) {
+        final metadataFile = File(path.join(subjectDir.path, 'metadata.json'));
+        Map<String, String> currentTitles = {};
+        if (await metadataFile.exists()) {
+          final jsonString = await metadataFile.readAsString();
+          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+          final content = jsonData['content'] as List<dynamic>? ?? [];
+          currentTitles = {
+            for (var item in content)
+              item['nama_file'] as String: item['judul'] as String,
+          };
+        }
+
+        final htmlFiles = subjectDir.listSync().whereType<File>().where(
+          (f) => f.path.toLowerCase().endsWith('.html'),
+        );
+
+        for (final file in htmlFiles) {
+          final fileName = path.basename(file.path);
+          final title = currentTitles[fileName] ?? fileName;
+
+          if (fileName.toLowerCase().contains(lowerCaseQuery) ||
+              title.toLowerCase().contains(lowerCaseQuery)) {
+            results.add(
+              PerpuskuFile(
+                fileName: fileName,
+                title: title,
+                path: file.path, // Path absolut untuk navigasi
+              ),
+            );
+          }
+        }
+      }
+    }
+    return results;
   }
 
   Future<List<PerpuskuTopic>> getTopics() async {
@@ -51,7 +101,6 @@ class PerpuskuService {
     return topics;
   }
 
-  // >> FUNGSI INI DIPERBARUI TOTAL <<
   Future<List<PerpuskuSubject>> getSubjects(String topicPath) async {
     final directory = Directory(topicPath);
     if (!await directory.exists()) {
@@ -65,7 +114,6 @@ class PerpuskuService {
       final subjectName = path.basename(dir.path);
       String subjectIcon = _defaultSubjectIcon;
 
-      // Coba baca file config dari direktori RSpace
       try {
         final topicName = path.basename(topicPath);
         final subjectJsonPath = await _pathService.getSubjectPath(
@@ -100,7 +148,6 @@ class PerpuskuService {
       return [];
     }
 
-    // Baca metadata untuk mendapatkan judul file
     final metadataFile = File(path.join(subjectPath, 'metadata.json'));
     Map<String, String> titles = {};
     if (await metadataFile.exists()) {

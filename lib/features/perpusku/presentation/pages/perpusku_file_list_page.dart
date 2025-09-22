@@ -22,66 +22,139 @@ class PerpuskuFileListPage extends StatelessWidget {
   }
 }
 
-class _PerpuskuFileListView extends StatelessWidget {
+class _PerpuskuFileListView extends StatefulWidget {
   final PerpuskuSubject subject;
   const _PerpuskuFileListView({required this.subject});
+
+  @override
+  State<_PerpuskuFileListView> createState() => __PerpuskuFileListViewState();
+}
+
+class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
+  final TextEditingController _searchController = TextEditingController();
+  List<PerpuskuFile> _filteredFiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = Provider.of<PerpuskuProvider>(context, listen: false);
+    provider.addListener(_filterList);
+    _searchController.addListener(_filterList);
+  }
+
+  void _filterList() {
+    final provider = Provider.of<PerpuskuProvider>(context, listen: false);
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredFiles = provider.files;
+      } else {
+        _filteredFiles = provider.files
+            .where(
+              (f) =>
+                  f.title.toLowerCase().contains(query) ||
+                  f.fileName.toLowerCase().contains(query),
+            )
+            .toList();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterList);
+    _searchController.dispose();
+    Provider.of<PerpuskuProvider>(
+      context,
+      listen: false,
+    ).removeListener(_filterList);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _searchController.text.isEmpty) {
+        _filteredFiles = provider.files;
+      }
+    });
+
     return Scaffold(
-      appBar: AppBar(title: Text(subject.name)),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : provider.files.isEmpty
-          ? const Center(
-              child: Text('Tidak ada file HTML di dalam subjek ini.'),
-            )
-          : ListView.builder(
-              itemCount: provider.files.length,
-              itemBuilder: (context, index) {
-                final file = provider.files[index];
-                return ListTile(
-                  leading: const Icon(Icons.description_outlined),
-                  title: Text(file.title),
-                  subtitle: Text(file.fileName),
-                  onTap: () async {
-                    try {
-                      // Logika baru untuk membuka file
-                      if (Platform.isAndroid &&
-                          themeProvider.openInAppBrowser) {
-                        final fileContent = await File(
-                          file.path,
-                        ).readAsString();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => WebViewPage(
-                              title: file.title,
-                              htmlContent: fileContent,
-                            ),
-                          ),
-                        );
-                      } else {
-                        final result = await OpenFile.open(file.path);
-                        if (result.type != ResultType.done) {
-                          throw Exception(result.message);
-                        }
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Gagal membuka file: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
+      appBar: AppBar(title: Text(widget.subject.name)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Cari file di dalam subjek ini...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _searchController.clear(),
+                      )
+                    : null,
+              ),
             ),
+          ),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredFiles.isEmpty
+                ? const Center(child: Text('Tidak ada file ditemukan.'))
+                : ListView.builder(
+                    itemCount: _filteredFiles.length,
+                    itemBuilder: (context, index) {
+                      final file = _filteredFiles[index];
+                      return ListTile(
+                        leading: const Icon(Icons.description_outlined),
+                        title: Text(file.title),
+                        subtitle: Text(file.fileName),
+                        onTap: () async {
+                          try {
+                            if (Platform.isAndroid &&
+                                themeProvider.openInAppBrowser) {
+                              final fileContent = await File(
+                                file.path,
+                              ).readAsString();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => WebViewPage(
+                                    title: file.title,
+                                    htmlContent: fileContent,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              final result = await OpenFile.open(file.path);
+                              if (result.type != ResultType.done) {
+                                throw Exception(result.message);
+                              }
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal membuka file: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
