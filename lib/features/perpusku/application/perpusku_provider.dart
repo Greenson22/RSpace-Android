@@ -13,6 +13,10 @@ class PerpuskuProvider with ChangeNotifier {
   bool _isSearching = false;
   bool get isSearching => _isSearching;
 
+  // >> STATE BARU UNTUK TOGGLE <<
+  bool _showHiddenTopics = false;
+  bool get showHiddenTopics => _showHiddenTopics;
+
   List<PerpuskuTopic> _topics = [];
   List<PerpuskuTopic> get topics => _topics;
 
@@ -27,8 +31,15 @@ class PerpuskuProvider with ChangeNotifier {
 
   Future<void> fetchTopics() async {
     _setLoading(true);
-    _topics = await _service.getTopics();
+    // >> KIRIM STATUS TOGGLE KE SERVICE <<
+    _topics = await _service.getTopics(showHidden: _showHiddenTopics);
     _setLoading(false);
+  }
+
+  // >> METODE BARU UNTUK MENGUBAH STATE DAN MEMUAT ULANG DATA <<
+  void toggleShowHidden() {
+    _showHiddenTopics = !_showHiddenTopics;
+    fetchTopics(); // Panggil fetchTopics untuk memuat ulang dengan filter baru
   }
 
   Future<void> fetchSubjects(String topicPath) async {
@@ -54,7 +65,6 @@ class PerpuskuProvider with ChangeNotifier {
     _setLoading(false);
   }
 
-  // Metode baru untuk pencarian di dalam topik
   Future<void> searchInTopic(String topicPath, String query) async {
     if (query.isEmpty) {
       clearSearch();

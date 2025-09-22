@@ -54,7 +54,23 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
     final provider = Provider.of<PerpuskuProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Perpusku - Topik')),
+      appBar: AppBar(
+        title: const Text('Perpusku - Topik'),
+        // >> TAMBAHKAN ACTIONS UNTUK MENAMPUNG TOMBOL TOGGLE <<
+        actions: [
+          IconButton(
+            icon: Icon(
+              provider.showHiddenTopics
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+            ),
+            onPressed: () => provider.toggleShowHidden(),
+            tooltip: provider.showHiddenTopics
+                ? 'Sembunyikan Topik Tersembunyi'
+                : 'Tampilkan Topik Tersembunyi',
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -90,8 +106,13 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
 
   Widget _buildTopicList(BuildContext context, PerpuskuProvider provider) {
     if (provider.topics.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada topik ditemukan di Perpusku.'),
+      return Center(
+        child: Text(
+          provider.showHiddenTopics
+              ? 'Tidak ada topik ditemukan di Perpusku.'
+              : 'Tidak ada topik yang terlihat.\nCoba aktifkan "Tampilkan Topik Tersembunyi".',
+          textAlign: TextAlign.center,
+        ),
       );
     }
     return ListView.builder(

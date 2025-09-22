@@ -105,8 +105,8 @@ class PerpuskuService {
     return results;
   }
 
-  // >> FUNGSI INI DIPERBARUI TOTAL <<
-  Future<List<PerpuskuTopic>> getTopics() async {
+  // >> FUNGSI INI DIPERBARUI UNTUK MENERIMA PARAMETER showHidden <<
+  Future<List<PerpuskuTopic>> getTopics({bool showHidden = false}) async {
     final basePath = await _perpuskuBasePath;
     final directory = Directory(basePath);
     if (!await directory.exists()) {
@@ -119,9 +119,8 @@ class PerpuskuService {
     for (final dir in entities) {
       final topicName = path.basename(dir.path);
       String topicIcon = _defaultIcon;
-      bool isHidden = false; // Defaultnya tidak tersembunyi
+      bool isHidden = false;
 
-      // Coba baca file config dari direktori RSpace
       try {
         final configPath = await _pathService.getTopicConfigPath(topicName);
         final configFile = File(configPath);
@@ -129,14 +128,14 @@ class PerpuskuService {
           final jsonString = await configFile.readAsString();
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           topicIcon = jsonData['icon'] ?? _defaultIcon;
-          isHidden = jsonData['isHidden'] ?? false; // Ambil status isHidden
+          isHidden = jsonData['isHidden'] ?? false;
         }
       } catch (e) {
-        // Abaikan jika gagal membaca, gunakan nilai default
+        // Abaikan
       }
 
-      // Hanya tambahkan topik jika tidak disembunyikan
-      if (!isHidden) {
+      // >> LOGIKA FILTER DITERAPKAN DI SINI <<
+      if (showHidden || !isHidden) {
         topics.add(
           PerpuskuTopic(name: topicName, path: dir.path, icon: topicIcon),
         );
@@ -176,7 +175,7 @@ class PerpuskuService {
           }
         }
       } catch (e) {
-        // Abaikan jika gagal membaca, gunakan ikon default
+        // Abaikan
       }
 
       subjects.add(
