@@ -16,7 +16,6 @@ class PerpuskuService {
     return path.join(perpuskuDataPath, 'file_contents', 'topics');
   }
 
-  // >> FUNGSI BARU UNTUK PENCARIAN DI DALAM TOPIK SPESIFIK <<
   Future<List<PerpuskuFile>> searchFilesInTopic(
     String topicPath,
     String query,
@@ -106,6 +105,7 @@ class PerpuskuService {
     return results;
   }
 
+  // >> FUNGSI INI DIPERBARUI TOTAL <<
   Future<List<PerpuskuTopic>> getTopics() async {
     final basePath = await _perpuskuBasePath;
     final directory = Directory(basePath);
@@ -119,7 +119,9 @@ class PerpuskuService {
     for (final dir in entities) {
       final topicName = path.basename(dir.path);
       String topicIcon = _defaultIcon;
+      bool isHidden = false; // Defaultnya tidak tersembunyi
 
+      // Coba baca file config dari direktori RSpace
       try {
         final configPath = await _pathService.getTopicConfigPath(topicName);
         final configFile = File(configPath);
@@ -127,14 +129,18 @@ class PerpuskuService {
           final jsonString = await configFile.readAsString();
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           topicIcon = jsonData['icon'] ?? _defaultIcon;
+          isHidden = jsonData['isHidden'] ?? false; // Ambil status isHidden
         }
       } catch (e) {
-        // Abaikan jika gagal membaca, gunakan ikon default
+        // Abaikan jika gagal membaca, gunakan nilai default
       }
 
-      topics.add(
-        PerpuskuTopic(name: topicName, path: dir.path, icon: topicIcon),
-      );
+      // Hanya tambahkan topik jika tidak disembunyikan
+      if (!isHidden) {
+        topics.add(
+          PerpuskuTopic(name: topicName, path: dir.path, icon: topicIcon),
+        );
+      }
     }
 
     topics.sort((a, b) => a.name.compareTo(b.name));
@@ -147,7 +153,7 @@ class PerpuskuService {
       return [];
     }
 
-    final entities = directory.listSync().whereType<Directory>().toList();
+    final entities = directory.listSync().whereType<Directory>();
     final List<PerpuskuSubject> subjects = [];
 
     for (final dir in entities) {
