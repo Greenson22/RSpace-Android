@@ -88,7 +88,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     });
     try {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
+      // >> PERBAIKAN DI SINI: Gunakan path dari provider dan nama file dari discussion <<
       final content = await provider.readHtmlFromFile(
+        provider.sourceSubjectLinkedPath!,
         widget.discussion.filePath!,
       );
 
@@ -108,7 +110,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  // ... (sisa fungsi seperti _onTextChanged, _findAndRemoveMatchingTag, _handleLineDeletion, dll. TIDAK BERUBAH) ...
+  // ... (fungsi _onTextChanged, dll. tidak berubah) ...
   void _onTextChanged() {
     if (_isAutoEditing) return;
 
@@ -293,9 +295,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     if (_controller == null) return;
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     try {
+      // >> PERBAIKAN UTAMA DI SINI <<
       await provider.writeHtmlToFile(
-        widget.discussion.filePath!,
-        _controller!.text,
+        provider.sourceSubjectLinkedPath!, // Argumen 1: Path folder subject
+        widget.discussion.filePath!, // Argumen 2: Nama file
+        _controller!.text, // Argumen 3: Konten baru
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

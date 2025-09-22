@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
+import 'package:path/path.dart' as path;
 import '../domain/models/discussion_model.dart';
 import '../domain/models/point_preset_model.dart';
 import '../domain/services/discussion_service.dart';
@@ -154,16 +155,15 @@ class DiscussionProvider
     bool createHtmlFile = false,
     String? subjectLinkedPath,
   }) async {
-    String? newFilePath;
+    String? newFileName;
     if (createHtmlFile) {
       if (subjectLinkedPath == null || subjectLinkedPath.isEmpty) {
         throw Exception(
           "Tidak dapat membuat file HTML karena Subject ini belum ditautkan ke folder PerpusKu.",
         );
       }
-      final perpuskuBasePath = await getPerpuskuHtmlBasePath();
-      newFilePath = await discussionService.createDiscussionFile(
-        perpuskuBasePath: perpuskuBasePath,
+      newFileName = await discussionService.createDiscussionFile(
+        perpuskuBasePath: await getPerpuskuHtmlBasePath(),
         subjectLinkedPath: subjectLinkedPath,
         discussionName: name,
       );
@@ -174,11 +174,9 @@ class DiscussionProvider
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
-      filePath: newFilePath,
+      filePath: newFileName,
     );
     _allDiscussions.add(newDiscussion);
-
-    await prefsService.saveNeurons(10);
 
     filterAndSortDiscussions();
     await saveDiscussions();
@@ -204,17 +202,20 @@ class DiscussionProvider
       points: [],
     );
 
-    // 2. Buat file HTML dan tautkan ke diskusi
+    // 2. Buat file HTML dan tautkan ke diskusi (sekarang memanggil dari mixin)
     await createAndLinkHtmlFile(newDiscussion, subjectLinkedPath);
 
-    // 3. Tulis konten HTML yang diberikan pengguna ke file yang baru dibuat
+    // 3. Tulis konten HTML ke file yang baru dibuat (sekarang memanggil dari mixin)
     if (newDiscussion.filePath != null) {
-      await writeHtmlToFile(newDiscussion.filePath!, htmlContent);
+      await writeHtmlToFile(
+        subjectLinkedPath,
+        newDiscussion.filePath!,
+        htmlContent,
+      );
     }
 
     // 4. Tambahkan diskusi ke daftar dan simpan
     _allDiscussions.add(newDiscussion);
-    await prefsService.saveNeurons(10);
     filterAndSortDiscussions();
     await saveDiscussions();
   }
@@ -235,15 +236,19 @@ class DiscussionProvider
   }
 
   Future<void> deleteDiscussion(Discussion discussion) async {
-    final pathToDelete = discussion.filePath;
+    // >> LOGIKA DIPERBARUI: Bangun path lengkap sebelum menghapus <<
+    final fullPathToDelete =
+        (sourceSubjectLinkedPath != null && discussion.filePath != null)
+        ? path.join(sourceSubjectLinkedPath!, discussion.filePath!)
+        : null;
+
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
     filterAndSortDiscussions();
 
     try {
       await saveDiscussions();
-      if (pathToDelete != null) {
-        await discussionService.deleteLinkedFile(pathToDelete);
-      }
+      // Panggil service dengan path yang lengkap
+      await discussionService.deleteLinkedFile(fullPathToDelete);
     } catch (e) {
       debugPrint("Error during discussion deletion process: $e");
       await loadInitialData();

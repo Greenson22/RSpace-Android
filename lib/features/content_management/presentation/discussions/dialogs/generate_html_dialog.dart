@@ -6,7 +6,7 @@ import '../../../application/discussion_provider.dart';
 
 class GenerateHtmlDialog extends StatefulWidget {
   final String discussionName;
-  final String? filePath;
+  final String? filePath; // Ini sekarang hanya nama file
 
   const GenerateHtmlDialog({
     super.key,
@@ -20,14 +20,13 @@ class GenerateHtmlDialog extends StatefulWidget {
 
 class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
   final GeminiService _geminiService = GeminiService();
-  late TextEditingController _textController; // Controller untuk text field
+  late TextEditingController _textController;
   bool _isLoading = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi controller dengan nama diskusi sebagai teks default
     _textController = TextEditingController(text: widget.discussionName);
   }
 
@@ -38,7 +37,6 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
   }
 
   Future<void> _handleGenerate() async {
-    // Periksa apakah input kosong
     if (_textController.text.trim().isEmpty) {
       setState(() {
         _error = 'Pembahasan tidak boleh kosong.';
@@ -52,7 +50,6 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
     });
 
     try {
-      // Gunakan teks dari controller untuk proses generate
       final generatedHtml = await _geminiService.generateHtmlContent(
         _textController.text,
       );
@@ -62,8 +59,16 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
           context,
           listen: false,
         );
-        // Tulis konten yang dihasilkan ke dalam file
-        await provider.writeHtmlToFile(widget.filePath!, generatedHtml);
+
+        // >> PERBAIKAN DI SINI <<
+        // Ambil subjectLinkedPath dari provider dan kirim sebagai argumen pertama.
+        // widget.filePath sekarang adalah nama file (argumen kedua).
+        await provider.writeHtmlToFile(
+          provider.sourceSubjectLinkedPath!, // Argumen ke-1
+          widget.filePath!, // Argumen ke-2
+          generatedHtml, // Argumen ke-3
+        );
+
         if (mounted) {
           Navigator.of(context).pop(true); // Kirim sinyal sukses
         }
@@ -86,7 +91,6 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
     return AlertDialog(
       title: const Text('Generate Konten AI'),
       content: SingleChildScrollView(
-        // Ditambahkan untuk layout yang lebih baik di layar kecil
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,11 +99,10 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
               'Masukkan atau ubah pembahasan di bawah ini untuk dibuatkan konten HTML oleh AI:',
             ),
             const SizedBox(height: 16),
-            // Text field untuk input pengguna
             TextField(
               controller: _textController,
               autofocus: true,
-              maxLines: 5, // Memungkinkan untuk teks yang lebih panjang
+              maxLines: 5,
               decoration: const InputDecoration(
                 labelText: 'Pembahasan',
                 border: OutlineInputBorder(),

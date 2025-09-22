@@ -7,17 +7,59 @@ import '../models/discussion_model.dart';
 import '../../../../core/services/path_service.dart';
 
 class DiscussionService {
-  // ... (fungsi moveDiscussionFile, loadDiscussions, addDiscussion, dll. tetap sama) ...
+  // >> FUNGSI INI DIPERBARUI: SEKARANG MENGEMBALIKAN NAMA FILE SAJA <<
+  Future<String> createDiscussionFile({
+    required String perpuskuBasePath,
+    required String subjectLinkedPath,
+    required String discussionName,
+  }) async {
+    String fileName = discussionName
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(' ', '_')
+        .toLowerCase();
+    fileName = '$fileName.html';
 
+    final directoryPath = path.join(perpuskuBasePath, subjectLinkedPath);
+    final directory = Directory(directoryPath);
+    if (!await directory.exists()) {
+      throw Exception("Direktori tertaut tidak ditemukan: $directoryPath");
+    }
+
+    final filePath = path.join(directoryPath, fileName);
+    final file = File(filePath);
+    if (await file.exists()) {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      fileName = '${path.basenameWithoutExtension(fileName)}_$timestamp.html';
+    }
+
+    final finalFile = File(path.join(directoryPath, fileName));
+    const htmlTemplate = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+</body>
+</html>
+''';
+    await finalFile.writeAsString(htmlTemplate);
+
+    // Hanya kembalikan nama filenya saja
+    return fileName;
+  }
+
+  // >> FUNGSI INI DIPERBARUI: MENGEMBALIKAN NAMA FILE SAJA <<
   Future<String?> moveDiscussionFile({
     required String perpuskuBasePath,
-    required String sourceDiscussionFilePath,
+    required String sourceRelativePath,
     required String targetSubjectLinkedPath,
   }) async {
     try {
-      final sourceFile = File(
-        path.join(perpuskuBasePath, sourceDiscussionFilePath),
-      );
+      final sourceFile = File(path.join(perpuskuBasePath, sourceRelativePath));
       if (!await sourceFile.exists()) {
         return null;
       }
@@ -32,12 +74,40 @@ class DiscussionService {
       }
       final newFilePath = path.join(targetDirectoryPath, fileName);
       await sourceFile.rename(newFilePath);
-      return path.join(targetSubjectLinkedPath, fileName);
+
+      // Hanya kembalikan nama filenya
+      return fileName;
     } catch (e) {
       throw Exception('Gagal memindahkan file fisik: $e');
     }
   }
 
+  // >> FUNGSI INI DIPERBARUI: MENERIMA FULL PATH DARI PEMANGGIL
+  Future<void> deleteLinkedFile(String? fullRelativePath) async {
+    if (fullRelativePath == null || fullRelativePath.isEmpty) {
+      return;
+    }
+    try {
+      final pathService = PathService();
+      final perpuskuBasePath = await pathService.perpuskuDataPath;
+      final fullPath = path.join(
+        perpuskuBasePath,
+        'file_contents',
+        'topics',
+        fullRelativePath,
+      );
+
+      final fileToDelete = File(fullPath);
+      if (await fileToDelete.exists()) {
+        await fileToDelete.delete();
+      }
+    } catch (e) {
+      debugPrint("Error deleting linked file '$fullRelativePath': $e");
+      throw Exception('Gagal menghapus file HTML tertaut: $e');
+    }
+  }
+
+  // ... Sisa fungsi lain (load, save, add, dll) tidak berubah secara signifikan ...
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
@@ -103,75 +173,5 @@ class DiscussionService {
     final discussions = await loadDiscussions(filePath);
     discussions.removeWhere((d) => discussionNames.contains(d.discussion));
     await saveDiscussions(filePath, discussions);
-  }
-
-  Future<void> deleteLinkedFile(String? relativePath) async {
-    if (relativePath == null || relativePath.isEmpty) {
-      return;
-    }
-    try {
-      final pathService = PathService();
-      final perpuskuBasePath = await pathService.perpuskuDataPath;
-      final fullPath = path.join(
-        perpuskuBasePath,
-        'file_contents',
-        'topics',
-        relativePath,
-      );
-
-      final fileToDelete = File(fullPath);
-      if (await fileToDelete.exists()) {
-        await fileToDelete.delete();
-        debugPrint("Successfully deleted linked file: $fullPath");
-      } else {
-        debugPrint("Linked file not found for deletion: $fullPath");
-      }
-    } catch (e) {
-      debugPrint("Error deleting linked file '$relativePath': $e");
-      throw Exception('Gagal menghapus file HTML tertaut: $e');
-    }
-  }
-
-  Future<String> createDiscussionFile({
-    required String perpuskuBasePath,
-    required String subjectLinkedPath,
-    required String discussionName,
-  }) async {
-    String fileName = discussionName
-        .replaceAll(RegExp(r'[^\w\s-]'), '')
-        .replaceAll(' ', '_')
-        .toLowerCase();
-    fileName = '$fileName.html';
-
-    final directoryPath = path.join(perpuskuBasePath, subjectLinkedPath);
-    final directory = Directory(directoryPath);
-    if (!await directory.exists()) {
-      throw Exception("Direktori tertaut tidak ditemukan: $directoryPath");
-    }
-
-    final filePath = path.join(directoryPath, fileName);
-    final file = File(filePath);
-    if (await file.exists()) {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      fileName = '${path.basenameWithoutExtension(fileName)}_$timestamp.html';
-    }
-
-    final finalFile = File(path.join(directoryPath, fileName));
-    const htmlTemplate = '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-
-</body>
-</html>
-''';
-    await finalFile.writeAsString(htmlTemplate);
-
-    return path.join(subjectLinkedPath, fileName);
   }
 }

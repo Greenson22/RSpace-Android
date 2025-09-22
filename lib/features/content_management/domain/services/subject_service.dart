@@ -1,15 +1,16 @@
 // lib/features/content_management/domain/services/subject_service.dart
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
+import 'package:my_aplication/core/services/path_service.dart';
+import 'package:my_aplication/core/services/storage_service.dart';
+import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
-import '../models/discussion_model.dart';
+
 import '../models/subject_model.dart';
 import 'discussion_service.dart';
-import '../../../../core/services/path_service.dart';
-import '../../../../core/services/storage_service.dart';
-import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'subject_repository.dart';
 
 class SubjectService {
@@ -43,17 +44,12 @@ class SubjectService {
         customCodeSortOrder,
       );
 
-      // ==> PERUBAHAN KUNCI DI SINI <==
-      // Sekarang, info relevan (subtitle) juga dihitung dari hasil filter.
-      // Jika hasil filter kosong, subtitle juga akan kosong.
       final relevantDiscussionInfo = await _getRelevantDiscussionInfo(
         discussionsToCount,
         sortPrefs,
         customCodeSortOrder,
       );
 
-      // Hitung repetition code dari diskusi yang sudah difilter dan diurutkan.
-      // Jika discussionsToCount kosong, map ini akan tetap kosong.
       final repetitionCodeCounts = <String, int>{};
       for (final discussion in discussionsToCount) {
         final code = discussion.effectiveRepetitionCode;
@@ -72,6 +68,7 @@ class SubjectService {
           discussionCount: discussions.length,
           finishedDiscussionCount: discussions.where((d) => d.finished).length,
           repetitionCodeCounts: repetitionCodeCounts,
+          topicName: '',
         ),
       );
     }
@@ -188,7 +185,6 @@ class SubjectService {
     return jsonData['metadata'] as Map<String, dynamic>? ?? {};
   }
 
-  // ==> PERUBAHAN: Fungsi ini sekarang lebih sederhana dan menerima list yang sudah difilter
   Future<Map<String, String?>> _getRelevantDiscussionInfo(
     List<Discussion> discussionsToConsider,
     Map<String, dynamic> sortPrefs,
@@ -199,7 +195,6 @@ class SubjectService {
         return {'date': null, 'code': null};
       }
 
-      // Karena list sudah difilter dan diurutkan, kita hanya perlu mengambil item pertama
       final relevantDiscussion = discussionsToConsider.first;
       return {
         'date': relevantDiscussion.effectiveDate,

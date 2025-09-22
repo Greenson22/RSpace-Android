@@ -20,7 +20,7 @@ import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import '../discussion_provider.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
-  // DEPENDENCIES
+  // ... (dependencies dan abstract methods tidak berubah) ...
   DiscussionService get discussionService;
   PathService get pathService;
   String? get sourceSubjectLinkedPath;
@@ -37,6 +37,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   // PROPERTIES
   List<String> get repetitionCodes => kRepetitionCodes;
 
+  // ... (selection actions, lifecycle, dan point actions tidak berubah) ...
   // SELECTION ACTIONS
   void toggleSelection(Discussion discussion) {
     if (selectedDiscussions.contains(discussion)) {
@@ -159,25 +160,32 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
-  // FILE & MOVE ACTIONS
+  // --- PERUBAHAN SIGNIFIKAN DI BAWAH INI ---
+
   Future<String> getPerpuskuHtmlBasePath() async {
     final perpuskuPath = await pathService.perpuskuDataPath;
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
-  Future<String> readHtmlFromFile(String relativePath) async {
+  // >> DIPERBARUI: Sekarang menerima subject's linkedPath dan nama file
+  Future<String> readHtmlFromFile(
+    String subjectLinkedPath,
+    String fileName,
+  ) async {
     final basePath = await getPerpuskuHtmlBasePath();
-    final fullPath = path.join(basePath, relativePath);
+    final fullPath = path.join(basePath, subjectLinkedPath, fileName);
     final file = File(fullPath);
-    if (!await file.exists()) throw Exception("File tidak ditemukan.");
+    if (!await file.exists())
+      throw Exception("File tidak ditemukan: $fullPath");
     return await file.readAsString();
   }
 
+  // >> DIPERBARUI: Hanya menyimpan nama file
   Future<void> updateDiscussionFilePath(
     Discussion discussion,
-    String filePath,
+    String fileName,
   ) async {
-    discussion.filePath = filePath;
+    discussion.filePath = fileName;
     filterAndSortDiscussions();
     await saveDiscussions();
   }
@@ -205,12 +213,18 @@ mixin DiscussionActionsMixin on ChangeNotifier {
         if (sourceSubjectLinkedPath != null &&
             targetSubjectLinkedPath != null) {
           try {
-            final newPath = await discussionService.moveDiscussionFile(
+            // Gabungkan path untuk mendapatkan path sumber yang lengkap
+            final sourceRelativePath = path.join(
+              sourceSubjectLinkedPath!,
+              discussion.filePath!,
+            );
+
+            final newFileName = await discussionService.moveDiscussionFile(
               perpuskuBasePath: perpuskuBasePath,
-              sourceDiscussionFilePath: discussion.filePath!,
+              sourceRelativePath: sourceRelativePath,
               targetSubjectLinkedPath: targetSubjectLinkedPath,
             );
-            discussion.filePath = newPath;
+            discussion.filePath = newFileName;
             log.writeln(
               '  > File HTML dipindahkan ke "$targetSubjectLinkedPath".',
             );
@@ -247,19 +261,25 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     String subjectLinkedPath,
   ) async {
-    final newRelativePath = await discussionService.createDiscussionFile(
+    // Service sekarang mengembalikan nama file saja
+    final newFileName = await discussionService.createDiscussionFile(
       perpuskuBasePath: await getPerpuskuHtmlBasePath(),
       subjectLinkedPath: subjectLinkedPath,
       discussionName: discussion.discussion,
     );
-    discussion.filePath = newRelativePath;
+    discussion.filePath = newFileName;
     filterAndSortDiscussions();
     await saveDiscussions();
   }
 
-  Future<void> writeHtmlToFile(String relativePath, String htmlContent) async {
+  // >> DIPERBARUI: Membutuhkan subject's linkedPath
+  Future<void> writeHtmlToFile(
+    String subjectLinkedPath,
+    String fileName,
+    String htmlContent,
+  ) async {
     final basePath = await getPerpuskuHtmlBasePath();
-    final fullPath = path.join(basePath, relativePath);
+    final fullPath = path.join(basePath, subjectLinkedPath, fileName);
     final file = File(fullPath);
     if (!await file.exists()) throw Exception("File target tidak ditemukan.");
     await file.writeAsString(htmlContent);
@@ -269,10 +289,18 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    if (discussion.filePath == null) throw Exception('Tidak ada path file.');
+    if (sourceSubjectLinkedPath == null || discussion.filePath == null) {
+      throw Exception('Path tidak lengkap atau tidak ada.');
+    }
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-    final contentPath = path.join(basePath, discussion.filePath!);
+
+    // Bangun path lengkap
+    final contentPath = path.join(
+      basePath,
+      sourceSubjectLinkedPath!,
+      discussion.filePath!,
+    );
     final subjectPath = path.dirname(contentPath);
     final indexPath = path.join(subjectPath, 'index.html');
 
@@ -280,6 +308,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       throw Exception('File konten atau index.html tidak ditemukan.');
     }
 
+    // ... sisa logika (parsing HTML, dll) tetap sama
     final contentHtml = await File(contentPath).readAsString();
     final indexHtml = await File(indexPath).readAsString();
     final indexDoc = parse(indexHtml);
@@ -305,23 +334,20 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     if (themeProvider.openInAppBrowser && Platform.isAndroid) {
-      // Buka dengan WebView Internal dan kirim konten HTML langsung
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider.value(
-            // Sediakan instance DiscussionProvider yang sudah ada
             value: this as DiscussionProvider,
             child: WebViewPage(
               title: discussion.discussion,
               htmlContent: finalHtmlContent,
-              discussion: discussion, // Kirim objek discussion
+              discussion: discussion,
             ),
           ),
         ),
       );
     } else {
-      // Untuk platform lain atau jika setelan nonaktif, gunakan file sementara
       final tempDir = await getTemporaryDirectory();
       final tempFile = File(
         path.join(
@@ -339,8 +365,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    // Tampilkan dialog untuk memilih editor
-    // PERBAIKAN DI SINI
     final choice = await showDialog<String?>(
       context: context,
       builder: (context) => AlertDialog(
@@ -362,7 +386,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     );
 
     if (choice == 'internal' && context.mounted) {
-      // Navigasi ke halaman editor internal baru
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -373,16 +396,22 @@ mixin DiscussionActionsMixin on ChangeNotifier {
         ),
       );
     } else if (choice == 'external') {
-      // Logika untuk membuka editor eksternal yang sudah ada
       await _openFileWithExternalEditor(discussion);
     }
   }
 
   Future<void> _openFileWithExternalEditor(Discussion discussion) async {
-    if (discussion.filePath == null) throw Exception('Tidak ada path file.');
+    if (sourceSubjectLinkedPath == null || discussion.filePath == null) {
+      throw Exception('Path tidak lengkap atau tidak ada.');
+    }
+
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-    final contentPath = path.join(basePath, discussion.filePath!);
+    final contentPath = path.join(
+      basePath,
+      sourceSubjectLinkedPath!,
+      discussion.filePath!,
+    );
 
     if (!await File(contentPath).exists()) {
       throw Exception('File tidak ditemukan.');

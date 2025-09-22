@@ -194,21 +194,37 @@ class TopicService {
     }
   }
 
+  // >> FUNGSI INI TELAH DIPERBARUI SECARA SIGNIFIKAN <<
   Future<void> renameTopic(String oldName, String newName) async {
     if (newName.isEmpty) throw Exception('Nama baru tidak boleh kosong.');
-    // Menggunakan await untuk mendapatkan oldPath dan newPath
-    final oldPath = await _pathService.getTopicPath(oldName);
-    final newPath = await _pathService.getTopicPath(newName);
-    final oldDir = Directory(oldPath);
-    if (!await oldDir.exists()) {
+
+    // Path untuk RSpace
+    final oldRspacePath = await _pathService.getTopicPath(oldName);
+    final newRspacePath = await _pathService.getTopicPath(newName);
+    final oldRspaceDir = Directory(oldRspacePath);
+
+    if (!await oldRspaceDir.exists()) {
       throw Exception('Topik yang ingin diubah tidak ditemukan.');
     }
-    if (await Directory(newPath).exists()) {
-      throw Exception('Topik dengan nama "$newName" sudah ada.');
+    if (await Directory(newRspacePath).exists()) {
+      throw Exception('Topik dengan nama "$newName" sudah ada di RSpace.');
     }
+
+    // Path untuk PerpusKu
+    final perpuskuDataPath = await _pathService.perpuskuDataPath;
+    final perpuskuTopicsBasePath = path.join(
+      perpuskuDataPath,
+      'file_contents',
+      'topics',
+    );
+    final oldPerpuskuPath = path.join(perpuskuTopicsBasePath, oldName);
+    final newPerpuskuPath = path.join(perpuskuTopicsBasePath, newName);
+    final oldPerpuskuDir = Directory(oldPerpuskuPath);
+
     try {
+      // 1. Rename folder RSpace dan simpan config baru
       final oldConfig = await _getTopicConfig(oldName);
-      await oldDir.rename(newPath);
+      await oldRspaceDir.rename(newRspacePath);
       final newTopic = Topic(
         name: newName,
         icon: oldConfig['icon'] as String? ?? _defaultIcon,
@@ -216,7 +232,51 @@ class TopicService {
         isHidden: oldConfig['isHidden'] as bool? ?? false,
       );
       await _saveTopicConfig(newTopic);
+
+      // 2. Rename juga folder di PerpusKu jika ada
+      if (await oldPerpuskuDir.exists()) {
+        if (await Directory(newPerpuskuPath).exists()) {
+          debugPrint(
+            'Folder tujuan di PerpusKu sudah ada, tidak jadi me-rename.',
+          );
+        } else {
+          await oldPerpuskuDir.rename(newPerpuskuPath);
+        }
+      }
+
+      // 3. PERBAIKAN: Update linkedPath di semua subject yang terpengaruh
+      final newRspaceDir = Directory(newRspacePath);
+      final subjectFiles = newRspaceDir.listSync().whereType<File>().where(
+        (file) =>
+            file.path.endsWith('.json') &&
+            !path.basename(file.path).contains('config'),
+      );
+
+      for (final subjectFile in subjectFiles) {
+        final jsonString = await subjectFile.readAsString();
+        if (jsonString.isEmpty) continue;
+
+        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        final metadata = jsonData['metadata'] as Map<String, dynamic>?;
+
+        if (metadata != null && metadata.containsKey('linkedPath')) {
+          final oldLinkedPath = metadata['linkedPath'] as String?;
+          if (oldLinkedPath != null && oldLinkedPath.isNotEmpty) {
+            final subjectFolderName = path.split(oldLinkedPath).last;
+            metadata['linkedPath'] = path.join(newName, subjectFolderName);
+
+            // Simpan kembali file JSON dengan metadata yang sudah diperbarui
+            const encoder = JsonEncoder.withIndent('  ');
+            await subjectFile.writeAsString(encoder.convert(jsonData));
+          }
+        }
+      }
     } catch (e) {
+      // Jika gagal, coba kembalikan nama folder RSpace
+      if (!await oldRspaceDir.exists() &&
+          await Directory(newRspacePath).exists()) {
+        await Directory(newRspacePath).rename(oldRspacePath);
+      }
       throw Exception('Gagal mengubah nama topik: $e');
     }
   }
