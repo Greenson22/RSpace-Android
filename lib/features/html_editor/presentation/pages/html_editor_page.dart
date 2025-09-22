@@ -7,7 +7,6 @@ import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
 import '../../../content_management/application/discussion_provider.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
-// ==> IMPORT THEME PROVIDER <==
 import '../../../settings/application/theme_provider.dart';
 import '../themes/editor_themes.dart';
 
@@ -21,7 +20,6 @@ class HtmlEditorPage extends StatefulWidget {
 }
 
 class _HtmlEditorPageState extends State<HtmlEditorPage> {
-  // SharedPreferencesService dihapus dari sini
   CodeController? _controller;
   bool _isLoading = true;
   String? _error;
@@ -40,16 +38,12 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   }
 
   Future<void> _initializeEditor() async {
-    // Panggil _loadTheme sebelum _loadFileContent
     await _loadTheme();
     await _loadFileContent();
   }
 
-  // ==> FUNGSI _loadTheme DIPERBARUI <==
   Future<void> _loadTheme() async {
-    // Ambil theme provider
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    // Ambil nama tema dari provider
     final themeName = themeProvider.htmlEditorTheme;
 
     if (themeName != null) {
@@ -62,13 +56,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  // ==> FUNGSI _handleThemeChanged DIPERBARUI <==
   Future<void> _handleThemeChanged(EditorTheme? newTheme) async {
     if (newTheme != null) {
       setState(() {
         _selectedTheme = newTheme;
       });
-      // Panggil provider untuk menyimpan tema baru
       final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
       await themeProvider.saveHtmlEditorTheme(newTheme.name);
     }
@@ -88,9 +80,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     });
     try {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
-      // >> PERBAIKAN DI SINI: Gunakan path dari provider dan nama file dari discussion <<
       final content = await provider.readHtmlFromFile(
-        provider.sourceSubjectLinkedPath!,
         widget.discussion.filePath!,
       );
 
@@ -110,7 +100,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  // ... (fungsi _onTextChanged, dll. tidak berubah) ...
   void _onTextChanged() {
     if (_isAutoEditing) return;
 
@@ -295,11 +284,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     if (_controller == null) return;
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     try {
-      // >> PERBAIKAN UTAMA DI SINI <<
       await provider.writeHtmlToFile(
-        provider.sourceSubjectLinkedPath!, // Argumen 1: Path folder subject
-        widget.discussion.filePath!, // Argumen 2: Nama file
-        _controller!.text, // Argumen 3: Konten baru
+        widget.discussion.filePath!,
+        _controller!.text,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -64,7 +64,6 @@ class DiscussionProvider
   @override
   List<String> get repetitionCodeOrder => _repetitionCodeOrder;
 
-  // ==> STATE BARU UNTUK MENYIMPAN BOBOT HARI <==
   Map<String, int> _repetitionCodeDays = {};
 
   // GETTERS
@@ -107,7 +106,6 @@ class DiscussionProvider
     try {
       _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
       _repetitionCodeOrder = await prefsService.loadRepetitionCodeOrder();
-      // ==> MUAT BOBOT HARI <==
       _repetitionCodeDays = await prefsService.loadRepetitionCodeDays();
       filterAndSortDiscussions();
     } finally {
@@ -182,19 +180,16 @@ class DiscussionProvider
     await saveDiscussions();
   }
 
-  /// Memanggil AI untuk mendapatkan beberapa saran judul berdasarkan konten HTML.
   Future<List<String>> getTitlesFromContent(String htmlContent) async {
     final geminiService = GeminiService();
     return await geminiService.generateDiscussionTitles(htmlContent);
   }
 
-  /// Membuat dan menyimpan diskusi baru dengan judul dan konten yang sudah ditentukan.
   Future<void> addDiscussionWithPredefinedTitle({
     required String title,
     required String htmlContent,
     required String subjectLinkedPath,
   }) async {
-    // 1. Buat diskusi baru di memori
     final newDiscussion = Discussion(
       discussion: title,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -202,19 +197,12 @@ class DiscussionProvider
       points: [],
     );
 
-    // 2. Buat file HTML dan tautkan ke diskusi (sekarang memanggil dari mixin)
     await createAndLinkHtmlFile(newDiscussion, subjectLinkedPath);
 
-    // 3. Tulis konten HTML ke file yang baru dibuat (sekarang memanggil dari mixin)
     if (newDiscussion.filePath != null) {
-      await writeHtmlToFile(
-        subjectLinkedPath,
-        newDiscussion.filePath!,
-        htmlContent,
-      );
+      await writeHtmlToFile(newDiscussion.filePath!, htmlContent);
     }
 
-    // 4. Tambahkan diskusi ke daftar dan simpan
     _allDiscussions.add(newDiscussion);
     filterAndSortDiscussions();
     await saveDiscussions();
@@ -236,18 +224,13 @@ class DiscussionProvider
   }
 
   Future<void> deleteDiscussion(Discussion discussion) async {
-    // >> LOGIKA DIPERBARUI: Bangun path lengkap sebelum menghapus <<
-    final fullPathToDelete =
-        (sourceSubjectLinkedPath != null && discussion.filePath != null)
-        ? path.join(sourceSubjectLinkedPath!, discussion.filePath!)
-        : null;
+    final fullPathToDelete = discussion.filePath;
 
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
     filterAndSortDiscussions();
 
     try {
       await saveDiscussions();
-      // Panggil service dengan path yang lengkap
       await discussionService.deleteLinkedFile(fullPathToDelete);
     } catch (e) {
       debugPrint("Error during discussion deletion process: $e");
@@ -262,7 +245,6 @@ class DiscussionProvider
     saveDiscussions();
   }
 
-  // ==> PERBARUI FUNGSI YANG MEMANGGIL getNewDateForRepetitionCode <==
   @override
   void updateDiscussionCode(Discussion discussion, String newCode) {
     discussion.repetitionCode = newCode;

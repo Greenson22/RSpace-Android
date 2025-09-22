@@ -20,7 +20,6 @@ import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import '../discussion_provider.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
-  // ... (dependencies dan abstract methods tidak berubah) ...
   DiscussionService get discussionService;
   PathService get pathService;
   String? get sourceSubjectLinkedPath;
@@ -29,16 +28,12 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   List<Discussion> get filteredDiscussions;
   Set<Discussion> get selectedDiscussions;
 
-  // ABSTRACT METHODS TO BE IMPLEMENTED BY THE MAIN PROVIDER
   void filterAndSortDiscussions();
   Future<void> saveDiscussions();
-  void internalNotifyListeners(); // Helper to call notifyListeners()
+  void internalNotifyListeners();
 
-  // PROPERTIES
   List<String> get repetitionCodes => kRepetitionCodes;
 
-  // ... (selection actions, lifecycle, dan point actions tidak berubah) ...
-  // SELECTION ACTIONS
   void toggleSelection(Discussion discussion) {
     if (selectedDiscussions.contains(discussion)) {
       selectedDiscussions.remove(discussion);
@@ -58,7 +53,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     internalNotifyListeners();
   }
 
-  // LIFECYCLE & METADATA ACTIONS
   void renameDiscussion(Discussion discussion, String newName) {
     discussion.discussion = newName;
     filterAndSortDiscussions();
@@ -78,7 +72,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     saveDiscussions();
   }
 
-  // This should be implemented by the main provider
   void updateDiscussionCode(Discussion discussion, String newCode);
 
   void markAsFinished(Discussion discussion) {
@@ -97,7 +90,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     saveDiscussions();
   }
 
-  // POINT ACTIONS
   void renamePoint(Point point, String newName) {
     point.pointText = newName;
     internalNotifyListeners();
@@ -115,14 +107,12 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     saveDiscussions();
   }
 
-  // This should be implemented by the main provider
   void updatePointCode(Point point, String newCode);
 
   void markPointAsFinished(Point point) {
     point.finished = true;
     point.finish_date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    // Check if parent discussion should be marked as finished
     final parent = allDiscussions.firstWhere((d) => d.points.contains(point));
     if (parent.points.every((p) => p.finished)) {
       markAsFinished(parent);
@@ -138,7 +128,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     point.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
     point.repetitionCode = 'R0D';
 
-    // Check if parent discussion should be reactivated
     final parent = allDiscussions.firstWhere((d) => d.points.contains(point));
     if (parent.finished) {
       reactivateDiscussion(parent);
@@ -160,32 +149,28 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
-  // --- PERUBAHAN SIGNIFIKAN DI BAWAH INI ---
-
   Future<String> getPerpuskuHtmlBasePath() async {
     final perpuskuPath = await pathService.perpuskuDataPath;
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
-  // >> DIPERBARUI: Sekarang menerima subject's linkedPath dan nama file
-  Future<String> readHtmlFromFile(
-    String subjectLinkedPath,
-    String fileName,
-  ) async {
+  // >> PERUBAIKAN: Parameter kedua sekarang adalah full relative path
+  Future<String> readHtmlFromFile(String relativeFilePath) async {
     final basePath = await getPerpuskuHtmlBasePath();
-    final fullPath = path.join(basePath, subjectLinkedPath, fileName);
+    final fullPath = path.join(basePath, relativeFilePath);
     final file = File(fullPath);
-    if (!await file.exists())
+    if (!await file.exists()) {
       throw Exception("File tidak ditemukan: $fullPath");
+    }
     return await file.readAsString();
   }
 
-  // >> DIPERBARUI: Hanya menyimpan nama file
+  // >> PERBAIKAN: Parameter kedua sekarang adalah full relative path
   Future<void> updateDiscussionFilePath(
     Discussion discussion,
-    String fileName,
+    String newRelativePath,
   ) async {
-    discussion.filePath = fileName;
+    discussion.filePath = newRelativePath;
     filterAndSortDiscussions();
     await saveDiscussions();
   }
@@ -209,22 +194,20 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 
     for (final discussion in toMove) {
       log.writeln('Memindahkan: "${discussion.discussion}"');
+      // Tidak perlu perubahan di sini karena filePath sudah benar
       if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
-        if (sourceSubjectLinkedPath != null &&
-            targetSubjectLinkedPath != null) {
+        if (targetSubjectLinkedPath != null) {
           try {
-            // Gabungkan path untuk mendapatkan path sumber yang lengkap
-            final sourceRelativePath = path.join(
-              sourceSubjectLinkedPath!,
-              discussion.filePath!,
-            );
-
             final newFileName = await discussionService.moveDiscussionFile(
               perpuskuBasePath: perpuskuBasePath,
-              sourceRelativePath: sourceRelativePath,
+              sourceRelativePath: discussion.filePath!, // Gunakan path lengkap
               targetSubjectLinkedPath: targetSubjectLinkedPath,
             );
-            discussion.filePath = newFileName;
+            // Simpan path relatif yang baru
+            discussion.filePath = path.join(
+              targetSubjectLinkedPath,
+              newFileName!,
+            );
             log.writeln(
               '  > File HTML dipindahkan ke "$targetSubjectLinkedPath".',
             );
@@ -233,7 +216,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
           }
         } else {
           log.writeln(
-            '  > File HTML tidak dipindahkan (sumber/tujuan tidak tertaut).',
+            '  > File HTML tidak dipindahkan (tujuan tidak tertaut).',
           );
         }
       }
@@ -257,50 +240,48 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     return log.toString();
   }
 
+  // >> PERBAIKAN: Pastikan menyimpan path relatif yang lengkap
   Future<void> createAndLinkHtmlFile(
     Discussion discussion,
     String subjectLinkedPath,
   ) async {
-    // Service sekarang mengembalikan nama file saja
     final newFileName = await discussionService.createDiscussionFile(
       perpuskuBasePath: await getPerpuskuHtmlBasePath(),
       subjectLinkedPath: subjectLinkedPath,
       discussionName: discussion.discussion,
     );
-    discussion.filePath = newFileName;
+    discussion.filePath = path.join(subjectLinkedPath, newFileName);
     filterAndSortDiscussions();
     await saveDiscussions();
   }
 
-  // >> DIPERBARUI: Membutuhkan subject's linkedPath
+  // >> PERBAIKAN: Menerima full relative path
   Future<void> writeHtmlToFile(
-    String subjectLinkedPath,
-    String fileName,
+    String relativeFilePath,
     String htmlContent,
   ) async {
     final basePath = await getPerpuskuHtmlBasePath();
-    final fullPath = path.join(basePath, subjectLinkedPath, fileName);
+    final fullPath = path.join(basePath, relativeFilePath);
     final file = File(fullPath);
-    if (!await file.exists()) throw Exception("File target tidak ditemukan.");
+    if (!await file.exists()) {
+      throw Exception("File target tidak ditemukan: $fullPath");
+    }
     await file.writeAsString(htmlContent);
   }
 
+  // >> PERBAIKAN UTAMA: Cara membangun path disederhanakan
   Future<void> openDiscussionFile(
     Discussion discussion,
     BuildContext context,
   ) async {
-    if (sourceSubjectLinkedPath == null || discussion.filePath == null) {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Path tidak lengkap atau tidak ada.');
     }
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
 
-    // Bangun path lengkap
-    final contentPath = path.join(
-      basePath,
-      sourceSubjectLinkedPath!,
-      discussion.filePath!,
-    );
+    // Cukup gabungkan base path dengan file path dari diskusi
+    final contentPath = path.join(basePath, discussion.filePath!);
     final subjectPath = path.dirname(contentPath);
     final indexPath = path.join(subjectPath, 'index.html');
 
@@ -308,7 +289,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       throw Exception('File konten atau index.html tidak ditemukan.');
     }
 
-    // ... sisa logika (parsing HTML, dll) tetap sama
     final contentHtml = await File(contentPath).readAsString();
     final indexHtml = await File(indexPath).readAsString();
     final indexDoc = parse(indexHtml);
@@ -400,18 +380,15 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
+  // >> PERBAIKAN: Path builder disederhanakan
   Future<void> _openFileWithExternalEditor(Discussion discussion) async {
-    if (sourceSubjectLinkedPath == null || discussion.filePath == null) {
+    if (discussion.filePath == null) {
       throw Exception('Path tidak lengkap atau tidak ada.');
     }
 
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
-    final contentPath = path.join(
-      basePath,
-      sourceSubjectLinkedPath!,
-      discussion.filePath!,
-    );
+    final contentPath = path.join(basePath, discussion.filePath!);
 
     if (!await File(contentPath).exists()) {
       throw Exception('File tidak ditemukan.');

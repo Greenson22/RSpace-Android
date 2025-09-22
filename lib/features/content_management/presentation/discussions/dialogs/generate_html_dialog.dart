@@ -6,7 +6,8 @@ import '../../../application/discussion_provider.dart';
 
 class GenerateHtmlDialog extends StatefulWidget {
   final String discussionName;
-  final String? filePath; // Ini sekarang hanya nama file
+  // >> PERUBAHAN DI SINI: Sekarang menerima path relatif yang lengkap <<
+  final String? filePath;
 
   const GenerateHtmlDialog({
     super.key,
@@ -60,14 +61,9 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
           listen: false,
         );
 
-        // >> PERBAIKAN DI SINI <<
-        // Ambil subjectLinkedPath dari provider dan kirim sebagai argumen pertama.
-        // widget.filePath sekarang adalah nama file (argumen kedua).
-        await provider.writeHtmlToFile(
-          provider.sourceSubjectLinkedPath!, // Argumen ke-1
-          widget.filePath!, // Argumen ke-2
-          generatedHtml, // Argumen ke-3
-        );
+        // >> PERBAIKAN UTAMA DI SINI <<
+        // Langsung gunakan widget.filePath yang sudah berisi path relatif lengkap.
+        await provider.writeHtmlToFile(widget.filePath!, generatedHtml);
 
         if (mounted) {
           Navigator.of(context).pop(true); // Kirim sinyal sukses
