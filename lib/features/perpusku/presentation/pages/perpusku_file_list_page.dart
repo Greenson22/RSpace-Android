@@ -33,16 +33,17 @@ class _PerpuskuFileListView extends StatefulWidget {
 class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   final TextEditingController _searchController = TextEditingController();
   List<PerpuskuFile> _filteredFiles = [];
-  // ==> TAMBAHKAN VARIABEL UNTUK MENYIMPAN INSTANCE PROVIDER
   late PerpuskuProvider _provider;
 
   @override
   void initState() {
     super.initState();
-    // ==> INISIALISASI PROVIDER DI SINI
     _provider = Provider.of<PerpuskuProvider>(context, listen: false);
     _provider.addListener(_filterList);
     _searchController.addListener(_filterList);
+
+    // Inisialisasi daftar filter dengan data awal
+    _filteredFiles = _provider.files;
   }
 
   void _filterList() {
@@ -66,7 +67,6 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   void dispose() {
     _searchController.removeListener(_filterList);
     _searchController.dispose();
-    // ==> GUNAKAN INSTANCE PROVIDER YANG SUDAH DISIMPAN
     _provider.removeListener(_filterList);
     super.dispose();
   }
@@ -75,14 +75,6 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _searchController.text.isEmpty) {
-        setState(() {
-          _filteredFiles = provider.files;
-        });
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.subject.name)),
