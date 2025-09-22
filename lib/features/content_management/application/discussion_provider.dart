@@ -160,11 +160,13 @@ class DiscussionProvider
           "Tidak dapat membuat file HTML karena Subject ini belum ditautkan ke folder PerpusKu.",
         );
       }
-      newFileName = await discussionService.createDiscussionFile(
+      final createdFileName = await discussionService.createDiscussionFile(
         perpuskuBasePath: await getPerpuskuHtmlBasePath(),
         subjectLinkedPath: subjectLinkedPath,
         discussionName: name,
       );
+      // Simpan path relatif lengkap
+      newFileName = path.join(subjectLinkedPath, createdFileName);
     }
 
     final newDiscussion = Discussion(
@@ -197,9 +199,11 @@ class DiscussionProvider
       points: [],
     );
 
+    // createAndLinkHtmlFile sudah menangani pembuatan path relatif yang benar
     await createAndLinkHtmlFile(newDiscussion, subjectLinkedPath);
 
     if (newDiscussion.filePath != null) {
+      // writeHtmlToFile juga menerima path relatif lengkap
       await writeHtmlToFile(newDiscussion.filePath!, htmlContent);
     }
 
@@ -224,13 +228,29 @@ class DiscussionProvider
   }
 
   Future<void> deleteDiscussion(Discussion discussion) async {
-    final fullPathToDelete = discussion.filePath;
+    // ==> AWAL PERBAIKAN: Rekonstruksi path sebelum menghapus
+    String? fullPathToDelete;
+    if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
+      if (!discussion.filePath!.contains('/')) {
+        if (sourceSubjectLinkedPath != null &&
+            sourceSubjectLinkedPath!.isNotEmpty) {
+          fullPathToDelete = path.join(
+            sourceSubjectLinkedPath!,
+            discussion.filePath!,
+          );
+        }
+      } else {
+        fullPathToDelete = discussion.filePath;
+      }
+    }
+    // <== AKHIR PERBAIKAN
 
     _allDiscussions.removeWhere((d) => d.hashCode == discussion.hashCode);
     filterAndSortDiscussions();
 
     try {
       await saveDiscussions();
+      // Gunakan path yang sudah diperbaiki
       await discussionService.deleteLinkedFile(fullPathToDelete);
     } catch (e) {
       debugPrint("Error during discussion deletion process: $e");
