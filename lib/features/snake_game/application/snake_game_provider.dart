@@ -1,5 +1,5 @@
 // lib/features/snake_game/application/snake_game_provider.dart
-import 'dart:async'; // Import Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../infrastructure/snake_game_settings_service.dart';
 
@@ -18,7 +18,10 @@ class SnakeGameProvider with ChangeNotifier {
   int _trainingDuration = 0; // 0 = tanpa batas
   int get trainingDuration => _trainingDuration;
 
-  // ==> STATE BARU UNTUK INDIKATOR WAKTU <==
+  // ==> STATE BARU UNTUK KECEPATAN <==
+  double _snakeSpeed = 1.0;
+  double get snakeSpeed => _snakeSpeed;
+
   int _trainingTimeRemaining = 0;
   int get trainingTimeRemaining => _trainingTimeRemaining;
   Timer? _countdownTimer;
@@ -39,6 +42,7 @@ class SnakeGameProvider with ChangeNotifier {
     _isTrainingMode = await _settingsService.loadTrainingMode();
     _populationSize = await _settingsService.loadPopulationSize();
     _trainingDuration = await _settingsService.loadTrainingDuration();
+    _snakeSpeed = await _settingsService.loadSnakeSpeed(); // ==> MUAT KECEPATAN
     _isLoading = false;
     notifyListeners();
   }
@@ -61,7 +65,13 @@ class SnakeGameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGELOLA COUNTDOWN <==
+  // ==> FUNGSI BARU UNTUK MENGUPDATE KECEPATAN <==
+  Future<void> setSnakeSpeed(double speed) async {
+    _snakeSpeed = speed;
+    await _settingsService.saveSnakeSpeed(speed);
+    notifyListeners();
+  }
+
   void startTrainingTimer() {
     _countdownTimer?.cancel();
     if (_isTrainingMode && _trainingDuration > 0) {

@@ -54,6 +54,7 @@ class _SnakeSettingsDialogState extends State<SnakeSettingsDialog> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SwitchListTile(
                   title: const Text('Mode Melatih AI'),
@@ -65,6 +66,35 @@ class _SnakeSettingsDialogState extends State<SnakeSettingsDialog> {
                     provider.setTrainingMode(value);
                   },
                 ),
+                const Divider(),
+                // ==> WIDGET BARU UNTUK PENGATURAN KECEPATAN <==
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Kecepatan Gerak',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        provider.snakeSpeed.toStringAsFixed(1) + 'x',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                Slider(
+                  value: provider.snakeSpeed,
+                  min: 0.5,
+                  max: 2.5,
+                  divisions: 4,
+                  label: provider.snakeSpeed.toStringAsFixed(1) + 'x',
+                  onChanged: (value) {
+                    provider.setSnakeSpeed(value);
+                  },
+                ),
+                // ==> AKHIR WIDGET BARU <==
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),

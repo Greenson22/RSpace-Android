@@ -40,11 +40,13 @@ class _SnakeGameView extends StatelessWidget {
           ),
           body: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              // ==> PERUBAHAN UTAMA: GUNAKAN STACK UNTUK MENUMPUK WIDGET <==
               : Stack(
                   children: [
-                    SnakeGameWidget(trainingMode: provider.isTrainingMode),
-                    // ==> INDIKATOR WAKTU DITAMPILKAN DI SINI <==
+                    // ==> KIRIM PARAMETER KECEPATAN BARU <==
+                    SnakeGameWidget(
+                      trainingMode: provider.isTrainingMode,
+                      speed: provider.snakeSpeed,
+                    ),
                     if (provider.isTrainingMode &&
                         provider.trainingDuration > 0)
                       Positioned(

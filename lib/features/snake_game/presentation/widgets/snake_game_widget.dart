@@ -33,8 +33,13 @@ class Snake {
 
 class SnakeGameWidget extends StatefulWidget {
   final bool trainingMode;
+  final double speed; // ==> TAMBAHKAN PARAMETER BARU
 
-  const SnakeGameWidget({super.key, this.trainingMode = false});
+  const SnakeGameWidget({
+    super.key,
+    this.trainingMode = false,
+    required this.speed, // ==> JADIKAN WAJIB
+  });
 
   @override
   State<SnakeGameWidget> createState() => _SnakeGameWidgetState();
@@ -68,6 +73,31 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     });
   }
 
+  // ==> FUNGSI BARU UNTUK MENDETEKSI PERUBAHAN PENGATURAN <==
+  @override
+  void didUpdateWidget(covariant SnakeGameWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Jika kecepatan berubah, restart timer game dengan durasi baru
+    if (oldWidget.speed != widget.speed) {
+      _gameTimer?.cancel();
+      _startGameTimer();
+    }
+  }
+
+  // ==> FUNGSI UNTUK MEMBUAT TIMER DIPISAHKAN <==
+  void _startGameTimer() {
+    _gameTimer?.cancel();
+    // Kecepatan lebih tinggi = durasi lebih pendek
+    final int timerMilliseconds = (100 / widget.speed).round();
+    _gameTimer = Timer.periodic(Duration(milliseconds: timerMilliseconds), (
+      timer,
+    ) {
+      if (mounted) {
+        _updateGame();
+      }
+    });
+  }
+
   void _startGame() async {
     final provider = Provider.of<SnakeGameProvider>(context, listen: false);
     _generation = 1;
@@ -84,16 +114,11 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     );
     _bestSnake = _population.first;
     _generateFood();
-    _gameTimer?.cancel();
-    _gameTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (mounted) {
-        _updateGame();
-      }
-    });
+
+    _startGameTimer(); // ==> PANGGIL FUNGSI TIMER YANG BARU
 
     _trainingDurationTimer?.cancel();
     if (widget.trainingMode && provider.trainingDuration > 0) {
-      // ==> PANGGIL PROVIDER UNTUK MEMULAI COUNTDOWN <==
       provider.startTrainingTimer();
       _trainingDurationTimer = Timer(
         Duration(seconds: provider.trainingDuration),
@@ -106,6 +131,8 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
       );
     }
   }
+
+  // ... (sisa fungsi tidak ada perubahan signifikan)
 
   void _generateFood() {
     _food = Point(_random.nextInt(_gridWidth), _random.nextInt(_gridHeight));
@@ -277,7 +304,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   void dispose() {
     _gameTimer?.cancel();
     _trainingDurationTimer?.cancel();
-    // ==> HENTIKAN TIMER DI PROVIDER SAAT WIDGET HILANG <==
     Provider.of<SnakeGameProvider>(context, listen: false).stopTrainingTimer();
     super.dispose();
   }
