@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../application/snake_game_provider.dart';
+// ==> IMPORT DIALOG BARU <==
+import 'ann_settings_dialog.dart';
 
 void showSnakeSettingsDialog(BuildContext context) {
   final provider = Provider.of<SnakeGameProvider>(context, listen: false);
@@ -67,7 +69,6 @@ class _SnakeSettingsDialogState extends State<SnakeSettingsDialog> {
                   },
                 ),
                 const Divider(),
-                // ==> WIDGET BARU UNTUK PENGATURAN KECEPATAN <==
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 0),
                   child: Row(
@@ -78,7 +79,7 @@ class _SnakeSettingsDialogState extends State<SnakeSettingsDialog> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        provider.snakeSpeed.toStringAsFixed(1) + 'x',
+                        '${provider.snakeSpeed.toStringAsFixed(1)}x',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -89,15 +90,29 @@ class _SnakeSettingsDialogState extends State<SnakeSettingsDialog> {
                   min: 0.5,
                   max: 2.5,
                   divisions: 4,
-                  label: provider.snakeSpeed.toStringAsFixed(1) + 'x',
+                  label: '${provider.snakeSpeed.toStringAsFixed(1)}x',
                   onChanged: (value) {
                     provider.setSnakeSpeed(value);
                   },
                 ),
-                // ==> AKHIR WIDGET BARU <==
+                const Divider(),
+                // ==> TOMBOL BARU UNTUK MEMBUKA DIALOG ANN <==
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  title: const Text('Arsitektur Jaringan Saraf'),
+                  subtitle: Text(provider.annLayers.join(' - ')),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.of(context).pop(); // Tutup dialog saat ini
+                    showAnnSettingsDialog(context); // Buka dialog ANN
+                  },
+                ),
                 const Divider(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 16.0,
+                  ),
                   child: TextFormField(
                     controller: _populationController,
                     decoration: const InputDecoration(
@@ -113,7 +128,10 @@ class _SnakeSettingsDialogState extends State<SnakeSettingsDialog> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 16.0,
+                  ),
                   child: TextFormField(
                     controller: _durationController,
                     decoration: const InputDecoration(

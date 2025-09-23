@@ -1,3 +1,4 @@
+// lib/features/snake_game/infrastructure/snake_game_service.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
@@ -29,5 +30,13 @@ class SnakeGameService {
       }
     }
     return null;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS OTAK TERBAIK <==
+  Future<void> deleteBestBrain() async {
+    final file = await _bestBrainFile;
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 }

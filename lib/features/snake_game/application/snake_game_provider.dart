@@ -1,10 +1,13 @@
 // lib/features/snake_game/application/snake_game_provider.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../infrastructure/snake_game_service.dart';
 import '../infrastructure/snake_game_settings_service.dart';
 
 class SnakeGameProvider with ChangeNotifier {
   final SnakeGameSettingsService _settingsService = SnakeGameSettingsService();
+  // ==> TAMBAHKAN SERVICE GAME UNTUK RESET OTAK
+  final SnakeGameService _gameService = SnakeGameService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -15,12 +18,15 @@ class SnakeGameProvider with ChangeNotifier {
   int _populationSize = 50;
   int get populationSize => _populationSize;
 
-  int _trainingDuration = 0; // 0 = tanpa batas
+  int _trainingDuration = 0;
   int get trainingDuration => _trainingDuration;
 
-  // ==> STATE BARU UNTUK KECEPATAN <==
   double _snakeSpeed = 1.0;
   double get snakeSpeed => _snakeSpeed;
+
+  // ==> STATE BARU UNTUK ARSITEKTUR ANN <==
+  List<int> _annLayers = [10, 12, 4];
+  List<int> get annLayers => _annLayers;
 
   int _trainingTimeRemaining = 0;
   int get trainingTimeRemaining => _trainingTimeRemaining;
@@ -42,8 +48,18 @@ class SnakeGameProvider with ChangeNotifier {
     _isTrainingMode = await _settingsService.loadTrainingMode();
     _populationSize = await _settingsService.loadPopulationSize();
     _trainingDuration = await _settingsService.loadTrainingDuration();
-    _snakeSpeed = await _settingsService.loadSnakeSpeed(); // ==> MUAT KECEPATAN
+    _snakeSpeed = await _settingsService.loadSnakeSpeed();
+    // ==> MUAT PENGATURAN ANN <==
+    _annLayers = await _settingsService.loadAnnLayers();
     _isLoading = false;
+    notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGATUR ANN DAN MERESET OTAK <==
+  Future<void> setAnnLayers(List<int> newLayers) async {
+    _annLayers = newLayers;
+    await _settingsService.saveAnnLayers(newLayers);
+    await _gameService.deleteBestBrain(); // Hapus otak lama
     notifyListeners();
   }
 
@@ -65,7 +81,6 @@ class SnakeGameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUPDATE KECEPATAN <==
   Future<void> setSnakeSpeed(double speed) async {
     _snakeSpeed = speed;
     await _settingsService.saveSnakeSpeed(speed);
