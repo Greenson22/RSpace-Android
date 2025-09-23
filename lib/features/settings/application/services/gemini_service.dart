@@ -18,7 +18,6 @@ class GeminiService {
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
 
-  // Authority (domain) untuk semua API call Gemini
   final String _googleApiAuthority = 'generativelanguage.googleapis.com';
 
   Future<String> _getActiveApiKey() async {
@@ -31,7 +30,6 @@ class GeminiService {
     }
   }
 
-  /// Helper untuk membuat URI yang aman
   Uri _buildApiUri(String model, String apiKey) {
     return Uri.https(
       _googleApiAuthority,
@@ -40,9 +38,7 @@ class GeminiService {
     );
   }
 
-  // --- FUNGSI-FUNGSI BARU UNTUK MANAJEMEN KUTIPAN MOTIVASI ---
-
-  /// Membaca semua kutipan motivasi yang tersimpan di file lokal.
+  // ... (fungsi-fungsi lain tidak berubah) ...
   Future<List<String>> getSavedMotivationalQuotes() async {
     try {
       final quotesPath = await _pathService.motivationalQuotesPath;
@@ -59,7 +55,6 @@ class GeminiService {
     return [];
   }
 
-  /// Menghapus satu kutipan spesifik dari file simpanan.
   Future<void> deleteMotivationalQuote(String quoteToDelete) async {
     final quotesPath = await _pathService.motivationalQuotesPath;
     final quotesFile = File(quotesPath);
@@ -68,7 +63,6 @@ class GeminiService {
     await quotesFile.writeAsString(jsonEncode(currentQuotes));
   }
 
-  /// Menghasilkan daftar kutipan baru dari AI dan menimpa file simpanan.
   Future<void> generateAndSaveMotivationalQuotes({int count = 10}) async {
     final settings = await _settingsService.loadSettings();
     final apiKey = await _getActiveApiKey();
@@ -118,8 +112,6 @@ class GeminiService {
     }
   }
 
-  // Fungsi getMotivationalQuote yang lama telah dihapus dan digantikan oleh fungsi-fungsi di atas.
-  // Sisa dari file ini (fungsi lain seperti suggestColorPalette, suggestIcon, dll.) tidak berubah.
   Future<ColorPalette> suggestColorPalette({
     required String theme,
     required String paletteName,
@@ -132,7 +124,6 @@ class GeminiService {
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    // ... (prompt tetap sama)
     final prompt =
         '''
       Buatkan palet warna harmonis untuk UI kartu berdasarkan tema "$theme".
@@ -151,11 +142,11 @@ class GeminiService {
       }
       ''';
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -170,7 +161,6 @@ class GeminiService {
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
@@ -223,11 +213,11 @@ Contoh Jawaban:
 ["💡", "📚", "⚙️", "❤️", "⭐"]
 ''';
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -271,7 +261,6 @@ Contoh Jawaban:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    // ... (prompt tetap sama)
     final fileListString = allFiles
         .map(
           (f) => "- Judul: \"${f['title']}\", Path: \"${f['relativePath']}\"",
@@ -306,11 +295,11 @@ Contoh Jawaban:
       ]
       ''';
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -325,7 +314,6 @@ Contoh Jawaban:
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
@@ -361,7 +349,6 @@ Contoh Jawaban:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    // ... (prompt tetap sama)
     final prompt =
         '''
     Analisis konten HTML berikut dan buatkan 3 sampai 5 rekomendasi judul yang singkat, padat, dan deskriptif dalam Bahasa Indonesia.
@@ -384,11 +371,11 @@ Contoh Jawaban:
     ]
     ''';
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -403,7 +390,6 @@ Contoh Jawaban:
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];
@@ -421,16 +407,10 @@ Contoh Jawaban:
     }
   }
 
-  Future<String> generateHtmlTemplate(String themeDescription) async {
-    final settings = await _settingsService.loadSettings();
-    final apiKey = await _getActiveApiKey();
-    final model = settings.contentModelId;
-
-    if (apiKey.isEmpty) {
-      throw Exception('API Key Gemini tidak aktif.');
-    }
-
-    // ... (prompt tetap sama)
+  // ==> FUNGSI BARU UNTUK MEMBUAT PROMPT
+  Future<String> generateHtmlTemplatePrompt(String themeDescription) async {
+    // Fungsi ini tidak memerlukan API key karena hanya membuat teks prompt.
+    // Prompt ini identik dengan yang ada di `generateHtmlTemplate`.
     final prompt =
         '''
     Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
@@ -440,12 +420,26 @@ Contoh Jawaban:
     2.  Di dalam `<body>`, WAJIB ada sebuah `<div>` kosong dengan id `main-container`. Contoh: `<div id="main-container"></div>`. Ini adalah tempat konten akan dimasukkan nanti.
     3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
     ''';
+    return prompt;
+  }
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+  Future<String> generateHtmlTemplate(String themeDescription) async {
+    final settings = await _settingsService.loadSettings();
+    final apiKey = await _getActiveApiKey();
+    final model = settings.contentModelId;
+
+    if (apiKey.isEmpty) {
+      throw Exception('API Key Gemini tidak aktif.');
+    }
+
+    // Panggil fungsi baru untuk mendapatkan prompt
+    final prompt = await generateHtmlTemplatePrompt(themeDescription);
+
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -459,7 +453,6 @@ Contoh Jawaban:
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
@@ -495,7 +488,6 @@ Contoh Jawaban:
       );
     }
 
-    // ... (prompt tetap sama)
     final prompt =
         '''
 Anda adalah "Flo", asisten AI yang terintegrasi di dalam aplikasi bernama RSpace.
@@ -510,11 +502,11 @@ Pertanyaan Pengguna: "$query"
 Jawaban Anda:
 ''';
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -528,7 +520,6 @@ Jawaban Anda:
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
@@ -571,11 +562,11 @@ Jawaban Anda:
     );
     final promptText = activePrompt.content.replaceAll('{topic}', topic);
 
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -589,7 +580,6 @@ Jawaban Anda:
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final candidates = body['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
@@ -631,7 +621,6 @@ Jawaban Anda:
       throw Exception('Materi kuis tidak boleh kosong.');
     }
 
-    // ... (prompt tetap sama)
     final prompt =
         '''
     Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
@@ -659,11 +648,11 @@ Jawaban Anda:
       }
     ]
     ''';
-    final apiUrl = _buildApiUri(model, apiKey); // Perbaikan di sini
+    final apiUrl = _buildApiUri(model, apiKey);
 
     try {
       final response = await http.post(
-        apiUrl, // Perbaikan di sini
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'contents': [
@@ -678,7 +667,6 @@ Jawaban Anda:
       );
 
       if (response.statusCode == 200) {
-        // ... (sisa fungsi tidak berubah)
         final body = jsonDecode(response.body);
         final textResponse =
             body['candidates'][0]['content']['parts'][0]['text'];

@@ -18,6 +18,8 @@ import 'widgets/subject_grid_tile.dart';
 import 'widgets/subject_list_tile.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import 'dialogs/generate_index_template_dialog.dart';
+// ==> IMPORT DIALOG BARU
+import 'dialogs/generate_index_prompt_dialog.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -63,6 +65,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     super.dispose();
   }
 
+  // ... (kode lainnya tidak berubah) ...
   void _handleKeyEvent(RawKeyEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.altLeft ||
         event.logicalKey == LogicalKeyboardKey.altRight) {
@@ -263,6 +266,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
+  // ==> FUNGSI INI DIPERBARUI
   Future<void> _showEditIndexOptions(
     BuildContext context,
     Subject subject,
@@ -275,11 +279,20 @@ class _SubjectsPageState extends State<SubjectsPage> {
         title: const Text('Pilih Metode Edit Template'),
         children: [
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'ai'),
+            onPressed: () => Navigator.pop(context, 'ai_direct'),
             child: const ListTile(
               leading: Icon(Icons.auto_awesome),
-              title: Text('Generate dengan AI'),
-              subtitle: Text('Buat template baru berdasarkan tema.'),
+              title: Text('Generate dengan AI (Otomatis)'),
+              subtitle: Text('Buat & simpan template baru berdasarkan tema.'),
+            ),
+          ),
+          // ==> OPSI BARU DITAMBAHKAN DI SINI
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'ai_prompt'),
+            child: const ListTile(
+              leading: Icon(Icons.copy_all_outlined),
+              title: Text('Generate Prompt (Manual)'),
+              subtitle: Text('Buat prompt untuk digunakan di Gemini Web.'),
             ),
           ),
           SimpleDialogOption(
@@ -294,7 +307,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
       ),
     );
 
-    if (choice == 'ai' && mounted) {
+    if (choice == 'ai_direct' && mounted) {
       final success = await showDialog<bool>(
         context: context,
         builder: (_) => ChangeNotifierProvider.value(
@@ -305,6 +318,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
       if (success == true && mounted) {
         _showSnackBar('Template baru berhasil dibuat oleh AI!');
       }
+    } else if (choice == 'ai_prompt' && mounted) {
+      // ==> ALUR BARU UNTUK MENAMPILKAN PROMPT
+      await showGenerateIndexPromptDialog(context, subject);
     } else if (choice == 'manual' && mounted) {
       try {
         await provider.editSubjectIndexFile(subject);
