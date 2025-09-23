@@ -52,15 +52,26 @@ class _AnnSettingsDialogState extends State<AnnSettingsDialog> {
   }
 
   void _removeLayer(int index) {
-    setState(() {
-      _hiddenLayerControllers[index].dispose();
-      _hiddenLayerControllers.removeAt(index);
-    });
+    if (_hiddenLayerControllers.length > 1) {
+      setState(() {
+        _hiddenLayerControllers[index].dispose();
+        _hiddenLayerControllers.removeAt(index);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Minimal harus ada satu hidden layer.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   void _resetToDefault() {
     setState(() {
-      _hiddenLayerControllers.forEach((c) => c.dispose());
+      for (var controller in _hiddenLayerControllers) {
+        controller.dispose();
+      }
       _hiddenLayerControllers = [TextEditingController(text: '12')];
     });
   }
@@ -69,9 +80,21 @@ class _AnnSettingsDialogState extends State<AnnSettingsDialog> {
     final provider = Provider.of<SnakeGameProvider>(context, listen: false);
     final List<int> newHiddenLayers = _hiddenLayerControllers
         .map((c) => int.tryParse(c.text) ?? 8)
+        .where((val) => val > 0) // Pastikan neuron lebih dari 0
         .toList();
 
-    // Layer input (10) + hidden layers + layer output (4)
+    if (newHiddenLayers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Harus ada setidaknya satu hidden layer dengan neuron > 0.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final newFullLayers = [10, ...newHiddenLayers, 4];
     provider.setAnnLayers(newFullLayers);
     Navigator.of(context).pop();
@@ -91,36 +114,76 @@ class _AnnSettingsDialogState extends State<AnnSettingsDialog> {
     return AlertDialog(
       title: const Text('Atur Arsitektur ANN'),
       content: SizedBox(
-        width: double.maxFinite,
+        width: 400, // Beri lebar agar tidak terlalu sempit
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLayerInfo('Input Layer (Sensor)', _layers.first, false),
-              const Divider(),
-              ..._hiddenLayerControllers.asMap().entries.map((entry) {
-                int index = entry.key;
-                TextEditingController controller = entry.value;
-                return _buildEditableLayer(
-                  'Hidden Layer ${index + 1}',
-                  controller,
-                  () => _removeLayer(index),
-                );
-              }),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _addLayer,
-                icon: const Icon(Icons.add),
-                label: const Text('Tambah Hidden Layer'),
+              _buildLayerCard(
+                'Input Layer (Sensor)',
+                '${_layers.first} Neuron',
+                Icons.sensors,
+                Theme.of(context).colorScheme.secondary,
+                isEditable: false,
               ),
-              const Divider(),
-              _buildLayerInfo('Output Layer (Arah)', _layers.last, false),
+              _buildFlowConnector(),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const ListTile(
+                        leading: Icon(Icons.layers),
+                        title: Text(
+                          'Hidden Layers',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        dense: true,
+                      ),
+                      ..._hiddenLayerControllers.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        TextEditingController controller = entry.value;
+                        return _buildEditableLayer(
+                          'Layer ${index + 1}',
+                          controller,
+                          () => _removeLayer(index),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          TextButton.icon(
+                            onPressed: _addLayer,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Tambah'),
+                          ),
+                          TextButton.icon(
+                            onPressed: _resetToDefault,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Reset'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildFlowConnector(),
+              _buildLayerCard(
+                'Output Layer (Arah)',
+                '${_layers.last} Neuron',
+                Icons.exit_to_app,
+                Theme.of(context).colorScheme.primary,
+                isEditable: false,
+              ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _resetToDefault, child: const Text('Reset')),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Batal'),
@@ -133,12 +196,25 @@ class _AnnSettingsDialogState extends State<AnnSettingsDialog> {
     );
   }
 
-  Widget _buildLayerInfo(String title, int neuronCount, bool isEditable) {
-    return ListTile(
-      title: Text(title),
-      trailing: Text(
-        '$neuronCount Neuron',
-        style: const TextStyle(fontWeight: FontWeight.bold),
+  Widget _buildFlowConnector() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.0),
+      child: Center(child: Icon(Icons.arrow_downward, color: Colors.grey)),
+    );
+  }
+
+  Widget _buildLayerCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color iconColor, {
+    bool isEditable = true,
+  }) {
+    return Card(
+      child: ListTile(
+        leading: Icon(icon, color: iconColor),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle),
       ),
     );
   }
@@ -149,7 +225,7 @@ class _AnnSettingsDialogState extends State<AnnSettingsDialog> {
     VoidCallback onRemove,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 4.0, 0.0, 4.0),
       child: Row(
         children: [
           Expanded(child: Text(title)),
