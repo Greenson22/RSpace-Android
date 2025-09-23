@@ -154,10 +154,11 @@ class PathService {
     return assetsDir.path;
   }
 
-  // ==> PENAMBAHAN BARU UNTUK GAME ULAR <==
+  // ==> PERUBAHAN DI SINI <==
+  // Path untuk game ular sekarang berada di dalam folder 'contents'
   Future<String> get snakeGamePath async {
-    final dirPath = await _baseDataPath;
-    final snakeDir = Directory(path.join(dirPath, 'snake_game'));
+    final contents = await contentsPath;
+    final snakeDir = Directory(path.join(contents, 'snake_game'));
     if (!await snakeDir.exists()) {
       await snakeDir.create(recursive: true);
     }
