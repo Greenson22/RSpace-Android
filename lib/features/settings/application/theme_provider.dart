@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/core/services/path_service.dart';
+import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/settings/application/theme_settings_service.dart';
 import 'package:my_aplication/features/settings/domain/models/theme_settings_model.dart';
 import '../../../core/theme/app_theme.dart';
@@ -10,8 +11,10 @@ import 'package:path/path.dart' as path;
 
 class ThemeProvider with ChangeNotifier {
   final ThemeSettingsService _settingsService = ThemeSettingsService();
+  final SharedPreferencesService _prefsService = SharedPreferencesService();
   final PathService _pathService = PathService();
   ThemeSettings? _settings;
+  String? _localBackgroundImagePath;
   bool _isLoading = true;
 
   // Getters that expose settings to the UI
@@ -25,7 +28,7 @@ class ThemeProvider with ChangeNotifier {
       _settings?.recentColorValues.map((v) => Color(v)).toList() ?? [];
   bool get isChristmasTheme => _settings?.isChristmasTheme ?? false;
   bool get isUnderwaterTheme => _settings?.isUnderwaterTheme ?? false;
-  String? get backgroundImagePath => _settings?.backgroundImagePath;
+  String? get backgroundImagePath => _localBackgroundImagePath;
   double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
   bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
   bool get showQuickFab => _settings?.showQuickFab ?? true;
@@ -60,6 +63,8 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> _loadTheme() async {
     _settings = await _settingsService.loadSettings();
+    _localBackgroundImagePath = await _prefsService
+        .loadLocalBackgroundImagePath();
     _isLoading = false;
     notifyListeners();
   }
@@ -130,7 +135,6 @@ class ThemeProvider with ChangeNotifier {
   }
 
   Future<void> setBackgroundImage() async {
-    if (_settings == null) return;
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
     );
@@ -139,36 +143,37 @@ class ThemeProvider with ChangeNotifier {
       final sourceFile = File(result.files.single.path!);
       final assetsPath = await _pathService.assetsPath;
       final fileExtension = path.extension(sourceFile.path);
-      final destinationPath = path.join(
-        assetsPath,
-        'dashboard_background$fileExtension',
-      );
+      // Buat nama file unik untuk menghindari konflik
+      final uniqueFileName =
+          'local_background_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
+      final destinationPath = path.join(assetsPath, uniqueFileName);
       final destinationFile = File(destinationPath);
+
+      // Hapus gambar latar lama jika ada
+      await clearBackgroundImagePath();
 
       // Salin file yang dipilih ke folder assets aplikasi
       await sourceFile.copy(destinationFile.path);
 
-      _saveAndUpdate(
-        _settings!.copyWith(
-          // Simpan path relatif di dalam data aplikasi
-          backgroundImagePath: () => destinationFile.path,
-        ),
-      );
+      // Simpan path baru secara lokal
+      await _prefsService.saveLocalBackgroundImagePath(destinationFile.path);
+      _localBackgroundImagePath = destinationFile.path;
+      notifyListeners();
     }
   }
 
   Future<void> clearBackgroundImagePath() async {
-    if (_settings == null) return;
-
-    // Hapus juga file fisik dari folder assets
-    if (_settings!.backgroundImagePath != null) {
-      final file = File(_settings!.backgroundImagePath!);
+    // Hapus file fisik dari folder assets
+    if (_localBackgroundImagePath != null) {
+      final file = File(_localBackgroundImagePath!);
       if (await file.exists()) {
         await file.delete();
       }
     }
-
-    _saveAndUpdate(_settings!.copyWith(backgroundImagePath: () => null));
+    // Hapus path dari penyimpanan lokal
+    await _prefsService.clearLocalBackgroundImagePath();
+    _localBackgroundImagePath = null;
+    notifyListeners();
   }
 
   void _addRecentColor(Color color) {

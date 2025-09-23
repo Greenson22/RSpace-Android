@@ -9,7 +9,6 @@ class ThemeSettings {
   final bool isUnderwaterTheme;
   final int primaryColorValue;
   final List<int> recentColorValues;
-  final String? backgroundImagePath;
   final double dashboardItemScale;
   final bool showFloatingCharacter;
   final bool showQuickFab;
@@ -27,7 +26,6 @@ class ThemeSettings {
     this.isUnderwaterTheme = false,
     required this.primaryColorValue,
     this.recentColorValues = const [],
-    this.backgroundImagePath,
     this.dashboardItemScale = 1.0,
     this.showFloatingCharacter = true,
     this.showQuickFab = true,
@@ -53,7 +51,6 @@ class ThemeSettings {
               ?.map((e) => e as int)
               .toList() ??
           [],
-      backgroundImagePath: json['backgroundImagePath'] as String?,
       dashboardItemScale:
           (json['dashboardItemScale'] as num?)?.toDouble() ?? 1.0,
       showFloatingCharacter: json['showFloatingCharacter'] as bool? ?? true,
@@ -76,7 +73,6 @@ class ThemeSettings {
       'isUnderwaterTheme': isUnderwaterTheme,
       'primaryColorValue': primaryColorValue,
       'recentColorValues': recentColorValues,
-      'backgroundImagePath': backgroundImagePath,
       'dashboardItemScale': dashboardItemScale,
       'showFloatingCharacter': showFloatingCharacter,
       'showQuickFab': showQuickFab,
@@ -96,7 +92,6 @@ class ThemeSettings {
     bool? isUnderwaterTheme,
     int? primaryColorValue,
     List<int>? recentColorValues,
-    ValueGetter<String?>? backgroundImagePath,
     double? dashboardItemScale,
     bool? showFloatingCharacter,
     bool? showQuickFab,
@@ -114,9 +109,6 @@ class ThemeSettings {
       isUnderwaterTheme: isUnderwaterTheme ?? this.isUnderwaterTheme,
       primaryColorValue: primaryColorValue ?? this.primaryColorValue,
       recentColorValues: recentColorValues ?? this.recentColorValues,
-      backgroundImagePath: backgroundImagePath != null
-          ? backgroundImagePath()
-          : this.backgroundImagePath,
       dashboardItemScale: dashboardItemScale ?? this.dashboardItemScale,
       showFloatingCharacter:
           showFloatingCharacter ?? this.showFloatingCharacter,

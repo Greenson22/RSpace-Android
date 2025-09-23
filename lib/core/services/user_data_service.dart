@@ -11,11 +11,26 @@ class UserDataService {
   static const String _filterValueKey = 'filter_value';
   static const String _backupSortTypeKey = 'backup_sort_type';
   static const String _backupSortAscendingKey = 'backup_sort_ascending';
-  // ==> KUNCI LAMA DIHAPUS <==
   static const String _repetitionCodeOrderKey = 'repetition_code_order';
   static const String _repetitionCodeDisplayOrderKey =
       'repetition_code_display_order';
   static const String _repetitionCodeDaysKey = 'repetition_code_days';
+
+  // ==> FUNGSI GENERIK BARU
+  Future<void> saveString(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  Future<String?> loadString(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  Future<void> remove(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+  }
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
@@ -81,8 +96,6 @@ class UserDataService {
     final sortAscending = prefs.getBool(_backupSortAscendingKey) ?? false;
     return {'sortType': sortType, 'sortAscending': sortAscending};
   }
-
-  // ==> FUNGSI-FUNGSI DI BAWAH INI DIHAPUS <==
 
   Future<void> saveRepetitionCodeOrder(List<String> order) async {
     final prefs = await SharedPreferences.getInstance();

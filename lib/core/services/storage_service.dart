@@ -11,6 +11,17 @@ class SharedPreferencesService {
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
 
+  // ==> KUNCI BARU UNTUK LATAR LOKAL
+  static const String _localBackgroundPathKey = 'local_background_path';
+
+  // ==> FUNGSI BARU UNTUK LATAR LOKAL
+  Future<void> saveLocalBackgroundImagePath(String path) =>
+      _userDataService.saveString(_localBackgroundPathKey, path);
+  Future<String?> loadLocalBackgroundImagePath() =>
+      _userDataService.loadString(_localBackgroundPathKey);
+  Future<void> clearLocalBackgroundImagePath() =>
+      _userDataService.remove(_localBackgroundPathKey);
+
   // Update neuron methods to use NeuronService
   Future<void> saveNeurons(int count) => _neuronService.setNeurons(count);
   Future<int> loadNeurons() => _neuronService.getNeurons();
