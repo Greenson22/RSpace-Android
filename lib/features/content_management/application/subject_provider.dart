@@ -20,7 +20,6 @@ class SubjectProvider with ChangeNotifier {
     // fetchSubjects dipanggil dari initState di halaman UI
   }
 
-  // ... (kode lainnya tidak berubah) ...
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -206,7 +205,9 @@ class SubjectProvider with ChangeNotifier {
           final now = DateTime.now();
           final difference = now.difference(frozenDate).inDays;
 
-          if (difference > 0) {
+          // ==> PERUBAHAN UTAMA DI SINI <==
+          // Sekarang kita proses jika selisihnya tidak nol (bisa positif atau negatif)
+          if (difference != 0) {
             final discussions = await _subjectService.getDiscussionsForSubject(
               topicPath,
               subject.name,
