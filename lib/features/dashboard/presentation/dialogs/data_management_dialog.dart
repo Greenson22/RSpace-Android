@@ -1,4 +1,4 @@
-// lib/presentation/pages/dashboard_page/dialogs/data_management_dialog.dart
+// lib/features/dashboard/presentation/dialogs/data_management_dialog.dart
 
 import 'package:flutter/material.dart';
 import '../../../link_maintenance/presentation/pages/unlinked_discussions_page.dart';
@@ -8,8 +8,8 @@ import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
 import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
 import '../../../exported_discussions_archive/presentation/pages/exported_discussions_page.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
-// >> IMPORT HALAMAN BARU <<
 import '../../../link_maintenance/presentation/pages/file_path_correction_page.dart';
+import '../../../finished_discussions/presentation/pages/finished_discussions_online_page.dart'; // IMPORT BARU
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {
@@ -58,7 +58,6 @@ class DataManagementDialog extends StatelessWidget {
     return SimpleDialog(
       title: const Text('Kelola & Perawatan Data'),
       children: <Widget>[
-        // >> TAMBAHKAN OPSI MENU BARU DI SINI (SAYA LETAKKAN DI BAWAH) <<
         _buildDialogOption(
           icon: Icons.auto_fix_high_outlined,
           title: 'Tautkan Diskusi Massal',
@@ -127,6 +126,21 @@ class DataManagementDialog extends StatelessWidget {
             );
           },
         ),
+        // >> OPSI MENU BARU DITAMBAHKAN DI SINI <<
+        _buildDialogOption(
+          icon: Icons.cloud_upload_outlined,
+          title: 'Diskusi Selesai (Online)',
+          subtitle: 'Kompres diskusi selesai untuk diunggah ke server.',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const FinishedDiscussionsOnlinePage(),
+              ),
+            );
+          },
+        ),
         _buildDialogOption(
           icon: Icons.cleaning_services_outlined,
           title: 'File Yatim',
@@ -151,7 +165,6 @@ class DataManagementDialog extends StatelessWidget {
             );
           },
         ),
-        // >> INI DIA MENU BARUNYA <<
         _buildDialogOption(
           icon: Icons.build_outlined,
           title: 'Perbaiki Path File Lama',
