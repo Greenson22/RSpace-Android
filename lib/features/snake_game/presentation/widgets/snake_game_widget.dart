@@ -59,13 +59,11 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   final Random _random = Random();
   int _generation = 1;
   final SnakeGameService _gameService = SnakeGameService();
-  // ==> PERBAIKAN: Simpan referensi provider di sini <==
   late SnakeGameProvider _snakeGameProvider;
 
   @override
   void initState() {
     super.initState();
-    // ==> PERBAIKAN: Inisialisasi referensi provider di initState <==
     _snakeGameProvider = Provider.of<SnakeGameProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -273,14 +271,25 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
         break;
     }
 
-    if (newHead.x < 0 ||
-        newHead.x >= _gridWidth ||
-        newHead.y < 0 ||
-        newHead.y >= _gridHeight ||
-        _isBodyAt(newHead, snake)) {
+    // ==> PERUBAHAN UTAMA DI SINI <==
+    // Logika "wrap-around" saat menyentuh tembok
+    if (newHead.x < 0) {
+      newHead = Point(_gridWidth - 1, newHead.y);
+    } else if (newHead.x >= _gridWidth) {
+      newHead = Point(0, newHead.y);
+    }
+    if (newHead.y < 0) {
+      newHead = Point(newHead.x, _gridHeight - 1);
+    } else if (newHead.y >= _gridHeight) {
+      newHead = Point(newHead.x, 0);
+    }
+
+    // Ular tetap mati jika menabrak dirinya sendiri
+    if (_isBodyAt(newHead, snake)) {
       snake.isDead = true;
       return;
     }
+    // ==> AKHIR DARI PERUBAHAN <==
 
     snake.body.insert(0, newHead);
 
@@ -296,7 +305,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   void dispose() {
     _gameTimer?.cancel();
     _trainingDurationTimer?.cancel();
-    // ==> PERBAIKAN: Gunakan referensi yang sudah disimpan <==
     _snakeGameProvider.stopTrainingTimer();
     super.dispose();
   }
