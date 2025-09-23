@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../domain/snake_ann.dart';
+import '../../infrastructure/snake_game_service.dart'; // Import service baru
 
 enum Direction { up, down, left, right }
 
@@ -28,18 +29,15 @@ class Snake {
   }
 }
 
-// ==> PERUBAHAN NAMA CLASS DI SINI <==
 class SnakeGameWidget extends StatefulWidget {
   final bool trainingMode;
 
   const SnakeGameWidget({super.key, this.trainingMode = false});
 
   @override
-  // ==> PERUBAHAN NAMA CLASS DI SINI <==
   State<SnakeGameWidget> createState() => _SnakeGameWidgetState();
 }
 
-// ==> PERUBAHAN NAMA CLASS DI SINI <==
 class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   static const int POPULATION_SIZE = 50;
   static const double MUTATION_RATE = 0.05;
@@ -53,6 +51,7 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   late int _gridHeight;
   final Random _random = Random();
   int _generation = 1;
+  final SnakeGameService _gameService = SnakeGameService(); // Instance service
 
   @override
   void initState() {
@@ -67,13 +66,18 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     });
   }
 
-  void _startGame() {
+  void _startGame() async {
+    // Diubah menjadi async
     _generation = 1;
+    final savedBrain = await _gameService.loadBestBrain();
+
     _population = List.generate(
       POPULATION_SIZE,
       (index) => Snake(
         Point(_gridWidth ~/ 2, _gridHeight ~/ 2),
-        NeuralNetwork([8, 12, 4]),
+        savedBrain != null && index == 0
+            ? savedBrain
+            : NeuralNetwork([8, 12, 4]),
       ),
     );
     _bestSnake = _population.first;
@@ -90,7 +94,8 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     _food = Point(_random.nextInt(_gridWidth), _random.nextInt(_gridHeight));
   }
 
-  void _nextGeneration() {
+  void _nextGeneration() async {
+    // Diubah menjadi async
     _generation++;
     double totalFitness = 0;
     for (var snake in _population) {
@@ -100,6 +105,9 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
 
     _population.sort((a, b) => b.fitness.compareTo(a.fitness));
     _bestSnake = _population.first;
+
+    // Simpan otak terbaik
+    await _gameService.saveBestBrain(_bestSnake!.brain);
 
     List<Snake> newPopulation = [];
     for (int i = 0; i < POPULATION_SIZE; i++) {

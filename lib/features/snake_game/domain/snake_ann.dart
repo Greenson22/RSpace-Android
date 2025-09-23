@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:convert'; // Ditambahkan
 
 // Fungsi aktivasi Sigmoid
 double sigmoid(double x) {
@@ -22,6 +23,26 @@ class NeuralNetwork {
         ),
       );
     }
+  }
+
+  // Konstruktor baru dari data bobot yang ada
+  NeuralNetwork.fromWeights(this.layers, this.weights);
+
+  // Fungsi untuk mengubah otak menjadi JSON
+  Map<String, dynamic> toJson() {
+    return {'layers': layers, 'weights': weights};
+  }
+
+  // Factory untuk membuat otak dari JSON
+  factory NeuralNetwork.fromJson(Map<String, dynamic> json) {
+    List<int> layers = List<int>.from(json['layers']);
+    List<dynamic> weightsJson = json['weights'];
+    List<List<List<double>>> weights = weightsJson.map((layer) {
+      return (layer as List).map((neuron) {
+        return (neuron as List).map((weight) => weight as double).toList();
+      }).toList();
+    }).toList();
+    return NeuralNetwork.fromWeights(layers, weights);
   }
 
   List<double> predict(List<double> inputs) {

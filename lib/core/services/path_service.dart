@@ -154,6 +154,16 @@ class PathService {
     return assetsDir.path;
   }
 
+  // ==> PENAMBAHAN BARU UNTUK GAME ULAR <==
+  Future<String> get snakeGamePath async {
+    final dirPath = await _baseDataPath;
+    final snakeDir = Directory(path.join(dirPath, 'snake_game'));
+    if (!await snakeDir.exists()) {
+      await snakeDir.create(recursive: true);
+    }
+    return snakeDir.path;
+  }
+
   Future<String> get topicsPath async =>
       path.join(await contentsPath, 'topics');
   Future<String> get myTasksPath async =>
