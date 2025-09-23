@@ -28,7 +28,6 @@ class ThemeProvider with ChangeNotifier {
       _settings?.recentColorValues.map((v) => Color(v)).toList() ?? [];
   bool get isChristmasTheme => _settings?.isChristmasTheme ?? false;
   bool get isUnderwaterTheme => _settings?.isUnderwaterTheme ?? false;
-  bool get isSnakeTheme => _settings?.isSnakeTheme ?? false; // ==> DITAMBAHKAN
   String? get backgroundImagePath => _localBackgroundImagePath;
   double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
   bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
@@ -80,33 +79,14 @@ class ThemeProvider with ChangeNotifier {
     bool? isDark,
     bool? isChristmas,
     bool? isUnderwater,
-    bool? isSnake,
     Color? color,
     double? dashboardScale,
   }) {
     if (_settings == null) return;
-
-    // Logika eksklusivitas tema spesial
-    bool finalIsChristmas = isChristmas ?? _settings!.isChristmasTheme;
-    bool finalIsUnderwater = isUnderwater ?? _settings!.isUnderwaterTheme;
-    bool finalIsSnake = isSnake ?? _settings!.isSnakeTheme;
-
-    if (isChristmas == true) {
-      finalIsUnderwater = false;
-      finalIsSnake = false;
-    } else if (isUnderwater == true) {
-      finalIsChristmas = false;
-      finalIsSnake = false;
-    } else if (isSnake == true) {
-      finalIsChristmas = false;
-      finalIsUnderwater = false;
-    }
-
     _settings = _settings!.copyWith(
       isDarkMode: isDark,
-      isChristmasTheme: finalIsChristmas,
-      isUnderwaterTheme: finalIsUnderwater,
-      isSnakeTheme: finalIsSnake,
+      isChristmasTheme: isChristmas,
+      isUnderwaterTheme: isUnderwater,
       primaryColorValue: color?.value,
       dashboardItemScale: dashboardScale,
     );

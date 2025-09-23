@@ -7,7 +7,6 @@ class ThemeSettings {
   final bool isDarkMode;
   final bool isChristmasTheme;
   final bool isUnderwaterTheme;
-  final bool isSnakeTheme; // ==> DITAMBAHKAN
   final int primaryColorValue;
   final List<int> recentColorValues;
   final double dashboardItemScale;
@@ -25,7 +24,6 @@ class ThemeSettings {
     this.isDarkMode = false,
     this.isChristmasTheme = false,
     this.isUnderwaterTheme = false,
-    this.isSnakeTheme = false, // ==> DITAMBAHKAN
     required this.primaryColorValue,
     this.recentColorValues = const [],
     this.dashboardItemScale = 1.0,
@@ -45,7 +43,6 @@ class ThemeSettings {
       isDarkMode: json['isDarkMode'] as bool? ?? false,
       isChristmasTheme: json['isChristmasTheme'] as bool? ?? false,
       isUnderwaterTheme: json['isUnderwaterTheme'] as bool? ?? false,
-      isSnakeTheme: json['isSnakeTheme'] as bool? ?? false, // ==> DITAMBAHKAN
       primaryColorValue:
           json['primaryColorValue'] as int? ??
           AppTheme.selectableColors.first.value,
@@ -74,7 +71,6 @@ class ThemeSettings {
       'isDarkMode': isDarkMode,
       'isChristmasTheme': isChristmasTheme,
       'isUnderwaterTheme': isUnderwaterTheme,
-      'isSnakeTheme': isSnakeTheme, // ==> DITAMBAHKAN
       'primaryColorValue': primaryColorValue,
       'recentColorValues': recentColorValues,
       'dashboardItemScale': dashboardItemScale,
@@ -94,7 +90,6 @@ class ThemeSettings {
     bool? isDarkMode,
     bool? isChristmasTheme,
     bool? isUnderwaterTheme,
-    bool? isSnakeTheme, // ==> DITAMBAHKAN
     int? primaryColorValue,
     List<int>? recentColorValues,
     double? dashboardItemScale,
@@ -112,7 +107,6 @@ class ThemeSettings {
       isDarkMode: isDarkMode ?? this.isDarkMode,
       isChristmasTheme: isChristmasTheme ?? this.isChristmasTheme,
       isUnderwaterTheme: isUnderwaterTheme ?? this.isUnderwaterTheme,
-      isSnakeTheme: isSnakeTheme ?? this.isSnakeTheme, // ==> DITAMBAHKAN
       primaryColorValue: primaryColorValue ?? this.primaryColorValue,
       recentColorValues: recentColorValues ?? this.recentColorValues,
       dashboardItemScale: dashboardItemScale ?? this.dashboardItemScale,

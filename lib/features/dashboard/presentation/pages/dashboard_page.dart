@@ -26,7 +26,6 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
       builder: (context, themeProvider, child) {
         final backgroundImagePath = themeProvider.backgroundImagePath;
         final isUnderwater = themeProvider.isUnderwaterTheme;
-        final isSnake = themeProvider.isSnakeTheme; // ==> DITAMBAHKAN
 
         return RawKeyboardListener(
           focusNode: focusNode,
@@ -45,8 +44,7 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
                   )
                 : null,
             child: Scaffold(
-              backgroundColor:
-                  (backgroundImagePath != null || isUnderwater || isSnake)
+              backgroundColor: (backgroundImagePath != null || isUnderwater)
                   ? Colors.transparent
                   : null,
               appBar: DashboardAppBar(

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart'; // IMPORT BARU
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
+import 'package:my_aplication/features/snake_game/presentation/pages/snake_game_page.dart';
 import 'package:provider/provider.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -70,6 +71,10 @@ List<VoidCallback> buildDashboardActions(
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
     // --- PERUBAHAN DI SINI ---
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SnakeGamePage()),
+    ),
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
@@ -176,6 +181,12 @@ class DashboardGrid extends StatelessWidget {
             'label': 'Pustaka Prompt',
             'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
+          },
+          {
+            'icon': Icons.catching_pokemon,
+            'label': 'Game Ular AI',
+            'subtitle': 'Latih & lihat AI bermain ular',
+            'colors': const [Color(0xFF2E7D32), Color(0xFF4CAF50)],
           },
           if (Platform.isAndroid)
             {

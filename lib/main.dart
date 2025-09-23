@@ -14,7 +14,6 @@ import 'package:my_aplication/features/content_management/application/topic_prov
 import 'package:my_aplication/core/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'core/widgets/underwater_widget.dart';
-import 'core/widgets/snake_widget.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
@@ -27,6 +26,7 @@ import 'features/ai_assistant/presentation/widgets/floating_character_widget.dar
 import 'features/feedback/application/feedback_provider.dart';
 import 'core/widgets/draggable_fab_view.dart';
 import 'core/providers/neuron_provider.dart';
+import 'features/snake_game/application/snake_game_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -74,6 +74,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => NeuronProvider()),
         ChangeNotifierProvider(create: (_) => QuizCategoryProvider()),
         ChangeNotifierProvider(create: (_) => PerpuskuProvider()),
+        ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
       ],
       child: const MyApp(),
     ),
@@ -131,7 +132,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
         final isChristmas = themeProvider.isChristmasTheme;
         final isUnderwater = themeProvider.isUnderwaterTheme;
-        final isSnake = themeProvider.isSnakeTheme;
         final bool showFlo = themeProvider.showFloatingCharacter;
         final bool showQuickFab = themeProvider.showQuickFab;
 
@@ -186,14 +186,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
 
                 // Lapisan 3 & 4: Overlay Fungsional
-                if (showFlo && !isSnake)
+                if (showFlo)
                   const IgnorePointer(
                     child: FloatingCharacter(isVisible: true),
                   ),
                 if (showQuickFab) const DraggableFabView(),
-
-                // Lapisan Paling Atas: Ular
-                if (isSnake) const IgnorePointer(child: SnakeWidget()),
               ],
             );
           },
