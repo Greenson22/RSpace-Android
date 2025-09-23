@@ -2,7 +2,7 @@
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 
 // BARU: Enum untuk tipe tautan diskusi
-enum DiscussionLinkType { html, quiz }
+enum DiscussionLinkType { html, quiz, none }
 
 class Point {
   String pointText;

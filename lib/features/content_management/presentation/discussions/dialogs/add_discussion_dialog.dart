@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 
 // Tipe data untuk hasil dialog
@@ -9,7 +10,7 @@ class AddDiscussionResult {
   final String name;
   final DiscussionLinkType linkType;
   final String?
-  linkData; // Berisi 'create_new' (HTML) atau quiz topic path (Kuis)
+  linkData; // Berisi 'create_new' (HTML), quiz topic path (Kuis), atau null (None)
 
   AddDiscussionResult({
     required this.name,
@@ -28,7 +29,6 @@ Future<AddDiscussionResult?> showAddDiscussionDialog({
   return showDialog<AddDiscussionResult>(
     context: context,
     builder: (context) {
-      // Sediakan QuizCategoryProvider untuk dialog
       return ChangeNotifierProvider(
         create: (_) => QuizCategoryProvider(),
         child: _AddDiscussionDialogContent(
@@ -61,7 +61,8 @@ class _AddDiscussionDialogContent extends StatefulWidget {
 class _AddDiscussionDialogContentState
     extends State<_AddDiscussionDialogContent> {
   final _controller = TextEditingController();
-  DiscussionLinkType _linkType = DiscussionLinkType.html;
+  // ==> PERUBAHAN DI SINI: Default ke 'none'
+  DiscussionLinkType _linkType = DiscussionLinkType.none;
   String? _selectedQuizTopicPath;
 
   @override
@@ -70,9 +71,9 @@ class _AddDiscussionDialogContentState
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
 
-    // Set default link type jika tidak bisa membuat HTML
+    // Jika default tidak bisa HTML, pastikan pilihannya bukan HTML
     if (!canCreateHtml && _linkType == DiscussionLinkType.html) {
-      _linkType = DiscussionLinkType.quiz;
+      _linkType = DiscussionLinkType.none;
     }
 
     return AlertDialog(
@@ -88,7 +89,18 @@ class _AddDiscussionDialogContentState
               decoration: InputDecoration(labelText: widget.label),
             ),
             const SizedBox(height: 24),
-            Text('Tautkan ke:', style: Theme.of(context).textTheme.titleSmall),
+            Text('Opsi Tautan:', style: Theme.of(context).textTheme.titleSmall),
+            // ==> TAMBAHKAN OPSI KETIGA DI SINI
+            RadioListTile<DiscussionLinkType>(
+              title: const Text("Tanpa Tautan File"),
+              subtitle: const Text(
+                "Hanya untuk catatan internal.",
+                style: TextStyle(fontSize: 12),
+              ),
+              value: DiscussionLinkType.none,
+              groupValue: _linkType,
+              onChanged: (value) => setState(() => _linkType = value!),
+            ),
             RadioListTile<DiscussionLinkType>(
               title: const Text("File HTML Baru"),
               subtitle: Text(
@@ -141,14 +153,21 @@ class _AddDiscussionDialogContentState
                 );
                 return;
               }
+
+              // ==> LOGIKA PENGEMBALIAN DATA DIPERBARUI
+              String? linkData;
+              if (_linkType == DiscussionLinkType.html) {
+                linkData = canCreateHtml ? 'create_new' : null;
+              } else if (_linkType == DiscussionLinkType.quiz) {
+                linkData = _selectedQuizTopicPath;
+              }
+
               Navigator.pop(
                 context,
                 AddDiscussionResult(
                   name: _controller.text,
                   linkType: _linkType,
-                  linkData: _linkType == DiscussionLinkType.quiz
-                      ? _selectedQuizTopicPath
-                      : (canCreateHtml ? 'create_new' : null),
+                  linkData: linkData,
                 ),
               );
             }
@@ -166,12 +185,8 @@ class _AddDiscussionDialogContentState
           return const Center(child: CircularProgressIndicator());
         }
 
-        // =================================================================
-        // ==> PERBAIKAN UTAMA ADA DI SINI <==
-        // Kita secara eksplisit mendeklarasikan tipe variabel `items`.
         final List<DropdownMenuItem<String>> items = provider.categories.expand(
           (category) {
-            // Sekarang kita bisa langsung mengambil `topics` dari `category`
             return category.topics.map((topic) {
               final path = '${category.name}/${topic.name}';
               return DropdownMenuItem<String>(
@@ -181,13 +196,12 @@ class _AddDiscussionDialogContentState
             });
           },
         ).toList();
-        // =================================================================
 
         return DropdownButtonFormField<String>(
           value: _selectedQuizTopicPath,
           hint: const Text('Pilih Topik Kuis...'),
           isExpanded: true,
-          items: items, // Sekarang `items` sudah memiliki tipe yang benar
+          items: items,
           onChanged: (value) {
             setState(() {
               _selectedQuizTopicPath = value;

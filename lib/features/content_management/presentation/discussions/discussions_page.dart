@@ -61,6 +61,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
+  // ... (fungsi _moveSelectedDiscussions, _showSnackBar, _handleKeyEvent, _togglePointsVisibility, _deleteDiscussion tidak berubah) ...
+
   void _moveSelectedDiscussions(DiscussionProvider provider) async {
     final targetInfo = await showMoveDiscussionDialog(context);
 
@@ -190,9 +192,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   void _addDiscussion(DiscussionProvider provider) async {
-    // Panggil dialog baru yang mengembalikan AddDiscussionResult
     final result = await showAddDiscussionDialog(
       context: context,
       title: 'Tambah Diskusi Baru',
@@ -200,12 +200,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       subjectLinkedPath: widget.linkedPath,
     );
 
-    // Proses hasilnya jika dialog tidak dibatalkan
     if (result != null && mounted) {
       try {
-        // Panggil provider dengan objek result
         await provider.addDiscussion(result);
-
         _showSnackBar('Diskusi "${result.name}" berhasil ditambahkan.');
         await Provider.of<NeuronProvider>(
           context,
@@ -273,6 +270,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             const AdBannerWidget(),
           ],
         ),
+        // ==> PERUBAHAN UTAMA DI SINI: Urutan SpeedDialChild diubah
         floatingActionButton: provider.isSelectionMode
             ? null
             : SpeedDial(
