@@ -105,9 +105,10 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
       _snakeGameProvider.populationSize,
       (index) => Snake(
         Point(_gridWidth ~/ 2, _gridHeight ~/ 2),
+        // ==> PERBAIKAN DI SINI: Ukuran input layer diubah dari 8 menjadi 10
         savedBrain != null && index == 0
             ? savedBrain
-            : NeuralNetwork([8, 12, 4]),
+            : NeuralNetwork([10, 12, 4]),
       ),
     );
     _bestSnake = _population.first;
@@ -181,14 +182,19 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   List<double> _getInputs(Snake snake) {
     Point<int> head = snake.body.first;
     return [
+      // Jarak ke dinding (4 input)
       head.y / _gridHeight,
       (_gridHeight - head.y) / _gridHeight,
       head.x / _gridWidth,
       (_gridWidth - head.x) / _gridWidth,
+      // Arah makanan (2 input)
       (head.x - _food!.x).sign.toDouble(),
       (head.y - _food!.y).sign.toDouble(),
-      _isBodyAt(Point(head.x, head.y - 1), snake) ? 1.0 : 0.0,
-      _isBodyAt(Point(head.x, head.y + 1), snake) ? 1.0 : 0.0,
+      // ==> PERBAIKAN DI SINI: Deteksi tubuh di 4 arah (4 input)
+      _isBodyAt(Point(head.x, head.y - 1), snake) ? 1.0 : 0.0, // Atas
+      _isBodyAt(Point(head.x, head.y + 1), snake) ? 1.0 : 0.0, // Bawah
+      _isBodyAt(Point(head.x - 1, head.y), snake) ? 1.0 : 0.0, // Kiri
+      _isBodyAt(Point(head.x + 1, head.y), snake) ? 1.0 : 0.0, // Kanan
     ];
   }
 
@@ -271,8 +277,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
         break;
     }
 
-    // ==> PERUBAHAN UTAMA DI SINI <==
-    // Logika "wrap-around" saat menyentuh tembok
     if (newHead.x < 0) {
       newHead = Point(_gridWidth - 1, newHead.y);
     } else if (newHead.x >= _gridWidth) {
@@ -284,12 +288,10 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
       newHead = Point(newHead.x, 0);
     }
 
-    // Ular tetap mati jika menabrak dirinya sendiri
     if (_isBodyAt(newHead, snake)) {
       snake.isDead = true;
       return;
     }
-    // ==> AKHIR DARI PERUBAHAN <==
 
     snake.body.insert(0, newHead);
 
