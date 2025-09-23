@@ -41,14 +41,13 @@ class SnakeGameWidget extends StatefulWidget {
 }
 
 class _SnakeGameWidgetState extends State<SnakeGameWidget> {
-  // ==> KONSTANTA DIHAPUS <==
   static const double MUTATION_RATE = 0.05;
 
   List<Snake> _population = [];
   Snake? _bestSnake;
   Point<int>? _food;
   Timer? _gameTimer;
-  Timer? _trainingDurationTimer; // ==> TIMER BARU UNTUK DURASI <==
+  Timer? _trainingDurationTimer;
   late Size _size;
   late int _gridWidth;
   late int _gridHeight;
@@ -74,7 +73,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     _generation = 1;
     final savedBrain = await _gameService.loadBestBrain();
 
-    // ==> GUNAKAN NILAI DARI PROVIDER <==
     _population = List.generate(
       provider.populationSize,
       (index) => Snake(
@@ -93,14 +91,14 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
       }
     });
 
-    // ==> MULAI TIMER DURASI JIKA DISET <==
     _trainingDurationTimer?.cancel();
     if (widget.trainingMode && provider.trainingDuration > 0) {
+      // ==> PANGGIL PROVIDER UNTUK MEMULAI COUNTDOWN <==
+      provider.startTrainingTimer();
       _trainingDurationTimer = Timer(
         Duration(seconds: provider.trainingDuration),
         () {
           if (mounted) {
-            // Hentikan permainan dan mulai dari awal setelah waktu habis
             _gameTimer?.cancel();
             _startGame();
           }
@@ -128,7 +126,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     await _gameService.saveBestBrain(_bestSnake!.brain);
 
     List<Snake> newPopulation = [];
-    // ==> GUNAKAN NILAI DARI PROVIDER <==
     for (int i = 0; i < provider.populationSize; i++) {
       Snake parentA = _selectParent();
       Snake parentB = _selectParent();
@@ -279,7 +276,9 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   @override
   void dispose() {
     _gameTimer?.cancel();
-    _trainingDurationTimer?.cancel(); // ==> JANGAN LUPA HAPUS TIMER <==
+    _trainingDurationTimer?.cancel();
+    // ==> HENTIKAN TIMER DI PROVIDER SAAT WIDGET HILANG <==
+    Provider.of<SnakeGameProvider>(context, listen: false).stopTrainingTimer();
     super.dispose();
   }
 

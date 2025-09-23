@@ -10,7 +10,6 @@ class SnakeGamePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sediakan provider khusus untuk halaman ini
     return ChangeNotifierProvider(
       create: (_) => SnakeGameProvider(),
       child: const _SnakeGameView(),
@@ -23,7 +22,6 @@ class _SnakeGameView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan Consumer untuk mendapatkan state terbaru dari provider
     return Consumer<SnakeGameProvider>(
       builder: (context, provider, child) {
         return Scaffold(
@@ -42,7 +40,30 @@ class _SnakeGameView extends StatelessWidget {
           ),
           body: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : SnakeGameWidget(trainingMode: provider.isTrainingMode),
+              // ==> PERUBAHAN UTAMA: GUNAKAN STACK UNTUK MENUMPUK WIDGET <==
+              : Stack(
+                  children: [
+                    SnakeGameWidget(trainingMode: provider.isTrainingMode),
+                    // ==> INDIKATOR WAKTU DITAMPILKAN DI SINI <==
+                    if (provider.isTrainingMode &&
+                        provider.trainingDuration > 0)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Chip(
+                          backgroundColor: Colors.black54,
+                          avatar: const Icon(
+                            Icons.timer_outlined,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            'Sisa Waktu: ${provider.trainingTimeRemaining}s',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
         );
       },
     );

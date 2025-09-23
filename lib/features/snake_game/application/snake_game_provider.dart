@@ -1,4 +1,5 @@
 // lib/features/snake_game/application/snake_game_provider.dart
+import 'dart:async'; // Import Timer
 import 'package:flutter/material.dart';
 import '../infrastructure/snake_game_settings_service.dart';
 
@@ -11,22 +12,31 @@ class SnakeGameProvider with ChangeNotifier {
   bool _isTrainingMode = false;
   bool get isTrainingMode => _isTrainingMode;
 
-  // ==> STATE BARU DITAMBAHKAN <==
   int _populationSize = 50;
   int get populationSize => _populationSize;
 
   int _trainingDuration = 0; // 0 = tanpa batas
   int get trainingDuration => _trainingDuration;
 
+  // ==> STATE BARU UNTUK INDIKATOR WAKTU <==
+  int _trainingTimeRemaining = 0;
+  int get trainingTimeRemaining => _trainingTimeRemaining;
+  Timer? _countdownTimer;
+
   SnakeGameProvider() {
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
     _isLoading = true;
     notifyListeners();
     _isTrainingMode = await _settingsService.loadTrainingMode();
-    // ==> MUAT PENGATURAN BARU <==
     _populationSize = await _settingsService.loadPopulationSize();
     _trainingDuration = await _settingsService.loadTrainingDuration();
     _isLoading = false;
@@ -39,17 +49,37 @@ class SnakeGameProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUPDATE UKURAN POPULASI <==
   Future<void> setPopulationSize(int size) async {
     _populationSize = size;
     await _settingsService.savePopulationSize(size);
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUPDATE DURASI LATIHAN <==
   Future<void> setTrainingDuration(int duration) async {
     _trainingDuration = duration;
     await _settingsService.saveTrainingDuration(duration);
     notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGELOLA COUNTDOWN <==
+  void startTrainingTimer() {
+    _countdownTimer?.cancel();
+    if (_isTrainingMode && _trainingDuration > 0) {
+      _trainingTimeRemaining = _trainingDuration;
+      notifyListeners();
+
+      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_trainingTimeRemaining > 0) {
+          _trainingTimeRemaining--;
+          notifyListeners();
+        } else {
+          timer.cancel();
+        }
+      });
+    }
+  }
+
+  void stopTrainingTimer() {
+    _countdownTimer?.cancel();
   }
 }
