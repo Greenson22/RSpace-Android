@@ -18,8 +18,9 @@ import 'widgets/subject_grid_tile.dart';
 import 'widgets/subject_list_tile.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import 'dialogs/generate_index_template_dialog.dart';
-// ==> IMPORT DIALOG BARU
 import 'dialogs/generate_index_prompt_dialog.dart';
+// ==> IMPORT EDITOR INTERNAL
+import '../../../html_editor/presentation/pages/html_editor_page.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -31,6 +32,7 @@ class SubjectsPage extends StatefulWidget {
 }
 
 class _SubjectsPageState extends State<SubjectsPage> {
+  // ... (properti state tidak berubah) ...
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
@@ -65,7 +67,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     super.dispose();
   }
 
-  // ... (kode lainnya tidak berubah) ...
+  // ... (fungsi _handleKeyEvent, _showSnackBar, _moveSubject, dll tidak berubah) ...
   void _handleKeyEvent(RawKeyEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.altLeft ||
         event.logicalKey == LogicalKeyboardKey.altRight) {
@@ -266,7 +268,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI
+  // ==> FUNGSI INI DIPERBARUI TOTAL
   Future<void> _showEditIndexOptions(
     BuildContext context,
     Subject subject,
@@ -286,7 +288,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
               subtitle: Text('Buat & simpan template baru berdasarkan tema.'),
             ),
           ),
-          // ==> OPSI BARU DITAMBAHKAN DI SINI
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, 'ai_prompt'),
             child: const ListTile(
@@ -300,7 +301,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             child: const ListTile(
               leading: Icon(Icons.edit_document),
               title: Text('Edit Manual'),
-              subtitle: Text('Buka file index.html di editor eksternal.'),
+              subtitle: Text('Buka file index.html di editor.'),
             ),
           ),
         ],
@@ -319,13 +320,54 @@ class _SubjectsPageState extends State<SubjectsPage> {
         _showSnackBar('Template baru berhasil dibuat oleh AI!');
       }
     } else if (choice == 'ai_prompt' && mounted) {
-      // ==> ALUR BARU UNTUK MENAMPILKAN PROMPT
       await showGenerateIndexPromptDialog(context, subject);
     } else if (choice == 'manual' && mounted) {
-      try {
-        await provider.editSubjectIndexFile(subject);
-      } catch (e) {
-        _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
+      // ==> TAMPILKAN DIALOG PEMILIHAN EDITOR
+      final editorChoice = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Pilih Editor'),
+          content: const Text(
+            'Buka dengan editor internal atau aplikasi eksternal?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'internal'),
+              child: const Text('Internal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'external'),
+              child: const Text('Eksternal'),
+            ),
+          ],
+        ),
+      );
+
+      if (editorChoice == 'internal' && mounted) {
+        try {
+          final content = await provider.readIndexFileContent(subject);
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => HtmlEditorPage(
+                  pageTitle: 'Template: ${subject.name}',
+                  initialContent: content,
+                  onSave: (newContent) =>
+                      provider.saveIndexFileContent(subject, newContent),
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          _showSnackBar('Gagal memuat konten: ${e.toString()}', isError: true);
+        }
+      } else if (editorChoice == 'external' && mounted) {
+        try {
+          await provider.editSubjectIndexFile(subject);
+        } catch (e) {
+          _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
+        }
       }
     }
   }
@@ -460,6 +502,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
+  // ... (sisa kode build widgets tidak berubah) ...
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,

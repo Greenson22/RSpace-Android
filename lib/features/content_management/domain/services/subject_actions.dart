@@ -12,7 +12,92 @@ class SubjectActions {
   final PathService _pathService = PathService();
   final SubjectRepository _repository = SubjectRepository();
 
-  /// Memindahkan file subject dan folder tertautnya ke topik baru.
+  // ==> FUNGSI HELPER BARU UNTUK MENDAPATKAN FILE INDEX
+  Future<File> _getIndexFile(String subjectLinkedPath) async {
+    final perpuskuBasePath = await _pathService.perpuskuDataPath;
+    final subjectDirectoryPath = path.join(
+      perpuskuBasePath,
+      'file_contents',
+      'topics',
+      subjectLinkedPath,
+    );
+    return File(path.join(subjectDirectoryPath, 'index.html'));
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMBACA KONTEN
+  Future<String> readSubjectIndexFile(String subjectLinkedPath) async {
+    final indexFile = await _getIndexFile(subjectLinkedPath);
+    if (!await indexFile.exists()) {
+      return '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="main-container"></div>
+</body>
+</html>''';
+    }
+    return await indexFile.readAsString();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN KONTEN
+  Future<void> saveSubjectIndexFileContent(
+    String subjectLinkedPath,
+    String htmlContent,
+  ) async {
+    final indexFile = await _getIndexFile(subjectLinkedPath);
+    await indexFile.writeAsString(htmlContent, flush: true);
+  }
+
+  Future<void> generateAndSaveSubjectIndexFile(
+    String subjectLinkedPath,
+    String htmlContent,
+  ) async {
+    // Fungsi ini sekarang memanggil helper save yang baru
+    await saveSubjectIndexFileContent(subjectLinkedPath, htmlContent);
+  }
+
+  // Fungsi ini tetap sama untuk membuka dengan editor eksternal
+  Future<void> openSubjectIndexFile(String subjectLinkedPath) async {
+    final indexFile = await _getIndexFile(subjectLinkedPath);
+
+    if (!await indexFile.exists()) {
+      await indexFile.create(recursive: true);
+      await indexFile.writeAsString('''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="main-container"></div>
+</body>
+</html>''');
+    }
+
+    if (Platform.isLinux) {
+      const editors = ['gedit', 'kate', 'mousepad', 'code', 'xdg-open'];
+      for (final ed in editors) {
+        final check = await Process.run('which', [ed]);
+        if (check.exitCode == 0) {
+          await Process.run(ed, [indexFile.path], runInShell: true);
+          return;
+        }
+      }
+      throw Exception('Tidak ditemukan editor teks yang kompatibel.');
+    } else {
+      final result = await OpenFile.open(indexFile.path);
+      if (result.type != ResultType.done) {
+        throw Exception('Gagal membuka file untuk diedit: ${result.message}');
+      }
+    }
+  }
+
+  // ... (sisa kode seperti moveSubject tidak berubah)
   Future<void> moveSubject(
     Subject subject,
     String oldTopicPath,
@@ -70,70 +155,6 @@ class SubjectActions {
           jsonData['metadata']['linkedPath'] = newLinkedPath;
           await _repository.writeSubjectJson(newJsonPath, jsonData);
         }
-      }
-    }
-  }
-
-  /// Menyimpan konten HTML baru ke file index.html milik subject.
-  Future<void> generateAndSaveSubjectIndexFile(
-    String subjectLinkedPath,
-    String htmlContent,
-  ) async {
-    final perpuskuBasePath = await _pathService.perpuskuDataPath;
-    final subjectDirectoryPath = path.join(
-      perpuskuBasePath,
-      'file_contents',
-      'topics',
-      subjectLinkedPath,
-    );
-    final indexFilePath = path.join(subjectDirectoryPath, 'index.html');
-    final indexFile = File(indexFilePath);
-
-    // Langsung timpa file yang ada dengan konten baru dari AI
-    await indexFile.writeAsString(htmlContent, flush: true);
-  }
-
-  /// Membuka atau membuat file index.html dari subject yang tertaut.
-  Future<void> openSubjectIndexFile(String subjectLinkedPath) async {
-    final perpuskuBasePath = await _pathService.perpuskuDataPath;
-    final subjectDirectoryPath = path.join(
-      perpuskuBasePath,
-      'file_contents',
-      'topics',
-      subjectLinkedPath,
-    );
-    final indexFilePath = path.join(subjectDirectoryPath, 'index.html');
-    final indexFile = File(indexFilePath);
-
-    if (!await indexFile.exists()) {
-      await indexFile.create(recursive: true);
-      await indexFile.writeAsString('''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Index</title>
-</head>
-<body>
-    <div id="main-container"></div>
-</body>
-</html>''');
-    }
-
-    if (Platform.isLinux) {
-      const editors = ['gedit', 'kate', 'mousepad', 'code', 'xdg-open'];
-      for (final ed in editors) {
-        final check = await Process.run('which', [ed]);
-        if (check.exitCode == 0) {
-          await Process.run(ed, [indexFile.path], runInShell: true);
-          return;
-        }
-      }
-      throw Exception('Tidak ditemukan editor teks yang kompatibel.');
-    } else {
-      final result = await OpenFile.open(indexFile.path);
-      if (result.type != ResultType.done) {
-        throw Exception('Gagal membuka file untuk diedit: ${result.message}');
       }
     }
   }

@@ -20,6 +20,7 @@ import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import '../discussion_provider.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
+  // ... (properti dan fungsi lain tidak berubah) ...
   DiscussionService get discussionService;
   PathService get pathService;
   String? get sourceSubjectLinkedPath;
@@ -32,18 +33,15 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   Future<void> saveDiscussions();
   void internalNotifyListeners();
 
-  // ==> AWAL PERBAIKAN: Fungsi helper terpusat untuk merekonstruksi path
   String _getCorrectRelativePath(Discussion discussion) {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Path file untuk diskusi ini kosong atau tidak ada.');
     }
 
-    // Cek jika path sudah lengkap (berisi separator direktori)
     if (discussion.filePath!.contains('/')) {
       return discussion.filePath!;
     }
 
-    // Jika path tidak lengkap (hanya nama file), coba rekonstruksi
     if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
       throw Exception(
         'Gagal merekonstruksi path file: Subject sumber tidak tertaut ke folder PerpusKu.',
@@ -52,7 +50,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 
     return path.join(sourceSubjectLinkedPath!, discussion.filePath!);
   }
-  // <== AKHIR PERBAIKAN
 
   List<String> get repetitionCodes => kRepetitionCodes;
 
@@ -176,7 +173,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     return path.join(perpuskuPath, 'file_contents', 'topics');
   }
 
-  // ==> PERBAIKAN: Fungsi ini sekarang menerima objek Discussion untuk mendapatkan konteks path
   Future<String> readHtmlFromFile(Discussion discussion) async {
     final String finalRelativePath = _getCorrectRelativePath(discussion);
     final basePath = await getPerpuskuHtmlBasePath();
@@ -388,6 +384,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL
   Future<void> editDiscussionFileWithSelection(
     Discussion discussion,
     BuildContext context,
@@ -413,12 +410,21 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     );
 
     if (choice == 'internal' && context.mounted) {
+      // Baca konten file terlebih dahulu
+      final content = await readHtmlFromFile(discussion);
+      final correctPath = _getCorrectRelativePath(discussion);
+
+      // Navigasi ke editor yang sudah direfaktor
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider.value(
-            value: this as DiscussionProvider,
-            child: HtmlEditorPage(discussion: discussion),
+          builder: (_) => HtmlEditorPage(
+            pageTitle: discussion.discussion,
+            initialContent: content,
+            // Sediakan fungsi onSave
+            onSave: (newContent) async {
+              await writeHtmlToFile(correctPath, newContent);
+            },
           ),
         ),
       );
@@ -428,7 +434,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   }
 
   Future<void> _openFileWithExternalEditor(Discussion discussion) async {
-    // ==> PERBAIKAN: Gunakan helper untuk path yang benar
     final finalRelativePath = _getCorrectRelativePath(discussion);
 
     final perpuskuPath = await pathService.perpuskuDataPath;

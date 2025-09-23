@@ -5,15 +5,20 @@ import 'package:provider/provider.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
-import '../../../content_management/application/discussion_provider.dart';
-import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../themes/editor_themes.dart';
 
 class HtmlEditorPage extends StatefulWidget {
-  final Discussion discussion;
+  final String pageTitle;
+  final String initialContent;
+  final Future<void> Function(String newContent) onSave;
 
-  const HtmlEditorPage({super.key, required this.discussion});
+  const HtmlEditorPage({
+    super.key,
+    required this.pageTitle,
+    required this.initialContent,
+    required this.onSave,
+  });
 
   @override
   State<HtmlEditorPage> createState() => _HtmlEditorPageState();
@@ -25,7 +30,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   String? _error;
 
   late EditorTheme _selectedTheme;
-
   String _previousText = '';
   bool _isAutoEditing = false;
   bool _isLineDeletionMode = false;
@@ -39,7 +43,14 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   Future<void> _initializeEditor() async {
     await _loadTheme();
-    await _loadFileContent();
+    _controller = CodeController(text: widget.initialContent, language: xml);
+    _previousText = _controller!.text;
+    _controller!.addListener(_onTextChanged);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadTheme() async {
@@ -71,32 +82,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     _controller?.removeListener(_onTextChanged);
     _controller?.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadFileContent() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final provider = Provider.of<DiscussionProvider>(context, listen: false);
-      // ==> PERBAIKAN: Kirim seluruh objek discussion, bukan hanya filePath
-      final content = await provider.readHtmlFromFile(widget.discussion);
-
-      _controller = CodeController(text: content, language: xml);
-      _previousText = _controller!.text;
-      _controller!.addListener(_onTextChanged);
-    } catch (e) {
-      setState(() {
-        _error = "Gagal memuat file: ${e.toString()}";
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   void _onTextChanged() {
@@ -173,26 +158,21 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   void _handleLineDeletion() {
     if (!_isLineDeletionMode || _controller == null) return;
-
     final text = _controller!.text;
     final offset = _controller!.selection.baseOffset;
-
     int start = offset;
     while (start > 0 && text[start - 1] != '\n') {
       start--;
     }
-
     int end = offset;
     while (end < text.length && text[end] != '\n') {
       end++;
     }
-
     if (end < text.length && text[end] == '\n') {
       end++;
     } else if (start > 0 && text[start - 1] == '\n') {
       start--;
     }
-
     final newText = text.substring(0, start) + text.substring(end);
     _controller!.text = newText;
     _controller!.selection = TextSelection.fromPosition(
@@ -281,13 +261,8 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   Future<void> _saveFileContent() async {
     if (_controller == null) return;
-    final provider = Provider.of<DiscussionProvider>(context, listen: false);
     try {
-      final correctPath = provider.allDiscussions
-          .firstWhere((d) => d.hashCode == widget.discussion.hashCode)
-          .filePath!;
-
-      await provider.writeHtmlToFile(correctPath, _controller!.text);
+      await widget.onSave(_controller!.text);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -314,7 +289,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Edit: ${widget.discussion.discussion}',
+          'Edit: ${widget.pageTitle}',
           overflow: TextOverflow.ellipsis,
         ),
         actions: [

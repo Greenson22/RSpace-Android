@@ -19,6 +19,7 @@ class SubjectProvider with ChangeNotifier {
     // fetchSubjects dipanggil dari initState di halaman UI
   }
 
+  // ... (kode lainnya tidak berubah) ...
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -226,6 +227,25 @@ class SubjectProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // ==> FUNGSI BARU UNTUK MEMBACA & MENYIMPAN KONTEN INDEX
+  Future<String> readIndexFileContent(Subject subject) async {
+    if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
+      throw Exception('Subject tidak memiliki tautan.');
+    }
+    return await _subjectActions.readSubjectIndexFile(subject.linkedPath!);
+  }
+
+  Future<void> saveIndexFileContent(Subject subject, String content) async {
+    if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
+      throw Exception('Subject tidak memiliki tautan.');
+    }
+    await _subjectActions.saveSubjectIndexFileContent(
+      subject.linkedPath!,
+      content,
+    );
+  }
+  // <== AKHIR FUNGSI BARU
 
   Future<void> editSubjectIndexFile(Subject subject) async {
     if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
