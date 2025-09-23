@@ -6,7 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/core/providers/debug_provider.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_provider.dart'; // IMPORT BARU
+import 'package:my_aplication/features/perpusku/application/perpusku_provider.dart';
 import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
 import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
@@ -14,6 +14,7 @@ import 'package:my_aplication/features/content_management/application/topic_prov
 import 'package:my_aplication/core/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
 import 'core/widgets/underwater_widget.dart';
+import 'core/widgets/snake_widget.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
 import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
@@ -72,9 +73,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PromptProvider()),
         ChangeNotifierProvider(create: (_) => NeuronProvider()),
         ChangeNotifierProvider(create: (_) => QuizCategoryProvider()),
-        ChangeNotifierProvider(
-          create: (_) => PerpuskuProvider(),
-        ), // ==> TAMBAHKAN INI
+        ChangeNotifierProvider(create: (_) => PerpuskuProvider()),
       ],
       child: const MyApp(),
     ),
@@ -124,7 +123,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        // Tampilkan layar loading jika tema belum siap
         if (themeProvider.isLoading) {
           return const MaterialApp(
             home: Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -133,6 +131,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
         final isChristmas = themeProvider.isChristmasTheme;
         final isUnderwater = themeProvider.isUnderwaterTheme;
+        final isSnake = themeProvider.isSnakeTheme;
         final bool showFlo = themeProvider.showFloatingCharacter;
         final bool showQuickFab = themeProvider.showQuickFab;
 
@@ -167,7 +166,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 // Lapisan 1: Konten Utama Aplikasi
                 if (navigator != null) navigator,
 
-                // Lapisan 2: Overlay Tema (Salju atau Ikan di Latar Depan)
+                // Lapisan 2: Overlay Tema
                 if (isChristmas)
                   const IgnorePointer(
                     child: SnowWidget(
@@ -180,18 +179,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 if (isUnderwater)
                   const IgnorePointer(
                     child: UnderwaterWidget(
-                      totalFish: 5, // Lebih sedikit ikan untuk di depan
-                      speed: 1.3, // Sedikit lebih cepat untuk efek parallax
+                      totalFish: 5,
+                      speed: 1.3,
                       isRunning: true,
                     ),
                   ),
 
-                // Lapisan 3 & 4: Overlay Fungsional (Flo & FAB)
-                if (showFlo)
+                // Lapisan 3 & 4: Overlay Fungsional
+                if (showFlo && !isSnake)
                   const IgnorePointer(
                     child: FloatingCharacter(isVisible: true),
                   ),
                 if (showQuickFab) const DraggableFabView(),
+
+                // Lapisan Paling Atas: Ular
+                if (isSnake) const IgnorePointer(child: SnakeWidget()),
               ],
             );
           },

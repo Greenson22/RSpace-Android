@@ -26,6 +26,7 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
       builder: (context, themeProvider, child) {
         final backgroundImagePath = themeProvider.backgroundImagePath;
         final isUnderwater = themeProvider.isUnderwaterTheme;
+        final isSnake = themeProvider.isSnakeTheme; // ==> DITAMBAHKAN
 
         return RawKeyboardListener(
           focusNode: focusNode,
@@ -44,12 +45,12 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
                   )
                 : null,
             child: Scaffold(
-              backgroundColor: (backgroundImagePath != null || isUnderwater)
+              backgroundColor:
+                  (backgroundImagePath != null || isUnderwater || isSnake)
                   ? Colors.transparent
                   : null,
               appBar: DashboardAppBar(
                 isPathSet: isPathSet,
-                // ==> BARIS INI YANG MEMPERBAIKI ERROR <==
                 isApiConfigured: isApiConfigured,
                 onShowStorageDialog: () => showStoragePathDialog(context),
                 onSync: handleBackupAndSync,

@@ -26,6 +26,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
   late bool _isChristmas;
   // ==> STATE BARU UNTUK TEMA BAWAH AIR <==
   late bool _isUnderwater;
+  late bool _isSnake; // ==> DITAMBAHKAN
   late Color _selectedColor;
   // ==> STATE LOKAL BARU UNTUK SLIDER <==
   late double _dashboardScale;
@@ -40,6 +41,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     _isChristmas = provider.isChristmasTheme;
     // ==> INISIALISASI STATE BARU <==
     _isUnderwater = provider.isUnderwaterTheme;
+    _isSnake = provider.isSnakeTheme; // ==> DITAMBAHKAN
     _selectedColor = provider.primaryColor;
     // ==> INISIALISASI STATE SLIDER <==
     _dashboardScale = provider.dashboardItemScale;
@@ -55,6 +57,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
       isChristmas: _isChristmas,
       // ==> KIRIM NILAI BARU <==
       isUnderwater: _isUnderwater,
+      isSnake: _isSnake, // ==> DITAMBAHKAN
       color: _selectedColor,
       // ==> SIMPAN NILAI DARI SLIDER <==
       dashboardScale: _dashboardScale,
@@ -95,6 +98,13 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               secondary: const Icon(Icons.pool_outlined),
               value: _isUnderwater,
               onChanged: (value) => setState(() => _isUnderwater = value),
+            ),
+            SwitchListTile(
+              title: const Text('Tema Spesial Ular'), // ==> DITAMBAHKAN
+              secondary: const Icon(Icons.catching_pokemon), // ==> DITAMBAHKAN
+              value: _isSnake, // ==> DITAMBAHKAN
+              onChanged: (value) =>
+                  setState(() => _isSnake = value), // ==> DITAMBAHKAN
             ),
             // --- TAMBAHKAN SWITCH BARU DI SINI ---
             SwitchListTile(
