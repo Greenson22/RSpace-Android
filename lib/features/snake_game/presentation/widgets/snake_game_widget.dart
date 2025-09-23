@@ -33,12 +33,12 @@ class Snake {
 
 class SnakeGameWidget extends StatefulWidget {
   final bool trainingMode;
-  final double speed; // ==> TAMBAHKAN PARAMETER BARU
+  final double speed;
 
   const SnakeGameWidget({
     super.key,
     this.trainingMode = false,
-    required this.speed, // ==> JADIKAN WAJIB
+    required this.speed,
   });
 
   @override
@@ -59,10 +59,15 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   final Random _random = Random();
   int _generation = 1;
   final SnakeGameService _gameService = SnakeGameService();
+  // ==> PERBAIKAN: Simpan referensi provider di sini <==
+  late SnakeGameProvider _snakeGameProvider;
 
   @override
   void initState() {
     super.initState();
+    // ==> PERBAIKAN: Inisialisasi referensi provider di initState <==
+    _snakeGameProvider = Provider.of<SnakeGameProvider>(context, listen: false);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _size = MediaQuery.of(context).size;
@@ -73,21 +78,17 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     });
   }
 
-  // ==> FUNGSI BARU UNTUK MENDETEKSI PERUBAHAN PENGATURAN <==
   @override
   void didUpdateWidget(covariant SnakeGameWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Jika kecepatan berubah, restart timer game dengan durasi baru
     if (oldWidget.speed != widget.speed) {
       _gameTimer?.cancel();
       _startGameTimer();
     }
   }
 
-  // ==> FUNGSI UNTUK MEMBUAT TIMER DIPISAHKAN <==
   void _startGameTimer() {
     _gameTimer?.cancel();
-    // Kecepatan lebih tinggi = durasi lebih pendek
     final int timerMilliseconds = (100 / widget.speed).round();
     _gameTimer = Timer.periodic(Duration(milliseconds: timerMilliseconds), (
       timer,
@@ -99,12 +100,11 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   }
 
   void _startGame() async {
-    final provider = Provider.of<SnakeGameProvider>(context, listen: false);
     _generation = 1;
     final savedBrain = await _gameService.loadBestBrain();
 
     _population = List.generate(
-      provider.populationSize,
+      _snakeGameProvider.populationSize,
       (index) => Snake(
         Point(_gridWidth ~/ 2, _gridHeight ~/ 2),
         savedBrain != null && index == 0
@@ -115,13 +115,13 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     _bestSnake = _population.first;
     _generateFood();
 
-    _startGameTimer(); // ==> PANGGIL FUNGSI TIMER YANG BARU
+    _startGameTimer();
 
     _trainingDurationTimer?.cancel();
-    if (widget.trainingMode && provider.trainingDuration > 0) {
-      provider.startTrainingTimer();
+    if (widget.trainingMode && _snakeGameProvider.trainingDuration > 0) {
+      _snakeGameProvider.startTrainingTimer();
       _trainingDurationTimer = Timer(
-        Duration(seconds: provider.trainingDuration),
+        Duration(seconds: _snakeGameProvider.trainingDuration),
         () {
           if (mounted) {
             _gameTimer?.cancel();
@@ -131,8 +131,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
       );
     }
   }
-
-  // ... (sisa fungsi tidak ada perubahan signifikan)
 
   void _generateFood() {
     _food = Point(_random.nextInt(_gridWidth), _random.nextInt(_gridHeight));
@@ -184,18 +182,13 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
 
   List<double> _getInputs(Snake snake) {
     Point<int> head = snake.body.first;
-    // Inputs: wall distances, food direction, body proximity
     return [
-      // Wall distances (normalized)
-      head.y / _gridHeight, // Up
-      (_gridHeight - head.y) / _gridHeight, // Down
-      head.x / _gridWidth, // Left
-      (_gridWidth - head.x) / _gridWidth, // Right
-      // Food direction
+      head.y / _gridHeight,
+      (_gridHeight - head.y) / _gridHeight,
+      head.x / _gridWidth,
+      (_gridWidth - head.x) / _gridWidth,
       (head.x - _food!.x).sign.toDouble(),
       (head.y - _food!.y).sign.toDouble(),
-
-      // Body proximity
       _isBodyAt(Point(head.x, head.y - 1), snake) ? 1.0 : 0.0,
       _isBodyAt(Point(head.x, head.y + 1), snake) ? 1.0 : 0.0,
     ];
@@ -253,7 +246,6 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
         break;
     }
 
-    // Prevent snake from reversing
     if ((newDirection == Direction.up && snake.direction != Direction.down) ||
         (newDirection == Direction.down && snake.direction != Direction.up) ||
         (newDirection == Direction.left &&
@@ -304,7 +296,8 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   void dispose() {
     _gameTimer?.cancel();
     _trainingDurationTimer?.cancel();
-    Provider.of<SnakeGameProvider>(context, listen: false).stopTrainingTimer();
+    // ==> PERBAIKAN: Gunakan referensi yang sudah disimpan <==
+    _snakeGameProvider.stopTrainingTimer();
     super.dispose();
   }
 
