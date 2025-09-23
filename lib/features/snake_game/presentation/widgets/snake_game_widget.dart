@@ -2,8 +2,10 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../application/snake_game_provider.dart';
 import '../../domain/snake_ann.dart';
-import '../../infrastructure/snake_game_service.dart'; // Import service baru
+import '../../infrastructure/snake_game_service.dart';
 
 enum Direction { up, down, left, right }
 
@@ -39,19 +41,20 @@ class SnakeGameWidget extends StatefulWidget {
 }
 
 class _SnakeGameWidgetState extends State<SnakeGameWidget> {
-  static const int POPULATION_SIZE = 50;
+  // ==> KONSTANTA DIHAPUS <==
   static const double MUTATION_RATE = 0.05;
 
   List<Snake> _population = [];
   Snake? _bestSnake;
   Point<int>? _food;
-  Timer? _timer;
+  Timer? _gameTimer;
+  Timer? _trainingDurationTimer; // ==> TIMER BARU UNTUK DURASI <==
   late Size _size;
   late int _gridWidth;
   late int _gridHeight;
   final Random _random = Random();
   int _generation = 1;
-  final SnakeGameService _gameService = SnakeGameService(); // Instance service
+  final SnakeGameService _gameService = SnakeGameService();
 
   @override
   void initState() {
@@ -67,12 +70,13 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   }
 
   void _startGame() async {
-    // Diubah menjadi async
+    final provider = Provider.of<SnakeGameProvider>(context, listen: false);
     _generation = 1;
     final savedBrain = await _gameService.loadBestBrain();
 
+    // ==> GUNAKAN NILAI DARI PROVIDER <==
     _population = List.generate(
-      POPULATION_SIZE,
+      provider.populationSize,
       (index) => Snake(
         Point(_gridWidth ~/ 2, _gridHeight ~/ 2),
         savedBrain != null && index == 0
@@ -82,12 +86,27 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     );
     _bestSnake = _population.first;
     _generateFood();
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+    _gameTimer?.cancel();
+    _gameTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (mounted) {
         _updateGame();
       }
     });
+
+    // ==> MULAI TIMER DURASI JIKA DISET <==
+    _trainingDurationTimer?.cancel();
+    if (widget.trainingMode && provider.trainingDuration > 0) {
+      _trainingDurationTimer = Timer(
+        Duration(seconds: provider.trainingDuration),
+        () {
+          if (mounted) {
+            // Hentikan permainan dan mulai dari awal setelah waktu habis
+            _gameTimer?.cancel();
+            _startGame();
+          }
+        },
+      );
+    }
   }
 
   void _generateFood() {
@@ -95,7 +114,7 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
   }
 
   void _nextGeneration() async {
-    // Diubah menjadi async
+    final provider = Provider.of<SnakeGameProvider>(context, listen: false);
     _generation++;
     double totalFitness = 0;
     for (var snake in _population) {
@@ -106,11 +125,11 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
     _population.sort((a, b) => b.fitness.compareTo(a.fitness));
     _bestSnake = _population.first;
 
-    // Simpan otak terbaik
     await _gameService.saveBestBrain(_bestSnake!.brain);
 
     List<Snake> newPopulation = [];
-    for (int i = 0; i < POPULATION_SIZE; i++) {
+    // ==> GUNAKAN NILAI DARI PROVIDER <==
+    for (int i = 0; i < provider.populationSize; i++) {
       Snake parentA = _selectParent();
       Snake parentB = _selectParent();
       NeuralNetwork childBrain = NeuralNetwork.crossover(
@@ -259,7 +278,8 @@ class _SnakeGameWidgetState extends State<SnakeGameWidget> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _gameTimer?.cancel();
+    _trainingDurationTimer?.cancel(); // ==> JANGAN LUPA HAPUS TIMER <==
     super.dispose();
   }
 
