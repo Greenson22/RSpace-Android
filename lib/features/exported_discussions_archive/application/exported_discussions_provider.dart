@@ -2,7 +2,6 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
@@ -20,8 +19,8 @@ class ExportedDiscussionsProvider with ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  File? _zipFile;
-  File? get zipFile => _zipFile;
+  Directory? _archiveDir;
+  Directory? get archiveDir => _archiveDir;
 
   DateTime? _lastModified;
   DateTime? get lastModified => _lastModified;
@@ -44,112 +43,68 @@ class ExportedDiscussionsProvider with ChangeNotifier {
 
     try {
       final exportPath = await _pathService.finishedDiscussionsExportPath;
-      final zipFilePath = path.join(
-        exportPath,
-        'Export-Finished-Discussions.zip',
-      );
-      _zipFile = File(zipFilePath);
+      final archiveTopicsPath = path.join(exportPath, 'topics');
+      _archiveDir = Directory(archiveTopicsPath);
 
-      if (!await _zipFile!.exists()) {
+      if (!await _archiveDir!.exists()) {
         _allExportedTopics = [];
         _exportedTopics = [];
         _lastModified = null;
         return;
       }
 
-      _lastModified = await _zipFile!.lastModified();
-
-      final bytes = await _zipFile!.readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
+      _lastModified = await _archiveDir!.stat().then((stat) => stat.modified);
 
       final Map<String, ExportedTopic> topicsMap = {};
-      final Map<String, String> topicIcons = {};
 
-      // >> TAHAP 1: Baca konfigurasi topik untuk mendapatkan ikonnya
-      for (final file in archive) {
-        if (file.isFile && file.name.endsWith('topic_config.json')) {
-          final topicName = path.dirname(file.name).split('/').last;
-          final content = utf8.decode(file.content as List<int>);
+      final topicDirs = _archiveDir!.listSync().whereType<Directory>();
+
+      for (final topicDir in topicDirs) {
+        final topicName = path.basename(topicDir.path);
+        String topicIcon = '📁';
+
+        final configFile = File(path.join(topicDir.path, 'topic_config.json'));
+        if (await configFile.exists()) {
+          final configContent = await configFile.readAsString();
+          final configJson = jsonDecode(configContent) as Map<String, dynamic>;
+          topicIcon = configJson['icon'] ?? '📁';
+        }
+
+        final topic = ExportedTopic(
+          name: topicName,
+          icon: topicIcon,
+          subjects: [],
+        );
+
+        final subjectFiles = topicDir.listSync().whereType<File>().where(
+          (file) =>
+              file.path.endsWith('.json') &&
+              !file.path.endsWith('topic_config.json'),
+        );
+
+        for (final subjectFile in subjectFiles) {
+          final subjectName = path.basenameWithoutExtension(subjectFile.path);
+          final content = await subjectFile.readAsString();
           final jsonData = jsonDecode(content) as Map<String, dynamic>;
-          topicIcons[topicName] = jsonData['icon'] ?? '📁';
+
+          final discussions = (jsonData['content'] as List)
+              .map((item) => Discussion.fromJson(item))
+              .toList();
+
+          final subjectIcon =
+              (jsonData['metadata'] as Map<String, dynamic>?)?['icon'] ?? '📄';
+
+          topic.subjects.add(
+            ExportedSubject(
+              name: subjectName,
+              icon: subjectIcon,
+              discussions: discussions,
+            ),
+          );
         }
-      }
 
-      // >> TAHAP 2: Proses semua file JSON untuk membangun struktur data
-      for (final file in archive) {
-        if (file.isFile &&
-            file.name.startsWith('RSpace/') &&
-            file.name.endsWith('.json') &&
-            !file.name.endsWith('topic_config.json')) {
-          final pathParts = file.name.split('/');
-          if (pathParts.length == 3) {
-            final topicName = pathParts[1];
-            final subjectName = path.basenameWithoutExtension(pathParts[2]);
-
-            final content = utf8.decode(file.content as List<int>);
-            final jsonData = jsonDecode(content) as Map<String, dynamic>;
-
-            final discussions = (jsonData['content'] as List)
-                .map((item) => Discussion.fromJson(item))
-                .toList();
-
-            // Dapatkan ikon subjek dari metadata
-            final subjectIcon =
-                (jsonData['metadata'] as Map<String, dynamic>?)?['icon'] ??
-                '📄';
-
-            if (!topicsMap.containsKey(topicName)) {
-              topicsMap[topicName] = ExportedTopic(
-                name: topicName,
-                icon:
-                    topicIcons[topicName] ??
-                    '📁', // Gunakan ikon yang sudah dibaca
-                subjects: [],
-              );
-            }
-
-            topicsMap[topicName]!.subjects.add(
-              ExportedSubject(
-                name: subjectName,
-                icon: subjectIcon, // Tambahkan ikon subjek
-                discussions: discussions,
-              ),
-            );
-          }
-        }
-      }
-
-      // >> TAHAP 3: Proses semua file HTML dan cocokkan
-      for (final file in archive) {
-        if (file.isFile &&
-            file.name.startsWith('PerpusKu/') &&
-            file.name.endsWith('.html')) {
-          final pathParts = file.name.split('/');
-          if (pathParts.length == 4) {
-            final topicName = pathParts[1];
-            final subjectName = pathParts[2];
-            final fileName = pathParts[3];
-
-            final topic = topicsMap[topicName];
-            if (topic != null) {
-              try {
-                final subject = topic.subjects.firstWhere(
-                  (s) => s.name == subjectName,
-                );
-                final discussion = subject.discussions.firstWhere(
-                  (d) =>
-                      d.filePath != null &&
-                      path.basename(d.filePath!) == fileName,
-                );
-
-                discussion.archivedHtmlContent = utf8.decode(
-                  file.content as List<int>,
-                );
-              } catch (e) {
-                // Abaikan
-              }
-            }
-          }
+        if (topic.subjects.isNotEmpty) {
+          topicsMap[topicName] = topic;
         }
       }
 
@@ -161,7 +116,7 @@ class ExportedDiscussionsProvider with ChangeNotifier {
 
       _filterExportedData();
     } catch (e) {
-      _error = "Gagal memuat atau membaca file arsip: ${e.toString()}";
+      _error = "Gagal memuat atau membaca arsip: ${e.toString()}";
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -217,20 +172,28 @@ class ExportedDiscussionsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> openArchivedHtml(Discussion discussion) async {
-    if (discussion.archivedHtmlContent == null) {
+  Future<void> openLinkedHtmlFile(Discussion discussion) async {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+      throw Exception("Diskusi ini tidak memiliki file tertaut.");
+    }
+
+    // Karena ini adalah arsip, kita asumsikan path-nya relatif terhadap folder PerpusKu
+    final perpuskuDataPath = await _pathService.perpuskuDataPath;
+    final fullPath = path.join(
+      perpuskuDataPath,
+      'file_contents',
+      'topics',
+      discussion.filePath!,
+    );
+    final file = File(fullPath);
+
+    if (!await file.exists()) {
       throw Exception(
-        "Konten HTML untuk diskusi ini tidak ditemukan di dalam arsip.",
+        "File HTML tidak ditemukan di lokasi: ${discussion.filePath}",
       );
     }
 
-    final tempDir = await getTemporaryDirectory();
-    final tempFile = File(
-      path.join(tempDir.path, '${discussion.discussion}.html'),
-    );
-    await tempFile.writeAsString(discussion.archivedHtmlContent!);
-
-    final result = await OpenFile.open(tempFile.path);
+    final result = await OpenFile.open(file.path);
     if (result.type != ResultType.done) {
       throw Exception("Tidak dapat membuka file: ${result.message}");
     }

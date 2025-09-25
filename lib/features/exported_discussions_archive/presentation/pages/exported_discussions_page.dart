@@ -12,13 +12,11 @@ class ExportedDiscussionsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ExportedDiscussionsProvider(),
-      // Pastikan nama di sini sama dengan nama class di bawah (dengan _)
       child: const _ExportedDiscussionsView(),
     );
   }
 }
 
-// Ini adalah StatefulWidget yang kita buat untuk fitur search
 class _ExportedDiscussionsView extends StatefulWidget {
   const _ExportedDiscussionsView();
 
@@ -82,12 +80,13 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
               );
             }
 
-            if (provider.zipFile == null || !provider.zipFile!.existsSync()) {
+            if (provider.archiveDir == null ||
+                !provider.archiveDir!.existsSync()) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
-                    'File "Export-Finished-Discussions.zip" tidak ditemukan.\nSilakan lakukan ekspor terlebih dahulu.',
+                    'Folder "finish_discussions" tidak ditemukan.\nSilakan lakukan arsip terlebih dahulu.',
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -119,7 +118,6 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                     ),
                   ),
                 ),
-
                 if (provider.exportedTopics.isEmpty)
                   Expanded(
                     child: Center(
@@ -170,19 +168,20 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                                   ),
                                 ),
                                 children: subject.discussions.map((discussion) {
-                                  final bool hasHtmlContent =
-                                      discussion.archivedHtmlContent != null;
+                                  final bool hasHtmlLink =
+                                      discussion.filePath != null &&
+                                      discussion.filePath!.isNotEmpty;
                                   return ListTile(
                                     leading: Padding(
                                       padding: const EdgeInsets.only(
                                         left: 32.0,
                                       ),
                                       child: Icon(
-                                        hasHtmlContent
+                                        hasHtmlLink
                                             ? Icons.link
                                             : Icons.link_off,
                                         size: 20,
-                                        color: hasHtmlContent
+                                        color: hasHtmlLink
                                             ? Theme.of(context).primaryColor
                                             : Colors.grey,
                                       ),
@@ -191,10 +190,10 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                                     subtitle: Text(
                                       'Selesai pada: ${discussion.finish_date ?? 'N/A'}',
                                     ),
-                                    onTap: hasHtmlContent
+                                    onTap: hasHtmlLink
                                         ? () async {
                                             try {
-                                              await provider.openArchivedHtml(
+                                              await provider.openLinkedHtmlFile(
                                                 discussion,
                                               );
                                             } catch (e) {
@@ -211,7 +210,7 @@ class _ExportedDiscussionsViewState extends State<_ExportedDiscussionsView> {
                                             }
                                           }
                                         : null,
-                                    enabled: hasHtmlContent,
+                                    enabled: hasHtmlLink,
                                   );
                                 }).toList(),
                               );
