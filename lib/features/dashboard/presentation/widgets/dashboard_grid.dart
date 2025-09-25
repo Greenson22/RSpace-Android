@@ -1,7 +1,8 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart'; // IMPORT BARU
+import 'package:my_aplication/features/archive/presentation/pages/archive_hub_page.dart'; // IMPORT BARU
+import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
 import 'package:my_aplication/features/snake_game/presentation/pages/snake_game_page.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,7 @@ import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
-import 'package:my_aplication/features/quiz/presentation/pages/quiz_category_page.dart'; // UBAH IMPORT
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_category_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -30,7 +31,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
     ),
-    // ==> TAMBAHKAN NAVIGASI BARU DI SINI (SESUAIKAN URUTAN JIKA PERLU)
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PerpuskuTopicPage()),
@@ -53,9 +53,12 @@ List<VoidCallback> buildDashboardActions(
     ),
     () => Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const QuizCategoryPage(),
-      ), // UBAH NAVIGASI
+      MaterialPageRoute(builder: (_) => const QuizCategoryPage()),
+    ),
+    // ==> TAMBAHKAN NAVIGASI BARU DI SINI
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ArchiveHubPage()),
     ),
     () => Navigator.push(
       context,
@@ -70,7 +73,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
-    // --- PERUBAHAN DI SINI ---
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const SnakeGamePage()),
@@ -121,7 +123,6 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Kelola semua materi Anda',
             'colors': AppTheme.gradientColors1,
           },
-          // ==> TAMBAHKAN ITEM BARU DI SINI
           {
             'icon': Icons.menu_book_outlined,
             'label': 'Perpusku',
@@ -157,6 +158,13 @@ class DashboardGrid extends StatelessWidget {
             'label': 'Kuis',
             'subtitle': 'Uji pemahaman Anda',
             'colors': const [Color(0xFF43A047), Color(0xFF66BB6A)],
+          },
+          // ==> TAMBAHKAN ITEM BARU DI SINI
+          {
+            'icon': Icons.archive_outlined,
+            'label': 'Arsip',
+            'subtitle': 'Lihat & kelola arsip diskusi',
+            'colors': const [Color(0xFF607D8B), Color(0xFF455A64)],
           },
           {
             'icon': Icons.cloud_outlined,

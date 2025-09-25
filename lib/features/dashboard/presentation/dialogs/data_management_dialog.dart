@@ -6,10 +6,8 @@ import '../../../finished_discussions/presentation/pages/finished_discussions_pa
 import '../../../link_maintenance/presentation/pages/orphaned_files_page.dart';
 import '../../../link_maintenance/presentation/pages/broken_links_page.dart';
 import '../../../link_maintenance/presentation/pages/bulk_link_page.dart';
-import '../../../exported_discussions_archive/presentation/pages/exported_discussions_page.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import '../../../link_maintenance/presentation/pages/file_path_correction_page.dart';
-import '../../../finished_discussions/presentation/pages/finished_discussions_online_page.dart'; // IMPORT BARU
 
 /// Menampilkan dialog terpusat untuk fitur manajemen dan perawatan data.
 void showDataManagementDialog(BuildContext context) {
@@ -72,20 +70,6 @@ class DataManagementDialog extends StatelessWidget {
           },
         ),
         _buildDialogOption(
-          icon: Icons.inventory_2_outlined,
-          title: 'Lihat Arsip Ekspor',
-          subtitle: 'Jelajahi konten diskusi selesai yang telah Anda ekspor.',
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ExportedDiscussionsPage(),
-              ),
-            );
-          },
-        ),
-        _buildDialogOption(
           icon: Icons.show_chart,
           title: 'Progress',
           subtitle: 'Lihat progress belajar Anda.',
@@ -122,22 +106,6 @@ class DataManagementDialog extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) => const FinishedDiscussionsPage(),
-              ),
-            );
-          },
-        ),
-        // >> OPSI MENU BARU DITAMBAHKAN DI SINI <<
-        _buildDialogOption(
-          icon: Icons.archive_outlined,
-          title: 'Arsipkan Diskusi Selesai',
-          subtitle:
-              'Salin semua diskusi selesai ke folder "finish_discussions".',
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const FinishedDiscussionsOnlinePage(),
               ),
             );
           },
