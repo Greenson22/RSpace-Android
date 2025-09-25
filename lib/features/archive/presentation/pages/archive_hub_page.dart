@@ -1,7 +1,7 @@
 // lib/features/archive/presentation/pages/archive_hub_page.dart
 
 import 'package:flutter/material.dart';
-import '../../../exported_discussions_archive/presentation/pages/exported_discussions_page.dart';
+import 'package:my_aplication/features/archive/presentation/pages/archive_topic_page.dart'; // IMPORT BARU
 import '../../../finished_discussions/presentation/pages/finished_discussions_online_page.dart';
 
 class ArchiveHubPage extends StatelessWidget {
@@ -23,8 +23,8 @@ class ArchiveHubPage extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const ExportedDiscussionsPage(),
-              ),
+                builder: (_) => const ArchiveTopicPage(),
+              ), // UBAH DI SINI
             ),
           ),
           const SizedBox(height: 16),
