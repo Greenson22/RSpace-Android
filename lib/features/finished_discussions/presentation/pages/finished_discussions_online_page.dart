@@ -24,21 +24,17 @@ class _FinishedDiscussionsOnlineView extends StatelessWidget {
     final provider = Provider.of<FinishedDiscussionsOnlineProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Diskusi Selesai (Online)')),
+      appBar: AppBar(title: const Text('Arsipkan Diskusi Selesai')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.cloud_upload_outlined,
-                size: 80,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.archive_outlined, size: 80, color: Colors.grey),
               const SizedBox(height: 24),
               const Text(
-                'Fitur ini akan mengkompres semua diskusi yang telah selesai ke dalam satu file zip untuk diunggah ke server.',
+                'Fitur ini akan mengumpulkan semua diskusi yang telah selesai dan menyalinnya ke dalam folder "finish_discussions" di penyimpanan utama Anda.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16),
               ),
@@ -47,8 +43,8 @@ class _FinishedDiscussionsOnlineView extends StatelessWidget {
                 const CircularProgressIndicator()
               else
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.compress),
-                  label: const Text('Mulai Proses Kompresi'),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('Mulai Proses Arsip'),
                   onPressed: () async {
                     try {
                       final message = await provider

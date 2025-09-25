@@ -128,9 +128,10 @@ class DataManagementDialog extends StatelessWidget {
         ),
         // >> OPSI MENU BARU DITAMBAHKAN DI SINI <<
         _buildDialogOption(
-          icon: Icons.cloud_upload_outlined,
-          title: 'Diskusi Selesai (Online)',
-          subtitle: 'Kompres diskusi selesai untuk diunggah ke server.',
+          icon: Icons.archive_outlined,
+          title: 'Arsipkan Diskusi Selesai',
+          subtitle:
+              'Salin semua diskusi selesai ke folder "finish_discussions".',
           onTap: () {
             Navigator.pop(context);
             Navigator.push(

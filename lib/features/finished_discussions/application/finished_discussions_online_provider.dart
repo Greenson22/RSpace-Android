@@ -2,11 +2,8 @@
 
 import 'dart:io';
 import 'dart:convert';
-import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/finished_discussions/domain/models/finished_discussion_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
@@ -56,33 +53,15 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
     if (_finishedDiscussions.isEmpty) {
       _isExporting = false;
       notifyListeners();
-      return "Tidak ada diskusi yang selesai untuk diekspor.";
+      return "Tidak ada diskusi yang selesai untuk diarsipkan.";
     }
 
-    Directory? stagingDir;
     try {
       final outputPath = await _pathService.finishedDiscussionsExportPath;
-      final zipFilePath = path.join(
-        outputPath,
-        'Export-Finished-Discussions-Online.zip',
-      );
-      final zipFile = File(zipFilePath);
-
-      final tempDir = await getTemporaryDirectory();
-      stagingDir = Directory(
-        path.join(
-          tempDir.path,
-          'export_online_${DateTime.now().millisecondsSinceEpoch}',
-        ),
-      );
-      await stagingDir.create(recursive: true);
-
-      if (await zipFile.exists()) {
-        await extractFileToDisk(zipFilePath, stagingDir.path);
+      final outputDir = Directory(outputPath);
+      if (!await outputDir.exists()) {
+        await outputDir.create(recursive: true);
       }
-
-      final rspaceDir = Directory(path.join(stagingDir.path, 'RSpace'));
-      if (!await rspaceDir.exists()) await rspaceDir.create();
 
       final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
       for (final finished in _finishedDiscussions) {
@@ -101,10 +80,10 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         final topicName = first.topicName;
         final subjectName = first.subjectName;
 
-        final rspaceTopicPath = path.join(rspaceDir.path, topicName);
-        await Directory(rspaceTopicPath).create(recursive: true);
+        final targetTopicPath = path.join(outputDir.path, 'topics', topicName);
+        await Directory(targetTopicPath).create(recursive: true);
         final subjectJsonFile = File(
-          path.join(rspaceTopicPath, '$subjectName.json'),
+          path.join(targetTopicPath, '$subjectName.json'),
         );
 
         List<Discussion> existingDiscussions = [];
@@ -143,23 +122,15 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
 
         final topicConfigContent = first.topic.toConfigJson();
         final topicConfigFile = File(
-          path.join(rspaceTopicPath, 'topic_config.json'),
+          path.join(targetTopicPath, 'topic_config.json'),
         );
         await topicConfigFile.writeAsString(jsonEncode(topicConfigContent));
       }
 
-      final encoder = ZipFileEncoder();
-      encoder.create(zipFilePath);
-      await encoder.addDirectory(stagingDir, includeDirName: false);
-      encoder.close();
-
-      return 'Ekspor online berhasil diperbarui di: $outputPath';
+      return 'Arsip berhasil diperbarui di folder: finish_discussions';
     } catch (e) {
       rethrow;
     } finally {
-      if (stagingDir != null && await stagingDir.exists()) {
-        await stagingDir.delete(recursive: true);
-      }
       _isExporting = false;
       notifyListeners();
     }
