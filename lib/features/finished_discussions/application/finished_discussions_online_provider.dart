@@ -24,9 +24,34 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
   List<FinishedDiscussion> _finishedDiscussions = [];
   List<FinishedDiscussion> get finishedDiscussions => _finishedDiscussions;
 
+  // ==> SELECTION LOGIC ADDED <==
+  final Set<FinishedDiscussion> _selectedDiscussions = {};
+  Set<FinishedDiscussion> get selectedDiscussions => _selectedDiscussions;
+  bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
+
   FinishedDiscussionsOnlineProvider() {
     fetchFinishedDiscussions();
   }
+
+  void toggleSelection(FinishedDiscussion discussion) {
+    if (_selectedDiscussions.contains(discussion)) {
+      _selectedDiscussions.remove(discussion);
+    } else {
+      _selectedDiscussions.add(discussion);
+    }
+    notifyListeners();
+  }
+
+  void selectAll() {
+    _selectedDiscussions.addAll(_finishedDiscussions);
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedDiscussions.clear();
+    notifyListeners();
+  }
+  // ==> END OF SELECTION LOGIC <==
 
   Future<void> fetchFinishedDiscussions() async {
     _isLoading = true;
@@ -44,20 +69,22 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
     }
   }
 
-  Future<String> exportFinishedDiscussionsOnline() async {
+  Future<String> archiveSelectedDiscussions() async {
     _isExporting = true;
     notifyListeners();
 
-    if (_finishedDiscussions.isEmpty) {
+    final discussionsToArchive = isSelectionMode
+        ? _selectedDiscussions.toList()
+        : _finishedDiscussions;
+
+    if (discussionsToArchive.isEmpty) {
       _isExporting = false;
       notifyListeners();
-      return "Tidak ada diskusi yang selesai untuk diarsipkan.";
+      return "Tidak ada diskusi yang dipilih untuk diarsipkan.";
     }
 
     try {
       final outputPath = await _pathService.finishedDiscussionsExportPath;
-
-      // Definisikan path untuk data RSpace dan PerpusKu di dalam folder arsip
       final rspaceArchiveDir = Directory(
         path.join(outputPath, 'RSpace_data', 'topics'),
       );
@@ -65,13 +92,11 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         path.join(outputPath, 'PerpusKu_data', 'topics'),
       );
 
-      // Buat direktori jika belum ada
       if (!await rspaceArchiveDir.exists())
         await rspaceArchiveDir.create(recursive: true);
       if (!await perpuskuArchiveDir.exists())
         await perpuskuArchiveDir.create(recursive: true);
 
-      // Dapatkan path sumber file HTML dari PerpusKu
       final perpuskuSourcePath = await _pathService.perpuskuDataPath;
       final perpuskuSourceTopicsPath = path.join(
         perpuskuSourcePath,
@@ -80,7 +105,7 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
       );
 
       final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
-      for (final finished in _finishedDiscussions) {
+      for (final finished in discussionsToArchive) {
         if (newDiscussionsByFile.containsKey(finished.subjectJsonPath)) {
           newDiscussionsByFile[finished.subjectJsonPath]!.add(finished);
         } else {
@@ -96,7 +121,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         final topicName = first.topicName;
         final subjectName = first.subjectName;
 
-        // Salin file JSON (RSpace)
         final targetTopicPath = path.join(rspaceArchiveDir.path, topicName);
         await Directory(targetTopicPath).create(recursive: true);
         final subjectJsonFile = File(
@@ -143,7 +167,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         );
         await topicConfigFile.writeAsString(jsonEncode(topicConfigContent));
 
-        // Salin file HTML terkait (PerpusKu)
         for (final discussionWrapper in discussionsToAdd) {
           final discussion = discussionWrapper.discussion;
           if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
@@ -170,7 +193,8 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         }
       }
 
-      return 'Arsip berhasil diperbarui di folder: finish_discussions';
+      final count = discussionsToArchive.length;
+      return '$count diskusi berhasil diarsipkan.';
     } catch (e) {
       rethrow;
     } finally {
