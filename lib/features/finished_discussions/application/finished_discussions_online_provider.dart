@@ -83,18 +83,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
 
     try {
       final outputPath = await _pathService.finishedDiscussionsExportPath;
-      final rspaceArchiveDir = Directory(
-        path.join(outputPath, 'RSpace_data', 'topics'),
-      );
-      final perpuskuArchiveDir = Directory(
-        path.join(outputPath, 'PerpusKu_data', 'topics'),
-      );
-
-      if (!await rspaceArchiveDir.exists())
-        await rspaceArchiveDir.create(recursive: true);
-      if (!await perpuskuArchiveDir.exists())
-        await perpuskuArchiveDir.create(recursive: true);
-
       final perpuskuSourcePath = await _pathService.perpuskuDataPath;
       final perpuskuSourceTopicsPath = path.join(
         perpuskuSourcePath,
@@ -102,16 +90,24 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         'topics',
       );
 
-      final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
+      final rspaceArchiveDir = Directory(
+        path.join(outputPath, 'RSpace_data', 'topics'),
+      );
+      final perpuskuArchiveDir = Directory(
+        path.join(outputPath, 'PerpusKu_data', 'topics'),
+      );
+
+      await rspaceArchiveDir.create(recursive: true);
+      await perpuskuArchiveDir.create(recursive: true);
+
+      final Map<String, List<FinishedDiscussion>> discussionsByFile = {};
       for (final finished in discussionsToArchive) {
-        if (newDiscussionsByFile.containsKey(finished.subjectJsonPath)) {
-          newDiscussionsByFile[finished.subjectJsonPath]!.add(finished);
-        } else {
-          newDiscussionsByFile[finished.subjectJsonPath] = [finished];
-        }
+        discussionsByFile
+            .putIfAbsent(finished.subjectJsonPath, () => [])
+            .add(finished);
       }
 
-      for (final entry in newDiscussionsByFile.entries) {
+      for (final entry in discussionsByFile.entries) {
         final discussionsToAdd = entry.value;
         if (discussionsToAdd.isEmpty) continue;
 
@@ -126,7 +122,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         );
 
         List<Discussion> existingDiscussions = [];
-
         if (await subjectJsonFile.exists()) {
           final jsonString = await subjectJsonFile.readAsString();
           if (jsonString.isNotEmpty) {
@@ -148,14 +143,10 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
           }
         }
 
-        // ==> PERUBAHAN UTAMA DI SINI <==
-        // Ambil seluruh metadata dari file subjek asli.
         final subjectMetadata = await _subjectService.getSubjectMetadata(
           entry.key,
         );
-
         final jsonContent = {
-          // Gunakan seluruh metadata yang diambil, bukan hanya ikon.
           'metadata': subjectMetadata,
           'content': existingDiscussions.map((d) => d.toJson()).toList(),
         };
@@ -167,27 +158,32 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         );
         await topicConfigFile.writeAsString(jsonEncode(topicConfigContent));
 
+        // --- PERBAIKAN LOGIKA PENYALINAN FILE HTML ---
         for (final discussionWrapper in discussionsToAdd) {
           final discussion = discussionWrapper.discussion;
-          if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
-            final sourceFile = File(
-              path.join(perpuskuSourceTopicsPath, discussion.filePath!),
+          final rawFilePath = discussion.filePath;
+
+          if (rawFilePath != null && rawFilePath.isNotEmpty) {
+            // Selalu rekonstruksi path relatif yang benar dari konteks
+            final fullRelativePath = path.join(
+              discussionWrapper.topicName,
+              discussionWrapper.subjectName,
+              path.basename(rawFilePath), // Hanya ambil nama filenya
             );
+
+            final sourceFile = File(
+              path.join(perpuskuSourceTopicsPath, fullRelativePath),
+            );
+
             if (await sourceFile.exists()) {
-              final targetFileDir = Directory(
-                path.join(
-                  perpuskuArchiveDir.path,
-                  path.dirname(discussion.filePath!),
-                ),
-              );
-              if (!await targetFileDir.exists()) {
-                await targetFileDir.create(recursive: true);
-              }
               final targetFilePath = path.join(
-                targetFileDir.path,
-                path.basename(discussion.filePath!),
+                perpuskuArchiveDir.path,
+                fullRelativePath,
               );
-              await sourceFile.copy(targetFilePath);
+              final targetFile = File(targetFilePath);
+
+              await targetFile.parent.create(recursive: true);
+              await sourceFile.copy(targetFile.path);
             }
           }
         }
