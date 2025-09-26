@@ -149,17 +149,30 @@ class ArchiveProvider with ChangeNotifier {
     }
   }
 
-  Future<void> openArchivedHtmlFile(Discussion discussion) async {
-    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+  Future<void> openArchivedHtmlFile(
+    Discussion discussion,
+    String topicName,
+    String subjectName,
+  ) async {
+    final rawFilePath = discussion.filePath;
+    if (rawFilePath == null || rawFilePath.isEmpty) {
       throw Exception("Diskusi ini tidak memiliki file tertaut.");
     }
+
+    // Rekonstruksi path relatif yang benar dari konteks
+    final fullRelativePath = path.join(
+      topicName,
+      subjectName,
+      path.basename(rawFilePath), // Gunakan basename untuk keamanan
+    );
+
     final perpuskuArchivePath = await _archivePerpuskuPath;
-    final fullPath = path.join(perpuskuArchivePath, discussion.filePath!);
+    final fullPath = path.join(perpuskuArchivePath, fullRelativePath);
     final file = File(fullPath);
 
     if (!await file.exists()) {
       throw Exception(
-        "File HTML tidak ditemukan di dalam arsip: ${discussion.filePath}",
+        "File HTML tidak ditemukan di dalam arsip: $fullRelativePath",
       );
     }
 

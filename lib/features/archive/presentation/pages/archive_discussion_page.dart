@@ -60,7 +60,12 @@ class _ArchiveDiscussionView extends StatelessWidget {
                 onTap: hasFile
                     ? () async {
                         try {
-                          await provider.openArchivedHtmlFile(discussion);
+                          // Kirim nama topik dan subjek ke provider
+                          await provider.openArchivedHtmlFile(
+                            discussion,
+                            subject.topicName,
+                            subject.name,
+                          );
                         } catch (e) {
                           if (context.mounted) {
                             showAppSnackBar(
