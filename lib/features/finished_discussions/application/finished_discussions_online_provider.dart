@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/finished_discussions/domain/models/finished_discussion_model.dart';
+import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussion_service.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
 
 class FinishedDiscussionsOnlineProvider with ChangeNotifier {
   final FinishedDiscussionService _service = FinishedDiscussionService();
+  final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
   final SubjectService _subjectService = SubjectService();
 
@@ -67,7 +69,30 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
     }
   }
 
-  Future<String> archiveSelectedDiscussions() async {
+  Future<void> deleteSelected() async {
+    final Map<String, List<String>> discussionsToDeleteByFile = {};
+
+    for (final selected in _selectedDiscussions) {
+      final path = selected.subjectJsonPath;
+      final discussionName = selected.discussion.discussion;
+      discussionsToDeleteByFile.putIfAbsent(path, () => []).add(discussionName);
+    }
+
+    for (final entry in discussionsToDeleteByFile.entries) {
+      await _discussionService.deleteMultipleDiscussions(
+        entry.key,
+        entry.value,
+      );
+    }
+
+    _finishedDiscussions.removeWhere((d) => _selectedDiscussions.contains(d));
+    _selectedDiscussions.clear();
+    notifyListeners();
+  }
+
+  Future<String> archiveSelectedDiscussions({
+    bool deleteAfterExport = false,
+  }) async {
     _isExporting = true;
     notifyListeners();
 
@@ -158,17 +183,15 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         );
         await topicConfigFile.writeAsString(jsonEncode(topicConfigContent));
 
-        // --- PERBAIKAN LOGIKA PENYALINAN FILE HTML ---
         for (final discussionWrapper in discussionsToAdd) {
           final discussion = discussionWrapper.discussion;
           final rawFilePath = discussion.filePath;
 
           if (rawFilePath != null && rawFilePath.isNotEmpty) {
-            // Selalu rekonstruksi path relatif yang benar dari konteks
             final fullRelativePath = path.join(
               discussionWrapper.topicName,
               discussionWrapper.subjectName,
-              path.basename(rawFilePath), // Hanya ambil nama filenya
+              path.basename(rawFilePath),
             );
 
             final sourceFile = File(
@@ -187,6 +210,14 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
             }
           }
         }
+      }
+
+      if (deleteAfterExport) {
+        // Jika belum mode seleksi, pilih semua dulu
+        if (!isSelectionMode) {
+          selectAll();
+        }
+        await deleteSelected();
       }
 
       final count = discussionsToArchive.length;

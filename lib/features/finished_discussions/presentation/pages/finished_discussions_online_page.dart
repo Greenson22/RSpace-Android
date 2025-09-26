@@ -38,24 +38,53 @@ class _FinishedDiscussionsOnlineView extends StatelessWidget {
       return;
     }
 
-    try {
-      final message = await provider.archiveSelectedDiscussions();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.green),
-        );
-        // Clear selection and refresh list after archiving
-        provider.clearSelection();
-        provider.fetchFinishedDiscussions();
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengarsipkan: ${e.toString()}'),
-            backgroundColor: Colors.red,
+    // Tampilkan dialog konfirmasi
+    final result = await showDialog<bool?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Arsip'),
+        content: Text(
+          'Anda akan mengarsipkan $discussionsToArchive diskusi. Setelah diarsipkan, apakah Anda ingin menghapus diskusi ini dari data aktif aplikasi?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null), // Batal
+            child: const Text('Batal'),
           ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false), // Arsip Saja
+            child: const Text('Arsip Saja'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true), // Arsip & Hapus
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Arsip & Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    // Jika pengguna tidak membatalkan
+    if (result != null && context.mounted) {
+      try {
+        final message = await provider.archiveSelectedDiscussions(
+          deleteAfterExport: result,
         );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: Colors.green),
+          );
+          // Provider akan menangani pembersihan seleksi dan pembaruan daftar jika perlu
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengarsipkan: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
