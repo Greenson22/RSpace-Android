@@ -24,7 +24,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
   List<FinishedDiscussion> _finishedDiscussions = [];
   List<FinishedDiscussion> get finishedDiscussions => _finishedDiscussions;
 
-  // ==> SELECTION LOGIC ADDED <==
   final Set<FinishedDiscussion> _selectedDiscussions = {};
   Set<FinishedDiscussion> get selectedDiscussions => _selectedDiscussions;
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
@@ -51,7 +50,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
     _selectedDiscussions.clear();
     notifyListeners();
   }
-  // ==> END OF SELECTION LOGIC <==
 
   Future<void> fetchFinishedDiscussions() async {
     _isLoading = true;
@@ -128,15 +126,15 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         );
 
         List<Discussion> existingDiscussions = [];
-        Map<String, dynamic> existingMetadata = {};
 
         if (await subjectJsonFile.exists()) {
           final jsonString = await subjectJsonFile.readAsString();
-          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-          existingMetadata = jsonData['metadata'] ?? {};
-          existingDiscussions = (jsonData['content'] as List)
-              .map((item) => Discussion.fromJson(item))
-              .toList();
+          if (jsonString.isNotEmpty) {
+            final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+            existingDiscussions = (jsonData['content'] as List)
+                .map((item) => Discussion.fromJson(item))
+                .toList();
+          }
         }
 
         final existingDiscussionNames = existingDiscussions
@@ -150,13 +148,15 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
           }
         }
 
+        // ==> PERUBAHAN UTAMA DI SINI <==
+        // Ambil seluruh metadata dari file subjek asli.
         final subjectMetadata = await _subjectService.getSubjectMetadata(
           entry.key,
         );
-        existingMetadata['icon'] = subjectMetadata['icon'];
 
         final jsonContent = {
-          'metadata': existingMetadata,
+          // Gunakan seluruh metadata yang diambil, bukan hanya ikon.
+          'metadata': subjectMetadata,
           'content': existingDiscussions.map((d) => d.toJson()).toList(),
         };
         await subjectJsonFile.writeAsString(jsonEncode(jsonContent));
