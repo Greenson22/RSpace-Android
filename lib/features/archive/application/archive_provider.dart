@@ -7,6 +7,7 @@ import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 
 class ArchiveProvider with ChangeNotifier {
@@ -29,7 +30,12 @@ class ArchiveProvider with ChangeNotifier {
 
   Future<String> get _archiveBasePath async {
     final exportPath = await _pathService.finishedDiscussionsExportPath;
-    return path.join(exportPath, 'topics');
+    return path.join(exportPath, 'RSpace_data', 'topics');
+  }
+
+  Future<String> get _archivePerpuskuPath async {
+    final exportPath = await _pathService.finishedDiscussionsExportPath;
+    return path.join(exportPath, 'PerpusKu_data', 'topics');
   }
 
   Future<void> fetchArchivedTopics() async {
@@ -140,6 +146,26 @@ class ArchiveProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> openArchivedHtmlFile(Discussion discussion) async {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+      throw Exception("Diskusi ini tidak memiliki file tertaut.");
+    }
+    final perpuskuArchivePath = await _archivePerpuskuPath;
+    final fullPath = path.join(perpuskuArchivePath, discussion.filePath!);
+    final file = File(fullPath);
+
+    if (!await file.exists()) {
+      throw Exception(
+        "File HTML tidak ditemukan di dalam arsip: ${discussion.filePath}",
+      );
+    }
+
+    final result = await OpenFile.open(file.path);
+    if (result.type != ResultType.done) {
+      throw Exception("Tidak dapat membuka file: ${result.message}");
     }
   }
 }

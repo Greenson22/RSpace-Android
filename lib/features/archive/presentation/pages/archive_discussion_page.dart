@@ -1,6 +1,7 @@
 // lib/features/archive/presentation/pages/archive_discussion_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 import 'package:my_aplication/features/archive/application/archive_provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:provider/provider.dart';
@@ -46,10 +47,31 @@ class _ArchiveDiscussionView extends StatelessWidget {
             itemCount: provider.discussions.length,
             itemBuilder: (context, index) {
               final discussion = provider.discussions[index];
+              final hasFile =
+                  discussion.filePath != null &&
+                  discussion.filePath!.isNotEmpty;
               return ListTile(
-                leading: const Icon(Icons.check_circle, color: Colors.green),
+                leading: Icon(
+                  hasFile ? Icons.link : Icons.link_off,
+                  color: hasFile ? Theme.of(context).primaryColor : Colors.grey,
+                ),
                 title: Text(discussion.discussion),
                 subtitle: Text('Selesai pada: ${discussion.finish_date}'),
+                onTap: hasFile
+                    ? () async {
+                        try {
+                          await provider.openArchivedHtmlFile(discussion);
+                        } catch (e) {
+                          if (context.mounted) {
+                            showAppSnackBar(
+                              context,
+                              e.toString(),
+                              isError: true,
+                            );
+                          }
+                        }
+                      }
+                    : null,
               );
             },
           );

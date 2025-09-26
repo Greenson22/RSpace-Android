@@ -6,14 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/finished_discussions/domain/models/finished_discussion_model.dart';
-import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/finished_discussions/application/finished_discussion_service.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
 
 class FinishedDiscussionsOnlineProvider with ChangeNotifier {
   final FinishedDiscussionService _service = FinishedDiscussionService();
-  final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
   final SubjectService _subjectService = SubjectService();
 
@@ -58,10 +56,28 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
 
     try {
       final outputPath = await _pathService.finishedDiscussionsExportPath;
-      final outputDir = Directory(outputPath);
-      if (!await outputDir.exists()) {
-        await outputDir.create(recursive: true);
-      }
+
+      // Definisikan path untuk data RSpace dan PerpusKu di dalam folder arsip
+      final rspaceArchiveDir = Directory(
+        path.join(outputPath, 'RSpace_data', 'topics'),
+      );
+      final perpuskuArchiveDir = Directory(
+        path.join(outputPath, 'PerpusKu_data', 'topics'),
+      );
+
+      // Buat direktori jika belum ada
+      if (!await rspaceArchiveDir.exists())
+        await rspaceArchiveDir.create(recursive: true);
+      if (!await perpuskuArchiveDir.exists())
+        await perpuskuArchiveDir.create(recursive: true);
+
+      // Dapatkan path sumber file HTML dari PerpusKu
+      final perpuskuSourcePath = await _pathService.perpuskuDataPath;
+      final perpuskuSourceTopicsPath = path.join(
+        perpuskuSourcePath,
+        'file_contents',
+        'topics',
+      );
 
       final Map<String, List<FinishedDiscussion>> newDiscussionsByFile = {};
       for (final finished in _finishedDiscussions) {
@@ -80,7 +96,8 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         final topicName = first.topicName;
         final subjectName = first.subjectName;
 
-        final targetTopicPath = path.join(outputDir.path, 'topics', topicName);
+        // Salin file JSON (RSpace)
+        final targetTopicPath = path.join(rspaceArchiveDir.path, topicName);
         await Directory(targetTopicPath).create(recursive: true);
         final subjectJsonFile = File(
           path.join(targetTopicPath, '$subjectName.json'),
@@ -125,6 +142,32 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
           path.join(targetTopicPath, 'topic_config.json'),
         );
         await topicConfigFile.writeAsString(jsonEncode(topicConfigContent));
+
+        // Salin file HTML terkait (PerpusKu)
+        for (final discussionWrapper in discussionsToAdd) {
+          final discussion = discussionWrapper.discussion;
+          if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
+            final sourceFile = File(
+              path.join(perpuskuSourceTopicsPath, discussion.filePath!),
+            );
+            if (await sourceFile.exists()) {
+              final targetFileDir = Directory(
+                path.join(
+                  perpuskuArchiveDir.path,
+                  path.dirname(discussion.filePath!),
+                ),
+              );
+              if (!await targetFileDir.exists()) {
+                await targetFileDir.create(recursive: true);
+              }
+              final targetFilePath = path.join(
+                targetFileDir.path,
+                path.basename(discussion.filePath!),
+              );
+              await sourceFile.copy(targetFilePath);
+            }
+          }
+        }
       }
 
       return 'Arsip berhasil diperbarui di folder: finish_discussions';
