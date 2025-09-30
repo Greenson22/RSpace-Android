@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 import 'package:my_aplication/features/archive/application/archive_provider.dart';
+import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +25,52 @@ class ArchiveDiscussionPage extends StatelessWidget {
 class _ArchiveDiscussionView extends StatelessWidget {
   final Subject subject;
   const _ArchiveDiscussionView({required this.subject});
+
+  // ==> FUNGSI BARU UNTUK MENANGANI TAP DAN DIALOG LOADING <==
+  Future<void> _handleDiscussionTap(
+    BuildContext context,
+    Discussion discussion,
+  ) async {
+    final provider = Provider.of<ArchiveProvider>(context, listen: false);
+
+    // Tampilkan dialog loading yang tidak bisa ditutup
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text("Mengunduh file..."),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      // Panggil fungsi provider untuk mengunduh dan membuka file
+      await provider.openArchivedHtmlFile(
+        discussion,
+        subject.topicName,
+        subject.name,
+      );
+
+      // Tutup dialog loading jika berhasil
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    } catch (e) {
+      // Tutup dialog loading jika terjadi error
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        // Tampilkan pesan error
+        showAppSnackBar(context, e.toString(), isError: true);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,26 +104,11 @@ class _ArchiveDiscussionView extends StatelessWidget {
                 ),
                 title: Text(discussion.discussion),
                 subtitle: Text('Selesai pada: ${discussion.finish_date}'),
+                // ==> PERBARUI onTap UNTUK MEMANGGIL FUNGSI BARU <==
                 onTap: hasFile
-                    ? () async {
-                        try {
-                          // Kirim nama topik dan subjek ke provider
-                          await provider.openArchivedHtmlFile(
-                            discussion,
-                            subject.topicName,
-                            subject.name,
-                          );
-                        } catch (e) {
-                          if (context.mounted) {
-                            showAppSnackBar(
-                              context,
-                              e.toString(),
-                              isError: true,
-                            );
-                          }
-                        }
-                      }
+                    ? () => _handleDiscussionTap(context, discussion)
                     : null,
+                enabled: hasFile,
               );
             },
           );
