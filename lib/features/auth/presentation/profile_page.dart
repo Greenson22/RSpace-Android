@@ -15,7 +15,9 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        // Tentukan UI berdasarkan status login
+        // Cek status secara berkala saat halaman ini dibuka
+        auth.checkLoginStatus();
+
         if (auth.authState == AuthState.authenticated) {
           return _buildLoggedInView(context, auth.user!);
         } else {
@@ -43,7 +45,7 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Login atau buat akun untuk mengaktifkan fitur online seperti sinkronisasi dan backup.',
+                'Login atau buat akun untuk mengaktifkan fitur online seperti sinkronisasi dan backup data.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -51,6 +53,7 @@ class ProfilePage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    // Navigasi ke halaman login dan tunggu hasilnya
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -79,7 +82,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Widget untuk tampilan saat sudah login (kode lama Anda)
+  // Widget untuk tampilan saat sudah login
   Widget _buildLoggedInView(BuildContext context, User user) {
     final formattedDate = DateFormat(
       'd MMMM yyyy',
@@ -109,6 +112,7 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
+              // Cukup panggil logout, UI akan otomatis rebuild
               Provider.of<AuthProvider>(context, listen: false).logout();
             },
             icon: const Icon(Icons.logout),
@@ -123,6 +127,8 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
+  // Method lainnya ( _buildProfileHeader, _buildInfoCard, _buildInfoTile) tetap sama
+  // ...
   Widget _buildProfileHeader(BuildContext context, User user) {
     return Column(
       children: [

@@ -19,8 +19,9 @@ import 'core/providers/neuron_provider.dart';
 import 'features/snake_game/application/snake_game_provider.dart';
 
 import 'features/auth/application/auth_provider.dart';
-import 'features/auth/presentation/login_page.dart';
-import 'core/widgets/splash_screen.dart';
+// Hapus import login_page.dart dan splash_screen.dart jika tidak digunakan untuk navigasi awal
+// import 'features/auth/presentation/login_page.dart';
+// import 'core/widgets/splash_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -31,8 +32,6 @@ void main() async {
   if (Platform.isAndroid || Platform.isIOS) {
     MobileAds.instance.initialize();
   }
-
-  // ... (kode QuickActions tidak berubah) ...
 
   runApp(
     MultiProvider(
@@ -56,50 +55,9 @@ void main() async {
   );
 }
 
-// ==> 1. UBAH MENJADI STATEFUL WIDGET <==
-class MyApp extends StatefulWidget {
+// Tidak perlu lagi StatefulWidget di sini
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    // ==> 2. DENGARKAN PERUBAHAN AUTHPROVIDER <==
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.addListener(_onAuthStateChanged);
-  }
-
-  @override
-  void dispose() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    authProvider.removeListener(_onAuthStateChanged);
-    super.dispose();
-  }
-
-  // ==> 3. BUAT FUNGSI UNTUK NAVIGASI <==
-  void _onAuthStateChanged() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final navigator = navigatorKey.currentState;
-
-    // Jika berhasil terautentikasi, pindah ke Dashboard
-    if (authProvider.authState == AuthState.authenticated) {
-      navigator?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
-        (route) => false,
-      );
-    }
-    // Jika logout atau gagal autentikasi, pindah ke Login
-    else if (authProvider.authState == AuthState.unauthenticated) {
-      navigator?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-        (route) => false,
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,8 +67,8 @@ class _MyAppState extends State<MyApp> {
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          // ==> 4. MULAI SELALU DARI SPLASH SCREEN <==
-          home: const SplashScreen(),
+          // Langsung arahkan ke DashboardPage sebagai halaman utama
+          home: const DashboardPage(),
         );
       },
     );
