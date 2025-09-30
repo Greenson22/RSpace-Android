@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/services/path_service.dart';
 import '../../settings/application/services/api_config_service.dart';
+// ==> 1. IMPORT AUTH SERVICE <==
+import '../../auth/application/auth_service.dart';
 
 /// Kelas untuk menampung hasil detail dari proses sinkronisasi.
 class SyncResult {
@@ -15,7 +17,6 @@ class SyncResult {
   final bool rspaceUploadSuccess;
   final bool perpuskuBackupSuccess;
   final bool perpuskuUploadSuccess;
-  // Properti isPerpuskuSkipped dihapus karena sudah tidak relevan
   final String? errorMessage;
   final String? rspaceBackupPath;
   final String? perpuskuBackupPath;
@@ -33,7 +34,7 @@ class SyncResult {
   bool get overallSuccess =>
       rspaceBackupSuccess &&
       rspaceUploadSuccess &&
-      perpuskuBackupSuccess && // Tidak ada lagi pengecekan isPerpuskuSkipped
+      perpuskuBackupSuccess &&
       perpuskuUploadSuccess &&
       errorMessage == null;
 }
@@ -41,6 +42,8 @@ class SyncResult {
 class SyncProvider with ChangeNotifier {
   final ApiConfigService _apiConfigService = ApiConfigService();
   final PathService _pathService = PathService();
+  // ==> 2. BUAT INSTANCE DARI AUTH SERVICE <==
+  final AuthService _authService = AuthService();
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
@@ -93,7 +96,6 @@ class SyncProvider with ChangeNotifier {
       rspaceUploadSuccess: rspaceUSuccess,
       perpuskuBackupSuccess: perpuskuBSuccess,
       perpuskuUploadSuccess: perpuskuUSuccess,
-      // isPerpuskuSkipped dihapus
       errorMessage: errorMsg,
       rspaceBackupPath: rspacePath,
       perpuskuBackupPath: perpuskuPath,
@@ -106,6 +108,7 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<File> _backupRspace() async {
+    // ... (fungsi ini tidak berubah)
     final destinationPath = await _pathService.rspaceBackupPath;
     final contentsPath = await _pathService.contentsPath;
     final sourceDir = Directory(contentsPath);
@@ -125,6 +128,7 @@ class SyncProvider with ChangeNotifier {
   }
 
   Future<File> _backupPerpusku() async {
+    // ... (fungsi ini tidak berubah)
     final destinationPath = await _pathService.perpuskuBackupPath;
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
     final sourceDir = Directory(perpuskuDataPath);
@@ -143,20 +147,34 @@ class SyncProvider with ChangeNotifier {
     return File(zipFilePath);
   }
 
+  // ==> 3. PERBARUI FUNGSI UPLOAD SECARA TOTAL <==
   Future<void> _uploadFile(File file, String type) async {
+    // Dapatkan konfigurasi domain
     final apiConfig = await _apiConfigService.loadConfig();
     final apiDomain = apiConfig['domain'];
-    final apiKey = apiConfig['apiKey'];
-
-    if (apiDomain == null || apiKey == null) {
-      throw Exception('Konfigurasi API (domain/key) tidak ditemukan.');
+    if (apiDomain == null) {
+      throw Exception('Konfigurasi domain API tidak ditemukan.');
     }
 
+    // Dapatkan token dari AuthService
+    final token = await _authService.getToken();
+    if (token == null) {
+      throw Exception(
+        'Akses ditolak. Silakan login terlebih dahulu untuk melakukan sinkronisasi.',
+      );
+    }
+
+    // Tentukan URL tujuan
     final url = type == 'RSpace'
         ? '$apiDomain/api/rspace/upload'
         : '$apiDomain/api/perpusku/upload';
+
     var request = http.MultipartRequest('POST', Uri.parse(url));
-    request.headers['x-api-key'] = apiKey;
+
+    // Tambahkan header otorisasi dengan token JWT
+    request.headers['Authorization'] = 'Bearer $token';
+
+    // Tambahkan file ke request
     request.files.add(await http.MultipartFile.fromPath('zipfile', file.path));
 
     final response = await request.send();
