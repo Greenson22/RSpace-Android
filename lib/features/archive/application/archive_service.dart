@@ -7,15 +7,15 @@ import 'package:my_aplication/features/content_management/domain/models/discussi
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/settings/application/services/api_config_service.dart';
-// ==> 1. IMPORT AUTH SERVICE <==
 import 'package:my_aplication/features/auth/application/auth_service.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:open_file/open_file.dart';
 
 class ArchiveService {
   final ApiConfigService _apiConfigService = ApiConfigService();
-  // ==> 2. BUAT INSTANCE DARI AUTH SERVICE <==
   final AuthService _authService = AuthService();
 
-  // ==> 3. UBAH _getHeaders MENJADI FUNGSI DINAMIS <==
   Future<Map<String, String>> _getHeaders() async {
     final token = await _authService.getToken();
     if (token == null) {
@@ -27,7 +27,6 @@ class ArchiveService {
     };
   }
 
-  // Fungsi _getDomain tidak perlu diubah
   Future<String> _getDomain() async {
     final apiConfig = await _apiConfigService.loadConfig();
     final apiDomain = apiConfig['domain'];
@@ -37,7 +36,7 @@ class ArchiveService {
     return apiDomain;
   }
 
-  // ==> 4. PERBARUI FUNGSI UPLOAD UNTUK MENGGUNAKAN TOKEN <==
+  // ==> PASTIKAN FUNGSI INI ADA DAN LENGKAP <==
   Future<String> uploadArchive(File archiveFile) async {
     final domain = await _getDomain();
     final token = await _authService.getToken();
@@ -57,13 +56,18 @@ class ArchiveService {
 
     if (response.statusCode != 201 && response.statusCode != 200) {
       final responseBody = await response.stream.bytesToString();
-      throw HttpException('Gagal mengunggah: $responseBody');
+      // Coba decode JSON untuk pesan error yang lebih baik
+      try {
+        final decoded = json.decode(responseBody);
+        throw HttpException(decoded['message'] ?? 'Gagal mengunggah arsip.');
+      } catch (e) {
+        throw HttpException('Gagal mengunggah arsip: $responseBody');
+      }
     }
     final responseBody = await response.stream.bytesToString();
     return json.decode(responseBody)['message'] ?? 'Arsip berhasil diunggah.';
   }
 
-  // ==> 5. PERBARUI SEMUA FUNGSI FETCH UNTUK MENGGUNAKAN _getHeaders() <==
   Future<List<Topic>> fetchArchivedTopics() async {
     final domain = await _getDomain();
     final headers = await _getHeaders();
@@ -119,6 +123,30 @@ class ArchiveService {
       return data.map((item) => Discussion.fromJson(item)).toList();
     } else {
       throw Exception('Gagal memuat diskusi arsip: ${response.body}');
+    }
+  }
+
+  Future<File> downloadArchivedFile(String relativePath) async {
+    final domain = await _getDomain();
+    final headers = await _getHeaders();
+
+    final encodedPath = Uri.encodeComponent(relativePath);
+    final uri = Uri.parse('$domain/api/archive/file?path=$encodedPath');
+
+    final response = await http.get(uri, headers: headers);
+
+    if (response.statusCode == 200) {
+      final tempDir = await getTemporaryDirectory();
+      final filePath = path.join(tempDir.path, path.basename(relativePath));
+      final file = File(filePath);
+
+      await file.writeAsBytes(response.bodyBytes);
+      return file;
+    } else {
+      final errorBody = json.decode(response.body);
+      throw Exception(
+        'Gagal mengunduh file: ${errorBody['message'] ?? response.reasonPhrase}',
+      );
     }
   }
 }

@@ -12,8 +12,6 @@ import 'package:my_aplication/features/content_management/domain/services/discus
 import 'package:my_aplication/features/finished_discussions/application/finished_discussion_service.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
-
-// ==> 1. IMPOR SERVICE BARU YANG TELAH DIBUAT <==
 import 'package:my_aplication/features/archive/application/archive_service.dart';
 
 class FinishedDiscussionsOnlineProvider with ChangeNotifier {
@@ -21,10 +19,8 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
   final SubjectService _subjectService = SubjectService();
-  // ==> 2. BUAT INSTANCE DARI SERVICE BARU <==
   final ArchiveService _archiveService = ArchiveService();
 
-  // ... (properti dan metode lain seperti _isLoading, fetchFinishedDiscussions, dll tetap sama) ...
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -98,7 +94,6 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> 3. MODIFIKASI FUNGSI archiveSelectedDiscussions <==
   Future<String> archiveSelectedDiscussions({
     bool deleteAfterExport = false,
   }) async {
@@ -120,7 +115,7 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
       // Membuat file zip di direktori sementara
       tempDir = await Directory.systemTemp.createTemp('archive_');
 
-      // Logika untuk mengumpulkan dan menyusun file ke dalam tempDir tetap sama...
+      // Logika untuk mengumpulkan dan menyusun file ke dalam tempDir
       final rspaceArchiveDir = Directory(
         path.join(tempDir.path, 'RSpace_data', 'topics'),
       );
@@ -224,20 +219,18 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         }
       }
 
-      // Mengompres direktori sementara menjadi satu file zip
       final zipFilePath = path.join(
         tempDir.path,
         'finished_discussions_archive.zip',
       );
       final encoder = ZipFileEncoder();
       encoder.create(zipFilePath);
-      // Menambahkan semua konten dari tempDir ke dalam zip
       await encoder.addDirectory(tempDir, includeDirName: false);
       encoder.close();
 
       final archiveFile = File(zipFilePath);
 
-      // MENGGANTI LOGIKA LAMA: unggah file zip ke server
+      // Panggil service yang sudah diperbarui. Token akan ditambahkan secara otomatis.
       final uploadMessage = await _archiveService.uploadArchive(archiveFile);
 
       if (deleteAfterExport) {
@@ -247,14 +240,11 @@ class FinishedDiscussionsOnlineProvider with ChangeNotifier {
         await deleteSelected();
       }
 
-      // Kembalikan pesan sukses dari server
       return uploadMessage;
     } catch (e) {
-      // Jika terjadi error, lemparkan kembali agar bisa ditangkap oleh UI
       rethrow;
     } finally {
       _isExporting = false;
-      // Selalu hapus direktori sementara setelah selesai
       if (tempDir != null && await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }
