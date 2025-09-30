@@ -28,6 +28,11 @@ import 'core/widgets/draggable_fab_view.dart';
 import 'core/providers/neuron_provider.dart';
 import 'features/snake_game/application/snake_game_provider.dart';
 
+// ==> IMPORT BARU <==
+import 'features/auth/application/auth_provider.dart';
+import 'features/auth/presentation/login_page.dart';
+import 'core/widgets/splash_screen.dart'; // Kita akan buat ini
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
@@ -59,6 +64,8 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // ==> TAMBAHKAN AUTHPROVIDER DI PALING ATAS <==
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => TopicProvider()),
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
@@ -81,119 +88,35 @@ void main() async {
   );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  Key _appKey = UniqueKey();
-  DateTime _lastKnownDay = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      final now = DateTime.now();
-      if (now.year != _lastKnownDay.year ||
-          now.month != _lastKnownDay.month ||
-          now.day != _lastKnownDay.day) {
-        setState(() {
-          _appKey = UniqueKey();
-          _lastKnownDay = now;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         if (themeProvider.isLoading) {
-          return const MaterialApp(
-            home: Scaffold(body: Center(child: CircularProgressIndicator())),
-          );
+          return const MaterialApp(home: SplashScreen());
         }
 
-        final isChristmas = themeProvider.isChristmasTheme;
-        final isUnderwater = themeProvider.isUnderwaterTheme;
-        final bool showFlo = themeProvider.showFloatingCharacter;
-        final bool showQuickFab = themeProvider.showQuickFab;
-
         return MaterialApp(
-          key: _appKey,
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          home: const DashboardPage(),
-          builder: (context, navigator) {
-            return Stack(
-              children: [
-                // Lapisan 0: Latar Belakang (jika tema aktif)
-                if (isUnderwater)
-                  IgnorePointer(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF003973), Color(0xFF33A1FD)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                      child: const UnderwaterWidget(
-                        totalFish: 15,
-                        speed: 1.0,
-                        isRunning: true,
-                      ),
-                    ),
-                  ),
-
-                // Lapisan 1: Konten Utama Aplikasi
-                if (navigator != null) navigator,
-
-                // Lapisan 2: Overlay Tema
-                if (isChristmas)
-                  const IgnorePointer(
-                    child: SnowWidget(
-                      isRunning: true,
-                      totalSnow: 200,
-                      speed: 0.5,
-                      snowColor: Colors.white,
-                    ),
-                  ),
-                if (isUnderwater)
-                  const IgnorePointer(
-                    child: UnderwaterWidget(
-                      totalFish: 5,
-                      speed: 1.3,
-                      isRunning: true,
-                    ),
-                  ),
-
-                // Lapisan 3 & 4: Overlay Fungsional
-                if (showFlo)
-                  const IgnorePointer(
-                    child: FloatingCharacter(isVisible: true),
-                  ),
-                if (showQuickFab) const DraggableFabView(),
-              ],
-            );
-          },
+          // ==> LOGIKA UTAMA ADA DI SINI <==
+          home: Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              switch (auth.authState) {
+                case AuthState.uninitialized:
+                  return const SplashScreen(); // Tampilkan splash saat cek login
+                case AuthState.authenticated:
+                  return const DashboardPage(); // Jika sudah login, ke dashboard
+                case AuthState.unauthenticated:
+                  return const LoginPage(); // Jika belum, ke halaman login
+              }
+            },
+          ),
+          // builder tidak lagi diperlukan di sini karena auth sudah menangani
         );
       },
     );

@@ -5,12 +5,13 @@ import 'package:provider/provider.dart';
 import '../../../about/presentation/pages/about_page.dart';
 import '../../../ai_assistant/presentation/pages/chat_page.dart';
 import '../../../settings/application/theme_provider.dart';
-// ==> IMPORT HALAMAN PENGATURAN BARU <==
 import '../../../settings/presentation/pages/settings_page.dart';
+// ==> IMPORT HALAMAN PROFIL <==
+import '../../../auth/presentation/profile_page.dart';
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
+  // ... (properti lain tidak berubah) ...
   final bool isPathSet;
-  // ==> TAMBAHKAN PARAMETER BARU <==
   final bool isApiConfigured;
   final VoidCallback onShowStorageDialog;
   final VoidCallback onSync;
@@ -19,7 +20,6 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DashboardAppBar({
     super.key,
     required this.isPathSet,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     required this.isApiConfigured,
     required this.onShowStorageDialog,
     required this.onSync,
@@ -39,6 +39,15 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: isTransparent ? Colors.transparent : null,
       elevation: isTransparent ? 0 : null,
       actions: [
+        // ==> TAMBAHKAN TOMBOL PROFIL DI SINI <==
+        IconButton(
+          icon: const Icon(Icons.account_circle_outlined),
+          tooltip: 'Profil Saya',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfilePage()),
+          ),
+        ),
         IconButton(
           icon: const Icon(Icons.chat_bubble_outline),
           tooltip: 'Chat dengan Flo AI',
@@ -47,7 +56,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             MaterialPageRoute(builder: (_) => const ChatPage()),
           ),
         ),
-        // ==> GUNAKAN KONDISI DI SINI <==
+        // ... (sisa actions tidak berubah) ...
         if (isApiConfigured)
           IconButton(
             icon: const Icon(Icons.sync_rounded),
