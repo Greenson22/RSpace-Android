@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 
 // Tipe data untuk hasil dialog

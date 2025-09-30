@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
 import '../../../domain/models/discussion_model.dart';
-import '../../../domain/models/point_preset_model.dart';
 import '../utils/repetition_code_utils.dart';
 import 'manage_point_presets_dialog.dart';
 

@@ -10,7 +10,6 @@ import 'package:my_aplication/features/settings/application/services/api_config_
 import 'package:my_aplication/features/auth/application/auth_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-import 'package:open_file/open_file.dart';
 
 class ArchiveService {
   final ApiConfigService _apiConfigService = ApiConfigService();

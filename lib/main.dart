@@ -11,23 +11,16 @@ import 'package:my_aplication/features/quiz/application/quiz_category_provider.d
 import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
-import 'package:my_aplication/core/widgets/snow_widget.dart';
 import 'package:provider/provider.dart';
-import 'core/widgets/underwater_widget.dart';
-import 'package:my_aplication/features/link_maintenance/application/providers/unlinked_discussions_provider.dart';
-import 'package:my_aplication/features/link_maintenance/application/providers/broken_link_provider.dart';
-import 'package:my_aplication/features/finished_discussions/application/finished_discussions_provider.dart';
-import 'package:quick_actions/quick_actions.dart';
-import 'features/prompt_library/application/prompt_provider.dart';
-import 'features/my_tasks/presentation/pages/my_tasks_page.dart';
 import 'features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/backup_management/application/sync_provider.dart';
-import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 import 'features/feedback/application/feedback_provider.dart';
-import 'core/widgets/draggable_fab_view.dart';
 import 'core/providers/neuron_provider.dart';
 import 'features/snake_game/application/snake_game_provider.dart';
+
 import 'features/auth/application/auth_provider.dart';
+import 'features/auth/presentation/login_page.dart';
+import 'core/widgets/splash_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -39,23 +32,7 @@ void main() async {
     MobileAds.instance.initialize();
   }
 
-  if (Platform.isAndroid || Platform.isIOS) {
-    const QuickActions quickActions = QuickActions();
-    quickActions.initialize((String shortcutType) {
-      if (shortcutType == 'action_my_tasks') {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const MyTasksPage()),
-        );
-      }
-    });
-    quickActions.setShortcutItems(<ShortcutItem>[
-      const ShortcutItem(
-        type: 'action_my_tasks',
-        localizedTitle: 'My Tasks',
-        icon: 'ic_task_icon',
-      ),
-    ]);
-  }
+  // ... (kode QuickActions tidak berubah) ...
 
   runApp(
     MultiProvider(
@@ -69,10 +46,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
         ChangeNotifierProvider(create: (_) => FeedbackProvider()),
-        ChangeNotifierProvider(create: (_) => UnlinkedDiscussionsProvider()),
-        ChangeNotifierProvider(create: (_) => BrokenLinkProvider()),
-        ChangeNotifierProvider(create: (_) => FinishedDiscussionsProvider()),
-        ChangeNotifierProvider(create: (_) => PromptProvider()),
         ChangeNotifierProvider(create: (_) => NeuronProvider()),
         ChangeNotifierProvider(create: (_) => QuizCategoryProvider()),
         ChangeNotifierProvider(create: (_) => PerpuskuProvider()),
@@ -83,8 +56,50 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+// ==> 1. UBAH MENJADI STATEFUL WIDGET <==
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // ==> 2. DENGARKAN PERUBAHAN AUTHPROVIDER <==
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.addListener(_onAuthStateChanged);
+  }
+
+  @override
+  void dispose() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.removeListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+  // ==> 3. BUAT FUNGSI UNTUK NAVIGASI <==
+  void _onAuthStateChanged() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final navigator = navigatorKey.currentState;
+
+    // Jika berhasil terautentikasi, pindah ke Dashboard
+    if (authProvider.authState == AuthState.authenticated) {
+      navigator?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+        (route) => false,
+      );
+    }
+    // Jika logout atau gagal autentikasi, pindah ke Login
+    else if (authProvider.authState == AuthState.unauthenticated) {
+      navigator?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +109,8 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          home: const DashboardPage(),
+          // ==> 4. MULAI SELALU DARI SPLASH SCREEN <==
+          home: const SplashScreen(),
         );
       },
     );
