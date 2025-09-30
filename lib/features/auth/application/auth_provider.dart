@@ -39,6 +39,10 @@ class AuthProvider with ChangeNotifier {
     await checkLoginStatus();
   }
 
+  Future<void> register(String name, String email, String password) async {
+    await _authService.register(name, email, password);
+  }
+
   Future<void> logout() async {
     await _authService.logout();
     _user = null;

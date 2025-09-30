@@ -6,11 +6,10 @@ import '../../../about/presentation/pages/about_page.dart';
 import '../../../ai_assistant/presentation/pages/chat_page.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
-// ==> IMPORT HALAMAN PROFIL <==
 import '../../../auth/presentation/profile_page.dart';
+import '../../../auth/application/auth_provider.dart';
 
 class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
-  // ... (properti lain tidak berubah) ...
   final bool isPathSet;
   final bool isApiConfigured;
   final VoidCallback onShowStorageDialog;
@@ -39,10 +38,21 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: isTransparent ? Colors.transparent : null,
       elevation: isTransparent ? 0 : null,
       actions: [
-        // ==> TAMBAHKAN TOMBOL PROFIL DI SINI <==
+        Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            if (auth.authState == AuthState.authenticated && isApiConfigured) {
+              return IconButton(
+                icon: const Icon(Icons.sync_rounded),
+                tooltip: 'Backup & Sync Otomatis',
+                onPressed: onSync,
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.account_circle_outlined),
-          tooltip: 'Profil Saya',
+          tooltip: 'Profil & Akun',
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ProfilePage()),
@@ -56,13 +66,6 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
             MaterialPageRoute(builder: (_) => const ChatPage()),
           ),
         ),
-        // ... (sisa actions tidak berubah) ...
-        if (isApiConfigured)
-          IconButton(
-            icon: const Icon(Icons.sync_rounded),
-            tooltip: 'Backup & Sync Otomatis',
-            onPressed: onSync,
-          ),
         PopupMenuButton<String>(
           tooltip: 'Opsi Lainnya',
           onSelected: (value) async {

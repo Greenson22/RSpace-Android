@@ -8,10 +8,7 @@ import '../domain/user_model.dart';
 
 class AuthService {
   final ApiConfigService _apiConfigService = ApiConfigService();
-
-  // ## PERBAIKAN DI SINI: Gunakan nama kelas yang benar ##
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-
   static const String _tokenKey = 'rspace_token';
 
   Future<String> _getApiDomain() async {
@@ -48,6 +45,23 @@ class AuthService {
     await _secureStorage.delete(key: _tokenKey);
   }
 
+  Future<void> register(String name, String email, String password) async {
+    final domain = await _getApiDomain();
+    final response = await http.post(
+      Uri.parse('$domain/api/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'email': email, 'password': password}),
+    );
+
+    if (response.statusCode != 201) {
+      final data = jsonDecode(response.body);
+      final errorMessage =
+          data['message'] ??
+          (data['errors']?[0]?['msg'] ?? 'Gagal melakukan registrasi.');
+      throw Exception(errorMessage);
+    }
+  }
+
   Future<User> getUserProfile() async {
     final token = await getToken();
     if (token == null) {
@@ -66,7 +80,6 @@ class AuthService {
     if (response.statusCode == 200) {
       return User.fromJson(jsonDecode(response.body));
     } else {
-      // Jika token tidak valid (misalnya, server di-restart), logout otomatis
       if (response.statusCode == 400 || response.statusCode == 401) {
         await logout();
       }

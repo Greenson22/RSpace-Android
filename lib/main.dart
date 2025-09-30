@@ -27,11 +27,7 @@ import 'features/feedback/application/feedback_provider.dart';
 import 'core/widgets/draggable_fab_view.dart';
 import 'core/providers/neuron_provider.dart';
 import 'features/snake_game/application/snake_game_provider.dart';
-
-// ==> IMPORT BARU <==
 import 'features/auth/application/auth_provider.dart';
-import 'features/auth/presentation/login_page.dart';
-import 'core/widgets/splash_screen.dart'; // Kita akan buat ini
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -64,7 +60,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // ==> TAMBAHKAN AUTHPROVIDER DI PALING ATAS <==
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => TopicProvider()),
@@ -95,28 +90,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        if (themeProvider.isLoading) {
-          return const MaterialApp(home: SplashScreen());
-        }
-
         return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          // ==> LOGIKA UTAMA ADA DI SINI <==
-          home: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              switch (auth.authState) {
-                case AuthState.uninitialized:
-                  return const SplashScreen(); // Tampilkan splash saat cek login
-                case AuthState.authenticated:
-                  return const DashboardPage(); // Jika sudah login, ke dashboard
-                case AuthState.unauthenticated:
-                  return const LoginPage(); // Jika belum, ke halaman login
-              }
-            },
-          ),
-          // builder tidak lagi diperlukan di sini karena auth sudah menangani
+          home: const DashboardPage(),
         );
       },
     );

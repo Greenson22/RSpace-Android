@@ -2,30 +2,89 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_aplication/features/auth/application/auth_provider.dart';
-import 'package:my_aplication/features/auth/domain/user_model.dart';
 import 'package:provider/provider.dart';
+import '../application/auth_provider.dart';
+import 'login_page.dart';
+import 'register_page.dart';
+import '../domain/user_model.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        // Tentukan UI berdasarkan status login
+        if (auth.authState == AuthState.authenticated) {
+          return _buildLoggedInView(context, auth.user!);
+        } else {
+          return _buildGuestView(context);
+        }
+      },
+    );
+  }
 
-    if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Profil')),
-        body: const Center(child: Text('Gagal memuat data pengguna.')),
-      );
-    }
+  // Widget untuk tampilan saat belum login
+  Widget _buildGuestView(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profil')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.login, size: 60, color: Colors.grey),
+              const SizedBox(height: 24),
+              const Text(
+                'Anda belum login',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Login atau buat akun untuk mengaktifkan fitur online seperti sinkronisasi dan backup.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                    );
+                  },
+                  child: const Text('Login'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RegisterPage()),
+                    );
+                  },
+                  child: const Text('Buat Akun Baru'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
+  // Widget untuk tampilan saat sudah login (kode lama Anda)
+  Widget _buildLoggedInView(BuildContext context, User user) {
     final formattedDate = DateFormat(
       'd MMMM yyyy',
       'id_ID',
     ).format(user.createdAt);
-
     return Scaffold(
       appBar: AppBar(title: const Text('Profil Saya')),
       body: ListView(
