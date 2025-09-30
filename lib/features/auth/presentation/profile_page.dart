@@ -1,6 +1,8 @@
 // lib/features/auth/presentation/profile_page.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../application/auth_provider.dart';
@@ -8,14 +10,60 @@ import 'login_page.dart';
 import 'register_page.dart';
 import '../domain/user_model.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  // Fungsi untuk memilih & mengunggah gambar
+  Future<void> _pickAndUploadImage(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+        maxWidth: 800,
+      );
+
+      if (pickedFile != null) {
+        final imageFile = File(pickedFile.path);
+        // Tampilkan loading snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mengunggah foto profil...')),
+        );
+        await authProvider.uploadProfilePicture(imageFile);
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Foto profil berhasil diperbarui!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        // Cek status secara berkala saat halaman ini dibuka
+        // Cek status saat halaman ini dibuka
         auth.checkLoginStatus();
 
         if (auth.authState == AuthState.authenticated) {
@@ -45,7 +93,7 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Login atau buat akun untuk mengaktifkan fitur online seperti sinkronisasi dan backup data.',
+                'Login atau buat akun untuk mengaktifkan fitur online seperti sinkronisasi dan backup.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -53,7 +101,6 @@ class ProfilePage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigasi ke halaman login dan tunggu hasilnya
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -93,7 +140,11 @@ class ProfilePage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          _buildProfileHeader(context, user),
+          _buildProfileHeader(
+            context,
+            user,
+            () => _pickAndUploadImage(context),
+          ),
           const SizedBox(height: 24),
           _buildInfoCard(context, [
             _buildInfoTile(Icons.email_outlined, 'Email', user.email),
@@ -112,7 +163,6 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              // Cukup panggil logout, UI akan otomatis rebuild
               Provider.of<AuthProvider>(context, listen: false).logout();
             },
             icon: const Icon(Icons.logout),
@@ -127,25 +177,85 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Method lainnya ( _buildProfileHeader, _buildInfoCard, _buildInfoTile) tetap sama
-  // ...
-  Widget _buildProfileHeader(BuildContext context, User user) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    User user,
+    VoidCallback onEditPressed,
+  ) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     return Column(
       children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
-          child: Text(
-            user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-            style: TextStyle(
-              fontSize: 40,
-              color: Theme.of(context).primaryColor,
+        Stack(
+          children: [
+            FutureBuilder<String>(
+              future: authProvider.authService.getApiDomain(),
+              builder: (context, snapshot) {
+                Widget avatar;
+                if (user.profilePictureUrl != null &&
+                    snapshot.hasData &&
+                    snapshot.data!.isNotEmpty) {
+                  final domain = snapshot.data!;
+                  final fullUrl =
+                      (domain.endsWith('/')
+                          ? domain.substring(0, domain.length - 1)
+                          : domain) +
+                      (user.profilePictureUrl!.startsWith('/')
+                          ? user.profilePictureUrl!
+                          : '/${user.profilePictureUrl!}');
+
+                  avatar = CircleAvatar(
+                    radius: 60,
+                    backgroundImage: NetworkImage(fullUrl),
+                    onBackgroundImageError: (exception, stackTrace) {
+                      debugPrint("Gagal memuat gambar profil: $exception");
+                    },
+                    child: (user.profilePictureUrl == null)
+                        ? _defaultAvatarContent(context, user)
+                        : null,
+                  );
+                } else {
+                  avatar = _defaultAvatar(context, user);
+                }
+                return avatar;
+              },
             ),
-          ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Material(
+                color: Colors.grey.shade200,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: onEditPressed,
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.edit, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Text(user.name, style: Theme.of(context).textTheme.headlineSmall),
       ],
+    );
+  }
+
+  Widget _defaultAvatarContent(BuildContext context, User user) {
+    return Text(
+      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+      style: TextStyle(fontSize: 40, color: Theme.of(context).primaryColor),
+    );
+  }
+
+  Widget _defaultAvatar(BuildContext context, User user) {
+    return CircleAvatar(
+      radius: 60,
+      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+      child: _defaultAvatarContent(context, user),
     );
   }
 

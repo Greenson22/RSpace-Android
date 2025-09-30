@@ -1,13 +1,14 @@
 // lib/features/auth/application/auth_provider.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../application/auth_service.dart';
 import '../domain/user_model.dart';
 
 // Enum untuk status autentikasi yang lebih deskriptif
-enum AuthState { uninitialized, authenticated, unauthenticated, authenticating }
+enum AuthState { uninitialized, authenticated, unauthenticated }
 
-// Enum untuk status proses login di UI
+// ==> PASTIKAN ENUM INI ADA DI SINI <==
 enum LoginStatus { idle, loading, success, error }
 
 class AuthProvider with ChangeNotifier {
@@ -21,6 +22,8 @@ class AuthProvider with ChangeNotifier {
 
   AuthState get authState => _authState;
   User? get user => _user;
+  AuthService get authService => _authService;
+
   // Getter baru untuk UI
   LoginStatus get loginStatus => _loginStatus;
   String get loginMessage => _loginMessage;
@@ -45,7 +48,6 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(String email, String password) async {
-    // 1. Set status ke 'loading' dan berikan pesan
     _loginStatus = LoginStatus.loading;
     _loginMessage = 'Mencoba login...';
     notifyListeners();
@@ -55,22 +57,18 @@ class AuthProvider with ChangeNotifier {
       _user = await _authService.getUserProfile();
       _authState = AuthState.authenticated;
 
-      // 2. Set status ke 'success' jika berhasil
       _loginStatus = LoginStatus.success;
       _loginMessage = 'Login Berhasil! Mengalihkan...';
       notifyListeners();
 
-      // Beri sedikit jeda agar pesan sukses terlihat sebelum navigasi
       await Future.delayed(const Duration(seconds: 1));
     } catch (e) {
-      // 3. Set status ke 'error' jika gagal
       _loginStatus = LoginStatus.error;
       _loginMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
     }
   }
 
-  // Fungsi untuk mereset status login setelah selesai
   void resetLoginStatus() {
     _loginStatus = LoginStatus.idle;
     _loginMessage = '';
@@ -85,5 +83,10 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     _authState = AuthState.unauthenticated;
     notifyListeners();
+  }
+
+  Future<void> uploadProfilePicture(File imageFile) async {
+    await _authService.uploadProfilePicture(imageFile);
+    await checkLoginStatus();
   }
 }

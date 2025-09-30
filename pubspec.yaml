@@ -62,6 +62,7 @@ dependencies:
   code_text_field: ^1.1.0
   flutter_speed_dial: ^7.0.0
   flutter_secure_storage: ^9.0.0
+  image_picker: ^1.0.4
 
   uuid: any
   mime: any

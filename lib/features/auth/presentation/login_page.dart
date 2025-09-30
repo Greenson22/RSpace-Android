@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../application/auth_provider.dart';
-import '../../dashboard/presentation/pages/dashboard_page.dart'; // Import DashboardPage
+import '../../dashboard/presentation/pages/dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,8 +26,9 @@ class _LoginPageState extends State<LoginPage> {
     // Cek status setelah proses login selesai
     if (authProvider.loginStatus == LoginStatus.success && mounted) {
       // Navigasi ke Dashboard setelah pesan sukses ditampilkan
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const DashboardPage()),
+        (route) => false,
       );
       // Reset status setelah navigasi
       authProvider.resetLoginStatus();
@@ -36,7 +37,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan Consumer untuk mendengarkan perubahan dari AuthProvider
     return Consumer<AuthProvider>(
       builder: (context, auth, child) {
         return Scaffold(
@@ -63,11 +63,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Tampilkan widget progres/status di sini
                       if (auth.loginStatus != LoginStatus.idle)
                         _buildStatusWidget(auth.loginStatus, auth.loginMessage),
 
-                      // Sembunyikan form jika sedang loading atau sukses
                       if (auth.loginStatus != LoginStatus.loading &&
                           auth.loginStatus != LoginStatus.success) ...[
                         TextFormField(
@@ -118,7 +116,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Widget baru untuk menampilkan status
   Widget _buildStatusWidget(LoginStatus status, String message) {
     Widget icon;
     Color color;
