@@ -7,19 +7,27 @@ import 'package:my_aplication/features/content_management/domain/models/discussi
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/settings/application/services/api_config_service.dart';
+// ==> 1. IMPORT AUTH SERVICE <==
+import 'package:my_aplication/features/auth/application/auth_service.dart';
 
 class ArchiveService {
   final ApiConfigService _apiConfigService = ApiConfigService();
+  // ==> 2. BUAT INSTANCE DARI AUTH SERVICE <==
+  final AuthService _authService = AuthService();
 
+  // ==> 3. UBAH _getHeaders MENJADI FUNGSI DINAMIS <==
   Future<Map<String, String>> _getHeaders() async {
-    final apiConfig = await _apiConfigService.loadConfig();
-    final apiKey = apiConfig['apiKey'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('API Key tidak ditemukan.');
+    final token = await _authService.getToken();
+    if (token == null) {
+      throw Exception('Akses ditolak. Silakan login terlebih dahulu.');
     }
-    return {'x-api-key': apiKey};
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
   }
 
+  // Fungsi _getDomain tidak perlu diubah
   Future<String> _getDomain() async {
     final apiConfig = await _apiConfigService.loadConfig();
     final apiDomain = apiConfig['domain'];
@@ -29,12 +37,18 @@ class ArchiveService {
     return apiDomain;
   }
 
+  // ==> 4. PERBARUI FUNGSI UPLOAD UNTUK MENGGUNAKAN TOKEN <==
   Future<String> uploadArchive(File archiveFile) async {
     final domain = await _getDomain();
-    final headers = await _getHeaders();
+    final token = await _authService.getToken();
+    if (token == null) {
+      throw Exception('Akses ditolak. Silakan login terlebih dahulu.');
+    }
+
     final url = '$domain/api/archive/discussions';
     var request = http.MultipartRequest('POST', Uri.parse(url));
-    request.headers.addAll(headers);
+    request.headers['Authorization'] = 'Bearer $token';
+
     request.files.add(
       await http.MultipartFile.fromPath('zipfile', archiveFile.path),
     );
@@ -49,8 +63,7 @@ class ArchiveService {
     return json.decode(responseBody)['message'] ?? 'Arsip berhasil diunggah.';
   }
 
-  // --- FUNGSI-FUNGSI BARU ---
-
+  // ==> 5. PERBARUI SEMUA FUNGSI FETCH UNTUK MENGGUNAKAN _getHeaders() <==
   Future<List<Topic>> fetchArchivedTopics() async {
     final domain = await _getDomain();
     final headers = await _getHeaders();
@@ -61,15 +74,7 @@ class ArchiveService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      return data
-          .map(
-            (item) => Topic(
-              name: item['name'],
-              icon: item['icon'] ?? '📁',
-              position: item['position'] ?? -1,
-            ),
-          )
-          .toList();
+      return data.map((item) => Topic.fromJson(item)).toList();
     } else {
       throw Exception('Gagal memuat topik arsip: ${response.body}');
     }
