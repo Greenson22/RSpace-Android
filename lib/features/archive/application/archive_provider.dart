@@ -1,16 +1,18 @@
 // lib/features/archive/application/archive_provider.dart
 
-import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:my_aplication/core/services/path_service.dart';
+import 'package:my_aplication/features/archive/application/archive_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
+import 'package:my_aplication/core/services/path_service.dart';
 
 class ArchiveProvider with ChangeNotifier {
+  final ArchiveService _archiveService = ArchiveService();
   final PathService _pathService = PathService();
 
   bool _isLoading = true;
@@ -28,49 +30,12 @@ class ArchiveProvider with ChangeNotifier {
   List<Discussion> _discussions = [];
   List<Discussion> get discussions => _discussions;
 
-  Future<String> get _archiveBasePath async {
-    final exportPath = await _pathService.finishedDiscussionsExportPath;
-    return path.join(exportPath, 'RSpace_data', 'topics');
-  }
-
-  Future<String> get _archivePerpuskuPath async {
-    final exportPath = await _pathService.finishedDiscussionsExportPath;
-    return path.join(exportPath, 'PerpusKu_data', 'topics');
-  }
-
   Future<void> fetchArchivedTopics() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
     try {
-      final basePath = await _archiveBasePath;
-      final directory = Directory(basePath);
-      if (!await directory.exists()) {
-        _topics = [];
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      final topicDirs = directory.listSync().whereType<Directory>();
-      final List<Topic> loadedTopics = [];
-      for (final dir in topicDirs) {
-        final topicName = path.basename(dir.path);
-        String icon = '📁';
-        int position = -1;
-
-        final configFile = File(path.join(dir.path, 'topic_config.json'));
-        if (await configFile.exists()) {
-          final jsonString = await configFile.readAsString();
-          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-          icon = jsonData['icon'] ?? '📁';
-          position = jsonData['position'] ?? -1;
-        }
-        loadedTopics.add(
-          Topic(name: topicName, icon: icon, position: position),
-        );
-      }
-      loadedTopics.sort((a, b) => a.position.compareTo(b.position));
-      _topics = loadedTopics;
+      _topics = await _archiveService.fetchArchivedTopics();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -81,32 +46,10 @@ class ArchiveProvider with ChangeNotifier {
 
   Future<void> fetchArchivedSubjects(String topicName) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
     try {
-      final topicPath = path.join(await _archiveBasePath, topicName);
-      final directory = Directory(topicPath);
-      if (!await directory.exists()) {
-        _subjects = [];
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      final subjectFiles = directory.listSync().whereType<File>().where(
-        (file) =>
-            file.path.endsWith('.json') &&
-            !file.path.endsWith('topic_config.json'),
-      );
-
-      final List<Subject> loadedSubjects = [];
-      for (final file in subjectFiles) {
-        final subjectName = path.basenameWithoutExtension(file.path);
-        final jsonString = await file.readAsString();
-        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-        loadedSubjects.add(Subject.fromJson(topicName, subjectName, jsonData));
-      }
-      loadedSubjects.sort((a, b) => a.position.compareTo(b.position));
-      _subjects = loadedSubjects;
+      _subjects = await _archiveService.fetchArchivedSubjects(topicName);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -120,27 +63,13 @@ class ArchiveProvider with ChangeNotifier {
     String subjectName,
   ) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
     try {
-      final subjectPath = path.join(
-        await _archiveBasePath,
+      _discussions = await _archiveService.fetchArchivedDiscussions(
         topicName,
-        '$subjectName.json',
+        subjectName,
       );
-      final file = File(subjectPath);
-      if (!await file.exists()) {
-        _discussions = [];
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      final jsonString = await file.readAsString();
-      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      final contentList = jsonData['content'] as List<dynamic>? ?? [];
-      _discussions = contentList
-          .map((item) => Discussion.fromJson(item))
-          .toList();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -154,25 +83,30 @@ class ArchiveProvider with ChangeNotifier {
     String topicName,
     String subjectName,
   ) async {
+    // Logika ini tetap sama karena masih mengandalkan path relatif dari data JSON
     final rawFilePath = discussion.filePath;
     if (rawFilePath == null || rawFilePath.isEmpty) {
       throw Exception("Diskusi ini tidak memiliki file tertaut.");
     }
 
-    // Rekonstruksi path relatif yang benar dari konteks
     final fullRelativePath = path.join(
       topicName,
       subjectName,
-      path.basename(rawFilePath), // Gunakan basename untuk keamanan
+      path.basename(rawFilePath),
     );
 
-    final perpuskuArchivePath = await _archivePerpuskuPath;
+    final exportPath = await _pathService.finishedDiscussionsExportPath;
+    final perpuskuArchivePath = path.join(
+      exportPath,
+      'PerpusKu_data',
+      'topics',
+    );
     final fullPath = path.join(perpuskuArchivePath, fullRelativePath);
     final file = File(fullPath);
 
     if (!await file.exists()) {
       throw Exception(
-        "File HTML tidak ditemukan di dalam arsip: $fullRelativePath",
+        "File HTML tidak ditemukan di dalam arsip lokal: $fullRelativePath",
       );
     }
 
