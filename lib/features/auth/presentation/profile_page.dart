@@ -18,13 +18,9 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _imageLoadError = false;
-
   Future<void> _pickAndUploadImage(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      setState(() => _imageLoadError = false);
-
       final result = await FilePicker.platform.pickFiles(type: FileType.image);
 
       if (result != null && result.files.single.path != null) {
@@ -63,12 +59,14 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        // === PERBAIKAN UTAMA DI SINI ===
-        // Baris `auth.checkLoginStatus();` dihapus dari sini untuk mencegah rebuild loop.
-        // Provider sudah menangani ini saat inisialisasi.
+        if (auth.authState == AuthState.uninitialized) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
         if (auth.authState == AuthState.authenticated) {
-          return _buildLoggedInView(context, auth.user!);
+          return _buildLoggedInView(context, auth);
         } else {
           return _buildGuestView(context);
         }
@@ -77,6 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildGuestView(BuildContext context) {
+    // ... (kode tidak berubah)
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: Center(
@@ -129,7 +128,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildLoggedInView(BuildContext context, User user) {
+  Widget _buildLoggedInView(BuildContext context, AuthProvider auth) {
+    final user = auth.user!;
     final formattedDate = DateFormat(
       'd MMMM yyyy',
       'id_ID',
@@ -142,6 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildProfileHeader(
             context,
             user,
+            auth.localProfilePicture, // Kirim file lokal
             () => _pickAndUploadImage(context),
           ),
           const SizedBox(height: 24),
@@ -179,55 +180,30 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildProfileHeader(
     BuildContext context,
     User user,
+    File? localImage,
     VoidCallback onEditPressed,
   ) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     return Column(
       children: [
         Stack(
           children: [
-            FutureBuilder<String>(
-              future: authProvider.authService.getApiDomain(),
-              builder: (context, snapshot) {
-                if (_imageLoadError ||
-                    user.profilePictureUrl == null ||
-                    !snapshot.hasData ||
-                    snapshot.data!.isEmpty) {
-                  return _defaultAvatar(context, user);
-                }
-
-                var domain = snapshot.data!;
-                if (domain.endsWith('/')) {
-                  domain = domain.substring(0, domain.length - 1);
-                }
-
-                var relativePath = user.profilePictureUrl!;
-                if (relativePath.startsWith('/')) {
-                  relativePath = relativePath.substring(1);
-                }
-
-                final fullUrl =
-                    '$domain/storage/$relativePath?v=${DateTime.now().millisecondsSinceEpoch}';
-
-                return CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).primaryColor.withOpacity(0.2),
-                  backgroundImage: NetworkImage(fullUrl),
-                  onBackgroundImageError: (exception, stackTrace) {
-                    debugPrint("Gagal memuat gambar profil: $exception");
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        setState(() {
-                          _imageLoadError = true;
-                        });
-                      }
-                    });
-                  },
-                );
-              },
+            // ==> LOGIKA TAMPILAN GAMBAR DIPERBARUI <==
+            CircleAvatar(
+              radius: 60,
+              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+              // Jika ada gambar lokal, gunakan FileImage. Jika tidak, tampilkan inisial.
+              backgroundImage: localImage != null
+                  ? FileImage(localImage)
+                  : null,
+              child: localImage == null
+                  ? Text(
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                      style: TextStyle(
+                        fontSize: 40,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    )
+                  : null,
             ),
             Positioned(
               bottom: 0,
@@ -250,21 +226,6 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 16),
         Text(user.name, style: Theme.of(context).textTheme.headlineSmall),
       ],
-    );
-  }
-
-  Widget _defaultAvatarContent(BuildContext context, User user) {
-    return Text(
-      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-      style: TextStyle(fontSize: 40, color: Theme.of(context).primaryColor),
-    );
-  }
-
-  Widget _defaultAvatar(BuildContext context, User user) {
-    return CircleAvatar(
-      radius: 60,
-      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
-      child: _defaultAvatarContent(context, user),
     );
   }
 

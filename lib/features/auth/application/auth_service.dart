@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_aplication/features/settings/application/services/api_config_service.dart';
+import '../../../core/services/path_service.dart';
 import '../domain/user_model.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
@@ -12,6 +13,8 @@ import 'package:path/path.dart' as path;
 class AuthService {
   final ApiConfigService _apiConfigService = ApiConfigService();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  // ==> TAMBAHKAN PATH SERVICE <==
+  final PathService _pathService = PathService();
   static const String _tokenKey = 'rspace_token';
 
   // == PERUBAHAN DI SINI ==
@@ -27,6 +30,45 @@ class AuthService {
 
   Future<String?> getToken() async {
     return await _secureStorage.read(key: _tokenKey);
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGAMBIL DAN MENYIMPAN FOTO PROFIL <==
+  Future<File?> getProfilePicture(User user) async {
+    final token = await getToken();
+    if (token == null || user.profilePictureUrl == null) return null;
+
+    final profilePicDir = await _pathService.profilePicturesPath;
+    final fileName = path.basename(user.profilePictureUrl!);
+    final localFile = File(path.join(profilePicDir, fileName));
+
+    // Jika file sudah ada di cache lokal, langsung kembalikan
+    if (await localFile.exists()) {
+      return localFile;
+    }
+
+    // Jika tidak, unduh dari server
+    final domain = await getApiDomain();
+    final url = '$domain/storage/${user.profilePictureUrl!}';
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      // Hapus file lama di cache sebelum menyimpan yang baru
+      final dir = Directory(profilePicDir);
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+      await dir.create(recursive: true);
+
+      // Simpan file baru dan kembalikan
+      await localFile.writeAsBytes(response.bodyBytes);
+      return localFile;
+    } else {
+      throw Exception('Gagal mengunduh foto profil.');
+    }
   }
 
   Future<void> login(String email, String password) async {
@@ -49,6 +91,12 @@ class AuthService {
 
   Future<void> logout() async {
     await _secureStorage.delete(key: _tokenKey);
+    // ==> HAPUS FOTO PROFIL LOKAL SAAT LOGOUT <==
+    final profilePicDir = await _pathService.profilePicturesPath;
+    final dir = Directory(profilePicDir);
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
   }
 
   Future<void> register(String name, String email, String password) async {
@@ -119,6 +167,13 @@ class AuthService {
     if (response.statusCode != 200) {
       final responseBody = await response.stream.bytesToString();
       throw Exception('Gagal mengunggah foto: $responseBody');
+    }
+
+    // ==> HAPUS FOTO PROFIL LOKAL SETELAH UPLOAD BERHASIL <==
+    final profilePicDir = await _pathService.profilePicturesPath;
+    final dir = Directory(profilePicDir);
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
     }
   }
 }

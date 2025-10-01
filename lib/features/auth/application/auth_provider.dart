@@ -16,12 +16,18 @@ class AuthProvider with ChangeNotifier {
 
   AuthState _authState = AuthState.uninitialized;
   User? _user;
+  // ==> STATE BARU UNTUK MENYIMPAN PATH FILE LOKAL <==
+  File? _localProfilePicture;
+
   // State baru untuk UI login
   LoginStatus _loginStatus = LoginStatus.idle;
   String _loginMessage = '';
 
   AuthState get authState => _authState;
   User? get user => _user;
+  // ==> GETTER BARU <==
+  File? get localProfilePicture => _localProfilePicture;
+
   AuthService get authService => _authService;
 
   // Getter baru untuk UI
@@ -37,12 +43,21 @@ class AuthProvider with ChangeNotifier {
     if (token != null) {
       try {
         _user = await _authService.getUserProfile();
+        // ==> AMBIL GAMBAR DARI CACHE/SERVER <==
+        if (_user != null) {
+          _localProfilePicture = await _authService.getProfilePicture(_user!);
+        }
         _authState = AuthState.authenticated;
       } catch (e) {
         _authState = AuthState.unauthenticated;
+        // Bersihkan data jika gagal
+        _user = null;
+        _localProfilePicture = null;
       }
     } else {
       _authState = AuthState.unauthenticated;
+      _user = null;
+      _localProfilePicture = null;
     }
     notifyListeners();
   }
@@ -54,8 +69,8 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _authService.login(email, password);
-      _user = await _authService.getUserProfile();
-      _authState = AuthState.authenticated;
+      // Panggil checkLoginStatus untuk memuat profil dan gambar
+      await checkLoginStatus();
 
       _loginStatus = LoginStatus.success;
       _loginMessage = 'Login Berhasil! Mengalihkan...';
@@ -81,12 +96,14 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     await _authService.logout();
     _user = null;
+    _localProfilePicture = null; // ==> BERSIHKAN GAMBAR LOKAL <==
     _authState = AuthState.unauthenticated;
     notifyListeners();
   }
 
   Future<void> uploadProfilePicture(File imageFile) async {
     await _authService.uploadProfilePicture(imageFile);
+    // Panggil checkLoginStatus untuk memuat ulang profil & gambar baru
     await checkLoginStatus();
   }
 }

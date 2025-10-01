@@ -104,6 +104,16 @@ class PathService {
     return backupDir.path;
   }
 
+  // ==> GETTER BARU UNTUK FOLDER FOTO PROFIL <==
+  Future<String> get profilePicturesPath async {
+    final appBase = await _appBasePath;
+    final profilePicDir = Directory(path.join(appBase, 'Profile_Pictures'));
+    if (!await profilePicDir.exists()) {
+      await profilePicDir.create(recursive: true);
+    }
+    return profilePicDir.path;
+  }
+
   // ==> GETTER BARU UNTUK FOLDER DOWNLOAD UTAMA <==
   Future<String> get downloadsPath async {
     final appBase = await _appBasePath;
