@@ -141,8 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           _buildProfileHeader(
             context,
-            user,
-            auth.localProfilePicture, // Kirim file lokal
+            auth, // Kirim provider-nya
             () => _pickAndUploadImage(context),
           ),
           const SizedBox(height: 24),
@@ -179,10 +178,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileHeader(
     BuildContext context,
-    User user,
-    File? localImage,
+    AuthProvider auth,
     VoidCallback onEditPressed,
   ) {
+    final user = auth.user!;
+    final localImage = auth.localProfilePicture;
+
     return Column(
       children: [
         Stack(
@@ -191,11 +192,12 @@ class _ProfilePageState extends State<ProfilePage> {
             CircleAvatar(
               radius: 60,
               backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
-              // Jika ada gambar lokal, gunakan FileImage. Jika tidak, tampilkan inisial.
               backgroundImage: localImage != null
                   ? FileImage(localImage)
                   : null,
-              child: localImage == null
+              child: auth.isProfilePictureLoading
+                  ? const CircularProgressIndicator() // Tampilkan loading
+                  : localImage == null
                   ? Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                       style: TextStyle(

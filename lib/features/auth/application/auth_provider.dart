@@ -16,8 +16,9 @@ class AuthProvider with ChangeNotifier {
 
   AuthState _authState = AuthState.uninitialized;
   User? _user;
-  // ==> STATE BARU UNTUK MENYIMPAN PATH FILE LOKAL <==
   File? _localProfilePicture;
+  // ==> STATE BARU UNTUK LOADING FOTO PROFIL <==
+  bool _isProfilePictureLoading = false;
 
   // State baru untuk UI login
   LoginStatus _loginStatus = LoginStatus.idle;
@@ -25,8 +26,9 @@ class AuthProvider with ChangeNotifier {
 
   AuthState get authState => _authState;
   User? get user => _user;
-  // ==> GETTER BARU <==
   File? get localProfilePicture => _localProfilePicture;
+  // ==> GETTER BARU <==
+  bool get isProfilePictureLoading => _isProfilePictureLoading;
 
   AuthService get authService => _authService;
 
@@ -43,21 +45,26 @@ class AuthProvider with ChangeNotifier {
     if (token != null) {
       try {
         _user = await _authService.getUserProfile();
-        // ==> AMBIL GAMBAR DARI CACHE/SERVER <==
+        _authState = AuthState.authenticated;
+        // ==> SET LOADING SEBELUM MENGAMBIL GAMBAR <==
+        _isProfilePictureLoading = true;
+        notifyListeners();
         if (_user != null) {
           _localProfilePicture = await _authService.getProfilePicture(_user!);
         }
-        _authState = AuthState.authenticated;
       } catch (e) {
         _authState = AuthState.unauthenticated;
-        // Bersihkan data jika gagal
         _user = null;
         _localProfilePicture = null;
+      } finally {
+        // ==> SET LOADING SELESAI <==
+        _isProfilePictureLoading = false;
       }
     } else {
       _authState = AuthState.unauthenticated;
       _user = null;
       _localProfilePicture = null;
+      _isProfilePictureLoading = false;
     }
     notifyListeners();
   }
@@ -69,8 +76,7 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _authService.login(email, password);
-      // Panggil checkLoginStatus untuk memuat profil dan gambar
-      await checkLoginStatus();
+      await checkLoginStatus(); // checkLoginStatus will handle loading state
 
       _loginStatus = LoginStatus.success;
       _loginMessage = 'Login Berhasil! Mengalihkan...';
@@ -96,14 +102,13 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     await _authService.logout();
     _user = null;
-    _localProfilePicture = null; // ==> BERSIHKAN GAMBAR LOKAL <==
+    _localProfilePicture = null;
     _authState = AuthState.unauthenticated;
     notifyListeners();
   }
 
   Future<void> uploadProfilePicture(File imageFile) async {
     await _authService.uploadProfilePicture(imageFile);
-    // Panggil checkLoginStatus untuk memuat ulang profil & gambar baru
     await checkLoginStatus();
   }
 }
