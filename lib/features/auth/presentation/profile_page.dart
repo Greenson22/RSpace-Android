@@ -2,7 +2,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../application/auth_provider.dart';
@@ -22,20 +22,17 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickAndUploadImage(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-        maxWidth: 800,
-      );
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
 
-      if (pickedFile != null) {
-        final imageFile = File(pickedFile.path);
-        // Tampilkan loading snackbar
+      if (result != null && result.files.single.path != null) {
+        final imageFile = File(result.files.single.path!);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mengunggah foto profil...')),
         );
+
         await authProvider.uploadProfilePicture(imageFile);
+
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +60,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        // Cek status saat halaman ini dibuka
         auth.checkLoginStatus();
 
         if (auth.authState == AuthState.authenticated) {
@@ -75,7 +71,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Widget untuk tampilan saat belum login
   Widget _buildGuestView(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
@@ -129,7 +124,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Widget untuk tampilan saat sudah login
   Widget _buildLoggedInView(BuildContext context, User user) {
     final formattedDate = DateFormat(
       'd MMMM yyyy',
@@ -191,33 +185,39 @@ class _ProfilePageState extends State<ProfilePage> {
             FutureBuilder<String>(
               future: authProvider.authService.getApiDomain(),
               builder: (context, snapshot) {
-                Widget avatar;
                 if (user.profilePictureUrl != null &&
                     snapshot.hasData &&
                     snapshot.data!.isNotEmpty) {
-                  final domain = snapshot.data!;
-                  final fullUrl =
-                      (domain.endsWith('/')
-                          ? domain.substring(0, domain.length - 1)
-                          : domain) +
-                      (user.profilePictureUrl!.startsWith('/')
-                          ? user.profilePictureUrl!
-                          : '/${user.profilePictureUrl!}');
+                  var domain = snapshot.data!;
+                  // Hapus garis miring di akhir domain jika ada
+                  if (domain.endsWith('/')) {
+                    domain = domain.substring(0, domain.length - 1);
+                  }
 
-                  avatar = CircleAvatar(
+                  var relativePath = user.profilePictureUrl!;
+                  // Hapus garis miring di awal path jika ada
+                  if (relativePath.startsWith('/')) {
+                    relativePath = relativePath.substring(1);
+                  }
+
+                  // Gabungkan dengan satu garis miring
+                  final fullUrl =
+                      '$domain/$relativePath?v=${DateTime.now().millisecondsSinceEpoch}';
+
+                  return CircleAvatar(
                     radius: 60,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.2),
                     backgroundImage: NetworkImage(fullUrl),
                     onBackgroundImageError: (exception, stackTrace) {
                       debugPrint("Gagal memuat gambar profil: $exception");
                     },
-                    child: (user.profilePictureUrl == null)
-                        ? _defaultAvatarContent(context, user)
-                        : null,
                   );
                 } else {
-                  avatar = _defaultAvatar(context, user);
+                  // Fallback jika tidak ada gambar atau domain belum siap
+                  return _defaultAvatar(context, user);
                 }
-                return avatar;
               },
             ),
             Positioned(
