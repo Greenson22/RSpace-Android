@@ -18,10 +18,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Fungsi untuk memilih & mengunggah gambar
+  bool _imageLoadError = false;
+
   Future<void> _pickAndUploadImage(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
+      setState(() => _imageLoadError = false);
+
       final result = await FilePicker.platform.pickFiles(type: FileType.image);
 
       if (result != null && result.files.single.path != null) {
@@ -60,7 +63,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        auth.checkLoginStatus();
+        // === PERBAIKAN UTAMA DI SINI ===
+        // Baris `auth.checkLoginStatus();` dihapus dari sini untuk mencegah rebuild loop.
+        // Provider sudah menangani ini saat inisialisasi.
 
         if (auth.authState == AuthState.authenticated) {
           return _buildLoggedInView(context, auth.user!);
@@ -185,39 +190,43 @@ class _ProfilePageState extends State<ProfilePage> {
             FutureBuilder<String>(
               future: authProvider.authService.getApiDomain(),
               builder: (context, snapshot) {
-                if (user.profilePictureUrl != null &&
-                    snapshot.hasData &&
-                    snapshot.data!.isNotEmpty) {
-                  var domain = snapshot.data!;
-                  // Hapus garis miring di akhir domain jika ada
-                  if (domain.endsWith('/')) {
-                    domain = domain.substring(0, domain.length - 1);
-                  }
-
-                  var relativePath = user.profilePictureUrl!;
-                  // Hapus garis miring di awal path jika ada
-                  if (relativePath.startsWith('/')) {
-                    relativePath = relativePath.substring(1);
-                  }
-
-                  // Gabungkan dengan satu garis miring
-                  final fullUrl =
-                      '$domain/$relativePath?v=${DateTime.now().millisecondsSinceEpoch}';
-
-                  return CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).primaryColor.withOpacity(0.2),
-                    backgroundImage: NetworkImage(fullUrl),
-                    onBackgroundImageError: (exception, stackTrace) {
-                      debugPrint("Gagal memuat gambar profil: $exception");
-                    },
-                  );
-                } else {
-                  // Fallback jika tidak ada gambar atau domain belum siap
+                if (_imageLoadError ||
+                    user.profilePictureUrl == null ||
+                    !snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
                   return _defaultAvatar(context, user);
                 }
+
+                var domain = snapshot.data!;
+                if (domain.endsWith('/')) {
+                  domain = domain.substring(0, domain.length - 1);
+                }
+
+                var relativePath = user.profilePictureUrl!;
+                if (relativePath.startsWith('/')) {
+                  relativePath = relativePath.substring(1);
+                }
+
+                final fullUrl =
+                    '$domain/storage/$relativePath?v=${DateTime.now().millisecondsSinceEpoch}';
+
+                return CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).primaryColor.withOpacity(0.2),
+                  backgroundImage: NetworkImage(fullUrl),
+                  onBackgroundImageError: (exception, stackTrace) {
+                    debugPrint("Gagal memuat gambar profil: $exception");
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() {
+                          _imageLoadError = true;
+                        });
+                      }
+                    });
+                  },
+                );
               },
             ),
             Positioned(
