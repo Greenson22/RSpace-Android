@@ -14,11 +14,15 @@ import '../../settings/application/services/api_config_service.dart';
 import '../domain/models/file_model.dart';
 // PathService di-import untuk mendapatkan path download otomatis
 import '../../../core/services/path_service.dart';
+// ==> 1. IMPORT AUTH SERVICE <==
+import '../../auth/application/auth_service.dart';
 
 class FileProvider with ChangeNotifier {
   // SharedPreferencesService dihapus karena tidak lagi digunakan untuk path
   final ApiConfigService _apiConfigService = ApiConfigService();
   final PathService _pathService = PathService(); // PathService ditambahkan
+  // ==> 2. TAMBAHKAN AUTH SERVICE <==
+  final AuthService _authService = AuthService();
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -56,9 +60,8 @@ class FileProvider with ChangeNotifier {
   bool get isSelectionMode => _selectedDownloadedFiles.isNotEmpty;
 
   String? _apiDomain;
-  String? _apiKey;
+  // API Key tidak lagi digunakan untuk request di sini
   String? get apiDomain => _apiDomain;
-  String? get apiKey => _apiKey;
 
   String get _rspaceEndpoint => '$_apiDomain/api/rspace/files';
   String get _perpuskuEndpoint => '$_apiDomain/api/perpusku/files';
@@ -71,6 +74,15 @@ class FileProvider with ChangeNotifier {
 
   FileProvider() {
     _initialize();
+  }
+
+  // ==> 3. BUAT FUNGSI HELPER UNTUK MENDAPATKAN HEADER OTENTIKASI <==
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final token = await _authService.getToken();
+    if (token == null) {
+      throw Exception('Akses ditolak. Silakan login terlebih dahulu.');
+    }
+    return {'Authorization': 'Bearer $token'};
   }
 
   void toggleDownloadedFileSelection(File file) {
@@ -115,12 +127,12 @@ class FileProvider with ChangeNotifier {
   Future<void> _initialize() async {
     await _loadApiConfig();
     // Panggilan ke _loadDownloadPath dihapus
-    if (_apiDomain != null && _apiKey != null) {
+    if (_apiDomain != null) {
       await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
     } else {
       _isLoading = false;
       _errorMessage =
-          'Konfigurasi Server API belum diatur. Silakan atur domain dan API key terlebih dahulu.';
+          'Konfigurasi Server API belum diatur. Silakan atur domain terlebih dahulu.';
       notifyListeners();
     }
   }
@@ -128,7 +140,6 @@ class FileProvider with ChangeNotifier {
   Future<void> _loadApiConfig() async {
     final config = await _apiConfigService.loadConfig();
     _apiDomain = config['domain'];
-    _apiKey = config['apiKey'];
     notifyListeners();
   }
 
@@ -138,7 +149,6 @@ class FileProvider with ChangeNotifier {
     }
     await _apiConfigService.saveConfig(domain, apiKey);
     _apiDomain = domain;
-    _apiKey = apiKey;
     notifyListeners();
     await fetchFiles();
   }
@@ -179,12 +189,9 @@ class FileProvider with ChangeNotifier {
   }
 
   Future<void> fetchFiles() async {
-    if (_apiDomain == null ||
-        _apiKey == null ||
-        _apiDomain!.isEmpty ||
-        _apiKey!.isEmpty) {
+    if (_apiDomain == null || _apiDomain!.isEmpty) {
       _errorMessage =
-          'Konfigurasi Server API belum diatur. Silakan atur domain dan API key terlebih dahulu.';
+          'Konfigurasi Server API belum diatur. Silakan atur domain terlebih dahulu.';
       _isLoading = false;
       notifyListeners();
       return;
@@ -195,7 +202,8 @@ class FileProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final headers = {'x-api-key': _apiKey!};
+      // ==> 4. GUNAKAN HEADER BARU <==
+      final headers = await _getAuthHeaders();
       final rspaceResponse = await http
           .get(Uri.parse(_rspaceEndpoint), headers: headers)
           .timeout(const Duration(seconds: 15));
@@ -232,7 +240,7 @@ class FileProvider with ChangeNotifier {
     } on HttpException catch (e) {
       _errorMessage = e.message;
     } catch (e) {
-      _errorMessage = 'Terjadi kesalahan tidak terduga: ${e.toString()}';
+      _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -245,10 +253,8 @@ class FileProvider with ChangeNotifier {
         : '$_perpuskuDeleteBaseUrl${file.uniqueName}';
 
     try {
-      final response = await http.delete(
-        Uri.parse(url),
-        headers: {'x-api-key': _apiKey!},
-      );
+      final headers = await _getAuthHeaders();
+      final response = await http.delete(Uri.parse(url), headers: headers);
 
       if (response.statusCode == 200) {
         await fetchFiles();
@@ -288,7 +294,8 @@ class FileProvider with ChangeNotifier {
           ? _rspaceUploadEndpoint
           : _perpuskuUploadEndpoint;
       var request = http.MultipartRequest('POST', Uri.parse(url));
-      request.headers['x-api-key'] = _apiKey!;
+      final headers = await _getAuthHeaders();
+      request.headers.addAll(headers);
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -403,7 +410,7 @@ class FileProvider with ChangeNotifier {
     final String savePath = path.join(downloadsDir.path, file.originalName);
 
     final request = http.Request('GET', Uri.parse(file.downloadUrl));
-    request.headers['x-api-key'] = _apiKey!;
+    request.headers.addAll(await _getAuthHeaders());
     final http.StreamedResponse response = await request.send();
 
     if (response.statusCode != 200) {
@@ -440,7 +447,7 @@ class FileProvider with ChangeNotifier {
       notifyListeners();
 
       final request = http.Request('GET', Uri.parse(file.downloadUrl));
-      request.headers['x-api-key'] = _apiKey!;
+      request.headers.addAll(await _getAuthHeaders());
       final http.StreamedResponse response = await request.send();
 
       if (response.statusCode != 200) {

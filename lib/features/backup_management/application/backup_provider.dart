@@ -1,4 +1,4 @@
-// lib/presentation/providers/backup_provider.dart
+// lib/features/backup_management/application/backup_provider.dart
 
 import 'dart:convert';
 import 'dart:io';
@@ -9,10 +9,14 @@ import 'package:intl/intl.dart';
 import '../../../core/services/path_service.dart';
 import '../../../core/services/storage_service.dart';
 import 'package:http/http.dart' as http;
+// ==> 1. IMPORT AUTH SERVICE <==
+import '../../auth/application/auth_service.dart';
 
 class BackupProvider with ChangeNotifier {
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final PathService _pathService = PathService();
+  // ==> 2. TAMBAHKAN AUTH SERVICE <==
+  final AuthService _authService = AuthService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -29,13 +33,10 @@ class BackupProvider with ChangeNotifier {
   final Map<String, double> _uploadProgress = {};
   double getUploadProgress(String fileName) => _uploadProgress[fileName] ?? 0.0;
 
-  final String _rspaceUploadEndpoint =
-      'http://rikal.kecmobar.my.id/api/rspace/upload';
-  final String _perpuskuUploadEndpoint =
-      'http://rikal.kecmobar.my.id/api/perpusku/upload';
-  final String _apiKey = 'frendygerung1234567890';
-
-  // Properti _backupPath dan getternya dihapus
+  // Endpoint dan API Key tidak lagi dibutuhkan di sini
+  // final String _rspaceUploadEndpoint = '...';
+  // final String _perpuskuUploadEndpoint = '...';
+  // final String _apiKey = '...';
 
   List<File> _rspaceBackupFiles = [];
   List<File> get rspaceBackupFiles => _rspaceBackupFiles;
@@ -130,14 +131,11 @@ class BackupProvider with ChangeNotifier {
     _sortType = sortPrefs['sortType'];
     _sortAscending = sortPrefs['sortAscending'];
 
-    // Pemuatan _backupPath dihapus
     await listBackupFiles();
 
     _isLoading = false;
     notifyListeners();
   }
-
-  // Metode setBackupPath dihapus
 
   Future<String> backupPerpuskuContents() async {
     _isBackingUp = true;
@@ -175,8 +173,6 @@ class BackupProvider with ChangeNotifier {
   Future<void> listBackupFiles() async {
     _rspaceBackupFiles = [];
     _perpuskuBackupFiles = [];
-
-    // Pemeriksaan null untuk _backupPath dihapus
 
     try {
       final rspaceDir = Directory(await _pathService.rspaceBackupPath);
@@ -284,11 +280,20 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // ==> 3. PERBAIKAN LOGIKA UPLOAD <==
+      final domain = await _authService.getApiDomain();
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('Akses ditolak. Silakan login terlebih dahulu.');
+      }
+
       final url = type == 'RSpace'
-          ? _rspaceUploadEndpoint
-          : _perpuskuUploadEndpoint;
+          ? '$domain/api/rspace/upload'
+          : '$domain/api/perpusku/upload';
       var request = http.MultipartRequest('POST', Uri.parse(url));
-      request.headers['x-api-key'] = _apiKey;
+
+      // Gunakan token JWT, bukan API Key
+      request.headers['Authorization'] = 'Bearer $token';
 
       request.files.add(
         await http.MultipartFile.fromPath(
