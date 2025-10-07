@@ -8,6 +8,7 @@ import '../../../settings/application/theme_provider.dart';
 import '../state/dashboard_state.dart';
 import '../widgets/dashboard_app_bar.dart';
 import '../widgets/dashboard_body.dart';
+// Import untuk Flo dan FAB dihapus dari sini
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -27,6 +28,7 @@ class _DashboardPageState extends State<DashboardPage> with DashboardState {
         final backgroundImagePath = themeProvider.backgroundImagePath;
         final isUnderwater = themeProvider.isUnderwaterTheme;
 
+        // ==> Stack dan widget Flo/FAB dihapus dari sini <==
         return RawKeyboardListener(
           focusNode: focusNode,
           onKey: handleKeyEvent,

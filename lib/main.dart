@@ -19,9 +19,9 @@ import 'core/providers/neuron_provider.dart';
 import 'features/snake_game/application/snake_game_provider.dart';
 
 import 'features/auth/application/auth_provider.dart';
-// Hapus import login_page.dart dan splash_screen.dart jika tidak digunakan untuk navigasi awal
-// import 'features/auth/presentation/login_page.dart';
-// import 'core/widgets/splash_screen.dart';
+// ==> 1. IMPORT WIDGET YANG DIPERLUKAN <==
+import 'core/widgets/draggable_fab_view.dart';
+import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -55,7 +55,6 @@ void main() async {
   );
 }
 
-// Tidak perlu lagi StatefulWidget di sini
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -67,7 +66,19 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          // Langsung arahkan ke DashboardPage sebagai halaman utama
+          // ==> 2. GUNAKAN BUILDER UNTUK MENAMBAHKAN STACK DI ATAS SEMUA HALAMAN <==
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // Ini adalah halaman utama Anda (seperti Dashboard, Topics, dll.)
+                child!,
+                // Tampilkan Flo dan FAB secara kondisional di atas halaman
+                if (themeProvider.showFloatingCharacter)
+                  const FloatingCharacter(),
+                if (themeProvider.showQuickFab) const DraggableFabView(),
+              ],
+            );
+          },
           home: const DashboardPage(),
         );
       },

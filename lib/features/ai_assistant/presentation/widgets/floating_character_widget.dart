@@ -1,4 +1,4 @@
-// lib/presentation/widgets/floating_character_widget.dart
+// lib/features/ai_assistant/presentation/widgets/floating_character_widget.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -307,15 +307,19 @@ class _FloatingCharacterState extends State<FloatingCharacter>
     return AnimatedBuilder(
       animation: Listenable.merge([_floatAnimation, _moveAnimation]),
       builder: (context, child) {
-        return CustomPaint(
-          size: Size.infinite,
-          painter: CharacterPainter(
-            floatAnimationValue: _floatAnimation.value,
-            moveAnimationValue: _moveAnimation.value,
-            character: _getCurrentCharacterFrame(),
-            isSpeaking: _isSpeaking,
-            speechText: _speechBubbleText,
-            isFacingRight: _isFacingRight,
+        // ==> PERBAIKAN DI SINI <==
+        // Bungkus CustomPaint dengan IgnorePointer agar tidak memblokir sentuhan
+        return IgnorePointer(
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: CharacterPainter(
+              floatAnimationValue: _floatAnimation.value,
+              moveAnimationValue: _moveAnimation.value,
+              character: _getCurrentCharacterFrame(),
+              isSpeaking: _isSpeaking,
+              speechText: _speechBubbleText,
+              isFacingRight: _isFacingRight,
+            ),
           ),
         );
       },
