@@ -7,13 +7,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PathService {
-  // Kunci SharedPreferences dipindahkan ke sini
   static const String _customStoragePathKey = 'custom_storage_path';
   static const String _customStoragePathKeyDebug = 'custom_storage_path_debug';
 
-  // Kunci dan fungsi untuk Download Path dihapus
-
-  // Metode dari path_service_2.dart digabungkan ke sini
   Future<void> saveCustomStoragePath(String path) async {
     final prefs = await SharedPreferences.getInstance();
     final key = kDebugMode ? _customStoragePathKeyDebug : _customStoragePathKey;
@@ -26,7 +22,6 @@ class PathService {
     return prefs.getString(key);
   }
 
-  // Metode asli dari path_service.dart disesuaikan untuk menggunakan metode di atas
   Future<String> get _appBasePath async {
     String? customPath = await loadCustomStoragePath();
     if (customPath != null && customPath.isNotEmpty) {
@@ -104,7 +99,6 @@ class PathService {
     return backupDir.path;
   }
 
-  // ==> GETTER BARU UNTUK FOLDER FOTO PROFIL <==
   Future<String> get profilePicturesPath async {
     final appBase = await _appBasePath;
     final profilePicDir = Directory(path.join(appBase, 'Profile_Pictures'));
@@ -114,7 +108,6 @@ class PathService {
     return profilePicDir.path;
   }
 
-  // ==> GETTER BARU UNTUK FOLDER DOWNLOAD UTAMA <==
   Future<String> get downloadsPath async {
     final appBase = await _appBasePath;
     final downloadsDir = Directory(path.join(appBase, 'Downloads'));
@@ -154,7 +147,6 @@ class PathService {
   Future<String> get contentsPath async =>
       path.join(await _baseDataPath, 'contents');
 
-  // ==> PENAMBAHAN BARU <==
   Future<String> get assetsPath async {
     final dataPath = await _baseDataPath;
     final assetsDir = Directory(path.join(dataPath, 'assets'));
@@ -164,8 +156,6 @@ class PathService {
     return assetsDir.path;
   }
 
-  // ==> PERUBAHAN DI SINI <==
-  // Path untuk game ular sekarang berada di dalam folder 'contents'
   Future<String> get snakeGamePath async {
     final contents = await contentsPath;
     final snakeDir = Directory(path.join(contents, 'snake_game'));
@@ -226,6 +216,19 @@ class PathService {
       await perpuskuDir.create(recursive: true);
     }
     return perpuskuDir.path;
+  }
+
+  // ==> FUNGSI INI TELAH DIPERBAIKI <==
+  Future<File> getPerpuskuHtmlFile(String relativePath) async {
+    // Nama variabel lokal diubah agar tidak bentrok
+    final String perpuskuPath = await perpuskuDataPath;
+    final fullPath = path.join(
+      perpuskuPath,
+      'file_contents',
+      'topics',
+      relativePath,
+    );
+    return File(fullPath);
   }
 
   Future<String> getTopicPath(String topicName) async {

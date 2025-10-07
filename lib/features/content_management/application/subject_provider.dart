@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_actions.dart';
@@ -9,7 +10,6 @@ import 'package:my_aplication/features/content_management/presentation/discussio
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
-// ==> 1. IMPORT SERVICE ENKRIPSI <==
 import '../domain/services/encryption_service.dart';
 
 class SubjectProvider with ChangeNotifier {
@@ -17,9 +17,10 @@ class SubjectProvider with ChangeNotifier {
   final SubjectActions _subjectActions = SubjectActions();
   final GeminiService _geminiService = GeminiService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
-  final String topicPath;
-  // ==> 2. TAMBAHKAN INSTANCE ENCRYPTION SERVICE <==
   final EncryptionService _encryptionService = EncryptionService();
+  // ==> TAMBAHKAN PATH SERVICE <==
+  final PathService _pathService = PathService();
+  final String topicPath;
 
   SubjectProvider(this.topicPath) {
     // fetchSubjects dipanggil dari initState di halaman UI
@@ -50,7 +51,6 @@ class SubjectProvider with ChangeNotifier {
   List<String> _repetitionCodeDisplayOrder = [];
   List<String> get repetitionCodeDisplayOrder => _repetitionCodeDisplayOrder;
 
-  // ==> 3. STATE BARU UNTUK MENYIMPAN SUBJECT YANG SUDAH DIBUKA <==
   final Set<String> _unlockedSubjects = {};
   bool isUnlocked(String subjectName) =>
       _unlockedSubjects.contains(subjectName);
@@ -86,6 +86,103 @@ class SubjectProvider with ChangeNotifier {
     _sortType = sortPrefs['sortType'] ?? 'position';
     _sortAscending = sortPrefs['sortAscending'] ?? true;
   }
+
+  // ==> FUNGSI HELPER BARU UNTUK MENGELOLA FILE HTML <==
+  Future<void> _processHtmlFiles(
+    Subject subject,
+    String password,
+    bool encrypt,
+  ) async {
+    for (final discussion in subject.discussions) {
+      if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
+        try {
+          final file = await _pathService.getPerpuskuHtmlFile(
+            discussion.filePath!,
+          );
+          if (encrypt) {
+            await _encryptionService.encryptFile(file, password);
+          } else {
+            await _encryptionService.decryptFile(file, password);
+          }
+        } catch (e) {
+          debugPrint("Gagal memproses file ${discussion.filePath}: $e");
+          // Lanjutkan proses meskipun satu file gagal
+        }
+      }
+    }
+  }
+
+  Future<void> lockSubject(String subjectName, String password) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    subject.isLocked = true;
+    subject.passwordHash = _encryptionService.hashPassword(password);
+    subject.discussions = await _subjectService.getDiscussionsForSubject(
+      topicPath,
+      subjectName,
+    );
+
+    // Enkripsi file JSON dan semua file HTML terkait
+    await _subjectService.saveEncryptedSubject(topicPath, subject, password);
+    await _processHtmlFiles(subject, password, true); // true = encrypt
+
+    _unlockedSubjects.remove(subjectName);
+    await fetchSubjects();
+  }
+
+  Future<void> unlockSubject(String subjectName, String password) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    final passwordHash = _encryptionService.hashPassword(password);
+
+    if (subject.passwordHash != passwordHash) {
+      throw Exception('Password salah.');
+    }
+
+    // Dekripsi konten JSON dan muat diskusi
+    subject.discussions = await _subjectService.getDecryptedDiscussions(
+      topicPath,
+      subject.name,
+      password,
+    );
+
+    // Dekripsi juga semua file HTML terkait
+    await _processHtmlFiles(subject, password, false); // false = decrypt
+
+    _unlockedSubjects.add(subjectName);
+    notifyListeners();
+  }
+
+  Future<void> removeLock(String subjectName, String password) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    final passwordHash = _encryptionService.hashPassword(password);
+
+    if (subject.passwordHash != passwordHash) {
+      throw Exception('Password salah.');
+    }
+
+    subject.isLocked = false;
+    subject.passwordHash = null;
+    subject.discussions = await _subjectService.getDecryptedDiscussions(
+      topicPath,
+      subject.name,
+      password,
+    );
+
+    // Simpan kembali file JSON dalam keadaan tidak terenkripsi
+    await _subjectService.saveDiscussionsForSubject(
+      topicPath,
+      subject.name,
+      subject.discussions,
+    );
+    await _subjectService.updateSubjectMetadata(topicPath, subject);
+
+    // Dekripsi semua file HTML terkait secara permanen
+    await _processHtmlFiles(subject, password, false); // false = decrypt
+
+    _unlockedSubjects.remove(subjectName);
+    await fetchSubjects();
+  }
+
+  // ... Sisa kode provider (filter, sort, add, rename, dll) tidak berubah ...
 
   Future<void> applySort(String sortType, bool sortAscending) async {
     _sortType = sortType;
@@ -199,65 +296,6 @@ class SubjectProvider with ChangeNotifier {
     final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
     subject.isHidden = isHidden;
     await _subjectService.updateSubjectMetadata(topicPath, subject);
-    await fetchSubjects();
-  }
-
-  // ==> 4. FUNGSI BARU UNTUK MENGUNCI/MEMBUKA SUBJECT <==
-  Future<void> lockSubject(String subjectName, String password) async {
-    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
-    subject.isLocked = true;
-    subject.passwordHash = _encryptionService.hashPassword(password);
-    subject.discussions = await _subjectService.getDiscussionsForSubject(
-      topicPath,
-      subjectName,
-    );
-
-    await _subjectService.saveEncryptedSubject(topicPath, subject, password);
-    _unlockedSubjects.remove(subjectName);
-    await fetchSubjects();
-  }
-
-  Future<void> unlockSubject(String subjectName, String password) async {
-    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
-    final passwordHash = _encryptionService.hashPassword(password);
-
-    if (subject.passwordHash != passwordHash) {
-      throw Exception('Password salah.');
-    }
-
-    // Dekripsi dan muat diskusi
-    subject.discussions = await _subjectService.getDecryptedDiscussions(
-      topicPath,
-      subject.name,
-      password,
-    );
-    _unlockedSubjects.add(subjectName);
-    notifyListeners();
-  }
-
-  Future<void> removeLock(String subjectName, String password) async {
-    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
-    final passwordHash = _encryptionService.hashPassword(password);
-
-    if (subject.passwordHash != passwordHash) {
-      throw Exception('Password salah.');
-    }
-
-    subject.isLocked = false;
-    subject.passwordHash = null;
-    subject.discussions = await _subjectService.getDecryptedDiscussions(
-      topicPath,
-      subject.name,
-      password,
-    );
-    await _subjectService.saveDiscussionsForSubject(
-      topicPath,
-      subject.name,
-      subject.discussions,
-    );
-    await _subjectService.updateSubjectMetadata(topicPath, subject);
-
-    _unlockedSubjects.remove(subjectName);
     await fetchSubjects();
   }
 
