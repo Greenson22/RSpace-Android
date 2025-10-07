@@ -23,21 +23,18 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
   final ApiConfigService _apiConfigService = ApiConfigService();
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _domainController;
-  late TextEditingController _apiKeyController;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _domainController = TextEditingController();
-    _apiKeyController = TextEditingController();
     _loadConfig();
   }
 
   @override
   void dispose() {
     _domainController.dispose();
-    _apiKeyController.dispose();
     super.dispose();
   }
 
@@ -47,7 +44,6 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     if (mounted) {
       setState(() {
         _domainController.text = config['domain'] ?? '';
-        _apiKeyController.text = config['apiKey'] ?? '';
         _isLoading = false;
       });
     }
@@ -61,7 +57,8 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
       domain = domain.substring(0, domain.length - 1);
     }
 
-    await _apiConfigService.saveConfig(domain, _apiKeyController.text.trim());
+    // ==> PERUBAHAN DI SINI: Simpan string kosong untuk API Key <==
+    await _apiConfigService.saveConfig(domain, '');
 
     if (mounted) {
       showAppSnackBar(context, 'Konfigurasi server berhasil disimpan.');
@@ -95,20 +92,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _apiKeyController,
-                      decoration: const InputDecoration(
-                        labelText: 'API Key Server (x-api-key)',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'API Key tidak boleh kosong.';
-                        }
-                        return null;
-                      },
-                    ),
+                    // ==> TextFormField untuk API Key telah dihapus dari sini <==
                   ],
                 ),
               ),

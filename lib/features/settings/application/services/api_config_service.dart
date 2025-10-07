@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:my_aplication/core/services/path_service.dart';
+import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfigService {
   final PathService _pathService = PathService();
 
-  // ==> FUNGSI INI DIPERBARUI MENGGUNAKAN GETTER BARU DARI PATHSERVICE <==
   Future<File> get _configFile async {
     final configFilePath = await _pathService.apiConfigPath;
     return File(configFilePath);
@@ -23,6 +23,7 @@ class ApiConfigService {
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           return {
             'domain': jsonData['domain'] as String?,
+            // 'apiKey' tetap dibaca untuk kompatibilitas, tapi tidak digunakan
             'apiKey': jsonData['apiKey'] as String?,
           };
         }
@@ -31,12 +32,13 @@ class ApiConfigService {
         final oldDomain = prefs.getString('api_domain');
         final oldApiKey = prefs.getString('api_key');
 
-        if (oldDomain != null && oldApiKey != null) {
+        if (oldDomain != null) {
+          // Cukup periksa domain
           debugPrint(
             "Migrating API config from SharedPreferences to JSON file...",
           );
-          final config = {'domain': oldDomain, 'apiKey': oldApiKey};
-          await saveConfig(oldDomain, oldApiKey);
+          final config = {'domain': oldDomain, 'apiKey': oldApiKey ?? ''};
+          await saveConfig(oldDomain, oldApiKey ?? '');
           await prefs.remove('api_domain');
           await prefs.remove('api_key');
           return config;
@@ -48,8 +50,10 @@ class ApiConfigService {
     return {'domain': null, 'apiKey': null};
   }
 
-  Future<void> saveConfig(String domain, String apiKey) async {
+  // ==> FUNGSI INI DIPERBARUI: Parameter apiKey sekarang opsional <==
+  Future<void> saveConfig(String domain, [String apiKey = '']) async {
     final file = await _configFile;
+    // Nilai 'apiKey' akan selalu disimpan sebagai string kosong.
     final configData = {'domain': domain, 'apiKey': apiKey};
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(configData));
