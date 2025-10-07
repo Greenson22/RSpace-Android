@@ -26,10 +26,7 @@ class DesktopLayout extends StatelessWidget {
           flex: 2,
           child: ListView(
             padding: const EdgeInsets.all(16.0),
-            children: [
-              ApiConfigCard(),
-              // PathInfoCard dihapus dari sini
-            ],
+            children: [ApiConfigCard()],
           ),
         ),
         const VerticalDivider(width: 1),
@@ -75,8 +72,6 @@ class DesktopLayout extends StatelessWidget {
       ],
     );
   }
-
-  // Fungsi _selectDownloadFolder dihapus
 
   Future<void> _uploadFile(BuildContext context, bool isRspaceFile) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
@@ -183,8 +178,6 @@ class DesktopLayout extends StatelessWidget {
         ) ??
         false;
   }
-
-  // Widget _buildPathInfoCard dihapus
 
   Widget _buildFileSection(
     BuildContext context, {
@@ -367,7 +360,13 @@ class DesktopLayout extends StatelessWidget {
                     await OpenFile.open(file.path);
                   } else if (value == 'import') {
                     final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
-                    importSpecificFile(context, file, backupType);
+                    // ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation <==
+                    importSpecificFile(
+                      context,
+                      file,
+                      backupType,
+                      showConfirmation: true,
+                    );
                   } else if (value == 'delete') {
                     _deleteDownloadedFile(context, file);
                   }

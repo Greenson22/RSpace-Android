@@ -1,20 +1,16 @@
-// lib/presentation/pages/backup_management_page/utils/backup_actions.dart
+// lib/features/backup_management/presentation/utils/backup_actions.dart
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import '../../application/backup_provider.dart';
 import '../../../content_management/application/topic_provider.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import 'backup_dialogs.dart';
-import 'package:path/path.dart' as path;
-
-// Fungsi selectBackupFolder telah dihapus dari sini
 
 Future<void> backupContents(BuildContext context, String type) async {
   final provider = Provider.of<BackupProvider>(context, listen: false);
-
-  // Pengecekan backupPath dihapus karena sekarang path sudah otomatis
   showAppSnackBar(context, 'Memulai proses backup $type...');
   try {
     String message;
@@ -42,15 +38,22 @@ Future<void> importContents(BuildContext context, String type) async {
   }
 
   final zipFile = File(result.files.single.path!);
-  await importSpecificFile(context, zipFile, type);
+  // ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation <==
+  await importSpecificFile(context, zipFile, type, showConfirmation: true);
 }
 
+// ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation pada definisi fungsi <==
 Future<void> importSpecificFile(
   BuildContext context,
   File zipFile,
-  String type,
-) async {
-  final confirmed = await showImportConfirmationDialog(context, type);
+  String type, {
+  required bool showConfirmation,
+}) async {
+  bool confirmed = true;
+  if (showConfirmation) {
+    confirmed = await showImportConfirmationDialog(context, type);
+  }
+
   if (!confirmed) {
     if (context.mounted) {
       showAppSnackBar(context, 'Import dibatalkan oleh pengguna.');
@@ -58,14 +61,21 @@ Future<void> importSpecificFile(
     return;
   }
 
-  final provider = BackupProvider();
+  // Gunakan provider baru untuk operasi ini agar tidak mengganggu state provider utama
+  final importOperationProvider = BackupProvider();
   showAppSnackBar(context, 'Memulai proses import...');
   try {
-    await provider.importContents(zipFile, type);
+    await importOperationProvider.importContents(zipFile, type);
     if (context.mounted) {
       if (type == 'RSpace') {
+        // Refresh data di provider yang relevan
         await Provider.of<TopicProvider>(context, listen: false).fetchTopics();
       }
+      // Refresh daftar file backup di provider backup utama
+      await Provider.of<BackupProvider>(
+        context,
+        listen: false,
+      ).listBackupFiles();
       showAppSnackBar(context, 'Import $type berhasil!');
     }
   } catch (e) {

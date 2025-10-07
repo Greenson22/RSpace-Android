@@ -12,16 +12,40 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:my_aplication/features/backup_management/presentation/utils/backup_actions.dart';
 import '../../settings/application/services/api_config_service.dart';
 import '../domain/models/file_model.dart';
-// PathService di-import untuk mendapatkan path download otomatis
 import '../../../core/services/path_service.dart';
-// ==> 1. IMPORT AUTH SERVICE <==
 import '../../auth/application/auth_service.dart';
+// ==> IMPORT DIALOG BARU <==
+import '../presentation/dialogs/download_import_progress_dialog.dart';
+
+// ==> ENUM BARU UNTUK STATUS PROGRES <==
+enum SyncStepStatus { waiting, inProgress, success, failed }
+
+// ==> CLASS BARU UNTUK MENYIMPAN STATE PROGRES <==
+class SyncProgressState {
+  SyncStepStatus rspaceDownloadStatus;
+  SyncStepStatus rspaceImportStatus;
+  SyncStepStatus perpuskuDownloadStatus;
+  SyncStepStatus perpuskuImportStatus;
+  String? errorMessage;
+
+  SyncProgressState({
+    this.rspaceDownloadStatus = SyncStepStatus.waiting,
+    this.rspaceImportStatus = SyncStepStatus.waiting,
+    this.perpuskuDownloadStatus = SyncStepStatus.waiting,
+    this.perpuskuImportStatus = SyncStepStatus.waiting,
+    this.errorMessage,
+  });
+
+  bool get isFinished =>
+      rspaceDownloadStatus != SyncStepStatus.inProgress &&
+      rspaceImportStatus != SyncStepStatus.inProgress &&
+      perpuskuDownloadStatus != SyncStepStatus.inProgress &&
+      perpuskuImportStatus != SyncStepStatus.inProgress;
+}
 
 class FileProvider with ChangeNotifier {
-  // SharedPreferencesService dihapus karena tidak lagi digunakan untuk path
   final ApiConfigService _apiConfigService = ApiConfigService();
-  final PathService _pathService = PathService(); // PathService ditambahkan
-  // ==> 2. TAMBAHKAN AUTH SERVICE <==
+  final PathService _pathService = PathService();
   final AuthService _authService = AuthService();
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -41,8 +65,6 @@ class FileProvider with ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // Properti dan metode terkait _downloadPath dihapus
-
   final Map<String, double> _downloadProgress = {};
   double getDownloadProgress(String uniqueName) =>
       _downloadProgress[uniqueName] ?? 0.0;
@@ -52,15 +74,15 @@ class FileProvider with ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
-  bool _isDownloading = false;
-  bool get isDownloading => _isDownloading;
+  // ==> HAPUS isDownloading, GANTI DENGAN syncProgress <==
+  SyncProgressState _syncProgress = SyncProgressState();
+  SyncProgressState get syncProgress => _syncProgress;
 
   final Set<String> _selectedDownloadedFiles = {};
   Set<String> get selectedDownloadedFiles => _selectedDownloadedFiles;
   bool get isSelectionMode => _selectedDownloadedFiles.isNotEmpty;
 
   String? _apiDomain;
-  // API Key tidak lagi digunakan untuk request di sini
   String? get apiDomain => _apiDomain;
 
   String get _rspaceEndpoint => '$_apiDomain/api/rspace/files';
@@ -76,7 +98,6 @@ class FileProvider with ChangeNotifier {
     _initialize();
   }
 
-  // ==> 3. BUAT FUNGSI HELPER UNTUK MENDAPATKAN HEADER OTENTIKASI <==
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await _authService.getToken();
     if (token == null) {
@@ -85,6 +106,105 @@ class FileProvider with ChangeNotifier {
     return {'Authorization': 'Bearer $token'};
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
+  Future<void> downloadAndImportAll(BuildContext context) async {
+    // Tampilkan dialog progres SEBELUM memulai proses
+    showDownloadImportProgressDialog(context);
+
+    // Reset state progres
+    _syncProgress = SyncProgressState();
+    notifyListeners();
+
+    File? rspaceFile;
+    File? perpuskuFile;
+
+    try {
+      // --- RSPACE ---
+      final rspaceItem = _rspaceFiles.isNotEmpty ? _rspaceFiles.first : null;
+      if (rspaceItem != null) {
+        // Step 1: Download RSpace
+        _syncProgress.rspaceDownloadStatus = SyncStepStatus.inProgress;
+        notifyListeners();
+        try {
+          rspaceFile = await _downloadSingleFile(rspaceItem, true);
+          _syncProgress.rspaceDownloadStatus = SyncStepStatus.success;
+        } catch (e) {
+          _syncProgress.rspaceDownloadStatus = SyncStepStatus.failed;
+          throw Exception("Gagal download RSpace: $e");
+        } finally {
+          notifyListeners();
+        }
+
+        // Step 2: Import RSpace
+        _syncProgress.rspaceImportStatus = SyncStepStatus.inProgress;
+        notifyListeners();
+        try {
+          await importSpecificFile(
+            context,
+            rspaceFile,
+            'RSpace',
+            showConfirmation: false,
+          );
+          _syncProgress.rspaceImportStatus = SyncStepStatus.success;
+        } catch (e) {
+          _syncProgress.rspaceImportStatus = SyncStepStatus.failed;
+          throw Exception("Gagal import RSpace: $e");
+        } finally {
+          notifyListeners();
+        }
+      } else {
+        _syncProgress.rspaceDownloadStatus = SyncStepStatus.success;
+        _syncProgress.rspaceImportStatus = SyncStepStatus.success;
+      }
+
+      // --- PERPUSKU ---
+      final perpuskuItem = _perpuskuFiles.isNotEmpty
+          ? _perpuskuFiles.first
+          : null;
+      if (perpuskuItem != null) {
+        // Step 3: Download PerpusKu
+        _syncProgress.perpuskuDownloadStatus = SyncStepStatus.inProgress;
+        notifyListeners();
+        try {
+          perpuskuFile = await _downloadSingleFile(perpuskuItem, false);
+          _syncProgress.perpuskuDownloadStatus = SyncStepStatus.success;
+        } catch (e) {
+          _syncProgress.perpuskuDownloadStatus = SyncStepStatus.failed;
+          throw Exception("Gagal download PerpusKu: $e");
+        } finally {
+          notifyListeners();
+        }
+
+        // Step 4: Import PerpusKu
+        _syncProgress.perpuskuImportStatus = SyncStepStatus.inProgress;
+        notifyListeners();
+        try {
+          await importSpecificFile(
+            context,
+            perpuskuFile,
+            'PerpusKu',
+            showConfirmation: false,
+          );
+          _syncProgress.perpuskuImportStatus = SyncStepStatus.success;
+        } catch (e) {
+          _syncProgress.perpuskuImportStatus = SyncStepStatus.failed;
+          throw Exception("Gagal import PerpusKu: $e");
+        } finally {
+          notifyListeners();
+        }
+      } else {
+        _syncProgress.perpuskuDownloadStatus = SyncStepStatus.success;
+        _syncProgress.perpuskuImportStatus = SyncStepStatus.success;
+      }
+    } catch (e) {
+      _syncProgress.errorMessage = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  // Sisa kode di bawah ini tidak berubah secara signifikan
+  // ...
   void toggleDownloadedFileSelection(File file) {
     if (_selectedDownloadedFiles.contains(file.path)) {
       _selectedDownloadedFiles.remove(file.path);
@@ -126,7 +246,6 @@ class FileProvider with ChangeNotifier {
 
   Future<void> _initialize() async {
     await _loadApiConfig();
-    // Panggilan ke _loadDownloadPath dihapus
     if (_apiDomain != null) {
       await Future.wait([fetchFiles(), _scanDownloadedFiles()]);
     } else {
@@ -153,12 +272,8 @@ class FileProvider with ChangeNotifier {
     await fetchFiles();
   }
 
-  // Metode _loadDownloadPath dan setDownloadPath dihapus
-
   Future<void> _scanDownloadedFiles() async {
-    // Menggunakan _pathService untuk mendapatkan path download secara dinamis
     final downloadPath = await _pathService.downloadsPath;
-
     try {
       final rspaceDir = Directory(path.join(downloadPath, 'rspace_download'));
       if (await rspaceDir.exists()) {
@@ -169,7 +284,6 @@ class FileProvider with ChangeNotifier {
       } else {
         _downloadedRspaceFiles = [];
       }
-
       final perpuskuDir = Directory(
         path.join(downloadPath, 'perpusku_download'),
       );
@@ -196,13 +310,10 @@ class FileProvider with ChangeNotifier {
       notifyListeners();
       return;
     }
-
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-
     try {
-      // ==> 4. GUNAKAN HEADER BARU <==
       final headers = await _getAuthHeaders();
       final rspaceResponse = await http
           .get(Uri.parse(_rspaceEndpoint), headers: headers)
@@ -210,7 +321,6 @@ class FileProvider with ChangeNotifier {
       final perpuskuResponse = await http
           .get(Uri.parse(_perpuskuEndpoint), headers: headers)
           .timeout(const Duration(seconds: 15));
-
       if (rspaceResponse.statusCode == 200) {
         final List<dynamic> rspaceData = json.decode(rspaceResponse.body);
         _rspaceFiles = rspaceData
@@ -221,7 +331,6 @@ class FileProvider with ChangeNotifier {
           'Gagal memuat file RSpace: Status ${rspaceResponse.statusCode}',
         );
       }
-
       if (perpuskuResponse.statusCode == 200) {
         final List<dynamic> perpuskuData = json.decode(perpuskuResponse.body);
         _perpuskuFiles = perpuskuData
@@ -251,11 +360,9 @@ class FileProvider with ChangeNotifier {
     final url = isRspaceFile
         ? '$_rspaceDeleteBaseUrl${file.uniqueName}'
         : '$_perpuskuDeleteBaseUrl${file.uniqueName}';
-
     try {
       final headers = await _getAuthHeaders();
       final response = await http.delete(Uri.parse(url), headers: headers);
-
       if (response.statusCode == 200) {
         await fetchFiles();
         return 'File "${file.originalName}" berhasil dihapus.';
@@ -288,7 +395,6 @@ class FileProvider with ChangeNotifier {
     final fileName = file.name;
     _uploadProgress[fileName] = 0.01;
     notifyListeners();
-
     try {
       final url = isRspaceFile
           ? _rspaceUploadEndpoint
@@ -296,7 +402,6 @@ class FileProvider with ChangeNotifier {
       var request = http.MultipartRequest('POST', Uri.parse(url));
       final headers = await _getAuthHeaders();
       request.headers.addAll(headers);
-
       request.files.add(
         await http.MultipartFile.fromPath(
           'zipfile',
@@ -304,9 +409,7 @@ class FileProvider with ChangeNotifier {
           filename: fileName,
         ),
       );
-
       final response = await request.send();
-
       if (response.statusCode == 201 || response.statusCode == 200) {
         await fetchFiles();
         return 'File "$fileName" berhasil diunggah.';
@@ -325,81 +428,6 @@ class FileProvider with ChangeNotifier {
     }
   }
 
-  Future<void> downloadAndImportAll(BuildContext context) async {
-    _isDownloading = true;
-    notifyListeners();
-
-    try {
-      final rspaceFile = _rspaceFiles.isNotEmpty ? _rspaceFiles.first : null;
-      final perpuskuFile = _perpuskuFiles.isNotEmpty
-          ? _perpuskuFiles.first
-          : null;
-
-      if (rspaceFile == null && perpuskuFile == null) {
-        throw Exception('Tidak ada file yang tersedia untuk diunduh.');
-      }
-
-      List<File> downloadedFiles = [];
-
-      if (rspaceFile != null) {
-        final downloaded = await _downloadSingleFile(rspaceFile, true);
-        downloadedFiles.add(downloaded);
-      }
-      if (perpuskuFile != null) {
-        final downloaded = await _downloadSingleFile(perpuskuFile, false);
-        downloadedFiles.add(downloaded);
-      }
-
-      if (context.mounted) {
-        final confirmed =
-            await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Konfirmasi Import'),
-                content: Text(
-                  'Download selesai. Lanjutkan untuk mengimpor ${downloadedFiles.length} file? Ini akan menimpa data yang ada.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Batal'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text('Lanjutkan'),
-                  ),
-                ],
-              ),
-            ) ??
-            false;
-
-        if (confirmed && context.mounted) {
-          if (rspaceFile != null) {
-            await importSpecificFile(
-              context,
-              downloadedFiles.firstWhere(
-                (f) => path.basename(f.path) == rspaceFile.originalName,
-              ),
-              'RSpace',
-            );
-          }
-          if (perpuskuFile != null) {
-            await importSpecificFile(
-              context,
-              downloadedFiles.firstWhere(
-                (f) => path.basename(f.path) == perpuskuFile.originalName,
-              ),
-              'PerpusKu',
-            );
-          }
-        }
-      }
-    } finally {
-      _isDownloading = false;
-      notifyListeners();
-    }
-  }
-
   Future<File> _downloadSingleFile(FileItem file, bool isRspaceFile) async {
     final downloadPath = await _pathService.downloadsPath;
     final subfolder = isRspaceFile ? 'rspace_download' : 'perpusku_download';
@@ -408,15 +436,12 @@ class FileProvider with ChangeNotifier {
       await downloadsDir.create(recursive: true);
     }
     final String savePath = path.join(downloadsDir.path, file.originalName);
-
     final request = http.Request('GET', Uri.parse(file.downloadUrl));
     request.headers.addAll(await _getAuthHeaders());
     final http.StreamedResponse response = await request.send();
-
     if (response.statusCode != 200) {
       throw HttpException('Gagal mengunduh: Status ${response.statusCode}');
     }
-
     final List<int> bytes = await response.stream.toBytes();
     final downloadedFile = File(savePath);
     await downloadedFile.writeAsBytes(bytes);
@@ -431,29 +456,22 @@ class FileProvider with ChangeNotifier {
         throw Exception('Izin penyimpanan ditolak.');
       }
     }
-
     final downloadPath = await _pathService.downloadsPath;
     final subfolder = isRspaceFile ? 'rspace_download' : 'perpusku_download';
     final downloadsDir = Directory(path.join(downloadPath, subfolder));
-
     if (!await downloadsDir.exists()) {
       await downloadsDir.create(recursive: true);
     }
-
     final String savePath = path.join(downloadsDir.path, file.originalName);
-
     try {
       _downloadProgress[file.uniqueName] = 0.01;
       notifyListeners();
-
       final request = http.Request('GET', Uri.parse(file.downloadUrl));
       request.headers.addAll(await _getAuthHeaders());
       final http.StreamedResponse response = await request.send();
-
       if (response.statusCode != 200) {
         throw HttpException('Gagal mengunduh: Status ${response.statusCode}');
       }
-
       final contentLength = response.contentLength;
       List<int> bytes = [];
       response.stream.listen(

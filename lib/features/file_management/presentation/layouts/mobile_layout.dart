@@ -24,7 +24,6 @@ class MobileLayout extends StatelessWidget {
       children: [
         ApiConfigCard(),
         const SizedBox(height: 16),
-        // Widget _buildPathInfoCard dihapus dari sini
         _buildFileSection(
           context,
           provider: provider,
@@ -59,8 +58,6 @@ class MobileLayout extends StatelessWidget {
       ],
     );
   }
-
-  // Fungsi _selectDownloadFolder telah dihapus
 
   Future<void> _uploadFile(BuildContext context, bool isRspaceFile) async {
     final provider = Provider.of<FileProvider>(context, listen: false);
@@ -167,8 +164,6 @@ class MobileLayout extends StatelessWidget {
         ) ??
         false;
   }
-
-  // Widget _buildPathInfoCard telah dihapus
 
   Widget _buildFileSection(
     BuildContext context, {
@@ -351,7 +346,13 @@ class MobileLayout extends StatelessWidget {
                     await OpenFile.open(file.path);
                   } else if (value == 'import') {
                     final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
-                    importSpecificFile(context, file, backupType);
+                    // ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation <==
+                    importSpecificFile(
+                      context,
+                      file,
+                      backupType,
+                      showConfirmation: true,
+                    );
                   } else if (value == 'delete') {
                     _deleteDownloadedFile(context, file);
                   }

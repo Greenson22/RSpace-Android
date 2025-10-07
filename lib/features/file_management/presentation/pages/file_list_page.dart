@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/file_provider.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
-// ==> 1. IMPORT AUTH_PROVIDER UNTUK CEK STATUS LOGIN <==
 import '../../../auth/application/auth_provider.dart';
 import '../../../auth/presentation/profile_page.dart';
+// ==> 1. IMPORT BACKUP PROVIDER <==
+import '../../../backup_management/application/backup_provider.dart';
 
 import '../layouts/desktop_layout.dart';
 import '../layouts/mobile_layout.dart';
@@ -16,16 +17,19 @@ class FileListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ==> 2. GUNAKAN MULTIPROVIDER UNTUK AUTH & FILE <==
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FileProvider()),
-        // Sediakan AuthProvider yang sudah ada dari atas tree
+        // ==> 2. TAMBAHKAN BACKUP PROVIDER DI SINI <==
+        ChangeNotifierProvider(create: (_) => BackupProvider()),
         ChangeNotifierProvider.value(value: Provider.of<AuthProvider>(context)),
       ],
-      child: Consumer2<FileProvider, AuthProvider>(
-        builder: (context, provider, auth, child) {
-          // ==> 3. TAMPILKAN UI BERDASARKAN STATUS LOGIN <==
+      // ==> 3. UBAH CONSUMER2 MENJADI CONSUMER BIASA UNTUK KESEDERHANAAN <==
+      child: Consumer<FileProvider>(
+        builder: (context, provider, child) {
+          // Baca AuthProvider secara terpisah
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+
           if (auth.authState != AuthState.authenticated) {
             return _buildLoginRequiredView(context);
           }
@@ -76,7 +80,8 @@ class FileListPage extends StatelessWidget {
     );
   }
 
-  // ==> 4. WIDGET BARU UNTUK TAMPILAN "LOGIN DIPERLUKAN" <==
+  // Sisa kode di bawah ini tidak berubah...
+
   Widget _buildLoginRequiredView(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('File Online')),
@@ -120,16 +125,16 @@ class FileListPage extends StatelessWidget {
   }
 
   AppBar _buildDefaultAppBar(BuildContext context, FileProvider provider) {
-    // ==> 5. PENGECEKAN API KEY DIHAPUS <==
     final bool isApiConfigured =
         provider.apiDomain != null && provider.apiDomain!.isNotEmpty;
+    final bool isSyncInProgress = !provider.syncProgress.isFinished;
 
     return AppBar(
       title: const Text('File Online & Unduhan'),
       actions: [
         if (isApiConfigured)
           IconButton(
-            icon: provider.isDownloading
+            icon: isSyncInProgress
                 ? const SizedBox(
                     width: 24,
                     height: 24,
@@ -139,7 +144,7 @@ class FileListPage extends StatelessWidget {
                     ),
                   )
                 : const Icon(Icons.download_for_offline_outlined),
-            onPressed: provider.isDownloading
+            onPressed: isSyncInProgress
                 ? null
                 : () => provider.downloadAndImportAll(context),
             tooltip: 'Download & Import Semua',
@@ -223,7 +228,7 @@ class FileListPage extends StatelessWidget {
                 onPressed: () => provider.fetchFiles(),
               ),
             const SizedBox(height: 24),
-            ApiConfigCard(),
+            const ApiConfigCard(),
           ],
         ),
       ),
@@ -232,43 +237,36 @@ class FileListPage extends StatelessWidget {
 }
 
 class ApiConfigCard extends StatefulWidget {
+  const ApiConfigCard({super.key});
   @override
   State<ApiConfigCard> createState() => _ApiConfigCardState();
 }
 
 class _ApiConfigCardState extends State<ApiConfigCard> {
   late TextEditingController _domainController;
-  // ==> 6. HAPUS CONTROLLER DAN STATE UNTUK API KEY <==
-  // late TextEditingController _apiKeyController;
-  // bool _obscureText = true;
 
   @override
   void initState() {
     super.initState();
     final provider = Provider.of<FileProvider>(context, listen: false);
     _domainController = TextEditingController(text: provider.apiDomain ?? '');
-    // _apiKeyController = TextEditingController(text: provider.apiKey ?? '');
   }
 
   @override
   void dispose() {
     _domainController.dispose();
-    // _apiKeyController.dispose();
     super.dispose();
   }
 
   void _saveConfig() {
     final provider = Provider.of<FileProvider>(context, listen: false);
     final domain = _domainController.text.trim();
-    // API Key tidak lagi diperlukan
-    // final apiKey = _apiKeyController.text.trim();
 
     if (domain.isEmpty) {
       showAppSnackBar(context, 'Domain tidak boleh kosong.', isError: true);
       return;
     }
 
-    // Simpan hanya domain, API Key dikelola di halaman lain (jika masih perlu)
     provider.saveApiConfig(domain, '');
     showAppSnackBar(context, 'Konfigurasi server berhasil disimpan.');
     FocusScope.of(context).unfocus();
@@ -278,7 +276,6 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
   Widget build(BuildContext context) {
     return Consumer<FileProvider>(
       builder: (context, provider, child) {
-        // ==> 7. PENGECEKAN HANYA PADA DOMAIN <==
         final bool shouldBeExpanded = provider.apiDomain == null;
 
         return Card(
@@ -301,7 +298,6 @@ class _ApiConfigCardState extends State<ApiConfigCard> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // ==> 8. HAPUS TextFormField UNTUK API KEY <==
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
