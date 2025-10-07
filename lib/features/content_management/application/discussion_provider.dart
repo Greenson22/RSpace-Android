@@ -29,11 +29,13 @@ class DiscussionProvider
   final String _jsonFilePath;
   @override
   final String? sourceSubjectLinkedPath;
+  // ==> TAMBAHKAN PROPERTI SUBJECT <==
+  final Subject subject;
 
   DiscussionProvider(
     this._jsonFilePath, {
     String? linkedPath,
-    required Subject subject,
+    required this.subject, // Jadikan subject sebagai parameter wajib
   }) : sourceSubjectLinkedPath = linkedPath {
     loadInitialData();
   }
@@ -103,11 +105,22 @@ class DiscussionProvider
     notifyListeners();
   }
 
+  // ==> PERUBAIKAN UTAMA DI SINI <==
   Future<void> loadDiscussions() async {
     _isLoading = true;
     notifyListeners();
     try {
-      _allDiscussions = await discussionService.loadDiscussions(_jsonFilePath);
+      // Jika subject yang di-pass sudah memiliki data diskusi (karena baru dibuka),
+      // langsung gunakan data tersebut dari memori.
+      if (subject.isLocked && subject.discussions.isNotEmpty) {
+        _allDiscussions = subject.discussions;
+      } else {
+        // Jika tidak, baru baca dari file (untuk subject yang tidak terkunci).
+        _allDiscussions = await discussionService.loadDiscussions(
+          _jsonFilePath,
+        );
+      }
+
       _repetitionCodeOrder = await prefsService.loadRepetitionCodeOrder();
       _repetitionCodeDays = await prefsService.loadRepetitionCodeDays();
       filterAndSortDiscussions();
@@ -119,6 +132,13 @@ class DiscussionProvider
 
   @override
   Future<void> saveDiscussions() async {
+    // Jika subject terkunci, jangan simpan perubahan ke file
+    // karena akan menimpa file terenkripsi dengan data yang tidak dienkripsi.
+    // Perubahan akan disimpan saat subject dikunci kembali.
+    if (subject.isLocked) {
+      debugPrint("Save skipped: Subject is locked and in-memory only.");
+      return;
+    }
     await discussionService.saveDiscussions(_jsonFilePath, _allDiscussions);
   }
 
@@ -153,7 +173,6 @@ class DiscussionProvider
   // BASIC CRUD (Create, Read, Update, Delete)
   Future<void> addDiscussion(AddDiscussionResult result) async {
     String? newFileName;
-    // Cek jika tipe link adalah HTML dan data link menandakan pembuatan file baru
     if (result.linkType == DiscussionLinkType.html &&
         result.linkData == 'create_new') {
       if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
@@ -166,7 +185,6 @@ class DiscussionProvider
         subjectLinkedPath: sourceSubjectLinkedPath!,
         discussionName: result.name,
       );
-      // Buat path relatif yang lengkap untuk disimpan
       newFileName = path.join(sourceSubjectLinkedPath!, createdFileName);
     }
 
@@ -175,9 +193,8 @@ class DiscussionProvider
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       repetitionCode: 'R0D',
       points: [],
-      // Gunakan data dari objek result
       linkType: result.linkType,
-      filePath: newFileName, // Mungkin null jika bukan link HTML baru
+      filePath: newFileName,
       quizTopicPath: result.linkType == DiscussionLinkType.quiz
           ? result.linkData
           : null,

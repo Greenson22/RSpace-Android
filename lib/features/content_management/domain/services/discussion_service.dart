@@ -1,4 +1,4 @@
-// lib/data/services/discussion_service.dart
+// lib/features/content_management/domain/services/discussion_service.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -7,7 +7,6 @@ import '../models/discussion_model.dart';
 import '../../../../core/services/path_service.dart';
 
 class DiscussionService {
-  // >> FUNGSI INI DIPERBARUI: SEKARANG MENGEMBALIKAN NAMA FILE SAJA <<
   Future<String> createDiscussionFile({
     required String perpuskuBasePath,
     required String subjectLinkedPath,
@@ -47,12 +46,9 @@ class DiscussionService {
 </html>
 ''';
     await finalFile.writeAsString(htmlTemplate);
-
-    // Hanya kembalikan nama filenya saja
     return fileName;
   }
 
-  // >> FUNGSI INI DIPERBARUI: MENGEMBALIKAN NAMA FILE SAJA <<
   Future<String?> moveDiscussionFile({
     required String perpuskuBasePath,
     required String sourceRelativePath,
@@ -75,14 +71,12 @@ class DiscussionService {
       final newFilePath = path.join(targetDirectoryPath, fileName);
       await sourceFile.rename(newFilePath);
 
-      // Hanya kembalikan nama filenya
       return fileName;
     } catch (e) {
       throw Exception('Gagal memindahkan file fisik: $e');
     }
   }
 
-  // >> FUNGSI INI DIPERBARUI: MENERIMA FULL PATH DARI PEMANGGIL
   Future<void> deleteLinkedFile(String? fullRelativePath) async {
     if (fullRelativePath == null || fullRelativePath.isEmpty) {
       return;
@@ -107,7 +101,7 @@ class DiscussionService {
     }
   }
 
-  // ... Sisa fungsi lain (load, save, add, dll) tidak berubah secara signifikan ...
+  // ==> PERUBAIKAN UTAMA DI FUNGSI INI <==
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
@@ -121,7 +115,17 @@ class DiscussionService {
     }
     try {
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      final contentList = jsonData['content'] as List<dynamic>? ?? [];
+      final content = jsonData['content'];
+      final metadata = jsonData['metadata'] as Map<String, dynamic>? ?? {};
+      final isLocked = metadata['isLocked'] as bool? ?? false;
+
+      // Jika terkunci atau kontennya adalah String (bukan List),
+      // kembalikan list kosong untuk mencegah error.
+      if (isLocked || content is String) {
+        return [];
+      }
+
+      final contentList = content as List<dynamic>? ?? [];
       return contentList.map((item) => Discussion.fromJson(item)).toList();
     } catch (e) {
       debugPrint("Error decoding discussion file, attempting fallback: $e");
