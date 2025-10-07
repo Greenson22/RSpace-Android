@@ -9,6 +9,7 @@ import '../application/auth_provider.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import '../domain/user_model.dart';
+import 'package:my_aplication/features/admin/presentation/pages/admin_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -75,7 +76,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildGuestView(BuildContext context) {
-    // ... (kode tidak berubah)
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: Center(
@@ -134,6 +134,8 @@ class _ProfilePageState extends State<ProfilePage> {
       'd MMMM yyyy',
       'id_ID',
     ).format(user.createdAt);
+    final bool isAdmin = user.id == 1;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Profil Saya')),
       body: ListView(
@@ -141,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           _buildProfileHeader(
             context,
-            auth, // Kirim provider-nya
+            auth,
             () => _pickAndUploadImage(context),
           ),
           const SizedBox(height: 24),
@@ -160,6 +162,23 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ]),
           const SizedBox(height: 24),
+          if (isAdmin)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminPage()),
+                  );
+                },
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: const Text('Manajemen Pengguna'),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Theme.of(context).primaryColor),
+                ),
+              ),
+            ),
           ElevatedButton.icon(
             onPressed: () {
               Provider.of<AuthProvider>(context, listen: false).logout();
@@ -188,7 +207,6 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         Stack(
           children: [
-            // ==> LOGIKA TAMPILAN GAMBAR DIPERBARUI <==
             CircleAvatar(
               radius: 60,
               backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
@@ -196,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? FileImage(localImage)
                   : null,
               child: auth.isProfilePictureLoading
-                  ? const CircularProgressIndicator() // Tampilkan loading
+                  ? const CircularProgressIndicator()
                   : localImage == null
                   ? Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
