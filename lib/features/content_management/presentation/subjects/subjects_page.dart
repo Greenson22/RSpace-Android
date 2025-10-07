@@ -19,8 +19,9 @@ import 'widgets/subject_list_tile.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import 'dialogs/generate_index_template_dialog.dart';
 import 'dialogs/generate_index_prompt_dialog.dart';
-// ==> IMPORT EDITOR INTERNAL
 import '../../../html_editor/presentation/pages/html_editor_page.dart';
+// ==> IMPORT DIALOG PASSWORD <==
+import 'dialogs/subject_password_dialog.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -128,6 +129,83 @@ class _SubjectsPageState extends State<SubjectsPage> {
         backgroundColor: isError ? Colors.red : null,
       ),
     );
+  }
+
+  // ==> FUNGSI BARU UNTUK MENANGANI AKSI KUNCI/BUKA KUNCI <==
+  Future<void> _toggleLock(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+
+    if (subject.isLocked) {
+      // Jika terkunci, tampilkan dialog untuk memasukkan password atau menghapus kunci
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: Text(subject.name),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'unlock'),
+              child: const ListTile(
+                leading: Icon(Icons.lock_open),
+                title: Text('Buka Kunci'),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'remove'),
+              child: const ListTile(
+                leading: Icon(Icons.lock_reset),
+                title: Text('Hapus Kunci Permanen'),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (choice == 'unlock' && mounted) {
+        final password = await showSubjectPasswordDialog(
+          context: context,
+          subjectName: subject.name,
+          mode: PasswordDialogMode.enter,
+        );
+        if (password != null) {
+          try {
+            await provider.unlockSubject(subject.name, password);
+          } catch (e) {
+            _showSnackBar(e.toString(), isError: true);
+          }
+        }
+      } else if (choice == 'remove' && mounted) {
+        final password = await showSubjectPasswordDialog(
+          context: context,
+          subjectName: subject.name,
+          mode: PasswordDialogMode.remove,
+        );
+        if (password != null) {
+          try {
+            await provider.removeLock(subject.name, password);
+            _showSnackBar(
+              'Kunci pada subject "${subject.name}" telah dihapus.',
+            );
+          } catch (e) {
+            _showSnackBar(e.toString(), isError: true);
+          }
+        }
+      }
+    } else {
+      // Jika tidak terkunci, tampilkan dialog untuk set password
+      final password = await showSubjectPasswordDialog(
+        context: context,
+        subjectName: subject.name,
+        mode: PasswordDialogMode.set,
+      );
+      if (password != null) {
+        try {
+          await provider.lockSubject(subject.name, password);
+          _showSnackBar('Subject "${subject.name}" berhasil dikunci.');
+        } catch (e) {
+          _showSnackBar(e.toString(), isError: true);
+        }
+      }
+    }
   }
 
   Future<void> _moveSubject(BuildContext context, Subject subject) async {
@@ -383,15 +461,31 @@ class _SubjectsPageState extends State<SubjectsPage> {
     BuildContext context,
     Subject subject,
   ) async {
-    if (subject.isFrozen) {
-      _showSnackBar('Subject ini sedang dibekukan dan tidak bisa dibuka.');
-      return;
-    }
-
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
     );
+
+    // ==> PERIKSA APAKAH SUBJECT TERKUNCI DAN BELUM DIBUKA <==
+    if (subject.isLocked && !subjectProvider.isUnlocked(subject.name)) {
+      final password = await showSubjectPasswordDialog(
+        context: context,
+        subjectName: subject.name,
+        mode: PasswordDialogMode.enter,
+      );
+      if (password == null) return; // Pengguna membatalkan
+      try {
+        await subjectProvider.unlockSubject(subject.name, password);
+      } catch (e) {
+        _showSnackBar(e.toString(), isError: true);
+        return;
+      }
+    }
+
+    if (subject.isFrozen) {
+      _showSnackBar('Subject ini sedang dibekukan dan tidak bisa dibuka.');
+      return;
+    }
 
     String? currentLinkedPath = subject.linkedPath;
 
@@ -430,8 +524,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
       context,
       MaterialPageRoute(
         builder: (context) => ChangeNotifierProvider(
-          create: (_) =>
-              DiscussionProvider(jsonFilePath, linkedPath: currentLinkedPath),
+          create: (_) => DiscussionProvider(
+            jsonFilePath,
+            linkedPath: currentLinkedPath,
+            subject: subject,
+          ), // ==> KIRIM SUBJECT KE DISCUSSION PROVIDER
           child: DiscussionsPage(
             subjectName: subject.name,
             linkedPath: currentLinkedPath,
@@ -555,6 +652,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
               onToggleFreeze: () => _toggleFreeze(context, subject),
+              // ==> SAMBUNGKAN CALLBACK BARU <==
+              onToggleLock: () => _toggleLock(context, subject),
             );
           },
         );
@@ -596,6 +695,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
               onToggleFreeze: () => _toggleFreeze(context, subject),
+              // ==> SAMBUNGKAN CALLBACK BARU <==
+              onToggleLock: () => _toggleLock(context, subject),
             );
           },
         );

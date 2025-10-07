@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
@@ -29,8 +30,11 @@ class DiscussionProvider
   @override
   final String? sourceSubjectLinkedPath;
 
-  DiscussionProvider(this._jsonFilePath, {String? linkedPath})
-    : sourceSubjectLinkedPath = linkedPath {
+  DiscussionProvider(
+    this._jsonFilePath, {
+    String? linkedPath,
+    required Subject subject,
+  }) : sourceSubjectLinkedPath = linkedPath {
     loadInitialData();
   }
 

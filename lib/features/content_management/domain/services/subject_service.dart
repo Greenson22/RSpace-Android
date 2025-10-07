@@ -1,4 +1,5 @@
 // lib/features/content_management/domain/services/subject_service.dart
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,12 +12,16 @@ import 'package:path/path.dart' as path;
 import '../models/subject_model.dart';
 import 'discussion_service.dart';
 import 'subject_repository.dart';
+// ==> IMPORT SERVICE ENKRIPSI <==
+import 'encryption_service.dart';
 
 class SubjectService {
   final DiscussionService _discussionService = DiscussionService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final SubjectRepository _repository = SubjectRepository();
   final PathService _pathService = PathService();
+  // ==> TAMBAHKAN INSTANCE ENCRYPTION SERVICE <==
+  final EncryptionService _encryptionService = EncryptionService();
   static const String _defaultIcon = '📄';
 
   Future<List<Subject>> getSubjects(String topicPath) async {
@@ -30,11 +35,15 @@ class SubjectService {
       final name = path.basenameWithoutExtension(file.path);
       final jsonData = await _repository.readSubjectJson(file);
       final metadata = jsonData['metadata'] as Map<String, dynamic>? ?? {};
-      final content = jsonData['content'] as List<dynamic>? ?? [];
+      final content =
+          jsonData['content']; // Bisa jadi String (terenkripsi) atau List
 
-      final discussions = content
-          .map((item) => Discussion.fromJson(item))
-          .toList();
+      final bool isLocked = metadata['isLocked'] as bool? ?? false;
+
+      // Hanya parse diskusi jika tidak terkunci dan tipenya adalah List
+      final discussions = (isLocked || content is! List<dynamic>)
+          ? <Discussion>[]
+          : content.map((item) => Discussion.fromJson(item)).toList();
 
       final discussionsToCount = _getFilteredAndSortedDiscussions(
         discussions,
@@ -66,6 +75,8 @@ class SubjectService {
           linkedPath: metadata['linkedPath'] as String?,
           isFrozen: metadata['isFrozen'] as bool? ?? false,
           frozenDate: metadata['frozenDate'] as String?,
+          isLocked: isLocked,
+          passwordHash: metadata['passwordHash'] as String?,
           discussionCount: discussions.length,
           finishedDiscussionCount: discussions.where((d) => d.finished).length,
           repetitionCodeCounts: repetitionCodeCounts,
@@ -89,7 +100,61 @@ class SubjectService {
     return subjects;
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBACA DISKUSI <==
+  // ==> FUNGSI BARU UNTUK MENYIMPAN SUBJECT YANG DIENKRIPSI <==
+  Future<void> saveEncryptedSubject(
+    String topicPath,
+    Subject subject,
+    String password,
+  ) async {
+    final filePath = await _pathService.getSubjectPath(topicPath, subject.name);
+
+    // Ambil metadata dari objek subject
+    final metadata = subject.toJson()['metadata'];
+
+    // Ubah konten diskusi menjadi string JSON
+    final discussionsJsonString = jsonEncode(
+      subject.discussions.map((d) => d.toJson()).toList(),
+    );
+
+    // Enkripsi string JSON tersebut
+    final encryptedContent = _encryptionService.encryptContent(
+      discussionsJsonString,
+      password,
+    );
+
+    // Buat data akhir untuk disimpan ke file
+    final jsonData = {
+      'metadata': metadata,
+      'content': encryptedContent, // Simpan konten yang sudah terenkripsi
+    };
+
+    // Tulis ke file menggunakan repository
+    await _repository.writeSubjectJson(filePath, jsonData);
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMBACA SUBJECT YANG DIENKRIPSI <==
+  Future<List<Discussion>> getDecryptedDiscussions(
+    String topicPath,
+    String subjectName,
+    String password,
+  ) async {
+    final filePath = await _pathService.getSubjectPath(topicPath, subjectName);
+    final file = File(filePath);
+    final jsonData = await _repository.readSubjectJson(file);
+
+    final encryptedContent = jsonData['content'] as String?;
+    if (encryptedContent == null || encryptedContent.isEmpty) {
+      return [];
+    }
+
+    final decryptedJsonString = _encryptionService.decryptContent(
+      encryptedContent,
+      password,
+    );
+    final contentList = jsonDecode(decryptedJsonString) as List<dynamic>;
+    return contentList.map((item) => Discussion.fromJson(item)).toList();
+  }
+
   Future<List<Discussion>> getDiscussionsForSubject(
     String topicPath,
     String subjectName,
@@ -101,7 +166,6 @@ class SubjectService {
     return await _discussionService.loadDiscussions(subjectJsonPath);
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN DISKUSI <==
   Future<void> saveDiscussionsForSubject(
     String topicPath,
     String subjectName,
@@ -254,6 +318,9 @@ class SubjectService {
       'linkedPath': subject.linkedPath,
       'isFrozen': subject.isFrozen,
       'frozenDate': subject.frozenDate,
+      // ==> PASTIKAN PROPERTI KUNCI DISIMPAN DI METADATA <==
+      'isLocked': subject.isLocked,
+      'passwordHash': subject.passwordHash,
     };
 
     await _repository.writeSubjectJson(filePath, jsonData);

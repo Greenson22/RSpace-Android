@@ -1,4 +1,5 @@
 // lib/features/content_management/application/subject_provider.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/core/services/storage_service.dart';
@@ -8,6 +9,8 @@ import 'package:my_aplication/features/content_management/presentation/discussio
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
+// ==> 1. IMPORT SERVICE ENKRIPSI <==
+import '../domain/services/encryption_service.dart';
 
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
@@ -15,6 +18,8 @@ class SubjectProvider with ChangeNotifier {
   final GeminiService _geminiService = GeminiService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final String topicPath;
+  // ==> 2. TAMBAHKAN INSTANCE ENCRYPTION SERVICE <==
+  final EncryptionService _encryptionService = EncryptionService();
 
   SubjectProvider(this.topicPath) {
     // fetchSubjects dipanggil dari initState di halaman UI
@@ -44,6 +49,11 @@ class SubjectProvider with ChangeNotifier {
 
   List<String> _repetitionCodeDisplayOrder = [];
   List<String> get repetitionCodeDisplayOrder => _repetitionCodeDisplayOrder;
+
+  // ==> 3. STATE BARU UNTUK MENYIMPAN SUBJECT YANG SUDAH DIBUKA <==
+  final Set<String> _unlockedSubjects = {};
+  bool isUnlocked(String subjectName) =>
+      _unlockedSubjects.contains(subjectName);
 
   Future<void> fetchSubjects() async {
     _isLoading = true;
@@ -192,6 +202,65 @@ class SubjectProvider with ChangeNotifier {
     await fetchSubjects();
   }
 
+  // ==> 4. FUNGSI BARU UNTUK MENGUNCI/MEMBUKA SUBJECT <==
+  Future<void> lockSubject(String subjectName, String password) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    subject.isLocked = true;
+    subject.passwordHash = _encryptionService.hashPassword(password);
+    subject.discussions = await _subjectService.getDiscussionsForSubject(
+      topicPath,
+      subjectName,
+    );
+
+    await _subjectService.saveEncryptedSubject(topicPath, subject, password);
+    _unlockedSubjects.remove(subjectName);
+    await fetchSubjects();
+  }
+
+  Future<void> unlockSubject(String subjectName, String password) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    final passwordHash = _encryptionService.hashPassword(password);
+
+    if (subject.passwordHash != passwordHash) {
+      throw Exception('Password salah.');
+    }
+
+    // Dekripsi dan muat diskusi
+    subject.discussions = await _subjectService.getDecryptedDiscussions(
+      topicPath,
+      subject.name,
+      password,
+    );
+    _unlockedSubjects.add(subjectName);
+    notifyListeners();
+  }
+
+  Future<void> removeLock(String subjectName, String password) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    final passwordHash = _encryptionService.hashPassword(password);
+
+    if (subject.passwordHash != passwordHash) {
+      throw Exception('Password salah.');
+    }
+
+    subject.isLocked = false;
+    subject.passwordHash = null;
+    subject.discussions = await _subjectService.getDecryptedDiscussions(
+      topicPath,
+      subject.name,
+      password,
+    );
+    await _subjectService.saveDiscussionsForSubject(
+      topicPath,
+      subject.name,
+      subject.discussions,
+    );
+    await _subjectService.updateSubjectMetadata(topicPath, subject);
+
+    _unlockedSubjects.remove(subjectName);
+    await fetchSubjects();
+  }
+
   Future<void> toggleSubjectFreeze(String subjectName) async {
     final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
     subject.isFrozen = !subject.isFrozen;
@@ -205,8 +274,6 @@ class SubjectProvider with ChangeNotifier {
           final now = DateTime.now();
           final difference = now.difference(frozenDate).inDays;
 
-          // ==> PERUBAHAN UTAMA DI SINI <==
-          // Sekarang kita proses jika selisihnya tidak nol (bisa positif atau negatif)
           if (difference != 0) {
             final discussions = await _subjectService.getDiscussionsForSubject(
               topicPath,

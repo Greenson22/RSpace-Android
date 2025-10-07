@@ -1,10 +1,12 @@
-// lib/presentation/pages/unlinked_discussions_page.dart
+// lib/features/link_maintenance/presentation/pages/unlinked_discussions_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../content_management/application/discussion_provider.dart';
 import '../../application/providers/unlinked_discussions_provider.dart';
-import '../../../content_management/presentation/discussions/discussions_page.dart';
+import '../../domain/models/unlinked_discussion_model.dart';
+import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/discussions_page.dart';
+import 'package:path/path.dart' as path;
 
 class UnlinkedDiscussionsPage extends StatelessWidget {
   const UnlinkedDiscussionsPage({super.key});
@@ -18,15 +20,34 @@ class UnlinkedDiscussionsPage extends StatelessWidget {
   }
 }
 
-class _UnlinkedDiscussionsView extends StatefulWidget {
+class _UnlinkedDiscussionsView extends StatelessWidget {
   const _UnlinkedDiscussionsView();
 
-  @override
-  State<_UnlinkedDiscussionsView> createState() =>
-      _UnlinkedDiscussionsViewState();
-}
+  void _navigateToDiscussion(BuildContext context, UnlinkedDiscussion item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider(
+          create: (_) => DiscussionProvider(
+            item.subjectJsonPath,
+            linkedPath: item.subjectLinkedPath,
+            subject: item.subject,
+          ),
+          child: DiscussionsPage(
+            subjectName: item.subjectName,
+            linkedPath: item.subjectLinkedPath,
+          ),
+        ),
+      ),
+    ).then((_) {
+      // Refresh list after returning
+      Provider.of<UnlinkedDiscussionsProvider>(
+        context,
+        listen: false,
+      ).fetchAllUnlinkedDiscussions();
+    });
+  }
 
-class _UnlinkedDiscussionsViewState extends State<_UnlinkedDiscussionsView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<UnlinkedDiscussionsProvider>(context);
@@ -38,7 +59,6 @@ class _UnlinkedDiscussionsViewState extends State<_UnlinkedDiscussionsView> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => provider.fetchAllUnlinkedDiscussions(),
-            tooltip: 'Perbarui Daftar',
           ),
         ],
       ),
@@ -55,7 +75,7 @@ class _UnlinkedDiscussionsViewState extends State<_UnlinkedDiscussionsView> {
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
-                    'Luar biasa! Semua diskusi sudah memiliki tautan file.',
+                    '🎉 Semua diskusi sudah memiliki tautan file!',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16),
                   ),
@@ -67,28 +87,17 @@ class _UnlinkedDiscussionsViewState extends State<_UnlinkedDiscussionsView> {
               itemCount: provider.unlinkedDiscussions.length,
               itemBuilder: (context, index) {
                 final item = provider.unlinkedDiscussions[index];
-                return ListTile(
-                  leading: const Icon(Icons.link_off, color: Colors.orange),
-                  title: Text(item.discussion.discussion),
-                  subtitle: Text('${item.topicName} > ${item.subjectName}'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider(
-                          create: (_) =>
-                              DiscussionProvider(item.subjectJsonPath),
-                          child: DiscussionsPage(
-                            subjectName: item.subjectName,
-                            linkedPath: item.subjectLinkedPath,
-                          ),
-                        ),
-                      ),
-                    ).then((_) {
-                      // Setelah kembali dari halaman diskusi, muat ulang daftar
-                      provider.fetchAllUnlinkedDiscussions();
-                    });
-                  },
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 4.0,
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.link_off, color: Colors.orange),
+                    title: Text(item.discussion.discussion),
+                    subtitle: Text('${item.topicName} > ${item.subjectName}'),
+                    onTap: () => _navigateToDiscussion(context, item),
+                  ),
                 );
               },
             );
