@@ -16,7 +16,6 @@ class SubjectGridTile extends StatelessWidget {
   final VoidCallback onEditIndexFile;
   final VoidCallback onMove;
   final VoidCallback onToggleFreeze;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onToggleLock;
   final bool isFocused;
 
@@ -32,7 +31,6 @@ class SubjectGridTile extends StatelessWidget {
     required this.onEditIndexFile,
     required this.onMove,
     required this.onToggleFreeze,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     required this.onToggleLock,
     this.isFocused = false,
   });
@@ -42,7 +40,6 @@ class SubjectGridTile extends StatelessWidget {
     final theme = Theme.of(context);
     final bool isHidden = subject.isHidden;
     final bool isFrozen = subject.isFrozen;
-    // ==> TAMBAHKAN STATUS isLocked <==
     final bool isLocked = subject.isLocked;
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
@@ -78,12 +75,11 @@ class SubjectGridTile extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // ==> TAMPILKAN IKON GEMBOK JIKA TERKUNCI <==
                         Text(
                           isLocked ? '🔒' : subject.icon,
                           style: TextStyle(fontSize: 32, color: textColor),
                         ),
-                        if (subject.linkedPath != null && !isLocked)
+                        if (subject.linkedPath != null)
                           Positioned(
                             top: -4,
                             right: -4,
@@ -93,7 +89,7 @@ class SubjectGridTile extends StatelessWidget {
                               size: 16,
                             ),
                           ),
-                        if (isFrozen && !isLocked)
+                        if (isFrozen)
                           Positioned(
                             bottom: -4,
                             right: -4,
@@ -116,7 +112,6 @@ class SubjectGridTile extends StatelessWidget {
                       if (value == 'edit_index') onEditIndexFile();
                       if (value == 'move') onMove();
                       if (value == 'toggle_freeze') onToggleFreeze();
-                      // ==> TAMBAHKAN AKSI UNTUK KUNCI <==
                       if (value == 'toggle_lock') onToggleLock();
                     },
                     itemBuilder: (context) => [
@@ -130,70 +125,68 @@ class SubjectGridTile extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // ==> SEMBUNYIKAN BEBERAPA MENU JIKA TERKUNCI <==
-                      if (!isLocked) ...[
-                        const PopupMenuItem(
-                          value: 'change_icon',
-                          child: Row(
-                            children: [
-                              Icon(Icons.emoji_emotions_outlined),
-                              SizedBox(width: 8),
-                              Text('Ubah Ikon'),
-                            ],
-                          ),
+                      // Opsi "Ubah Ikon", "Edit Template", dll. tetap ditampilkan
+                      // meskipun terkunci karena tidak mengubah konten diskusi.
+                      const PopupMenuItem(
+                        value: 'change_icon',
+                        child: Row(
+                          children: [
+                            Icon(Icons.emoji_emotions_outlined),
+                            SizedBox(width: 8),
+                            Text('Ubah Ikon'),
+                          ],
                         ),
-                        if (subject.linkedPath != null &&
-                            subject.linkedPath!.isNotEmpty)
-                          const PopupMenuItem<String>(
-                            value: 'edit_index',
-                            child: Row(
-                              children: [
-                                Icon(Icons.code_outlined),
-                                SizedBox(width: 8),
-                                Text('Edit Template Induk'),
-                              ],
-                            ),
-                          ),
-                        PopupMenuItem<String>(
-                          value: 'link_path',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.link_outlined),
-                              const SizedBox(width: 8),
-                              Text(
-                                subject.linkedPath == null
-                                    ? 'Link ke PerpusKu'
-                                    : 'Ubah Link PerpusKu',
-                              ),
-                            ],
-                          ),
-                        ),
+                      ),
+                      if (subject.linkedPath != null &&
+                          subject.linkedPath!.isNotEmpty)
                         const PopupMenuItem<String>(
-                          value: 'move',
+                          value: 'edit_index',
                           child: Row(
                             children: [
-                              Icon(Icons.move_up_outlined),
+                              Icon(Icons.code_outlined),
                               SizedBox(width: 8),
-                              Text('Pindahkan'),
+                              Text('Edit Template Induk'),
                             ],
                           ),
                         ),
-                        PopupMenuItem<String>(
-                          value: 'toggle_freeze',
-                          child: Row(
-                            children: [
-                              Icon(
-                                isFrozen
-                                    ? Icons.play_arrow_outlined
-                                    : Icons.ac_unit,
-                              ),
-                              SizedBox(width: 8),
-                              Text(isFrozen ? 'Unfreeze' : 'Freeze'),
-                            ],
-                          ),
+                      PopupMenuItem<String>(
+                        value: 'link_path',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.link_outlined),
+                            const SizedBox(width: 8),
+                            Text(
+                              subject.linkedPath == null
+                                  ? 'Link ke PerpusKu'
+                                  : 'Ubah Link PerpusKu',
+                            ),
+                          ],
                         ),
-                      ],
-                      // ==> TAMBAHKAN MENU KUNCI/BUKA KUNCI <==
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'move',
+                        child: Row(
+                          children: [
+                            Icon(Icons.move_up_outlined),
+                            SizedBox(width: 8),
+                            Text('Pindahkan'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'toggle_freeze',
+                        child: Row(
+                          children: [
+                            Icon(
+                              isFrozen
+                                  ? Icons.play_arrow_outlined
+                                  : Icons.ac_unit,
+                            ),
+                            SizedBox(width: 8),
+                            Text(isFrozen ? 'Unfreeze' : 'Freeze'),
+                          ],
+                        ),
+                      ),
                       const PopupMenuDivider(),
                       PopupMenuItem<String>(
                         value: 'toggle_lock',
@@ -251,12 +244,13 @@ class SubjectGridTile extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (hasSubtitle && !isLocked) ...[
+              // ==> PERUBAIKAN DI SINI: Hapus kondisi !isLocked <==
+              if (hasSubtitle) ...[
                 const SizedBox(height: 6),
                 _buildSubtitle(context, textColor, 11),
               ],
               const SizedBox(height: 6),
-              if (!isLocked) _buildStatsInfo(context, textColor),
+              _buildStatsInfo(context, textColor),
               const Spacer(),
             ],
           ),
@@ -278,6 +272,7 @@ class SubjectGridTile extends StatelessWidget {
   }
 
   Widget _buildStatsInfo(BuildContext context, Color? textColor) {
+    // ... (sisa fungsi ini tidak berubah)
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor);
@@ -342,6 +337,7 @@ class SubjectGridTile extends StatelessWidget {
     Color? textColor,
     double fontSize,
   ) {
+    // ... (sisa fungsi ini tidak berubah)
     return RichText(
       text: TextSpan(
         style: Theme.of(
