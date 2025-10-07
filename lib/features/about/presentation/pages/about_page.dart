@@ -182,7 +182,7 @@ class _AboutPageState extends State<AboutPage>
                 icon: const Icon(Icons.email_outlined),
                 label: const Text('Email'),
                 onPressed: () =>
-                    launchUrl(Uri.parse('mailto:frendygerung@gmail.com')),
+                    launchUrl(Uri.parse('mailto:frendydev1@gmail.com')),
               ),
             ],
           ),
