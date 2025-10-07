@@ -6,8 +6,8 @@ import '../../application/file_provider.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../auth/application/auth_provider.dart';
 import '../../../auth/presentation/profile_page.dart';
-// ==> 1. IMPORT BACKUP PROVIDER <==
 import '../../../backup_management/application/backup_provider.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 
 import '../layouts/desktop_layout.dart';
 import '../layouts/mobile_layout.dart';
@@ -20,14 +20,11 @@ class FileListPage extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FileProvider()),
-        // ==> 2. TAMBAHKAN BACKUP PROVIDER DI SINI <==
         ChangeNotifierProvider(create: (_) => BackupProvider()),
         ChangeNotifierProvider.value(value: Provider.of<AuthProvider>(context)),
       ],
-      // ==> 3. UBAH CONSUMER2 MENJADI CONSUMER BIASA UNTUK KESEDERHANAAN <==
       child: Consumer<FileProvider>(
         builder: (context, provider, child) {
-          // Baca AuthProvider secara terpisah
           final auth = Provider.of<AuthProvider>(context, listen: false);
 
           if (auth.authState != AuthState.authenticated) {
@@ -52,9 +49,7 @@ class FileListPage extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (provider.errorMessage != null &&
-                      provider.rspaceFiles.isEmpty &&
-                      provider.perpuskuFiles.isEmpty) {
+                  if (provider.errorMessage != null) {
                     return _buildErrorView(context, provider);
                   }
 
@@ -79,8 +74,6 @@ class FileListPage extends StatelessWidget {
       ),
     );
   }
-
-  // Sisa kode di bawah ini tidak berubah...
 
   Widget _buildLoginRequiredView(BuildContext context) {
     return Scaffold(
@@ -206,6 +199,7 @@ class FileListPage extends StatelessWidget {
     );
   }
 
+  // ==> TAMPILAN ERROR DIPERBARUI <==
   Widget _buildErrorView(BuildContext context, FileProvider provider) {
     return Center(
       child: Padding(
@@ -221,14 +215,28 @@ class FileListPage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            if (!provider.errorMessage!.contains('Konfigurasi'))
-              ElevatedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Coba Lagi'),
-                onPressed: () => provider.fetchFiles(),
-              ),
-            const SizedBox(height: 24),
-            const ApiConfigCard(),
+            ElevatedButton.icon(
+              icon: provider.isLoading
+                  ? const SizedBox.shrink()
+                  : const Icon(Icons.refresh),
+              label: Text(provider.isLoading ? 'Memuat...' : 'Coba Lagi'),
+              onPressed: provider.isLoading
+                  ? null
+                  : () => provider.fetchFiles(),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              icon: const Icon(Icons.settings),
+              label: const Text('Buka Pengaturan Server'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                ).then(
+                  (_) => provider.fetchFiles(),
+                ); // Muat ulang setelah kembali
+              },
+            ),
           ],
         ),
       ),
@@ -236,92 +244,4 @@ class FileListPage extends StatelessWidget {
   }
 }
 
-class ApiConfigCard extends StatefulWidget {
-  const ApiConfigCard({super.key});
-  @override
-  State<ApiConfigCard> createState() => _ApiConfigCardState();
-}
-
-class _ApiConfigCardState extends State<ApiConfigCard> {
-  late TextEditingController _domainController;
-
-  @override
-  void initState() {
-    super.initState();
-    final provider = Provider.of<FileProvider>(context, listen: false);
-    _domainController = TextEditingController(text: provider.apiDomain ?? '');
-  }
-
-  @override
-  void dispose() {
-    _domainController.dispose();
-    super.dispose();
-  }
-
-  void _saveConfig() {
-    final provider = Provider.of<FileProvider>(context, listen: false);
-    final domain = _domainController.text.trim();
-
-    if (domain.isEmpty) {
-      showAppSnackBar(context, 'Domain tidak boleh kosong.', isError: true);
-      return;
-    }
-
-    provider.saveApiConfig(domain, '');
-    showAppSnackBar(context, 'Konfigurasi server berhasil disimpan.');
-    FocusScope.of(context).unfocus();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<FileProvider>(
-      builder: (context, provider, child) {
-        final bool shouldBeExpanded = provider.apiDomain == null;
-
-        return Card(
-          child: ExpansionTile(
-            leading: const Icon(Icons.settings_ethernet),
-            title: const Text('Konfigurasi Server'),
-            initiallyExpanded: shouldBeExpanded,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      controller: _domainController,
-                      decoration: const InputDecoration(
-                        labelText: 'Domain Server',
-                        hintText: 'Contoh: http://domain.com',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('Simpan & Muat Ulang'),
-                        onPressed: _saveConfig,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Catatan: API Key sekarang dikelola di halaman Pengaturan -> Manajemen API Key.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
+// Widget ApiConfigCard dihapus dari file ini

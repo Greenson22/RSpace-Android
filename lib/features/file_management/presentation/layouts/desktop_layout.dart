@@ -11,7 +11,6 @@ import '../../application/file_provider.dart';
 import '../../domain/models/file_model.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../backup_management/presentation/utils/file_utils.dart';
-import '../pages/file_list_page.dart';
 
 class DesktopLayout extends StatelessWidget {
   const DesktopLayout({super.key});
@@ -22,11 +21,15 @@ class DesktopLayout extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ==> PERUBAHAN DI SINI: Kolom kiri dikosongkan dari ApiConfigCard <==
         Expanded(
           flex: 2,
           child: ListView(
             padding: const EdgeInsets.all(16.0),
-            children: [ApiConfigCard()],
+            children: const [
+              // Konten di kolom ini bisa ditambahkan di masa depan jika perlu
+              SizedBox(),
+            ],
           ),
         ),
         const VerticalDivider(width: 1),
@@ -360,7 +363,6 @@ class DesktopLayout extends StatelessWidget {
                     await OpenFile.open(file.path);
                   } else if (value == 'import') {
                     final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
-                    // ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation <==
                     importSpecificFile(
                       context,
                       file,

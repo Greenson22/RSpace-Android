@@ -10,7 +10,9 @@ import '../dialogs/gemini_prompt_dialog.dart';
 import '../dialogs/repetition_code_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/progress_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/task_settings_dialog.dart';
-import '../dialogs/motivational_quotes_dialog.dart'; // IMPORT DIALOG BARU
+import '../dialogs/motivational_quotes_dialog.dart';
+// ==> IMPORT DIALOG BARU <==
+import '../dialogs/server_config_dialog.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -47,9 +49,9 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
+
           const Divider(),
           _buildCategoryHeader(context, 'Fungsionalitas'),
-          // >> TAMBAHKAN ITEM MENU BARU DI SINI <<
           _buildSettingsTile(
             context,
             icon: Icons.format_quote_outlined,
@@ -81,12 +83,21 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Pilih kategori tugas yang akan dihitung.',
             onTap: () => showTaskSettingsDialog(context),
           ),
+
           const Divider(),
-          _buildCategoryHeader(context, 'Kecerdasan Buatan (AI)'),
+          _buildCategoryHeader(context, 'Konektivitas & AI'),
+          // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+          _buildSettingsTile(
+            context,
+            icon: Icons.dns_outlined,
+            title: 'Konfigurasi Server',
+            subtitle: 'Atur domain & API Key untuk fitur online.',
+            onTap: () => showServerConfigDialog(context),
+          ),
           _buildSettingsTile(
             context,
             icon: Icons.vpn_key_outlined,
-            title: 'Manajemen API Key',
+            title: 'Manajemen API Key Gemini',
             subtitle: 'Kelola kunci API untuk layanan Gemini.',
             onTap: () => showGeminiApiKeyDialog(context),
           ),

@@ -156,6 +156,13 @@ class PathService {
     return assetsDir.path;
   }
 
+  // ==> FUNGSI BARU UNTUK LOKASI FILE KONFIGURASI API <==
+  Future<String> get apiConfigPath async {
+    final appBase = await _appBasePath;
+    // File ini sekarang berada di RSpace_App/api_config.json
+    return path.join(appBase, 'api_config.json');
+  }
+
   Future<String> get snakeGamePath async {
     final contents = await contentsPath;
     final snakeDir = Directory(path.join(contents, 'snake_game'));
@@ -218,9 +225,7 @@ class PathService {
     return perpuskuDir.path;
   }
 
-  // ==> FUNGSI INI TELAH DIPERBAIKI <==
   Future<File> getPerpuskuHtmlFile(String relativePath) async {
-    // Nama variabel lokal diubah agar tidak bentrok
     final String perpuskuPath = await perpuskuDataPath;
     final fullPath = path.join(
       perpuskuPath,

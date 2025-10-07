@@ -11,7 +11,6 @@ import '../../application/file_provider.dart';
 import '../../domain/models/file_model.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../backup_management/presentation/utils/file_utils.dart';
-import '../pages/file_list_page.dart';
 
 class MobileLayout extends StatelessWidget {
   const MobileLayout({super.key});
@@ -22,8 +21,7 @@ class MobileLayout extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        ApiConfigCard(),
-        const SizedBox(height: 16),
+        // ==> PERUBAHAN DI SINI: ApiConfigCard dihapus <==
         _buildFileSection(
           context,
           provider: provider,
@@ -346,7 +344,6 @@ class MobileLayout extends StatelessWidget {
                     await OpenFile.open(file.path);
                   } else if (value == 'import') {
                     final backupType = isRspaceFile ? 'RSpace' : 'PerpusKu';
-                    // ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation <==
                     importSpecificFile(
                       context,
                       file,
