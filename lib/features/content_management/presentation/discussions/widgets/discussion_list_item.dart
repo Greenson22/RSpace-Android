@@ -16,6 +16,7 @@ import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -39,16 +40,29 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
   });
 
+  // ==> PERBAIKAN DI FUNGSI INI <==
   void _showSnackBar(
     BuildContext context,
     String message, {
     bool isError = false,
+    bool isLong = false, // Parameter ditambahkan
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: const Duration(seconds: 2),
+        // Logika durasi dan aksi ditambahkan
+        duration: isLong
+            ? const Duration(seconds: 10)
+            : const Duration(seconds: 2),
         backgroundColor: isError ? Colors.red : null,
+        action: isLong
+            ? SnackBarAction(
+                label: 'TUTUP',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+              )
+            : null,
       ),
     );
   }
@@ -61,20 +75,21 @@ class DiscussionListItem extends StatelessWidget {
     final isFinished = discussion.finished;
     final hasFile =
         discussion.filePath != null && discussion.filePath!.isNotEmpty;
-    // ==> VARIABEL BARU
     final isQuizLink = discussion.linkType == DiscussionLinkType.quiz;
+    final isWebLink = discussion.linkType == DiscussionLinkType.link;
     final iconColor = isFinished
         ? Colors.green
         : (isSelected ? theme.primaryColor : null);
 
-    // ==> LOGIKA IKON DIPERBARUI
     IconData iconData;
     if (isFinished) {
       iconData = Icons.check_circle;
     } else if (isQuizLink) {
       iconData = Icons.quiz_outlined;
-    } else if (hasFile) {
+    } else if (isWebLink) {
       iconData = Icons.link;
+    } else if (hasFile) {
+      iconData = Icons.insert_drive_file_outlined;
     } else {
       iconData = Icons.chat_bubble_outline;
     }
@@ -97,6 +112,8 @@ class DiscussionListItem extends StatelessWidget {
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
+              } else if (isWebLink) {
+                _launchUrl(context);
               } else {
                 onToggleVisibility(index);
               }
@@ -106,17 +123,20 @@ class DiscussionListItem extends StatelessWidget {
             },
             leading: IconButton(
               icon: Icon(iconData, color: iconColor),
-              // ==> LOGIKA ONPRESSED DIPERBARUI
               onPressed: () {
                 if (isQuizLink) {
                   _startQuiz(context);
+                } else if (isWebLink) {
+                  _launchUrl(context);
                 } else if (hasFile) {
                   provider.openDiscussionFile(discussion, context);
                 }
               },
               tooltip: isQuizLink
                   ? 'Mulai Kuis'
-                  : (hasFile ? 'Buka File' : null),
+                  : (isWebLink
+                        ? 'Buka Tautan'
+                        : (hasFile ? 'Buka File' : null)),
             ),
             title: Text(
               discussion.discussion,
@@ -125,10 +145,14 @@ class DiscussionListItem extends StatelessWidget {
                 decoration: isFinished ? TextDecoration.lineThrough : null,
               ),
             ),
-            subtitle: DiscussionSubtitle(
-              discussion: discussion,
-              isCompact: true,
-            ),
+            subtitle: isWebLink
+                ? Text(
+                    discussion.url ?? 'URL tidak valid',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: theme.primaryColor, fontSize: 12),
+                  )
+                : DiscussionSubtitle(discussion: discussion, isCompact: true),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -188,7 +212,21 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // --- FUNGSI BARU UNTUK MEMULAI KUIS ---
+  Future<void> _launchUrl(BuildContext context) async {
+    if (discussion.url != null) {
+      final uri = Uri.parse(discussion.url!);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnackBar(
+          context,
+          'Tidak dapat membuka URL: ${discussion.url}',
+          isError: true,
+        );
+      }
+    }
+  }
+
   void _startQuiz(BuildContext context) async {
     if (discussion.quizTopicPath == null) return;
     final pathParts = discussion.quizTopicPath!.split('/');
@@ -212,7 +250,6 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
-  // --- PRIVATE HELPER METHODS FOR ACTIONS (TIDAK BERUBAH) ---
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
       context: context,
@@ -240,7 +277,7 @@ class DiscussionListItem extends StatelessWidget {
           targetInfo['jsonPath']!,
           targetInfo['linkedPath'],
         );
-        _showSnackBar(context, log);
+        _showSnackBar(context, log, isLong: true);
       } catch (e) {
         _showSnackBar(
           context,

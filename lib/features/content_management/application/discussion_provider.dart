@@ -1,5 +1,4 @@
 // lib/features/content_management/application/discussion_provider.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
@@ -15,6 +14,7 @@ import '../../../core/services/path_service.dart';
 import '../../../core/services/storage_service.dart';
 import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {
@@ -29,18 +29,16 @@ class DiscussionProvider
   final String _jsonFilePath;
   @override
   final String? sourceSubjectLinkedPath;
-  // ==> TAMBAHKAN PROPERTI SUBJECT <==
   final Subject subject;
 
   DiscussionProvider(
     this._jsonFilePath, {
     String? linkedPath,
-    required this.subject, // Jadikan subject sebagai parameter wajib
+    required this.subject,
   }) : sourceSubjectLinkedPath = linkedPath {
     loadInitialData();
   }
 
-  // CORE STATE
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -73,7 +71,6 @@ class DiscussionProvider
 
   Map<String, int> _repetitionCodeDays = {};
 
-  // GETTERS
   bool get isSelectionMode => _selectedDiscussions.isNotEmpty;
   int get totalDiscussionCount => _allDiscussions.length;
   int get finishedDiscussionCount =>
@@ -88,7 +85,6 @@ class DiscussionProvider
     return counts;
   }
 
-  // INITIALIZATION & DATA HANDLING
   Future<void> loadInitialData() async {
     await loadPreferences();
     await loadDiscussions();
@@ -105,17 +101,13 @@ class DiscussionProvider
     notifyListeners();
   }
 
-  // ==> PERUBAIKAN UTAMA DI SINI <==
   Future<void> loadDiscussions() async {
     _isLoading = true;
     notifyListeners();
     try {
-      // Jika subject yang di-pass sudah memiliki data diskusi (karena baru dibuka),
-      // langsung gunakan data tersebut dari memori.
       if (subject.isLocked && subject.discussions.isNotEmpty) {
         _allDiscussions = subject.discussions;
       } else {
-        // Jika tidak, baru baca dari file (untuk subject yang tidak terkunci).
         _allDiscussions = await discussionService.loadDiscussions(
           _jsonFilePath,
         );
@@ -132,9 +124,6 @@ class DiscussionProvider
 
   @override
   Future<void> saveDiscussions() async {
-    // Jika subject terkunci, jangan simpan perubahan ke file
-    // karena akan menimpa file terenkripsi dengan data yang tidak dienkripsi.
-    // Perubahan akan disimpan saat subject dikunci kembali.
     if (subject.isLocked) {
       debugPrint("Save skipped: Subject is locked and in-memory only.");
       return;
@@ -148,7 +137,6 @@ class DiscussionProvider
     filterAndSortDiscussions();
   }
 
-  // PRESET ACTIONS
   Future<void> addPointPreset(String name) async {
     final newId =
         (_pointPresets.isEmpty
@@ -170,7 +158,7 @@ class DiscussionProvider
     await _savePointPresets();
   }
 
-  // BASIC CRUD (Create, Read, Update, Delete)
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENANGANI TIPE LINK BARU
   Future<void> addDiscussion(AddDiscussionResult result) async {
     String? newFileName;
     if (result.linkType == DiscussionLinkType.html &&
@@ -198,6 +186,7 @@ class DiscussionProvider
       quizTopicPath: result.linkType == DiscussionLinkType.quiz
           ? result.linkData
           : null,
+      url: result.linkType == DiscussionLinkType.link ? result.linkData : null,
     );
     _allDiscussions.add(newDiscussion);
 

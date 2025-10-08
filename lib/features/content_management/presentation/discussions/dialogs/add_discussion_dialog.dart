@@ -4,12 +4,11 @@ import 'package:my_aplication/features/content_management/domain/models/discussi
 import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
 import 'package:provider/provider.dart';
 
-// Tipe data untuk hasil dialog
 class AddDiscussionResult {
   final String name;
   final DiscussionLinkType linkType;
   final String?
-  linkData; // Berisi 'create_new' (HTML), quiz topic path (Kuis), atau null (None)
+  linkData; // Berisi 'create_new' (HTML), quiz topic path (Kuis), URL (Link), atau null (None)
 
   AddDiscussionResult({
     required this.name,
@@ -18,7 +17,6 @@ class AddDiscussionResult {
   });
 }
 
-// Fungsi utama untuk menampilkan dialog
 Future<AddDiscussionResult?> showAddDiscussionDialog({
   required BuildContext context,
   required String title,
@@ -40,7 +38,6 @@ Future<AddDiscussionResult?> showAddDiscussionDialog({
   );
 }
 
-// Widget stateful untuk konten dialog
 class _AddDiscussionDialogContent extends StatefulWidget {
   final String title;
   final String label;
@@ -59,10 +56,18 @@ class _AddDiscussionDialogContent extends StatefulWidget {
 
 class _AddDiscussionDialogContentState
     extends State<_AddDiscussionDialogContent> {
+  final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
-  // ==> PERUBAHAN DI SINI: Default ke 'none'
+  final _urlController = TextEditingController();
   DiscussionLinkType _linkType = DiscussionLinkType.none;
   String? _selectedQuizTopicPath;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _urlController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,68 +75,115 @@ class _AddDiscussionDialogContentState
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
 
-    // Jika default tidak bisa HTML, pastikan pilihannya bukan HTML
     if (!canCreateHtml && _linkType == DiscussionLinkType.html) {
       _linkType = DiscussionLinkType.none;
     }
 
     return AlertDialog(
       title: Text(widget.title),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              decoration: InputDecoration(labelText: widget.label),
-            ),
-            const SizedBox(height: 24),
-            Text('Opsi Tautan:', style: Theme.of(context).textTheme.titleSmall),
-            // ==> TAMBAHKAN OPSI KETIGA DI SINI
-            RadioListTile<DiscussionLinkType>(
-              title: const Text("Tanpa Tautan File"),
-              subtitle: const Text(
-                "Hanya untuk catatan internal.",
-                style: TextStyle(fontSize: 12),
-              ),
-              value: DiscussionLinkType.none,
-              groupValue: _linkType,
-              onChanged: (value) => setState(() => _linkType = value!),
-            ),
-            RadioListTile<DiscussionLinkType>(
-              title: const Text("File HTML Baru"),
-              subtitle: Text(
-                canCreateHtml
-                    ? "Membuat file .html baru di folder subjek."
-                    : "Subjek ini tidak tertaut ke PerpusKu.",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: canCreateHtml ? null : Colors.orange,
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: _linkType == DiscussionLinkType.link
+                      ? 'Nama Tautan'
+                      : widget.label,
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nama tidak boleh kosong.';
+                  }
+                  return null;
+                },
               ),
-              value: DiscussionLinkType.html,
-              groupValue: _linkType,
-              onChanged: canCreateHtml
-                  ? (value) => setState(() => _linkType = value!)
-                  : null,
-            ),
-            RadioListTile<DiscussionLinkType>(
-              title: const Text("Topik Kuis"),
-              subtitle: const Text(
-                "Membuka sesi kuis saat diskusi diklik.",
-                style: TextStyle(fontSize: 12),
+              if (_linkType == DiscussionLinkType.link)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: TextFormField(
+                    controller: _urlController,
+                    decoration: const InputDecoration(
+                      labelText: 'Alamat URL',
+                      hintText: 'https://contoh.com',
+                    ),
+                    keyboardType: TextInputType.url,
+                    // ==> PERBAIKAN DI BLOK VALIDATOR INI <==
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'URL tidak boleh kosong.';
+                      }
+                      final uri = Uri.tryParse(value.trim());
+                      if (uri == null || !uri.isAbsolute) {
+                        return 'Format URL tidak valid.';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              const SizedBox(height: 24),
+              Text(
+                'Opsi Tautan:',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
-              value: DiscussionLinkType.quiz,
-              groupValue: _linkType,
-              onChanged: (value) => setState(() => _linkType = value!),
-            ),
-            if (_linkType == DiscussionLinkType.quiz) ...[
-              const Divider(),
-              _buildQuizTopicSelector(),
+              RadioListTile<DiscussionLinkType>(
+                title: const Text("Tanpa Tautan File"),
+                subtitle: const Text(
+                  "Hanya untuk catatan internal.",
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: DiscussionLinkType.none,
+                groupValue: _linkType,
+                onChanged: (value) => setState(() => _linkType = value!),
+              ),
+              RadioListTile<DiscussionLinkType>(
+                title: const Text("File HTML Baru"),
+                subtitle: Text(
+                  canCreateHtml
+                      ? "Membuat file .html baru di folder subjek."
+                      : "Subjek ini tidak tertaut ke PerpusKu.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: canCreateHtml ? null : Colors.orange,
+                  ),
+                ),
+                value: DiscussionLinkType.html,
+                groupValue: _linkType,
+                onChanged: canCreateHtml
+                    ? (value) => setState(() => _linkType = value!)
+                    : null,
+              ),
+              RadioListTile<DiscussionLinkType>(
+                title: const Text("Topik Kuis"),
+                subtitle: const Text(
+                  "Membuka sesi kuis saat diskusi diklik.",
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: DiscussionLinkType.quiz,
+                groupValue: _linkType,
+                onChanged: (value) => setState(() => _linkType = value!),
+              ),
+              RadioListTile<DiscussionLinkType>(
+                title: const Text("Simpan Tautan (Bookmark)"),
+                subtitle: const Text(
+                  "Membuka alamat URL di browser.",
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: DiscussionLinkType.link,
+                groupValue: _linkType,
+                onChanged: (value) => setState(() => _linkType = value!),
+              ),
+              if (_linkType == DiscussionLinkType.quiz) ...[
+                const Divider(),
+                _buildQuizTopicSelector(),
+              ],
             ],
-          ],
+          ),
         ),
       ),
       actions: [
@@ -141,7 +193,7 @@ class _AddDiscussionDialogContentState
         ),
         ElevatedButton(
           onPressed: () {
-            if (_controller.text.isNotEmpty) {
+            if (_formKey.currentState!.validate()) {
               if (_linkType == DiscussionLinkType.quiz &&
                   _selectedQuizTopicPath == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -153,12 +205,13 @@ class _AddDiscussionDialogContentState
                 return;
               }
 
-              // ==> LOGIKA PENGEMBALIAN DATA DIPERBARUI
               String? linkData;
               if (_linkType == DiscussionLinkType.html) {
                 linkData = canCreateHtml ? 'create_new' : null;
               } else if (_linkType == DiscussionLinkType.quiz) {
                 linkData = _selectedQuizTopicPath;
+              } else if (_linkType == DiscussionLinkType.link) {
+                linkData = _urlController.text.trim();
               }
 
               Navigator.pop(
