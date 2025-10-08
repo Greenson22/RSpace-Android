@@ -5,23 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import '../../domain/models/subject_model.dart';
-import '../../domain/models/topic_model.dart';
-import '../../application/discussion_provider.dart';
-import '../../application/subject_provider.dart';
-import '../discussions/discussions_page.dart';
-import 'dialogs/subject_dialogs.dart';
-import 'dialogs/move_subject_dialog.dart';
-import 'dialogs/subject_sort_dialog.dart';
-import 'dialogs/repetition_code_display_order_dialog.dart';
-import 'widgets/subject_grid_tile.dart';
-import 'widgets/subject_list_tile.dart';
-import '../../../../core/widgets/ad_banner_widget.dart';
-import 'dialogs/generate_index_template_dialog.dart';
-import 'dialogs/generate_index_prompt_dialog.dart';
-import '../../../html_editor/presentation/pages/html_editor_page.dart';
-// ==> IMPORT DIALOG PASSWORD <==
-import 'dialogs/subject_password_dialog.dart';
+import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
+import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
+import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
+import 'package:my_aplication/features/content_management/application/subject_provider.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/discussions_page.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_dialogs.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/move_subject_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_sort_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/widgets/subject_grid_tile.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/widgets/subject_list_tile.dart';
+import 'package:my_aplication/core/widgets/ad_banner_widget.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/generate_index_template_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/generate_index_prompt_dialog.dart';
+import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_password_dialog.dart';
+// ==> MENGGUNAKAN IMPORT ABSOLUT UNTUK MEMASTIKAN FILE DITEMUKAN <==
+import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -131,12 +131,10 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENANGANI AKSI KUNCI/BUKA KUNCI <==
   Future<void> _toggleLock(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
 
     if (subject.isLocked) {
-      // Jika terkunci, tampilkan dialog untuk memasukkan password atau menghapus kunci
       final choice = await showDialog<String>(
         context: context,
         builder: (context) => SimpleDialog(
@@ -191,7 +189,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
         }
       }
     } else {
-      // Jika tidak terkunci, tampilkan dialog untuk set password
       final password = await showSubjectPasswordDialog(
         context: context,
         subjectName: subject.name,
@@ -466,14 +463,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
       listen: false,
     );
 
-    // ==> PERIKSA APAKAH SUBJECT TERKUNCI DAN BELUM DIBUKA <==
     if (subject.isLocked && !subjectProvider.isUnlocked(subject.name)) {
       final password = await showSubjectPasswordDialog(
         context: context,
         subjectName: subject.name,
         mode: PasswordDialogMode.enter,
       );
-      if (password == null) return; // Pengguna membatalkan
+      if (password == null) return;
       try {
         await subjectProvider.unlockSubject(subject.name, password);
       } catch (e) {
@@ -528,7 +524,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             jsonFilePath,
             linkedPath: currentLinkedPath,
             subject: subject,
-          ), // ==> KIRIM SUBJECT KE DISCUSSION PROVIDER
+          ),
           child: DiscussionsPage(
             subjectName: subject.name,
             linkedPath: currentLinkedPath,
@@ -539,6 +535,28 @@ class _SubjectsPageState extends State<SubjectsPage> {
       if (!mounted) return;
       subjectProvider.fetchSubjects();
     });
+  }
+
+  void _navigateToTimelinePage(BuildContext context, Subject subject) {
+    if (subject.isLocked &&
+        !Provider.of<SubjectProvider>(
+          context,
+          listen: false,
+        ).isUnlocked(subject.name)) {
+      _showSnackBar(
+        'Buka kunci subjek terlebih dahulu untuk melihat linimasa.',
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DiscussionTimelinePage(
+          subjectName: subject.name,
+          discussions: subject.discussions,
+        ),
+      ),
+    );
   }
 
   @override
@@ -694,6 +712,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onMove: () => _moveSubject(context, subject),
               onToggleFreeze: () => _toggleFreeze(context, subject),
               onToggleLock: () => _toggleLock(context, subject),
+              onTimeline: () => _navigateToTimelinePage(context, subject),
             );
           },
         );
@@ -742,6 +761,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onMove: () => _moveSubject(context, subject),
               onToggleFreeze: () => _toggleFreeze(context, subject),
               onToggleLock: () => _toggleLock(context, subject),
+              onTimeline: () => _navigateToTimelinePage(context, subject),
             );
           },
         );

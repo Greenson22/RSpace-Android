@@ -17,6 +17,7 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onMove;
   final VoidCallback onToggleFreeze;
   final VoidCallback onToggleLock;
+  final VoidCallback onTimeline; // ==> TAMBAHKAN CALLBACK
   final bool isFocused;
 
   const SubjectListTile({
@@ -32,6 +33,7 @@ class SubjectListTile extends StatelessWidget {
     required this.onMove,
     required this.onToggleFreeze,
     required this.onToggleLock,
+    required this.onTimeline, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.isFocused = false,
   });
 
@@ -167,8 +169,20 @@ class SubjectListTile extends StatelessWidget {
                     if (value == 'move') onMove();
                     if (value == 'toggle_freeze') onToggleFreeze();
                     if (value == 'toggle_lock') onToggleLock();
+                    if (value == 'timeline') onTimeline();
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'timeline',
+                      child: Row(
+                        children: [
+                          Icon(Icons.timeline),
+                          SizedBox(width: 8),
+                          Text('Lihat Linimasa'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
                     const PopupMenuItem(
                       value: 'rename',
                       child: Row(
