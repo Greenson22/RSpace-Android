@@ -1,9 +1,11 @@
 // lib/features/auth/presentation/profile_page.dart
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 import 'package:provider/provider.dart';
 import '../application/auth_provider.dart';
 import 'login_page.dart';
@@ -19,6 +21,52 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  // State untuk timer kirim ulang
+  Timer? _cooldownTimer;
+  int _cooldownSeconds = 60;
+  bool _canResend = true;
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCooldown() {
+    setState(() {
+      _canResend = false;
+      _cooldownSeconds = 60;
+    });
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_cooldownSeconds > 0) {
+        setState(() {
+          _cooldownSeconds--;
+        });
+      } else {
+        _cooldownTimer?.cancel();
+        setState(() {
+          _canResend = true;
+        });
+      }
+    });
+  }
+
+  Future<void> _handleResend(String email) async {
+    _startCooldown();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      await authProvider.resendVerification(email);
+      if (mounted)
+        showAppSnackBar(context, 'Email verifikasi baru telah dikirim.');
+    } catch (e) {
+      if (mounted) showAppSnackBar(context, e.toString(), isError: true);
+    }
+  }
+
   Future<void> _pickAndUploadImage(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
@@ -27,31 +75,19 @@ class _ProfilePageState extends State<ProfilePage> {
       if (result != null && result.files.single.path != null) {
         final imageFile = File(result.files.single.path!);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mengunggah foto profil...')),
-        );
+        showAppSnackBar(context, 'Mengunggah foto profil...');
 
         await authProvider.uploadProfilePicture(imageFile);
 
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Foto profil berhasil diperbarui!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          showAppSnackBar(context, 'Foto profil berhasil diperbarui!');
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showAppSnackBar(context, 'Gagal: ${e.toString()}', isError: true);
       }
     }
   }
@@ -76,6 +112,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildGuestView(BuildContext context) {
+    // Tampilan ini tidak berubah
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: Center(
@@ -141,6 +178,9 @@ class _ProfilePageState extends State<ProfilePage> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // ==> TAMPILKAN BANNER PERINGATAN JIKA BELUM VERIFIKASI <==
+          if (!user.isVerified) _buildVerificationWarning(context, user.email),
+
           _buildProfileHeader(
             context,
             auth,
@@ -148,6 +188,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 24),
           _buildInfoCard(context, [
+            _buildInfoTile(Icons.person_outline, 'Username', user.username),
             _buildInfoTile(Icons.email_outlined, 'Email', user.email),
             _buildInfoTile(
               Icons.cake_outlined,
@@ -195,11 +236,56 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ==> WIDGET BARU UNTUK BANNER PERINGATAN <==
+  Widget _buildVerificationWarning(BuildContext context, String email) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.amber.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Akun Belum Diverifikasi',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Periksa email Anda atau kirim ulang link verifikasi.',
+                  style: TextStyle(color: Colors.amber.shade800, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: _canResend ? () => _handleResend(email) : null,
+            child: Text(
+              _canResend ? 'KIRIM ULANG' : 'Tunggu ($_cooldownSeconds s)',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfileHeader(
     BuildContext context,
     AuthProvider auth,
     VoidCallback onEditPressed,
   ) {
+    // ... (Fungsi ini tidak berubah)
     final user = auth.user!;
     final localImage = auth.localProfilePicture;
 
@@ -250,10 +336,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildInfoCard(BuildContext context, List<Widget> children) {
+    // ... (Fungsi ini tidak berubah)
     return Card(child: Column(children: children));
   }
 
   Widget _buildInfoTile(IconData icon, String title, String subtitle) {
+    // ... (Fungsi ini tidak berubah)
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
