@@ -86,9 +86,9 @@ mixin DashboardState on State<DashboardPage> {
     final apiConfig = await _apiConfigService.loadConfig();
     if (mounted) {
       setState(() {
+        // Hanya periksa domain, tidak lagi memeriksa apiKey
         isApiConfigured =
-            (apiConfig['domain'] != null && apiConfig['domain']!.isNotEmpty) &&
-            (apiConfig['apiKey'] != null && apiConfig['apiKey']!.isNotEmpty);
+            (apiConfig['domain'] != null && apiConfig['domain']!.isNotEmpty);
       });
     }
   }
