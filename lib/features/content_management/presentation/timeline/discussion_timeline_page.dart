@@ -13,22 +13,21 @@ import 'dialogs/reschedule_discussions_dialog.dart';
 class DiscussionTimelinePage extends StatelessWidget {
   final String subjectName;
   final List<Discussion> discussions;
+  final String subjectJsonPath;
 
   const DiscussionTimelinePage({
     super.key,
     required this.subjectName,
     required this.discussions,
+    required this.subjectJsonPath,
   });
 
   @override
   Widget build(BuildContext context) {
-    final discussionProvider = Provider.of<DiscussionProvider>(
-      context,
-      listen: false,
-    );
+    // Di sini kita tidak perlu `Provider.of` karena kita membuat instance baru.
+    // Provider yang ada di `subjects_page` tidak dibawa ke sini.
     return ChangeNotifierProvider(
-      create: (_) =>
-          DiscussionTimelineProvider(discussions, discussionProvider),
+      create: (_) => DiscussionTimelineProvider(discussions, subjectJsonPath),
       child: _DiscussionTimelineView(subjectName: subjectName),
     );
   }
@@ -46,18 +45,15 @@ class _DiscussionTimelineView extends StatefulWidget {
 class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   Offset? _pointerPosition;
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<void> _handleReschedule(BuildContext context) async {
     final provider = Provider.of<DiscussionTimelineProvider>(
       context,
       listen: false,
     );
 
-    // Tampilkan dialog dan tunggu hasilnya (bisa null)
     final RescheduleDialogResult? result =
         await showRescheduleDiscussionsDialog(context);
 
-    // Lanjutkan hanya jika pengguna menekan "Jalankan"
     if (result != null && mounted) {
       try {
         final resultMessage = await provider.rescheduleDiscussions(result);

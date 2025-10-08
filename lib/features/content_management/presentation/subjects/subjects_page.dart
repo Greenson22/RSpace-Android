@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
-import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/application/subject_provider.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/discussions_page.dart';
@@ -453,7 +452,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI INI DIPERBAIKI SECARA TOTAL <==
   Future<void> _navigateToDiscussionsPage(
     BuildContext context,
     Subject subject,
@@ -463,7 +461,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       listen: false,
     );
 
-    // 1. Cek status kunci
     if (subject.isLocked && !subjectProvider.isUnlocked(subject.name)) {
       final password = await showSubjectPasswordDialog(
         context: context,
@@ -473,26 +470,24 @@ class _SubjectsPageState extends State<SubjectsPage> {
       if (password == null) return;
       try {
         await subjectProvider.unlockSubject(subject.name, password);
-        // Ambil ulang data subjek yang sudah di-unlock dengan diskusi di dalamnya
         final unlockedSubject = subjectProvider.allSubjects.firstWhere(
           (s) => s.name == subject.name,
         );
-        _navigate(context, unlockedSubject, subjectProvider);
+        _navigate(context, unlockedSubject);
       } catch (e) {
         _showSnackBar(e.toString(), isError: true);
         return;
       }
     } else {
-      _navigate(context, subject, subjectProvider);
+      _navigate(context, subject);
     }
   }
 
-  // ==> FUNGSI HELPER BARU UNTUK NAVIGASI <==
-  Future<void> _navigate(
-    BuildContext context,
-    Subject subject,
-    SubjectProvider subjectProvider,
-  ) async {
+  Future<void> _navigate(BuildContext context, Subject subject) async {
+    final subjectProvider = Provider.of<SubjectProvider>(
+      context,
+      listen: false,
+    );
     if (subject.isFrozen) {
       _showSnackBar('Subject ini sedang dibekukan dan tidak bisa dibuka.');
       return;
@@ -531,9 +526,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
     if (!mounted) return;
 
-    // Di sini kita membuat DiscussionProvider baru untuk halaman selanjutnya
-    // Provider ini butuh 'context' yang memiliki akses ke dirinya sendiri,
-    // jadi kita bungkus dengan Builder atau ChangeNotifierProvider.
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -567,7 +559,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       return;
     }
 
-    // ==> PERBAIKAN DI SINI: SEDIAKAN DISCUSSIONPROVIDER UNTUK HALAMAN TIMELINE <==
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
@@ -577,23 +568,22 @@ class _SubjectsPageState extends State<SubjectsPage> {
       '${subject.name}.json',
     );
 
+    // ==> PERBAIKAN DI SINI: BUNGKUS DENGAN PROVIDER YANG SUDAH ADA <==
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (newContext) => ChangeNotifierProvider(
-          // Buat instance DiscussionProvider khusus untuk halaman timeline
-          create: (_) => DiscussionProvider(
-            jsonFilePath,
-            linkedPath: subject.linkedPath,
-            subject: subject,
-          ),
+        builder: (_) => ChangeNotifierProvider.value(
+          value: subjectProvider,
           child: DiscussionTimelinePage(
             subjectName: subject.name,
             discussions: subject.discussions,
+            subjectJsonPath: jsonFilePath,
           ),
         ),
       ),
-    );
+    ).then((_) {
+      subjectProvider.fetchSubjects();
+    });
   }
 
   @override

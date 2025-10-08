@@ -3,14 +3,18 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/models/timeline_models.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
-// ==> IMPORT DIALOG BARU <==
 import 'dialogs/reschedule_discussions_dialog.dart';
+// ==> IMPORT SERVICE YANG DIPERLUKAN <==
+import '../../domain/services/discussion_service.dart';
 
 class DiscussionTimelineProvider with ChangeNotifier {
+  // ==> TAMBAHKAN SERVICE DAN PATH <==
+  final String _subjectJsonPath;
+  final DiscussionService _discussionService = DiscussionService();
+
   List<Discussion> _allDiscussions = [];
   TimelineData? _timelineData;
   TimelineData? get timelineData => _timelineData;
@@ -25,17 +29,15 @@ class DiscussionTimelineProvider with ChangeNotifier {
   DateTimeRange? _selectedDateRange;
   DateTimeRange? get selectedDateRange => _selectedDateRange;
 
-  final DiscussionProvider _sourceDiscussionProvider;
-
+  // ==> PERBARUI KONSTRUKTOR <==
   DiscussionTimelineProvider(
     List<Discussion>? initialDiscussions,
-    this._sourceDiscussionProvider,
+    this._subjectJsonPath,
   ) {
     _allDiscussions = initialDiscussions ?? [];
     processDiscussions();
   }
 
-  // ==> FUNGSI INI SEKARANG MENERIMA PILIHAN ALGORITMA <==
   Future<String> rescheduleDiscussions(RescheduleDialogResult result) async {
     _isProcessing = true;
     notifyListeners();
@@ -48,11 +50,10 @@ class DiscussionTimelineProvider with ChangeNotifier {
       }
     } finally {
       _isProcessing = false;
-      notifyListeners();
+      // Jangan panggil notifyListeners di sini agar tidak rebuild saat proses masih berjalan
     }
   }
 
-  // ==> METODE LAMA MENJADI FUNGSI PRIVATE <==
   Future<String> _balanceSchedule(int maxMoveDays) async {
     final today = DateUtils.dateOnly(DateTime.now());
     final discussionsToReschedule =
@@ -106,17 +107,32 @@ class DiscussionTimelineProvider with ChangeNotifier {
         newDate = today;
       }
 
-      _sourceDiscussionProvider.updateDiscussionDate(discussion, newDate);
+      // ==> PERBAIKAN LOGIKA UPDATE TANGGAL <==
+      // Langsung ubah tanggal pada objek discussion atau point
+      if (discussion.points.isEmpty) {
+        discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
+      } else {
+        try {
+          final pointToUpdate = discussion.points.firstWhere(
+            (p) => p.date == discussion.effectiveDate,
+          );
+          pointToUpdate.date = DateFormat('yyyy-MM-dd').format(newDate);
+        } catch (e) {
+          // Fallback jika point tidak ditemukan (seharusnya tidak terjadi)
+          discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
+        }
+      }
       updatedCount++;
     }
 
-    await _sourceDiscussionProvider.saveDiscussions();
+    // ==> SIMPAN PERUBAHAN KE FILE <==
+    await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
+    // Muat ulang data di provider ini setelah menyimpan
     processDiscussions();
 
     return "$updatedCount diskusi berhasil diseimbangkan jadwalnya.";
   }
 
-  // ==> FUNGSI BARU UNTUK ALGORITMA "RATAKAN" <==
   Future<String> _spreadSchedule() async {
     final today = DateUtils.dateOnly(DateTime.now());
     final discussionsToReschedule =
@@ -142,7 +158,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
       return "Rentang waktu tidak cukup untuk penjadwalan ulang.";
     }
 
-    // Hitung interval merata di seluruh rentang
     final double evenInterval =
         totalDays / (discussionsToReschedule.length - 1);
     int updatedCount = 0;
@@ -151,11 +166,24 @@ class DiscussionTimelineProvider with ChangeNotifier {
       final discussion = discussionsToReschedule[i];
       final newDate = startDate.add(Duration(days: (i * evenInterval).round()));
 
-      _sourceDiscussionProvider.updateDiscussionDate(discussion, newDate);
+      // ==> PERBAIKAN LOGIKA UPDATE TANGGAL <==
+      if (discussion.points.isEmpty) {
+        discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
+      } else {
+        try {
+          final pointToUpdate = discussion.points.firstWhere(
+            (p) => p.date == discussion.effectiveDate,
+          );
+          pointToUpdate.date = DateFormat('yyyy-MM-dd').format(newDate);
+        } catch (e) {
+          discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
+        }
+      }
       updatedCount++;
     }
 
-    await _sourceDiscussionProvider.saveDiscussions();
+    // ==> SIMPAN PERUBAHAN KE FILE <==
+    await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
     processDiscussions();
 
     return "$updatedCount diskusi berhasil diratakan jadwalnya.";
