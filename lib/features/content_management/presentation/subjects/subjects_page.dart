@@ -548,43 +548,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        appBar: AppBar(
-          title: _isSearching
-              ? _buildSearchField()
-              : Text(
-                  'Subjects: ${widget.topicName}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-          actions: [
-            IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  if (!_isSearching) _searchController.clear();
-                });
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                provider.showHiddenSubjects
-                    ? Icons.visibility_off
-                    : Icons.visibility,
-              ),
-              onPressed: () => provider.toggleShowHidden(),
-              tooltip: provider.showHiddenSubjects
-                  ? 'Sembunyikan Subjects Tersembunyi'
-                  : 'Tampilkan Subjects Tersembunyi',
-            ),
-            IconButton(
-              icon: const Icon(Icons.sort),
-              tooltip: 'Urutkan Subject',
-              onPressed: () => showSubjectSortDialog(context: context),
-            ),
-          ],
-          elevation: 0,
-        ),
+        appBar: provider.isSelectionMode
+            ? _buildSelectionAppBar(provider)
+            : _buildDefaultAppBar(provider),
         body: Column(
           children: [
             Expanded(
@@ -601,13 +567,82 @@ class _SubjectsPageState extends State<SubjectsPage> {
             const AdBannerWidget(),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _addSubject(context),
-          tooltip: 'Tambah Subject',
-          icon: const Icon(Icons.add),
-          label: const Text('Tambah Subject'),
-        ),
+        floatingActionButton: provider.isSelectionMode
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: () => _addSubject(context),
+                tooltip: 'Tambah Subject',
+                icon: const Icon(Icons.add),
+                label: const Text('Tambah Subject'),
+              ),
       ),
+    );
+  }
+
+  AppBar _buildSelectionAppBar(SubjectProvider provider) {
+    return AppBar(
+      title: Text('${provider.selectedSubjects.length} dipilih'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => provider.clearSelection(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          onPressed: () => provider.selectAllFilteredSubjects(),
+          tooltip: 'Pilih Semua',
+        ),
+        IconButton(
+          icon: const Icon(Icons.visibility_off_outlined),
+          onPressed: () => provider.toggleVisibilitySelectedSubjects(),
+          tooltip: 'Sembunyikan/Tampilkan Pilihan',
+        ),
+        IconButton(
+          icon: const Icon(Icons.ac_unit_outlined),
+          onPressed: () => provider.toggleFreezeSelectedSubjects(),
+          tooltip: 'Bekukan/Cairkan Pilihan',
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildDefaultAppBar(SubjectProvider provider) {
+    return AppBar(
+      title: _isSearching
+          ? _buildSearchField()
+          : Text(
+              'Subjects: ${widget.topicName}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+      actions: [
+        IconButton(
+          icon: Icon(_isSearching ? Icons.close : Icons.search),
+          onPressed: () {
+            setState(() {
+              _isSearching = !_isSearching;
+              if (!_isSearching) _searchController.clear();
+            });
+          },
+        ),
+        IconButton(
+          icon: Icon(
+            provider.showHiddenSubjects
+                ? Icons.visibility_off
+                : Icons.visibility,
+          ),
+          onPressed: () => provider.toggleShowHidden(),
+          tooltip: provider.showHiddenSubjects
+              ? 'Sembunyikan Subjects Tersembunyi'
+              : 'Tampilkan Subjects Tersembunyi',
+        ),
+        IconButton(
+          icon: const Icon(Icons.sort),
+          tooltip: 'Urutkan Subject',
+          onPressed: () => showSubjectSortDialog(context: context),
+        ),
+      ],
+      elevation: 0,
     );
   }
 
@@ -643,7 +678,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
               key: ValueKey(subject.name + subject.position.toString()),
               subject: subject,
               isFocused: _isKeyboardActive && index == _focusedIndex,
-              onTap: () => _navigateToDiscussionsPage(context, subject),
+              onTap: () {
+                if (provider.isSelectionMode) {
+                  provider.toggleSubjectSelection(subject);
+                } else {
+                  _navigateToDiscussionsPage(context, subject);
+                }
+              },
               onRename: () => _renameSubject(context, subject),
               onDelete: () => _deleteSubject(context, subject),
               onIconChange: () => _changeIcon(context, subject),
@@ -652,7 +693,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
               onToggleFreeze: () => _toggleFreeze(context, subject),
-              // ==> SAMBUNGKAN CALLBACK BARU <==
               onToggleLock: () => _toggleLock(context, subject),
             );
           },
@@ -686,7 +726,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
               key: ValueKey(subject.name + subject.position.toString()),
               subject: subject,
               isFocused: _isKeyboardActive && index == _focusedIndex,
-              onTap: () => _navigateToDiscussionsPage(context, subject),
+              onTap: () {
+                if (provider.isSelectionMode) {
+                  provider.toggleSubjectSelection(subject);
+                } else {
+                  _navigateToDiscussionsPage(context, subject);
+                }
+              },
               onRename: () => _renameSubject(context, subject),
               onDelete: () => _deleteSubject(context, subject),
               onIconChange: () => _changeIcon(context, subject),
@@ -695,7 +741,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
               onToggleFreeze: () => _toggleFreeze(context, subject),
-              // ==> SAMBUNGKAN CALLBACK BARU <==
               onToggleLock: () => _toggleLock(context, subject),
             );
           },

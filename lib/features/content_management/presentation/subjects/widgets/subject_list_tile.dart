@@ -37,17 +37,22 @@ class SubjectListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<SubjectProvider>(context);
     final theme = Theme.of(context);
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
     final bool isHidden = subject.isHidden;
     final bool isFrozen = subject.isFrozen;
     final bool isLocked = subject.isLocked;
-    final Color cardColor = isHidden
-        ? theme.disabledColor.withOpacity(0.1)
-        : (isFrozen
-              ? Colors.lightBlue.shade50
-              : (isLocked ? Colors.grey.shade300 : theme.cardColor));
+    final bool isSelected = provider.selectedSubjects.contains(subject);
+
+    final Color cardColor = isSelected
+        ? theme.primaryColor.withOpacity(0.2)
+        : (isHidden
+              ? theme.disabledColor.withOpacity(0.1)
+              : (isFrozen
+                    ? Colors.lightBlue.shade50
+                    : (isLocked ? Colors.grey.shade300 : theme.cardColor)));
     final Color? textColor = isHidden
         ? theme.disabledColor
         : (isLocked ? Colors.grey.shade700 : null);
@@ -65,6 +70,7 @@ class SubjectListTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        onLongPress: () => provider.toggleSubjectSelection(subject),
         borderRadius: BorderRadius.circular(15),
         splashColor: theme.primaryColor.withOpacity(0.1),
         highlightColor: theme.primaryColor.withOpacity(0.05),
@@ -83,14 +89,21 @@ class SubjectListTile extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Text(
-                      isLocked ? '🔒' : subject.icon,
-                      style: TextStyle(
-                        fontSize: iconFontSize,
-                        color: textColor,
+                    if (isSelected)
+                      Icon(
+                        Icons.check_circle,
+                        color: theme.primaryColor,
+                        size: iconFontSize,
+                      )
+                    else
+                      Text(
+                        isLocked ? '🔒' : subject.icon,
+                        style: TextStyle(
+                          fontSize: iconFontSize,
+                          color: textColor,
+                        ),
                       ),
-                    ),
-                    if (isFrozen)
+                    if (isFrozen && !isSelected)
                       Positioned(
                         bottom: -2,
                         right: -2,
@@ -133,7 +146,6 @@ class SubjectListTile extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // ==> PERUBAIKAN DI SINI: Hapus kondisi !isLocked <==
                     if (hasSubtitle) ...[
                       const SizedBox(height: 4),
                       _buildSubtitle(context, textColor, subtitleFontSize),
@@ -143,130 +155,133 @@ class SubjectListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'rename') onRename();
-                  if (value == 'delete') onDelete();
-                  if (value == 'change_icon') onIconChange();
-                  if (value == 'toggle_visibility') onToggleVisibility();
-                  if (value == 'link_path') onLinkPath();
-                  if (value == 'edit_index') onEditIndexFile();
-                  if (value == 'move') onMove();
-                  if (value == 'toggle_freeze') onToggleFreeze();
-                  if (value == 'toggle_lock') onToggleLock();
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined),
-                        SizedBox(width: 8),
-                        Text('Ubah Nama'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'change_icon',
-                    child: Row(
-                      children: [
-                        Icon(Icons.emoji_emotions_outlined),
-                        SizedBox(width: 8),
-                        Text('Ubah Ikon'),
-                      ],
-                    ),
-                  ),
-                  if (subject.linkedPath != null &&
-                      subject.linkedPath!.isNotEmpty)
-                    const PopupMenuItem<String>(
-                      value: 'edit_index',
+              if (!provider.isSelectionMode)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'rename') onRename();
+                    if (value == 'delete') onDelete();
+                    if (value == 'change_icon') onIconChange();
+                    if (value == 'toggle_visibility') onToggleVisibility();
+                    if (value == 'link_path') onLinkPath();
+                    if (value == 'edit_index') onEditIndexFile();
+                    if (value == 'move') onMove();
+                    if (value == 'toggle_freeze') onToggleFreeze();
+                    if (value == 'toggle_lock') onToggleLock();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'rename',
                       child: Row(
                         children: [
-                          Icon(Icons.code_outlined),
+                          Icon(Icons.edit_outlined),
                           SizedBox(width: 8),
-                          Text('Edit Template Induk'),
+                          Text('Ubah Nama'),
                         ],
                       ),
                     ),
-                  PopupMenuItem<String>(
-                    value: 'link_path',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.link_outlined),
-                        const SizedBox(width: 8),
-                        Text(
-                          subject.linkedPath == null
-                              ? 'Link ke PerpusKu'
-                              : 'Ubah Link PerpusKu',
+                    const PopupMenuItem(
+                      value: 'change_icon',
+                      child: Row(
+                        children: [
+                          Icon(Icons.emoji_emotions_outlined),
+                          SizedBox(width: 8),
+                          Text('Ubah Ikon'),
+                        ],
+                      ),
+                    ),
+                    if (subject.linkedPath != null &&
+                        subject.linkedPath!.isNotEmpty)
+                      const PopupMenuItem<String>(
+                        value: 'edit_index',
+                        child: Row(
+                          children: [
+                            Icon(Icons.code_outlined),
+                            SizedBox(width: 8),
+                            Text('Edit Template Induk'),
+                          ],
                         ),
-                      ],
+                      ),
+                    PopupMenuItem<String>(
+                      value: 'link_path',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.link_outlined),
+                          const SizedBox(width: 8),
+                          Text(
+                            subject.linkedPath == null
+                                ? 'Link ke PerpusKu'
+                                : 'Ubah Link PerpusKu',
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'move',
-                    child: Row(
-                      children: [
-                        Icon(Icons.move_up_outlined),
-                        SizedBox(width: 8),
-                        Text('Pindahkan'),
-                      ],
+                    const PopupMenuItem<String>(
+                      value: 'move',
+                      child: Row(
+                        children: [
+                          Icon(Icons.move_up_outlined),
+                          SizedBox(width: 8),
+                          Text('Pindahkan'),
+                        ],
+                      ),
                     ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'toggle_freeze',
-                    child: Row(
-                      children: [
-                        Icon(
-                          isFrozen ? Icons.play_arrow_outlined : Icons.ac_unit,
-                        ),
-                        SizedBox(width: 8),
-                        Text(isFrozen ? 'Unfreeze' : 'Freeze'),
-                      ],
+                    PopupMenuItem<String>(
+                      value: 'toggle_freeze',
+                      child: Row(
+                        children: [
+                          Icon(
+                            isFrozen
+                                ? Icons.play_arrow_outlined
+                                : Icons.ac_unit,
+                          ),
+                          SizedBox(width: 8),
+                          Text(isFrozen ? 'Unfreeze' : 'Freeze'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem<String>(
-                    value: 'toggle_lock',
-                    child: Row(
-                      children: [
-                        Icon(
-                          isLocked
-                              ? Icons.lock_open_outlined
-                              : Icons.lock_outline,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(isLocked ? 'Buka Kunci' : 'Kunci Subject'),
-                      ],
+                    const PopupMenuDivider(),
+                    PopupMenuItem<String>(
+                      value: 'toggle_lock',
+                      child: Row(
+                        children: [
+                          Icon(
+                            isLocked
+                                ? Icons.lock_open_outlined
+                                : Icons.lock_outline,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(isLocked ? 'Buka Kunci' : 'Kunci Subject'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem<String>(
-                    value: 'toggle_visibility',
-                    child: Row(
-                      children: [
-                        Icon(
-                          isHidden
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-                      ],
+                    const PopupMenuDivider(),
+                    PopupMenuItem<String>(
+                      value: 'toggle_visibility',
+                      child: Row(
+                        children: [
+                          Icon(
+                            isHidden
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Hapus', style: TextStyle(color: Colors.red)),
-                      ],
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Hapus', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -291,7 +306,6 @@ class SubjectListTile extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, Color? textColor) {
-    // ... (sisa fungsi ini tidak berubah)
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 11, color: textColor);
@@ -358,7 +372,6 @@ class SubjectListTile extends StatelessWidget {
     Color? textColor,
     double fontSize,
   ) {
-    // ... (sisa fungsi ini tidak berubah)
     return RichText(
       text: TextSpan(
         style: Theme.of(

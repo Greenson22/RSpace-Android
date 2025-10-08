@@ -55,6 +55,51 @@ class SubjectProvider with ChangeNotifier {
   bool isUnlocked(String subjectName) =>
       _unlockedSubjects.contains(subjectName);
 
+  // ==> STATE BARU UNTUK SELEKSI <==
+  final Set<Subject> _selectedSubjects = {};
+  Set<Subject> get selectedSubjects => _selectedSubjects;
+  bool get isSelectionMode => _selectedSubjects.isNotEmpty;
+
+  // ==> FUNGSI BARU UNTUK MANAJEMEN SELEKSI <==
+  void toggleSubjectSelection(Subject subject) {
+    if (_selectedSubjects.contains(subject)) {
+      _selectedSubjects.remove(subject);
+    } else {
+      _selectedSubjects.add(subject);
+    }
+    notifyListeners();
+  }
+
+  void selectAllFilteredSubjects() {
+    _selectedSubjects.addAll(_filteredSubjects);
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedSubjects.clear();
+    notifyListeners();
+  }
+
+  Future<void> toggleFreezeSelectedSubjects() async {
+    for (final subject in _selectedSubjects) {
+      await toggleSubjectFreeze(subject.name, isBulkAction: true);
+    }
+    clearSelection();
+    await fetchSubjects();
+  }
+
+  Future<void> toggleVisibilitySelectedSubjects() async {
+    for (final subject in _selectedSubjects) {
+      await toggleSubjectVisibility(
+        subject.name,
+        !subject.isHidden,
+        isBulkAction: true,
+      );
+    }
+    clearSelection();
+    await fetchSubjects();
+  }
+
   Future<void> fetchSubjects() async {
     _isLoading = true;
     notifyListeners();
@@ -291,15 +336,21 @@ class SubjectProvider with ChangeNotifier {
 
   Future<void> toggleSubjectVisibility(
     String subjectName,
-    bool isHidden,
-  ) async {
+    bool isHidden, {
+    bool isBulkAction = false,
+  }) async {
     final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
     subject.isHidden = isHidden;
     await _subjectService.updateSubjectMetadata(topicPath, subject);
-    await fetchSubjects();
+    if (!isBulkAction) {
+      await fetchSubjects();
+    }
   }
 
-  Future<void> toggleSubjectFreeze(String subjectName) async {
+  Future<void> toggleSubjectFreeze(
+    String subjectName, {
+    bool isBulkAction = false,
+  }) async {
     final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
     subject.isFrozen = !subject.isFrozen;
 
@@ -337,7 +388,9 @@ class SubjectProvider with ChangeNotifier {
     }
 
     await _subjectService.updateSubjectMetadata(topicPath, subject);
-    await fetchSubjects();
+    if (!isBulkAction) {
+      await fetchSubjects();
+    }
   }
 
   void _updateDate(dynamic item, int daysToAdd) {
