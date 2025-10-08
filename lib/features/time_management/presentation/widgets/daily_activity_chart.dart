@@ -1,4 +1,4 @@
-// lib/presentation/pages/time_log_page/widgets/daily_activity_chart.dart
+// lib/features/time_management/presentation/widgets/daily_activity_chart.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -6,8 +6,14 @@ import '../../domain/models/time_log_model.dart';
 
 class DailyActivityChart extends StatefulWidget {
   final List<TimeLogEntry> logs;
+  // ==> 1. TAMBAHKAN PROPERTI BARU <==
+  final double barWidth;
 
-  const DailyActivityChart({super.key, required this.logs});
+  const DailyActivityChart({
+    super.key,
+    required this.logs,
+    required this.barWidth, // ==> 2. TAMBAHKAN DI KONSTRUKTOR
+  });
 
   @override
   State<DailyActivityChart> createState() => _DailyActivityChartState();
@@ -17,7 +23,6 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
   final Map<String, Color> _taskColors = {};
   late List<String> _allTaskNames;
   late double _maxHours;
-  // ==> 1. TAMBAHKAN SCROLL CONTROLLER <==
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -25,9 +30,6 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     super.initState();
     _prepareChartData();
 
-    // ==> 2. TAMBAHKAN LOGIKA UNTUK SCROLL OTOMATIS <==
-    // Gunakan addPostFrameCallback untuk memastikan widget sudah ter-render
-    // sebelum mencoba melakukan scroll.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -39,11 +41,18 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     });
   }
 
-  // ==> 3. JANGAN LUPA UNTUK DISPOSE CONTROLLER <==
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant DailyActivityChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.logs != oldWidget.logs) {
+      _prepareChartData();
+    }
   }
 
   void _prepareChartData() {
@@ -53,7 +62,9 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     for (final log in widget.logs) {
       double dailyTotalMinutes = 0;
       for (final task in log.tasks) {
-        allTasks.add(task.name);
+        if (task.durationMinutes > 0) {
+          allTasks.add(task.name);
+        }
         dailyTotalMinutes += task.durationMinutes;
       }
       if (dailyTotalMinutes > maxMinutes) {
@@ -65,6 +76,7 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     _maxHours = (maxMinutes / 60).ceilToDouble();
     if (_maxHours == 0) _maxHours = 1;
 
+    _taskColors.clear();
     for (final taskName in _allTaskNames) {
       _taskColors[taskName] = _generateColor(taskName);
     }
@@ -84,7 +96,6 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
       children: [
         Expanded(
           child: SingleChildScrollView(
-            // ==> 4. PASANG CONTROLLER KE WIDGET <==
             controller: _scrollController,
             scrollDirection: Axis.horizontal,
             child: Padding(
@@ -129,7 +140,8 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
             child: Tooltip(
               message: '${task.name}: ${task.durationMinutes} menit',
               child: Container(
-                width: 40,
+                // ==> 3. GUNAKAN LEBAR DARI WIDGET <==
+                width: widget.barWidth,
                 height: segmentHeight,
                 color: _taskColors[task.name],
               ),
@@ -141,7 +153,8 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      // ==> 4. BUAT PADDING MENJADI DINAMIS <==
+      padding: EdgeInsets.symmetric(horizontal: widget.barWidth / 4),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -151,7 +164,8 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
           ),
           const SizedBox(height: 4),
           Container(
-            width: 40,
+            // ==> 5. GUNAKAN LEBAR DARI WIDGET <==
+            width: widget.barWidth,
             height: max(barHeight, 0),
             decoration: BoxDecoration(
               color: Colors.grey.shade300,

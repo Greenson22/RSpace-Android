@@ -1,24 +1,20 @@
-// lib/presentation/pages/time_log_page/dialogs/activity_chart_dialog.dart
+// lib/features/time_management/presentation/dialogs/activity_chart_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/time_log_model.dart';
 import '../widgets/daily_activity_chart.dart';
 
-/// Enum untuk mengelola tipe filter yang aktif.
-enum ChartFilterType { last30Days, range, month, year }
+enum ChartFilterType { last30Days, range, month, year, allTime }
 
-/// Menampilkan dialog utama yang berisi grafik dan filter.
 void showActivityChartDialog(BuildContext context, List<TimeLogEntry> logs) {
   showDialog(
     context: context,
-    // ## PERUBAIKAN 1: Hapus `scrollable: true` dari sini ##
     builder: (context) {
       return ActivityChartDialog(logs: logs);
     },
   );
 }
 
-/// Widget stateful untuk dialog agar dapat mengelola state filter.
 class ActivityChartDialog extends StatefulWidget {
   final List<TimeLogEntry> logs;
 
@@ -29,22 +25,35 @@ class ActivityChartDialog extends StatefulWidget {
 }
 
 class _ActivityChartDialogState extends State<ActivityChartDialog> {
-  // State untuk filter
   ChartFilterType _selectedFilter = ChartFilterType.last30Days;
   DateTimeRange? _selectedRange;
   DateTime? _selectedMonth;
   int? _selectedYear;
 
-  // State untuk data yang ditampilkan
   List<TimeLogEntry> _filteredLogs = [];
   TimeLogEntry? _mostActiveDay;
   TimeLogEntry? _leastActiveDay;
   double _maxMinutes = -1;
   double _minMinutes = double.infinity;
 
-  // State untuk pilihan di picker
   late List<int> _availableYears;
   late List<DateTime> _availableMonths;
+
+  double _barWidth = 40.0;
+  static const double _minBarWidth = 10.0;
+  static const double _maxBarWidth = 100.0;
+
+  void _zoomIn() {
+    setState(() {
+      _barWidth = (_barWidth + 10.0).clamp(_minBarWidth, _maxBarWidth);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _barWidth = (_barWidth - 10.0).clamp(_minBarWidth, _maxBarWidth);
+    });
+  }
 
   @override
   void initState() {
@@ -53,7 +62,6 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
     _applyFilter();
   }
 
-  /// Menyiapkan daftar tahun dan bulan yang tersedia berdasarkan data log.
   void _prepareFilterOptions() {
     if (widget.logs.isEmpty) {
       _availableYears = [];
@@ -68,18 +76,18 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
       months.add(DateTime(log.date.year, log.date.month));
     }
 
-    _availableYears = years.toList()
-      ..sort((a, b) => b.compareTo(a)); // Urutkan terbaru
-    _availableMonths = months.toList()
-      ..sort((a, b) => b.compareTo(a)); // Urutkan terbaru
+    _availableYears = years.toList()..sort((a, b) => b.compareTo(a));
+    _availableMonths = months.toList()..sort((a, b) => b.compareTo(a));
   }
 
-  /// Menerapkan filter berdasarkan state yang dipilih dan memperbarui data.
   void _applyFilter() {
     List<TimeLogEntry> newFilteredLogs;
     final now = DateTime.now();
 
     switch (_selectedFilter) {
+      case ChartFilterType.allTime:
+        newFilteredLogs = List.from(widget.logs);
+        break;
       case ChartFilterType.last30Days:
         final thirtyDaysAgo = now.subtract(const Duration(days: 30));
         newFilteredLogs = widget.logs
@@ -129,7 +137,6 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
     });
   }
 
-  /// Menghitung statistik (hari terproduktif & tersantai) dari data yang sudah difilter.
   void _calculateStats() {
     if (_filteredLogs.isEmpty) {
       setState(() {
@@ -167,7 +174,6 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
     });
   }
 
-  /// Menampilkan dialog pemilih rentang tanggal.
   Future<void> _pickDateRange() async {
     final range = await showDateRangePicker(
       context: context,
@@ -184,7 +190,6 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
     }
   }
 
-  /// Menampilkan dialog pemilih bulan.
   Future<void> _pickMonth() async {
     final selected = await showDialog<DateTime>(
       context: context,
@@ -209,7 +214,6 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
     }
   }
 
-  /// Menampilkan dialog pemilih tahun.
   Future<void> _pickYear() async {
     final selected = await showDialog<int>(
       context: context,
@@ -237,54 +241,76 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      // ## PERUBAIKAN 2: Tambahkan `scrollable: true` di sini ##
       scrollable: true,
       title: const Text('Grafik Aktivitas Harian'),
       contentPadding: const EdgeInsets.only(top: 12.0),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Kontrol Filter
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: SegmentedButton<ChartFilterType>(
-              segments: const [
-                ButtonSegment(
-                  value: ChartFilterType.last30Days,
-                  label: Text('30 Hari'),
+          // ==> PERBAIKAN DI SINI <==
+          Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: SegmentedButton<ChartFilterType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ChartFilterType.last30Days,
+                      label: Text('30 Hari'),
+                    ),
+                    ButtonSegment(
+                      value: ChartFilterType.month,
+                      label: Text('Bulan'),
+                    ),
+                    ButtonSegment(
+                      value: ChartFilterType.year,
+                      label: Text('Tahun'),
+                    ),
+                    ButtonSegment(
+                      value: ChartFilterType.range,
+                      label: Text('Rentang'),
+                    ),
+                    ButtonSegment(
+                      value: ChartFilterType.allTime,
+                      label: Text('Semua'),
+                    ),
+                  ],
+                  selected: {_selectedFilter},
+                  onSelectionChanged: (newSelection) {
+                    final filter = newSelection.first;
+                    if (filter == ChartFilterType.last30Days ||
+                        filter == ChartFilterType.allTime) {
+                      setState(() => _selectedFilter = filter);
+                      _applyFilter();
+                    } else if (filter == ChartFilterType.month) {
+                      _pickMonth();
+                    } else if (filter == ChartFilterType.year) {
+                      _pickYear();
+                    } else if (filter == ChartFilterType.range) {
+                      _pickDateRange();
+                    }
+                  },
                 ),
-                ButtonSegment(
-                  value: ChartFilterType.month,
-                  label: Text('Bulan'),
-                ),
-                ButtonSegment(
-                  value: ChartFilterType.year,
-                  label: Text('Tahun'),
-                ),
-                ButtonSegment(
-                  value: ChartFilterType.range,
-                  label: Text('Rentang'),
-                ),
-              ],
-              selected: {_selectedFilter},
-              onSelectionChanged: (newSelection) {
-                // Set state filter dan panggil picker yang sesuai
-                final filter = newSelection.first;
-                if (filter == ChartFilterType.last30Days) {
-                  setState(() => _selectedFilter = filter);
-                  _applyFilter();
-                } else if (filter == ChartFilterType.month) {
-                  _pickMonth();
-                } else if (filter == ChartFilterType.year) {
-                  _pickYear();
-                } else if (filter == ChartFilterType.range) {
-                  _pickDateRange();
-                }
-              },
-            ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.zoom_out),
+                    onPressed: _barWidth > _minBarWidth ? _zoomOut : null,
+                    tooltip: 'Perkecil',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.zoom_in),
+                    onPressed: _barWidth < _maxBarWidth ? _zoomIn : null,
+                    tooltip: 'Perbesar',
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          // Konten Utama (Grafik dan Statistik)
+          const SizedBox(height: 8),
           SizedBox(
             width: double.maxFinite,
             height: 420,
@@ -312,7 +338,12 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
                         ),
                       if (_mostActiveDay != null || _leastActiveDay != null)
                         const Divider(height: 24),
-                      Expanded(child: DailyActivityChart(logs: _filteredLogs)),
+                      Expanded(
+                        child: DailyActivityChart(
+                          logs: _filteredLogs,
+                          barWidth: _barWidth,
+                        ),
+                      ),
                     ],
                   ),
           ),
@@ -328,7 +359,6 @@ class _ActivityChartDialogState extends State<ActivityChartDialog> {
   }
 }
 
-/// Menampilkan widget statistik ringkas di dalam dialog.
 Widget _buildStatRow(
   BuildContext context, {
   required IconData icon,
