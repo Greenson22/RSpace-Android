@@ -1,22 +1,22 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_list_item.dart
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_point_dialog.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/confirmation_dialogs.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/edit_dialogs.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/html_file_picker_dialog.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/move_discussion_dialog.dart';
-import 'package:my_aplication/features/quiz/application/quiz_service.dart';
-import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
+import '../../../../quiz/application/quiz_service.dart';
+import '../../../../quiz/presentation/pages/quiz_player_page.dart';
+import '../../../../settings/application/theme_provider.dart';
+import '../../../../webview_page/presentation/pages/webview_page.dart';
+import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
 import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -40,17 +40,15 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
   });
 
-  // ==> PERBAIKAN DI FUNGSI INI <==
   void _showSnackBar(
     BuildContext context,
     String message, {
     bool isError = false,
-    bool isLong = false, // Parameter ditambahkan
+    bool isLong = false,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        // Logika durasi dan aksi ditambahkan
         duration: isLong
             ? const Duration(seconds: 10)
             : const Duration(seconds: 2),
@@ -109,11 +107,11 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
+            // ==> PERUBAIKAN DI SINI <==
+            // Menghapus kondisi 'isWebLink' agar onTap selalu membuka daftar poin.
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
-              } else if (isWebLink) {
-                _launchUrl(context);
               } else {
                 onToggleVisibility(index);
               }
@@ -127,7 +125,7 @@ class DiscussionListItem extends StatelessWidget {
                 if (isQuizLink) {
                   _startQuiz(context);
                 } else if (isWebLink) {
-                  _launchUrl(context);
+                  _openUrlWithOptions(context);
                 } else if (hasFile) {
                   provider.openDiscussionFile(discussion, context);
                 }
@@ -145,14 +143,22 @@ class DiscussionListItem extends StatelessWidget {
                 decoration: isFinished ? TextDecoration.lineThrough : null,
               ),
             ),
-            subtitle: isWebLink
-                ? Text(
-                    discussion.url ?? 'URL tidak valid',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: theme.primaryColor, fontSize: 12),
-                  )
-                : DiscussionSubtitle(discussion: discussion, isCompact: true),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DiscussionSubtitle(discussion: discussion, isCompact: true),
+                if (isWebLink)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Text(
+                      discussion.url ?? 'URL tidak valid',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: theme.primaryColor, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -212,15 +218,37 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  Future<void> _launchUrl(BuildContext context) async {
-    if (discussion.url != null) {
-      final uri = Uri.parse(discussion.url!);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+  Future<void> _openUrlWithOptions(BuildContext context) async {
+    if (discussion.url == null || discussion.url!.isEmpty) {
+      _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
+      return;
+    }
+
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final uri = Uri.parse(discussion.url!);
+
+    if (themeProvider.openInAppBrowser &&
+        (Platform.isAndroid || Platform.isIOS)) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WebViewPage(
+            initialUrl: uri.toString(),
+            title: discussion.discussion,
+          ),
+        ),
+      );
+    } else {
+      try {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          throw Exception('Tidak dapat membuka URL');
+        }
+      } catch (e) {
         _showSnackBar(
           context,
-          'Tidak dapat membuka URL: ${discussion.url}',
+          'Gagal membuka URL: ${e.toString()}',
           isError: true,
         );
       }
