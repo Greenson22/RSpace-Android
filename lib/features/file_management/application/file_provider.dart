@@ -14,8 +14,9 @@ import '../../settings/application/services/api_config_service.dart';
 import '../domain/models/file_model.dart';
 import '../../../core/services/path_service.dart';
 import '../../auth/application/auth_service.dart';
-// ==> IMPORT DIALOG BARU <==
+// ==> IMPORT DIALOG BARU & DIALOG KONFIRMASI <==
 import '../presentation/dialogs/download_import_progress_dialog.dart';
+import 'package:my_aplication/features/backup_management/presentation/utils/backup_dialogs.dart';
 
 // ==> ENUM BARU UNTUK STATUS PROGRES <==
 enum SyncStepStatus { waiting, inProgress, success, failed }
@@ -119,10 +120,11 @@ class FileProvider with ChangeNotifier {
     File? perpuskuFile;
 
     try {
+      // --- TAHAP 1: PENGUNDUHAN ---
+
       // --- RSPACE ---
       final rspaceItem = _rspaceFiles.isNotEmpty ? _rspaceFiles.first : null;
       if (rspaceItem != null) {
-        // Step 1: Download RSpace
         _syncProgress.rspaceDownloadStatus = SyncStepStatus.inProgress;
         notifyListeners();
         try {
@@ -134,8 +136,71 @@ class FileProvider with ChangeNotifier {
         } finally {
           notifyListeners();
         }
+      } else {
+        _syncProgress.rspaceDownloadStatus = SyncStepStatus.success;
+      }
 
-        // Step 2: Import RSpace
+      // --- PERPUSKU ---
+      final perpuskuItem = _perpuskuFiles.isNotEmpty
+          ? _perpuskuFiles.first
+          : null;
+      if (perpuskuItem != null) {
+        _syncProgress.perpuskuDownloadStatus = SyncStepStatus.inProgress;
+        notifyListeners();
+        try {
+          perpuskuFile = await _downloadSingleFile(perpuskuItem, false);
+          _syncProgress.perpuskuDownloadStatus = SyncStepStatus.success;
+        } catch (e) {
+          _syncProgress.perpuskuDownloadStatus = SyncStepStatus.failed;
+          throw Exception("Gagal download PerpusKu: $e");
+        } finally {
+          notifyListeners();
+        }
+      } else {
+        _syncProgress.perpuskuDownloadStatus = SyncStepStatus.success;
+      }
+
+      // --- TAHAP 2: KONFIRMASI ---
+      // Tutup dialog progres setelah download selesai
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      // Jika tidak ada file yang diunduh, hentikan proses.
+      if (rspaceFile == null && perpuskuFile == null) {
+        _syncProgress.errorMessage = "Tidak ada file online untuk diunduh.";
+        notifyListeners();
+        return; // Hentikan eksekusi lebih lanjut
+      }
+
+      final confirmed = await showImportConfirmationDialog(
+        context,
+        'RSpace & PerpusKu',
+      );
+
+      if (!confirmed) {
+        // Hapus file yang sudah terunduh jika import dibatalkan
+        if (rspaceFile != null && await rspaceFile.exists()) {
+          await rspaceFile.delete();
+        }
+        if (perpuskuFile != null && await perpuskuFile.exists()) {
+          await perpuskuFile.delete();
+        }
+        _syncProgress.rspaceImportStatus = SyncStepStatus.waiting;
+        _syncProgress.perpuskuImportStatus = SyncStepStatus.waiting;
+        _syncProgress.errorMessage = "Proses import dibatalkan oleh pengguna.";
+        notifyListeners();
+        return; // Hentikan eksekusi
+      }
+
+      // --- TAHAP 3: IMPORT ---
+      // Tampilkan kembali dialog progres untuk proses impor
+      if (context.mounted) {
+        showDownloadImportProgressDialog(context);
+      }
+
+      // Import RSpace
+      if (rspaceFile != null) {
         _syncProgress.rspaceImportStatus = SyncStepStatus.inProgress;
         notifyListeners();
         try {
@@ -153,29 +218,11 @@ class FileProvider with ChangeNotifier {
           notifyListeners();
         }
       } else {
-        _syncProgress.rspaceDownloadStatus = SyncStepStatus.success;
         _syncProgress.rspaceImportStatus = SyncStepStatus.success;
       }
 
-      // --- PERPUSKU ---
-      final perpuskuItem = _perpuskuFiles.isNotEmpty
-          ? _perpuskuFiles.first
-          : null;
-      if (perpuskuItem != null) {
-        // Step 3: Download PerpusKu
-        _syncProgress.perpuskuDownloadStatus = SyncStepStatus.inProgress;
-        notifyListeners();
-        try {
-          perpuskuFile = await _downloadSingleFile(perpuskuItem, false);
-          _syncProgress.perpuskuDownloadStatus = SyncStepStatus.success;
-        } catch (e) {
-          _syncProgress.perpuskuDownloadStatus = SyncStepStatus.failed;
-          throw Exception("Gagal download PerpusKu: $e");
-        } finally {
-          notifyListeners();
-        }
-
-        // Step 4: Import PerpusKu
+      // Import PerpusKu
+      if (perpuskuFile != null) {
         _syncProgress.perpuskuImportStatus = SyncStepStatus.inProgress;
         notifyListeners();
         try {
@@ -193,12 +240,22 @@ class FileProvider with ChangeNotifier {
           notifyListeners();
         }
       } else {
-        _syncProgress.perpuskuDownloadStatus = SyncStepStatus.success;
         _syncProgress.perpuskuImportStatus = SyncStepStatus.success;
       }
     } catch (e) {
       _syncProgress.errorMessage = e.toString().replaceAll('Exception: ', '');
+      // Pastikan dialog ditutup jika ada error di tengah jalan
+      if (context.mounted &&
+          Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      // Tampilkan lagi dialog dengan pesan error
+      if (context.mounted) {
+        showDownloadImportProgressDialog(context);
+      }
     } finally {
+      // Pemindaian ulang file yang diunduh setelah semua proses selesai
+      await _scanDownloadedFiles();
       notifyListeners();
     }
   }
