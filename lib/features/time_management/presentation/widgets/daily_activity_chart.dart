@@ -17,11 +17,33 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
   final Map<String, Color> _taskColors = {};
   late List<String> _allTaskNames;
   late double _maxHours;
+  // ==> 1. TAMBAHKAN SCROLL CONTROLLER <==
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _prepareChartData();
+
+    // ==> 2. TAMBAHKAN LOGIKA UNTUK SCROLL OTOMATIS <==
+    // Gunakan addPostFrameCallback untuk memastikan widget sudah ter-render
+    // sebelum mencoba melakukan scroll.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  // ==> 3. JANGAN LUPA UNTUK DISPOSE CONTROLLER <==
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _prepareChartData() {
@@ -40,18 +62,15 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     }
 
     _allTaskNames = allTasks.toList();
-    // Bulatkan jam maksimal ke atas agar grafik terlihat bagus
     _maxHours = (maxMinutes / 60).ceilToDouble();
-    if (_maxHours == 0) _maxHours = 1; // Hindari pembagian dengan nol
+    if (_maxHours == 0) _maxHours = 1;
 
-    // Buat warna yang konsisten untuk setiap nama tugas
     for (final taskName in _allTaskNames) {
       _taskColors[taskName] = _generateColor(taskName);
     }
   }
 
   Color _generateColor(String text) {
-    // Fungsi hash sederhana untuk menghasilkan warna dari sebuah string
     final hash = text.hashCode;
     final r = (hash & 0xFF0000) >> 16;
     final g = (hash & 0x00FF00) >> 8;
@@ -65,6 +84,8 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
       children: [
         Expanded(
           child: SingleChildScrollView(
+            // ==> 4. PASANG CONTROLLER KE WIDGET <==
+            controller: _scrollController,
             scrollDirection: Axis.horizontal,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -90,13 +111,11 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
     );
     final totalHours = totalMinutes / 60.0;
 
-    // Tinggi bar dihitung berdasarkan rasio jam hari ini dengan jam maksimal
     final barHeight = 200.0 * (totalHours / _maxHours);
 
     final stackChildren = <Widget>[];
     double accumulatedHeight = 0;
 
-    // Urutkan task berdasarkan durasi untuk tampilan tumpukan yang lebih baik
     final sortedTasks = List<LoggedTask>.from(log.tasks)
       ..sort((a, b) => b.durationMinutes.compareTo(a.durationMinutes));
 
@@ -133,7 +152,7 @@ class _DailyActivityChartState extends State<DailyActivityChart> {
           const SizedBox(height: 4),
           Container(
             width: 40,
-            height: max(barHeight, 0), // Pastikan tinggi tidak negatif
+            height: max(barHeight, 0),
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
               borderRadius: const BorderRadius.only(
