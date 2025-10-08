@@ -21,17 +21,25 @@ class DiscussionTimelinePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // ==> PERBAIKAN DI SINI <==
-      // Memastikan provider dibuat dengan daftar diskusi yang tidak null
-      create: (_) => DiscussionTimelineProvider(discussions ?? []),
+      create: (_) => DiscussionTimelineProvider(discussions),
       child: _DiscussionTimelineView(subjectName: subjectName),
     );
   }
 }
 
-class _DiscussionTimelineView extends StatelessWidget {
+// ==> UBAH MENJADI STATEFULWIDGET <==
+class _DiscussionTimelineView extends StatefulWidget {
   final String subjectName;
   const _DiscussionTimelineView({required this.subjectName});
+
+  @override
+  State<_DiscussionTimelineView> createState() =>
+      _DiscussionTimelineViewState();
+}
+
+class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
+  // ==> TAMBAHKAN STATE UNTUK MENYIMPAN POSISI HOVER/TAP <==
+  Offset? _pointerPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +48,7 @@ class _DiscussionTimelineView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Linimasa: $subjectName'),
+        title: Text('Linimasa: ${widget.subjectName}'),
         actions: [
           if (provider.selectedDateRange != null)
             IconButton(
@@ -113,13 +121,26 @@ class _DiscussionTimelineView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: 300,
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: TimelinePainter(
-                      timelineData: finalTimelineData,
-                      context: context,
+                // ==> BUNGKUS CUSTOMPAINT DENGAN GESTUREDETECTOR <==
+                GestureDetector(
+                  onPanStart: (details) =>
+                      setState(() => _pointerPosition = details.localPosition),
+                  onPanUpdate: (details) =>
+                      setState(() => _pointerPosition = details.localPosition),
+                  onPanEnd: (_) => setState(() => _pointerPosition = null),
+                  onTapDown: (details) =>
+                      setState(() => _pointerPosition = details.localPosition),
+                  onTapUp: (_) => setState(() => _pointerPosition = null),
+                  child: SizedBox(
+                    height: 300,
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: TimelinePainter(
+                        timelineData: finalTimelineData,
+                        context: context,
+                        // ==> KIRIM POSISI POINTER KE PAINTER <==
+                        pointerPosition: _pointerPosition,
+                      ),
                     ),
                   ),
                 ),
