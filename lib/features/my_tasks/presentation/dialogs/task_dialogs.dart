@@ -1,17 +1,15 @@
-// lib/presentation/pages/my_tasks_page/dialogs/task_dialogs.dart
+// lib/features/my_tasks/presentation/dialogs/task_dialogs.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
 import 'package:my_aplication/features/my_tasks/application/my_task_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../content_management/presentation/topics/dialogs/topic_dialogs.dart';
 
-// FUNGSI BARU UNTUK MENAMPILKAN DIALOG PENGURUTAN
 void showReorderTasksDialog(BuildContext context, TaskCategory category) {
   final provider = Provider.of<MyTaskProvider>(context, listen: false);
 
   showDialog(
     context: context,
-    // Pastikan provider di-pass ke dalam konteks dialog
     builder: (dialogContext) => ChangeNotifierProvider.value(
       value: provider,
       child: _ReorderTasksDialog(category: category),
@@ -19,7 +17,6 @@ void showReorderTasksDialog(BuildContext context, TaskCategory category) {
   );
 }
 
-// WIDGET BARU UNTUK DIALOG PENGURUTAN
 class _ReorderTasksDialog extends StatefulWidget {
   final TaskCategory category;
 
@@ -35,7 +32,6 @@ class _ReorderTasksDialogState extends State<_ReorderTasksDialog> {
   @override
   void initState() {
     super.initState();
-    // Buat salinan list agar bisa diubah urutannya di dalam state dialog
     _tasks = List<MyTask>.from(widget.category.tasks);
   }
 
@@ -46,7 +42,7 @@ class _ReorderTasksDialogState extends State<_ReorderTasksDialog> {
     return AlertDialog(
       title: Text('Urutkan Task di "${widget.category.name}"'),
       content: SizedBox(
-        width: double.maxFinite, // Agar dialog melebar
+        width: double.maxFinite,
         child: ReorderableListView.builder(
           shrinkWrap: true,
           itemCount: _tasks.length,
@@ -82,7 +78,6 @@ class _ReorderTasksDialogState extends State<_ReorderTasksDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            // Panggil provider untuk menyimpan urutan baru
             provider.updateTasksOrder(widget.category, _tasks);
             Navigator.pop(context);
           },
@@ -92,8 +87,6 @@ class _ReorderTasksDialogState extends State<_ReorderTasksDialog> {
     );
   }
 }
-
-// --- KODE LAMA DI BAWAH INI TIDAK BERUBAH ---
 
 void showAddTaskDialog(BuildContext context, TaskCategory category) {
   final provider = Provider.of<MyTaskProvider>(context, listen: false);
@@ -183,7 +176,7 @@ void showUpdateCountDialog(
   final provider = Provider.of<MyTaskProvider>(context, listen: false);
   showTopicTextInputDialog(
     context: context,
-    title: 'Ubah Jumlah (Count)',
+    title: 'Ubah Jumlah Total (Count)',
     label: 'Jumlah Baru',
     initialValue: task.count.toString(),
     keyboardType: TextInputType.number,
@@ -191,7 +184,7 @@ void showUpdateCountDialog(
       final newCount = int.tryParse(newValue);
       if (newCount != null) {
         provider.updateTaskCount(category, task, newCount);
-        _showSnackBar(context, 'Jumlah task berhasil diubah.');
+        _showSnackBar(context, 'Jumlah total task berhasil diubah.');
       } else {
         _showSnackBar(
           context,
@@ -203,21 +196,21 @@ void showUpdateCountDialog(
   );
 }
 
-Future<bool?> showToggleConfirmationDialog(BuildContext context) async {
+Future<bool?> showIncrementCountConfirmationDialog(BuildContext context) async {
   return showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Konfirmasi Penyelesaian'),
+      title: const Text('Konfirmasi'),
       content: const Text(
-        'Update tanggal ke hari ini dan tambah jumlah (count) sebanyak 1?',
+        'Tambah hitungan hari ini dan total hitungan sebanyak 1? Tanggal "due" juga akan diperbarui ke hari ini.',
       ),
       actions: [
         TextButton(
           child: const Text('Batal'),
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        TextButton(
-          child: const Text('Ya, Update'),
+        ElevatedButton(
+          child: const Text('Ya, Tambah'),
           onPressed: () => Navigator.of(context).pop(true),
         ),
       ],
@@ -225,33 +218,7 @@ Future<bool?> showToggleConfirmationDialog(BuildContext context) async {
   );
 }
 
-void showUncheckAllConfirmationDialog(BuildContext context) {
-  final provider = Provider.of<MyTaskProvider>(context, listen: false);
-  showDialog(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('Konfirmasi'),
-      content: const Text(
-        'Anda yakin ingin menghapus semua centang dari task?',
-      ),
-      actions: [
-        TextButton(
-          child: const Text('Batal'),
-          onPressed: () => Navigator.of(dialogContext).pop(),
-        ),
-        TextButton(
-          child: const Text('Ya, Hapus'),
-          onPressed: () {
-            provider.uncheckAllTasks();
-            Navigator.of(dialogContext).pop();
-            _showSnackBar(context, 'Semua centang telah dihapus.');
-          },
-        ),
-      ],
-    ),
-  );
-}
-
+// ==> PERUBAHAN DI SINI: Dialog uncheck all dihapus
 void _showSnackBar(
   BuildContext context,
   String message, {

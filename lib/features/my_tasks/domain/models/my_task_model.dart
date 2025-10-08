@@ -1,43 +1,61 @@
-// lib/data/models/my_task_model.dart
-// 1. IMPORT UUID UNTUK MEMBUAT ID UNIK
+// lib/features/my_tasks/domain/models/my_task_model.dart
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class MyTask {
-  // 2. TAMBAHKAN PROPERTI ID
   final String id;
   String name;
   int count;
   String date;
   bool checked;
+  // ==> PERUBAHAN DI SINI <==
+  int countToday;
+  String lastUpdated; // Menyimpan tanggal dalam format YYYY-MM-DD
 
   MyTask({
-    String? id, // 3. BUAT ID JADI OPSIONAL DI KONSTRUKTOR
+    String? id,
     required this.name,
     required this.count,
     required this.date,
     required this.checked,
-    // 4. GENERATE ID JIKA KOSONG (ID BARU AKAN DIBUAT SAAT TUGAS BARU DIBUAT)
-  }) : id = id ?? const Uuid().v4();
+    // ==> PERUBAHAN DI SINI <==
+    this.countToday = 0,
+    String? lastUpdated,
+  }) : id = id ?? const Uuid().v4(),
+       // Set lastUpdated ke hari ini jika tidak ada nilai
+       lastUpdated =
+           lastUpdated ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
 
   factory MyTask.fromJson(Map<String, dynamic> json) {
+    final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final lastUpdatedString = json['lastUpdated'] as String? ?? todayString;
+
     return MyTask(
-      // 5. BACA ID DARI JSON, ATAU BUAT YANG BARU JIKA TIDAK ADA (UNTUK KOMPATIBILITAS DATA LAMA)
       id: json['id'] as String? ?? const Uuid().v4(),
       name: json['name'] ?? 'Untitled Task',
       count: json['count'] ?? 0,
       date: json['date'] ?? '',
-      checked: json['checked'] ?? false,
+      checked:
+          json['checked'] ?? false, // Tetap ada untuk kompatibilitas data lama
+      // ==> PERUBAHAN DI SINI <==
+      // Jika tanggal update terakhir bukan hari ini, reset countToday
+      countToday: lastUpdatedString == todayString
+          ? json['countToday'] ?? 0
+          : 0,
+      lastUpdated: lastUpdatedString,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      // 6. SIMPAN ID KE JSON
       'id': id,
       'name': name,
       'count': count,
       'date': date,
-      'checked': checked,
+      'checked': checked, // Tetap disimpan untuk kompatibilitas data lama
+      // ==> PERUBAHAN DI SINI <==
+      'countToday': countToday,
+      'lastUpdated': lastUpdated,
     };
   }
 }

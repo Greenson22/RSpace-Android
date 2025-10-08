@@ -148,7 +148,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
 
     final isAnyReordering = taskProvider.isCategoryReorderEnabled;
 
-    // ==> PERBAIKAN: Logika tema dipindahkan ke sini <==
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isChristmas = themeProvider.isChristmasTheme;
 
@@ -156,7 +155,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
       focusNode: _focusNode,
       onKey: handleKeyEvent,
       child: Scaffold(
-        // ==> PERBAIKAN: backgroundColor tidak lagi diatur menjadi transparan <==
         backgroundColor: null,
         appBar: taskProvider.isTaskSelectionMode
             ? _buildTaskSelectionAppBar(taskProvider)
@@ -203,7 +201,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
 
   AppBar _buildDefaultAppBar(MyTaskProvider taskProvider, bool isChristmas) {
     return AppBar(
-      // ==> PERBAIKAN: backgroundColor tidak lagi diatur secara manual di sini <==
       backgroundColor: null,
       elevation: isChristmas ? 0 : null,
       title: const Text('My Tasks'),
@@ -244,12 +241,7 @@ class _MyTasksViewState extends State<_MyTasksView> {
             taskProvider.toggleCategoryReorder();
           },
         ),
-        if (!taskProvider.isCategoryReorderEnabled)
-          IconButton(
-            icon: const Icon(Icons.clear_all),
-            tooltip: 'Hapus Semua Centang',
-            onPressed: () => showUncheckAllConfirmationDialog(context),
-          ),
+        // ==> PERUBAHAN DI SINI: Tombol hapus semua centang dihilangkan
       ],
     );
   }

@@ -1,4 +1,4 @@
-// lib/presentation/pages/my_tasks_page/widgets/task_tile.dart
+// lib/features/my_tasks/presentation/widgets/task_tile.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/my_tasks/domain/models/my_task_model.dart';
 import 'package:my_aplication/features/my_tasks/application/my_task_provider.dart';
@@ -23,17 +23,15 @@ class TaskTile extends StatelessWidget {
     final theme = Theme.of(context);
     final isCategoryReorderMode = provider.isCategoryReorderEnabled;
 
-    // == LOGIKA BARU UNTUK UI SELEKSI ==
     final bool isSelected =
         provider.selectedTasks[category.name]?.contains(task.id) ?? false;
     final bool isSelectionMode = provider.isTaskSelectionMode;
-    // --- AKHIR LOGIKA BARU ---
 
-    final textColor = isParentHidden || task.checked ? Colors.grey : null;
+    // ==> PERUBAHAN DI SINI <==
+    final textColor = isParentHidden ? Colors.grey : null;
 
     return ListTile(
       key: key,
-      // == PERUBAHAN PADA onLongPress dan onTap ==
       onLongPress: () {
         if (!isCategoryReorderMode) {
           provider.toggleTaskSelection(category, task);
@@ -44,8 +42,7 @@ class TaskTile extends StatelessWidget {
           provider.toggleTaskSelection(category, task);
         }
       },
-      // --- AKHIR PERUBAHAN ---
-      // == PERUBAHAN PADA leading WIDGET ==
+      // ==> PERUBAHAN PADA LEADING: GANTI CHECKBOX DENGAN TOMBOL TAMBAH <==
       leading: isSelectionMode
           ? Icon(
               isSelected
@@ -53,59 +50,57 @@ class TaskTile extends StatelessWidget {
                   : Icons.check_box_outline_blank_rounded,
               color: theme.primaryColor,
             )
-          : Checkbox(
-              value: task.checked,
-              onChanged: isCategoryReorderMode || isParentHidden
+          : IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              color: theme.primaryColor,
+              onPressed: isCategoryReorderMode || isParentHidden
                   ? null
-                  : (bool? value) async {
-                      if (value == true) {
-                        final shouldUpdate = await showToggleConfirmationDialog(
-                          context,
-                        );
-                        if (shouldUpdate == true) {
-                          provider.toggleTaskChecked(
-                            category,
-                            task,
-                            confirmUpdate: true,
-                          );
-                        }
-                      } else {
-                        provider.toggleTaskChecked(
-                          category,
-                          task,
-                          confirmUpdate: false,
-                        );
+                  : () async {
+                      final confirmed =
+                          await showIncrementCountConfirmationDialog(context);
+                      if (confirmed == true) {
+                        provider.incrementTaskCount(category, task);
                       }
                     },
             ),
-      // --- AKHIR PERUBAHAN ---
       tileColor: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
       title: Text(
         task.name,
         style: TextStyle(
-          decoration: task.checked ? TextDecoration.lineThrough : null,
+          // Hapus text-decoration
           color: textColor,
         ),
       ),
+      // ==> PERUBAHAN SUBTITLE UNTUK MENAMPILKAN COUNT HARI INI <==
       subtitle: RichText(
         text: TextSpan(
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: textColor),
           children: [
-            const TextSpan(text: 'Due: '),
-            TextSpan(
-              text: task.date,
-              style: TextStyle(
-                color: isParentHidden ? textColor : Colors.blue,
-                fontWeight: FontWeight.bold,
+            if (task.countToday > 0) ...[
+              TextSpan(
+                text: '+${task.countToday} hari ini',
+                style: TextStyle(
+                  color: isParentHidden ? textColor : Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const TextSpan(text: ' | Count: '),
+              const TextSpan(text: ' | '),
+            ],
+            const TextSpan(text: 'Total: '),
             TextSpan(
               text: task.count.toString(),
               style: TextStyle(
                 color: isParentHidden ? textColor : Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const TextSpan(text: ' | Due: '),
+            TextSpan(
+              text: task.date,
+              style: TextStyle(
+                color: isParentHidden ? textColor : Colors.blue,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -134,7 +129,7 @@ class TaskTile extends StatelessWidget {
                 ),
                 const PopupMenuItem(
                   value: 'edit_count',
-                  child: Text('Ubah Jumlah'),
+                  child: Text('Ubah Jumlah Total'),
                 ),
                 const PopupMenuDivider(),
                 const PopupMenuItem(

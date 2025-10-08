@@ -1,4 +1,4 @@
-// lib/presentation/providers/my_task_provider.dart
+// lib/features/my_tasks/application/my_task_provider.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/core/services/storage_service.dart';
@@ -21,7 +21,6 @@ class MyTaskProvider with ChangeNotifier {
   bool _showHiddenCategories = false;
   bool get showHiddenCategories => _showHiddenCategories;
 
-  // ==> STATE BARU UNTUK LAYOUT <==
   bool _isGridView = false;
   bool get isGridView => _isGridView;
 
@@ -33,20 +32,17 @@ class MyTaskProvider with ChangeNotifier {
     return _allCategories.where((c) => !c.isHidden).toList();
   }
 
-  // == STATE BARU UNTUK SELEKSI TASK ==
   final Map<String, Set<String>> _selectedTasks = {};
   Map<String, Set<String>> get selectedTasks => _selectedTasks;
   bool get isTaskSelectionMode =>
       _selectedTasks.values.any((s) => s.isNotEmpty);
   int get totalSelectedTasks =>
       _selectedTasks.values.fold(0, (sum, set) => sum + set.length);
-  // --- AKHIR STATE BARU ---
 
   MyTaskProvider() {
     fetchTasks();
   }
 
-  // == FUNGSI BARU UNTUK MANAJEMEN SELEKSI TASK ==
   void toggleTaskSelection(TaskCategory category, MyTask task) {
     _selectedTasks.putIfAbsent(category.name, () => {});
     if (_selectedTasks[category.name]!.contains(task.id)) {
@@ -81,7 +77,6 @@ class MyTaskProvider with ChangeNotifier {
 
     final List<MyTask> tasksToMove = [];
 
-    // Kumpulkan semua task yang terpilih dan hapus dari kategori asal
     for (var entry in _selectedTasks.entries) {
       final sourceCategoryName = entry.key;
       final selectedIds = entry.value;
@@ -99,13 +94,11 @@ class MyTaskProvider with ChangeNotifier {
       }
     }
 
-    // Tambahkan task ke kategori tujuan
     _allCategories[targetCategoryIndex].tasks.addAll(tasksToMove);
 
-    clearTaskSelection(); // Membersihkan seleksi setelah dipindah
-    await _saveTasks(); // Menyimpan perubahan ke file
+    clearTaskSelection();
+    await _saveTasks();
   }
-  // --- AKHIR FUNGSI BARU ---
 
   void toggleShowHidden() {
     _showHiddenCategories = !_showHiddenCategories;
@@ -117,7 +110,6 @@ class MyTaskProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH LAYOUT <==
   Future<void> toggleLayout() async {
     _isGridView = !_isGridView;
     await _prefsService.saveMyTasksLayoutPreference(_isGridView);
@@ -141,7 +133,6 @@ class MyTaskProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Category Management ---
   Future<void> reorderCategories(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) {
       newIndex -= 1;
@@ -206,8 +197,6 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  // --- Task Management ---
-
   Future<void> updateTasksOrder(
     TaskCategory category,
     List<MyTask> newOrderedTasks,
@@ -271,11 +260,7 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> toggleTaskChecked(
-    TaskCategory category,
-    MyTask task, {
-    bool confirmUpdate = false,
-  }) async {
+  Future<void> incrementTaskCount(TaskCategory category, MyTask task) async {
     final categoryIndex = _allCategories.indexWhere(
       (c) => c.name == category.name,
     );
@@ -285,16 +270,13 @@ class MyTaskProvider with ChangeNotifier {
       );
       if (taskIndex != -1) {
         final currentTask = _allCategories[categoryIndex].tasks[taskIndex];
-        final isChecking = !currentTask.checked;
-        currentTask.checked = isChecking;
-
-        if (isChecking) {
-          if (confirmUpdate) {
-            currentTask.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-            currentTask.count++;
-          }
-          await _updateTimeLogForTask(currentTask.id);
-        }
+        currentTask.count++;
+        currentTask.countToday++;
+        currentTask.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        currentTask.lastUpdated = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now());
+        await _updateTimeLogForTask(currentTask.id);
         await _saveTasks();
       }
     }
@@ -358,14 +340,5 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> uncheckAllTasks() async {
-    for (final category in _allCategories) {
-      for (final task in category.tasks) {
-        if (task.checked) {
-          task.checked = false;
-        }
-      }
-    }
-    await _saveTasks();
-  }
+  // ==> PERUBAHAN DI SINI: FUNGSI UNCHECK ALL DIHAPUS <==
 }
