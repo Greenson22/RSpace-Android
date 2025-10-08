@@ -25,50 +25,18 @@ class AuthService {
     return domain;
   }
 
-  Future<String?> getToken() async {
-    return await _secureStorage.read(key: _tokenKey);
-  }
+  // ... (getToken, getProfilePicture tidak berubah)
 
-  Future<File?> getProfilePicture(User user) async {
-    final token = await getToken();
-    if (token == null || user.profilePictureUrl == null) return null;
-
-    final profilePicDir = await _pathService.profilePicturesPath;
-    final fileName = path.basename(user.profilePictureUrl!);
-    final localFile = File(path.join(profilePicDir, fileName));
-
-    if (await localFile.exists()) {
-      return localFile;
-    }
-
-    final domain = await getApiDomain();
-    final url = '$domain/storage/${user.profilePictureUrl!}';
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-
-    if (response.statusCode == 200) {
-      final dir = Directory(profilePicDir);
-      if (await dir.exists()) {
-        await dir.delete(recursive: true);
-      }
-      await dir.create(recursive: true);
-
-      await localFile.writeAsBytes(response.bodyBytes);
-      return localFile;
-    } else {
-      throw Exception('Gagal mengunduh foto profil.');
-    }
-  }
-
-  Future<void> login(String email, String password) async {
+  // Perbarui metode login
+  Future<void> login(String loginIdentifier, String password) async {
     final domain = await getApiDomain();
     final response = await http.post(
       Uri.parse('$domain/api/auth/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
+      body: jsonEncode({
+        'loginIdentifier': loginIdentifier,
+        'password': password,
+      }),
     );
 
     if (response.statusCode == 200) {
@@ -77,6 +45,70 @@ class AuthService {
     } else {
       final data = jsonDecode(response.body);
       throw Exception(data['message'] ?? 'Gagal login.');
+    }
+  }
+
+  // ... (logout tidak berubah)
+
+  // Perbarui metode register
+  Future<void> register(
+    String name,
+    String email,
+    String password,
+    String username,
+  ) async {
+    final domain = await getApiDomain();
+    final response = await http.post(
+      Uri.parse('$domain/api/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'username': username,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      final data = jsonDecode(response.body);
+      final errorMessage =
+          data['message'] ??
+          (data['errors']?[0]?['msg'] ?? 'Gagal melakukan registrasi.');
+      throw Exception(errorMessage);
+    }
+  }
+
+  // ... (getUserProfile, uploadProfilePicture, resendVerificationEmail tidak berubah)
+
+  Future<String?> getToken() async {
+    return await _secureStorage.read(key: _tokenKey);
+  }
+
+  Future<File?> getProfilePicture(User user) async {
+    final token = await getToken();
+    if (token == null || user.profilePictureUrl == null) return null;
+    final profilePicDir = await _pathService.profilePicturesPath;
+    final fileName = path.basename(user.profilePictureUrl!);
+    final localFile = File(path.join(profilePicDir, fileName));
+    if (await localFile.exists()) {
+      return localFile;
+    }
+    final domain = await getApiDomain();
+    final url = '$domain/storage/${user.profilePictureUrl!}';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final dir = Directory(profilePicDir);
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+      await dir.create(recursive: true);
+      await localFile.writeAsBytes(response.bodyBytes);
+      return localFile;
+    } else {
+      throw Exception('Gagal mengunduh foto profil.');
     }
   }
 
@@ -89,29 +121,11 @@ class AuthService {
     }
   }
 
-  Future<void> register(String name, String email, String password) async {
-    final domain = await getApiDomain();
-    final response = await http.post(
-      Uri.parse('$domain/api/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
-    );
-
-    if (response.statusCode != 201) {
-      final data = jsonDecode(response.body);
-      final errorMessage =
-          data['message'] ??
-          (data['errors']?[0]?['msg'] ?? 'Gagal melakukan registrasi.');
-      throw Exception(errorMessage);
-    }
-  }
-
   Future<User> getUserProfile() async {
     final token = await getToken();
     if (token == null) {
       throw Exception('Tidak terautentikasi.');
     }
-
     final domain = await getApiDomain();
     final response = await http.get(
       Uri.parse('$domain/api/profile'),
@@ -120,7 +134,6 @@ class AuthService {
         'Authorization': 'Bearer $token',
       },
     );
-
     if (response.statusCode == 200) {
       return User.fromJson(jsonDecode(response.body));
     } else {
@@ -134,13 +147,10 @@ class AuthService {
   Future<void> uploadProfilePicture(File imageFile) async {
     final token = await getToken();
     if (token == null) throw Exception('Tidak terautentikasi.');
-
     final domain = await getApiDomain();
     final uri = Uri.parse('$domain/api/profile/picture');
-
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Bearer $token';
-
     request.files.add(
       await http.MultipartFile.fromPath(
         'profilePicture',
@@ -151,14 +161,11 @@ class AuthService {
         ),
       ),
     );
-
     final response = await request.send();
-
     if (response.statusCode != 200) {
       final responseBody = await response.stream.bytesToString();
       throw Exception('Gagal mengunggah foto: $responseBody');
     }
-
     final profilePicDir = await _pathService.profilePicturesPath;
     final dir = Directory(profilePicDir);
     if (await dir.exists()) {

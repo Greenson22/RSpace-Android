@@ -34,6 +34,44 @@ class AuthProvider with ChangeNotifier {
     checkLoginStatus();
   }
 
+  // ... (checkLoginStatus tidak berubah)
+
+  // Perbarui metode login
+  Future<void> login(String loginIdentifier, String password) async {
+    _loginStatus = LoginStatus.loading;
+    _loginMessage = 'Mencoba login...';
+    notifyListeners();
+
+    try {
+      await _authService.login(loginIdentifier, password);
+      await checkLoginStatus();
+
+      _loginStatus = LoginStatus.success;
+      _loginMessage = 'Login Berhasil! Mengalihkan...';
+      notifyListeners();
+
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      _loginStatus = LoginStatus.error;
+      _loginMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  // ... (resetLoginStatus tidak berubah)
+
+  // Perbarui metode register
+  Future<void> register(
+    String name,
+    String email,
+    String password,
+    String username,
+  ) async {
+    await _authService.register(name, email, password, username);
+  }
+
+  // ... (logout, uploadProfilePicture, resendVerification tidak berubah)
+
   Future<void> checkLoginStatus() async {
     final token = await _authService.getToken();
     if (token != null) {
@@ -61,34 +99,9 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
-    _loginStatus = LoginStatus.loading;
-    _loginMessage = 'Mencoba login...';
-    notifyListeners();
-
-    try {
-      await _authService.login(email, password);
-      await checkLoginStatus();
-
-      _loginStatus = LoginStatus.success;
-      _loginMessage = 'Login Berhasil! Mengalihkan...';
-      notifyListeners();
-
-      await Future.delayed(const Duration(seconds: 1));
-    } catch (e) {
-      _loginStatus = LoginStatus.error;
-      _loginMessage = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
-    }
-  }
-
   void resetLoginStatus() {
     _loginStatus = LoginStatus.idle;
     _loginMessage = '';
-  }
-
-  Future<void> register(String name, String email, String password) async {
-    await _authService.register(name, email, password);
   }
 
   Future<void> logout() async {

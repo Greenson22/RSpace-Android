@@ -14,10 +14,20 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController(); // <-- Controller baru
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose(); // <-- Jangan lupa dispose
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
@@ -28,20 +38,19 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
-      // ==> PERUBAHAN DI SINI <==
-      // Tangkap pesan sukses dari backend
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      // ==> PANGGIL FUNGSI REGISTER DENGAN 4 ARGUMEN
       await authProvider.register(
-        _nameController.text,
-        _emailController.text,
+        _nameController.text.trim(),
+        _emailController.text.trim(),
         _passwordController.text,
+        _usernameController.text.trim(),
       );
 
       if (mounted) {
-        // Tampilkan dialog informasi
         await showDialog(
           context: context,
-          barrierDismissible: false, // User harus menekan tombol
+          barrierDismissible: false,
           builder: (dialogContext) => AlertDialog(
             title: const Text('Registrasi Berhasil'),
             content: const Text(
@@ -50,8 +59,8 @@ class _RegisterPageState extends State<RegisterPage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(dialogContext).pop(); // Tutup dialog
-                  Navigator.of(context).pop(); // Kembali dari halaman register
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).pop();
                 },
                 child: const Text('OK'),
               ),
@@ -83,11 +92,21 @@ class _RegisterPageState extends State<RegisterPage> {
               child: Column(
                 children: [
                   if (_errorMessage != null) ...[
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.withOpacity(0.5)),
+                      ),
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    const SizedBox(height: 16),
                   ],
                   TextFormField(
                     controller: _nameController,
@@ -96,8 +115,30 @@ class _RegisterPageState extends State<RegisterPage> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (v) =>
-                        v!.isEmpty ? 'Nama tidak boleh kosong' : null,
+                        v!.trim().isEmpty ? 'Nama tidak boleh kosong' : null,
                   ),
+                  const SizedBox(height: 16),
+                  // ==> TAMBAHKAN INPUT UNTUK USERNAME DI SINI
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username (min. 3 karakter, huruf & angka)',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Username tidak boleh kosong';
+                      }
+                      if (v.length < 3) {
+                        return 'Username minimal 3 karakter';
+                      }
+                      if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(v)) {
+                        return 'Hanya boleh berisi huruf dan angka';
+                      }
+                      return null;
+                    },
+                  ),
+                  // --- AKHIR PENAMBAHAN ---
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
@@ -107,7 +148,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) =>
-                        v!.isEmpty ? 'Email tidak boleh kosong' : null,
+                        v!.trim().isEmpty ? 'Email tidak boleh kosong' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
