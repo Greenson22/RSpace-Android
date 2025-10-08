@@ -1,6 +1,6 @@
 // lib/features/auth/presentation/login_page.dart
 
-import 'dart:async'; // <-- Import async
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../application/auth_provider.dart';
@@ -18,7 +18,6 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // ==> STATE BARU UNTUK TIMER <==
   Timer? _cooldownTimer;
   int _cooldownSeconds = 60;
   bool _canResend = false;
@@ -37,6 +36,10 @@ class _LoginPageState extends State<LoginPage> {
       _cooldownSeconds = 60;
     });
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_cooldownSeconds > 0) {
         setState(() {
           _cooldownSeconds--;
@@ -54,7 +57,10 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.login(_emailController.text, _passwordController.text);
+    await authProvider.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
     if (authProvider.loginStatus == LoginStatus.success && mounted) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -63,19 +69,17 @@ class _LoginPageState extends State<LoginPage> {
       );
       authProvider.resetLoginStatus();
     } else if (authProvider.loginMessage.contains('belum diverifikasi')) {
-      // Jika error karena belum verifikasi, aktifkan tombol resend
       setState(() {
         _canResend = true;
       });
     }
   }
 
-  // ==> FUNGSI BARU UNTUK KIRIM ULANG <==
   Future<void> _handleResend() async {
-    if (_emailController.text.isEmpty) {
+    if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Masukkan email Anda terlebih dahulu.'),
+          content: Text('Masukkan username atau email Anda terlebih dahulu.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -83,19 +87,24 @@ class _LoginPageState extends State<LoginPage> {
     }
     _startCooldown();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.resendVerification(_emailController.text);
+    await authProvider.resendVerification(_emailController.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, child) {
-        // Cek apakah pesan error adalah tentang verifikasi
         final bool showResendButton =
             auth.loginStatus == LoginStatus.error &&
             auth.loginMessage.contains('belum diverifikasi');
 
         return Scaffold(
+          // ==> TAMBAHKAN APPBAR DI SINI <==
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            // Tombol kembali akan muncul secara otomatis
+          ),
           body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32.0),
@@ -109,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                       const Text('🚀', style: TextStyle(fontSize: 60)),
                       const SizedBox(height: 16),
                       Text(
-                        'Selamat Datang di RSpace',
+                        'Selamat Datang Kembali',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
@@ -118,22 +127,19 @@ class _LoginPageState extends State<LoginPage> {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 32),
-
                       if (auth.loginStatus != LoginStatus.idle)
                         _buildStatusWidget(auth.loginStatus, auth.loginMessage),
-
                       if (auth.loginStatus != LoginStatus.loading &&
                           auth.loginStatus != LoginStatus.success) ...[
                         TextFormField(
                           controller: _emailController,
                           decoration: const InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: Icon(Icons.email_outlined),
+                            labelText: 'Username atau Email',
+                            prefixIcon: Icon(Icons.person_outline),
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) => value!.isEmpty
-                              ? 'Email tidak boleh kosong'
+                          validator: (value) => value!.trim().isEmpty
+                              ? 'Username atau Email tidak boleh kosong'
                               : null,
                         ),
                         const SizedBox(height: 16),
@@ -160,7 +166,6 @@ class _LoginPageState extends State<LoginPage> {
                             child: const Text('Login'),
                           ),
                         ),
-                        // ==> TAMPILKAN TOMBOL KIRIM ULANG SECARA KONDISIONAL <==
                         if (showResendButton) ...[
                           const SizedBox(height: 16),
                           OutlinedButton(
