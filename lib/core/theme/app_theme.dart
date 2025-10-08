@@ -186,9 +186,11 @@ class AppTheme {
     ),
     // ==> PERBAIKAN DI SINI <==
     tabBarTheme: TabBarThemeData(
-      labelColor: primaryColor, // Warna teks tab yang aktif
-      unselectedLabelColor: Colors.black54, // Warna teks tab yang tidak aktif
-      indicatorColor: primaryColor, // Warna garis indikator
+      labelColor: Colors.white, // Warna teks & ikon tab yang aktif
+      unselectedLabelColor: Colors.white.withOpacity(
+        0.7,
+      ), // Warna teks & ikon tab yang tidak aktif
+      indicatorColor: Colors.white, // Warna garis indikator
     ),
     cardTheme: CardThemeData(
       elevation: 2,
