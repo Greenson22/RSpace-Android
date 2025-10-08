@@ -29,6 +29,10 @@ class TimelinePainter extends CustomPainter {
       ..color = Colors.grey.shade400
       ..strokeWidth = 2.0;
 
+    final verticalLinePaint = Paint()
+      ..color = Colors.grey.shade300
+      ..strokeWidth = 1.0;
+
     canvas.drawLine(
       Offset(startX, timelineY),
       Offset(endX, timelineY),
@@ -66,15 +70,28 @@ class TimelinePainter extends CustomPainter {
           )
           .toList();
 
+      double highestY = timelineY;
+
       for (int i = 0; i < discussionsOnThisDay.length; i++) {
         final item = discussionsOnThisDay[i];
         final yPos = timelineY - 40 - (i * (dotRadius * 2 + 5));
+        if (yPos < highestY) {
+          highestY = yPos;
+        }
         positionedDiscussions.add(
           TimelineDiscussion(
             discussion: item.discussion,
             position: Offset(xPos, yPos),
             color: item.color,
           ),
+        );
+      }
+
+      if (discussionsOnThisDay.isNotEmpty) {
+        canvas.drawLine(
+          Offset(xPos, timelineY),
+          Offset(xPos, highestY),
+          verticalLinePaint,
         );
       }
     });
@@ -96,9 +113,7 @@ class TimelinePainter extends CustomPainter {
         }
       }
 
-      // ==> PERUBAHAN UTAMA DI BLOK INI <==
       if (hoveredDiscussion != null) {
-        // Gambar highlight hanya untuk titik yang di-hover
         final highlightPaint = Paint()
           ..color = hoveredDiscussion.color.withOpacity(0.3)
           ..strokeWidth = 2.0
@@ -109,12 +124,12 @@ class TimelinePainter extends CustomPainter {
           highlightPaint,
         );
 
-        // Gambar tooltip hanya untuk satu titik yang di-hover
         _drawTooltip(canvas, size, hoveredDiscussion);
       }
     }
   }
 
+  // ==> FUNGSI INI YANG DIPERBARUI <==
   void _drawTooltip(Canvas canvas, Size size, TimelineDiscussion item) {
     final textStyle = TextStyle(color: Colors.white, fontSize: 11);
     final dateStyle = TextStyle(
@@ -126,13 +141,27 @@ class TimelinePainter extends CustomPainter {
       text: item.discussion.discussion,
       style: textStyle,
     );
-    final dateSpan = TextSpan(
-      text: '\n${item.discussion.effectiveDate}',
+
+    // Buat TextSpan untuk tanggal dan kode repetisi
+    final dateAndCodeSpan = TextSpan(
       style: dateStyle,
+      children: [
+        TextSpan(text: '\n${item.discussion.effectiveDate} | '),
+        TextSpan(
+          text: item.discussion.effectiveRepetitionCode,
+          style: TextStyle(
+            color: getColorForRepetitionCode(
+              item.discussion.effectiveRepetitionCode,
+            ),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
 
     final textPainter = TextPainter(
-      text: TextSpan(children: [titleSpan, dateSpan]),
+      // Gabungkan semua TextSpan
+      text: TextSpan(children: [titleSpan, dateAndCodeSpan]),
       textAlign: TextAlign.left,
       textDirection: Directionality.of(context),
     );
