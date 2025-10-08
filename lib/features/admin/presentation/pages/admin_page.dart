@@ -85,12 +85,64 @@ class _AdminPageView extends StatelessWidget {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK DIALOG VERIFIKASI <==
+  void _showVerifyUserDialog(BuildContext context, AdminUser user) {
+    final provider = Provider.of<AdminProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Konfirmasi Verifikasi'),
+        content: Text(
+          'Anda yakin ingin memverifikasi akun "${user.email}" secara manual?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final message = await provider.verifyUser(user.id);
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Gagal: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Ya, Verifikasi'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AdminProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manajemen Pengguna')),
+      appBar: AppBar(
+        title: const Text('Manajemen Pengguna'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => provider.fetchUsers(),
+            tooltip: 'Muat Ulang Daftar',
+          ),
+        ],
+      ),
       body: Builder(
         builder: (context) {
           if (provider.isLoading) {
@@ -111,14 +163,38 @@ class _AdminPageView extends StatelessWidget {
               ).format(user.createdAt);
               return ListTile(
                 leading: CircleAvatar(
-                  child: Text(user.name.isNotEmpty ? user.name[0] : '?'),
+                  backgroundColor: user.isVerified
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.amber.withOpacity(0.2),
+                  child: Icon(
+                    user.isVerified ? Icons.check : Icons.mail_outline,
+                    color: user.isVerified
+                        ? Colors.green
+                        : Colors.amber.shade800,
+                  ),
                 ),
                 title: Text(user.name),
                 subtitle: Text('${user.email} - Bergabung: $formattedDate'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.password),
-                  tooltip: 'Ubah Password',
-                  onPressed: () => _showChangePasswordDialog(context, user),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'change_password') {
+                      _showChangePasswordDialog(context, user);
+                    } else if (value == 'verify_manual') {
+                      _showVerifyUserDialog(context, user);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'change_password',
+                      child: Text('Ubah Password'),
+                    ),
+                    // Tampilkan opsi verifikasi hanya jika belum terverifikasi
+                    if (!user.isVerified)
+                      const PopupMenuItem(
+                        value: 'verify_manual',
+                        child: Text('Verifikasi Manual'),
+                      ),
+                  ],
                 ),
               );
             },

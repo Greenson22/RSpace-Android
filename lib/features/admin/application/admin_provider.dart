@@ -40,4 +40,26 @@ class AdminProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  // ==> FUNGSI BARU UNTUK VERIFIKASI MANUAL <==
+  Future<String> verifyUser(int userId) async {
+    try {
+      final message = await _adminService.manuallyVerifyUser(userId);
+      // Perbarui state pengguna secara lokal setelah berhasil
+      final userIndex = _users.indexWhere((user) => user.id == userId);
+      if (userIndex != -1) {
+        _users[userIndex] = AdminUser(
+          id: _users[userIndex].id,
+          name: _users[userIndex].name,
+          email: _users[userIndex].email,
+          createdAt: _users[userIndex].createdAt,
+          isVerified: true, // Ubah status menjadi true
+        );
+        notifyListeners();
+      }
+      return message;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

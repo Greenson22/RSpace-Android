@@ -35,16 +35,32 @@ class AdminService {
       body: jsonEncode({'newPassword': newPassword}),
     );
 
+    final data = json.decode(response.body);
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
       return data['message'] ?? 'Password berhasil diperbarui.';
     } else {
-      final data = json.decode(response.body);
       final errorMsg =
           data['errors']?[0]?['msg'] ??
           data['message'] ??
           'Gagal memperbarui password.';
       throw Exception(errorMsg);
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK VERIFIKASI MANUAL <==
+  Future<String> manuallyVerifyUser(int userId) async {
+    final domain = await _authService.getApiDomain();
+    final token = await _authService.getToken();
+    final response = await http.put(
+      Uri.parse('$domain/api/admin/users/$userId/verify'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return data['message'] ?? 'Verifikasi berhasil.';
+    } else {
+      throw Exception(data['message'] ?? 'Gagal memverifikasi pengguna.');
     }
   }
 }
