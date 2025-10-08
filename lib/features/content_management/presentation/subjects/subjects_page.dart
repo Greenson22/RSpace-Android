@@ -20,7 +20,6 @@ import 'package:my_aplication/features/content_management/presentation/subjects/
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/generate_index_prompt_dialog.dart';
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_password_dialog.dart';
-// ==> MENGGUNAKAN IMPORT ABSOLUT UNTUK MEMASTIKAN FILE DITEMUKAN <==
 import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
 
 class SubjectsPage extends StatefulWidget {
@@ -454,6 +453,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
+  // ==> FUNGSI INI DIPERBAIKI SECARA TOTAL <==
   Future<void> _navigateToDiscussionsPage(
     BuildContext context,
     Subject subject,
@@ -463,6 +463,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
       listen: false,
     );
 
+    // 1. Cek status kunci
     if (subject.isLocked && !subjectProvider.isUnlocked(subject.name)) {
       final password = await showSubjectPasswordDialog(
         context: context,
@@ -472,12 +473,26 @@ class _SubjectsPageState extends State<SubjectsPage> {
       if (password == null) return;
       try {
         await subjectProvider.unlockSubject(subject.name, password);
+        // Ambil ulang data subjek yang sudah di-unlock dengan diskusi di dalamnya
+        final unlockedSubject = subjectProvider.allSubjects.firstWhere(
+          (s) => s.name == subject.name,
+        );
+        _navigate(context, unlockedSubject, subjectProvider);
       } catch (e) {
         _showSnackBar(e.toString(), isError: true);
         return;
       }
+    } else {
+      _navigate(context, subject, subjectProvider);
     }
+  }
 
+  // ==> FUNGSI HELPER BARU UNTUK NAVIGASI <==
+  Future<void> _navigate(
+    BuildContext context,
+    Subject subject,
+    SubjectProvider subjectProvider,
+  ) async {
     if (subject.isFrozen) {
       _showSnackBar('Subject ini sedang dibekukan dan tidak bisa dibuka.');
       return;
@@ -516,10 +531,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
     if (!mounted) return;
 
+    // Di sini kita membuat DiscussionProvider baru untuk halaman selanjutnya
+    // Provider ini butuh 'context' yang memiliki akses ke dirinya sendiri,
+    // jadi kita bungkus dengan Builder atau ChangeNotifierProvider.
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChangeNotifierProvider(
+        builder: (newContext) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(
             jsonFilePath,
             linkedPath: currentLinkedPath,
@@ -548,12 +566,31 @@ class _SubjectsPageState extends State<SubjectsPage> {
       );
       return;
     }
+
+    // ==> PERBAIKAN DI SINI: SEDIAKAN DISCUSSIONPROVIDER UNTUK HALAMAN TIMELINE <==
+    final subjectProvider = Provider.of<SubjectProvider>(
+      context,
+      listen: false,
+    );
+    final jsonFilePath = path.join(
+      subjectProvider.topicPath,
+      '${subject.name}.json',
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DiscussionTimelinePage(
-          subjectName: subject.name,
-          discussions: subject.discussions,
+        builder: (newContext) => ChangeNotifierProvider(
+          // Buat instance DiscussionProvider khusus untuk halaman timeline
+          create: (_) => DiscussionProvider(
+            jsonFilePath,
+            linkedPath: subject.linkedPath,
+            subject: subject,
+          ),
+          child: DiscussionTimelinePage(
+            subjectName: subject.name,
+            discussions: subject.discussions,
+          ),
         ),
       ),
     );

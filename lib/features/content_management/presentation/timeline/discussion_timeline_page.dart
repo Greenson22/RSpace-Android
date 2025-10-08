@@ -1,12 +1,14 @@
 // lib/features/content_management/presentation/timeline/discussion_timeline_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/discussion_model.dart';
 import 'discussion_timeline_provider.dart';
 import 'widgets/timeline_painter.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import '../../domain/models/timeline_models.dart';
+import 'dialogs/reschedule_discussions_dialog.dart';
 
 class DiscussionTimelinePage extends StatelessWidget {
   final String subjectName;
@@ -20,14 +22,18 @@ class DiscussionTimelinePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final discussionProvider = Provider.of<DiscussionProvider>(
+      context,
+      listen: false,
+    );
     return ChangeNotifierProvider(
-      create: (_) => DiscussionTimelineProvider(discussions),
+      create: (_) =>
+          DiscussionTimelineProvider(discussions, discussionProvider),
       child: _DiscussionTimelineView(subjectName: subjectName),
     );
   }
 }
 
-// ==> UBAH MENJADI STATEFULWIDGET <==
 class _DiscussionTimelineView extends StatefulWidget {
   final String subjectName;
   const _DiscussionTimelineView({required this.subjectName});
@@ -38,8 +44,36 @@ class _DiscussionTimelineView extends StatefulWidget {
 }
 
 class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
-  // ==> TAMBAHKAN STATE UNTUK MENYIMPAN POSISI HOVER/TAP <==
   Offset? _pointerPosition;
+
+  // ==> FUNGSI INI DIPERBARUI <==
+  Future<void> _handleReschedule(BuildContext context) async {
+    final provider = Provider.of<DiscussionTimelineProvider>(
+      context,
+      listen: false,
+    );
+
+    // Tampilkan dialog dan tunggu hasilnya (bisa null)
+    final RescheduleDialogResult? result =
+        await showRescheduleDiscussionsDialog(context);
+
+    // Lanjutkan hanya jika pengguna menekan "Jalankan"
+    if (result != null && mounted) {
+      try {
+        final resultMessage = await provider.rescheduleDiscussions(result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(resultMessage), backgroundColor: Colors.green),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +84,13 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       appBar: AppBar(
         title: Text('Linimasa: ${widget.subjectName}'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: provider.isProcessing
+                ? null
+                : () => _handleReschedule(context),
+            tooltip: 'Atur Ulang Jadwal (AI)',
+          ),
           if (provider.selectedDateRange != null)
             IconButton(
               icon: const Icon(Icons.refresh),
@@ -65,8 +106,21 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       ),
       body: Builder(
         builder: (context) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+          if (provider.isLoading || provider.isProcessing) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    provider.isProcessing
+                        ? 'Menjadwalkan ulang...'
+                        : 'Memuat data...',
+                  ),
+                ],
+              ),
+            );
           }
           if (provider.timelineData == null) {
             return const Center(
@@ -88,12 +142,8 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
             if (d.effectiveDate == null) return false;
             final date = DateTime.tryParse(d.effectiveDate!);
             if (date == null) return false;
-            return !date.isBefore(timelineData.startDate) &&
-                !date.isAfter(
-                  timelineData.endDate.add(
-                    const Duration(days: 1) - const Duration(microseconds: 1),
-                  ),
-                );
+            return !date.isBefore(DateUtils.dateOnly(timelineData.startDate)) &&
+                !date.isAfter(DateUtils.dateOnly(timelineData.endDate));
           }).toList();
 
           for (var discussion in discussionsToDisplay) {
@@ -121,7 +171,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ==> BUNGKUS CUSTOMPAINT DENGAN GESTUREDETECTOR <==
                 GestureDetector(
                   onPanStart: (details) =>
                       setState(() => _pointerPosition = details.localPosition),
@@ -138,7 +187,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                       painter: TimelinePainter(
                         timelineData: finalTimelineData,
                         context: context,
-                        // ==> KIRIM POSISI POINTER KE PAINTER <==
                         pointerPosition: _pointerPosition,
                       ),
                     ),
