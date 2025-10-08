@@ -28,21 +28,36 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
-      await Provider.of<AuthProvider>(context, listen: false).register(
+      // ==> PERUBAHAN DI SINI <==
+      // Tangkap pesan sukses dari backend
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.register(
         _nameController.text,
         _emailController.text,
         _passwordController.text,
       );
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registrasi berhasil! Silakan login.'),
-            backgroundColor: Colors.green,
+        // Tampilkan dialog informasi
+        await showDialog(
+          context: context,
+          barrierDismissible: false, // User harus menekan tombol
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Registrasi Berhasil'),
+            content: const Text(
+              'Kami telah mengirimkan email verifikasi ke alamat email Anda. Silakan periksa kotak masuk Anda untuk mengaktifkan akun.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Tutup dialog
+                  Navigator.of(context).pop(); // Kembali dari halaman register
+                },
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
-        Navigator.of(
-          context,
-        ).pop(); // Kembali ke halaman sebelumnya (profil/login)
       }
     } catch (e) {
       if (mounted) {
