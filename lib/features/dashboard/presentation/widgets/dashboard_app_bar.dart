@@ -32,7 +32,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       title: const Text(
-        'Dashboard',
+        '🚀 RSpace',
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       backgroundColor: isTransparent ? Colors.transparent : null,
