@@ -5,10 +5,8 @@ import 'package:flutter/material.dart';
 import '../application/auth_service.dart';
 import '../domain/user_model.dart';
 
-// Enum untuk status autentikasi yang lebih deskriptif
 enum AuthState { uninitialized, authenticated, unauthenticated }
 
-// ==> PASTIKAN ENUM INI ADA DI SINI <==
 enum LoginStatus { idle, loading, success, error }
 
 class AuthProvider with ChangeNotifier {
@@ -17,22 +15,18 @@ class AuthProvider with ChangeNotifier {
   AuthState _authState = AuthState.uninitialized;
   User? _user;
   File? _localProfilePicture;
-  // ==> STATE BARU UNTUK LOADING FOTO PROFIL <==
   bool _isProfilePictureLoading = false;
 
-  // State baru untuk UI login
   LoginStatus _loginStatus = LoginStatus.idle;
   String _loginMessage = '';
 
   AuthState get authState => _authState;
   User? get user => _user;
   File? get localProfilePicture => _localProfilePicture;
-  // ==> GETTER BARU <==
   bool get isProfilePictureLoading => _isProfilePictureLoading;
 
   AuthService get authService => _authService;
 
-  // Getter baru untuk UI
   LoginStatus get loginStatus => _loginStatus;
   String get loginMessage => _loginMessage;
 
@@ -46,7 +40,6 @@ class AuthProvider with ChangeNotifier {
       try {
         _user = await _authService.getUserProfile();
         _authState = AuthState.authenticated;
-        // ==> SET LOADING SEBELUM MENGAMBIL GAMBAR <==
         _isProfilePictureLoading = true;
         notifyListeners();
         if (_user != null) {
@@ -57,7 +50,6 @@ class AuthProvider with ChangeNotifier {
         _user = null;
         _localProfilePicture = null;
       } finally {
-        // ==> SET LOADING SELESAI <==
         _isProfilePictureLoading = false;
       }
     } else {
@@ -76,7 +68,7 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _authService.login(email, password);
-      await checkLoginStatus(); // checkLoginStatus will handle loading state
+      await checkLoginStatus();
 
       _loginStatus = LoginStatus.success;
       _loginMessage = 'Login Berhasil! Mengalihkan...';
@@ -110,5 +102,20 @@ class AuthProvider with ChangeNotifier {
   Future<void> uploadProfilePicture(File imageFile) async {
     await _authService.uploadProfilePicture(imageFile);
     await checkLoginStatus();
+  }
+
+  Future<void> resendVerification(String email) async {
+    try {
+      final message = await _authService.resendVerificationEmail(email);
+      _loginStatus = LoginStatus.success;
+      _loginMessage = message;
+      notifyListeners();
+      await Future.delayed(const Duration(seconds: 5));
+      resetLoginStatus();
+    } catch (e) {
+      _loginStatus = LoginStatus.error;
+      _loginMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+    }
   }
 }

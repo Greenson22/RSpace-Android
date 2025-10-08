@@ -1,5 +1,6 @@
 // lib/features/auth/presentation/login_page.dart
 
+import 'dart:async'; // <-- Import async
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../application/auth_provider.dart';
@@ -17,28 +18,83 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  // ==> STATE BARU UNTUK TIMER <==
+  Timer? _cooldownTimer;
+  int _cooldownSeconds = 60;
+  bool _canResend = false;
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _startCooldown() {
+    setState(() {
+      _canResend = false;
+      _cooldownSeconds = 60;
+    });
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_cooldownSeconds > 0) {
+        setState(() {
+          _cooldownSeconds--;
+        });
+      } else {
+        _cooldownTimer?.cancel();
+        setState(() {
+          _canResend = true;
+        });
+      }
+    });
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.login(_emailController.text, _passwordController.text);
 
-    // Cek status setelah proses login selesai
     if (authProvider.loginStatus == LoginStatus.success && mounted) {
-      // Navigasi ke Dashboard setelah pesan sukses ditampilkan
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const DashboardPage()),
         (route) => false,
       );
-      // Reset status setelah navigasi
       authProvider.resetLoginStatus();
+    } else if (authProvider.loginMessage.contains('belum diverifikasi')) {
+      // Jika error karena belum verifikasi, aktifkan tombol resend
+      setState(() {
+        _canResend = true;
+      });
     }
+  }
+
+  // ==> FUNGSI BARU UNTUK KIRIM ULANG <==
+  Future<void> _handleResend() async {
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Masukkan email Anda terlebih dahulu.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    _startCooldown();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.resendVerification(_emailController.text);
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, child) {
+        // Cek apakah pesan error adalah tentang verifikasi
+        final bool showResendButton =
+            auth.loginStatus == LoginStatus.error &&
+            auth.loginMessage.contains('belum diverifikasi');
+
         return Scaffold(
           body: Center(
             child: SingleChildScrollView(
@@ -104,6 +160,18 @@ class _LoginPageState extends State<LoginPage> {
                             child: const Text('Login'),
                           ),
                         ),
+                        // ==> TAMPILKAN TOMBOL KIRIM ULANG SECARA KONDISIONAL <==
+                        if (showResendButton) ...[
+                          const SizedBox(height: 16),
+                          OutlinedButton(
+                            onPressed: _canResend ? _handleResend : null,
+                            child: Text(
+                              _canResend
+                                  ? 'Kirim Ulang Email Verifikasi'
+                                  : 'Kirim Ulang dalam ($_cooldownSeconds detik)',
+                            ),
+                          ),
+                        ],
                       ],
                     ],
                   ),

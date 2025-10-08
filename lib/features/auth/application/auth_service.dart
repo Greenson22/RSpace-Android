@@ -13,12 +13,9 @@ import 'package:path/path.dart' as path;
 class AuthService {
   final ApiConfigService _apiConfigService = ApiConfigService();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  // ==> TAMBAHKAN PATH SERVICE <==
   final PathService _pathService = PathService();
   static const String _tokenKey = 'rspace_token';
 
-  // == PERUBAHAN DI SINI ==
-  // Hapus garis bawah untuk menjadikan metode ini public
   Future<String> getApiDomain() async {
     final config = await _apiConfigService.loadConfig();
     final domain = config['domain'];
@@ -32,7 +29,6 @@ class AuthService {
     return await _secureStorage.read(key: _tokenKey);
   }
 
-  // ==> FUNGSI BARU UNTUK MENGAMBIL DAN MENYIMPAN FOTO PROFIL <==
   Future<File?> getProfilePicture(User user) async {
     final token = await getToken();
     if (token == null || user.profilePictureUrl == null) return null;
@@ -41,12 +37,10 @@ class AuthService {
     final fileName = path.basename(user.profilePictureUrl!);
     final localFile = File(path.join(profilePicDir, fileName));
 
-    // Jika file sudah ada di cache lokal, langsung kembalikan
     if (await localFile.exists()) {
       return localFile;
     }
 
-    // Jika tidak, unduh dari server
     final domain = await getApiDomain();
     final url = '$domain/storage/${user.profilePictureUrl!}';
 
@@ -56,14 +50,12 @@ class AuthService {
     );
 
     if (response.statusCode == 200) {
-      // Hapus file lama di cache sebelum menyimpan yang baru
       final dir = Directory(profilePicDir);
       if (await dir.exists()) {
         await dir.delete(recursive: true);
       }
       await dir.create(recursive: true);
 
-      // Simpan file baru dan kembalikan
       await localFile.writeAsBytes(response.bodyBytes);
       return localFile;
     } else {
@@ -72,7 +64,6 @@ class AuthService {
   }
 
   Future<void> login(String email, String password) async {
-    // Gunakan metode yang sudah public
     final domain = await getApiDomain();
     final response = await http.post(
       Uri.parse('$domain/api/auth/login'),
@@ -91,7 +82,6 @@ class AuthService {
 
   Future<void> logout() async {
     await _secureStorage.delete(key: _tokenKey);
-    // ==> HAPUS FOTO PROFIL LOKAL SAAT LOGOUT <==
     final profilePicDir = await _pathService.profilePicturesPath;
     final dir = Directory(profilePicDir);
     if (await dir.exists()) {
@@ -169,11 +159,26 @@ class AuthService {
       throw Exception('Gagal mengunggah foto: $responseBody');
     }
 
-    // ==> HAPUS FOTO PROFIL LOKAL SETELAH UPLOAD BERHASIL <==
     final profilePicDir = await _pathService.profilePicturesPath;
     final dir = Directory(profilePicDir);
     if (await dir.exists()) {
       await dir.delete(recursive: true);
+    }
+  }
+
+  Future<String> resendVerificationEmail(String email) async {
+    final domain = await getApiDomain();
+    final response = await http.post(
+      Uri.parse('$domain/api/auth/resend-verification'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      return data['message'] ?? 'Email terkirim.';
+    } else {
+      throw Exception(data['message'] ?? 'Gagal mengirim email.');
     }
   }
 }
