@@ -1,10 +1,10 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/archive/presentation/pages/archive_hub_page.dart'; // IMPORT BARU
+import 'package:my_aplication/features/archive/presentation/pages/archive_hub_page.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
-import 'package:my_aplication/features/snake_game/presentation/pages/snake_game_page.dart';
+// ==> IMPORT UNTUK SNAKE GAME DIHAPUS
 import 'package:provider/provider.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -55,7 +55,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const QuizCategoryPage()),
     ),
-    // ==> TAMBAHKAN NAVIGASI BARU DI SINI
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ArchiveHubPage()),
@@ -73,10 +72,7 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SnakeGamePage()),
-    ),
+    // ==> NAVIGASI KE SNAKE GAME DIHAPUS DARI SINI
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
@@ -159,7 +155,6 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Uji pemahaman Anda',
             'colors': const [Color(0xFF43A047), Color(0xFF66BB6A)],
           },
-          // ==> TAMBAHKAN ITEM BARU DI SINI
           {
             'icon': Icons.archive_outlined,
             'label': 'Arsip',
@@ -190,12 +185,7 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
           },
-          {
-            'icon': Icons.catching_pokemon,
-            'label': 'Game Ular AI',
-            'subtitle': 'Latih & lihat AI bermain ular',
-            'colors': const [Color(0xFF2E7D32), Color(0xFF4CAF50)],
-          },
+          // ==> ITEM UNTUK GAME ULAR DIHAPUS DARI SINI
           if (Platform.isAndroid)
             {
               'icon': Icons.public,
