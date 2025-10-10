@@ -30,12 +30,59 @@ class DiscussionTimelineProvider with ChangeNotifier {
   double _zoomLevel = 1.0;
   double get zoomLevel => _zoomLevel;
 
+  // ==> STATE BARU UNTUK SELEKSI <==
+  final Set<TimelineEvent> _selectedEvents = {};
+  Set<TimelineEvent> get selectedEvents => _selectedEvents;
+  bool get isSelectionMode => _selectedEvents.isNotEmpty;
+
   DiscussionTimelineProvider(
     List<Discussion>? initialDiscussions,
     this._subjectJsonPath,
   ) {
     _allDiscussions = initialDiscussions ?? [];
     processDiscussions();
+  }
+
+  // ==> FUNGSI-FUNGSI BARU UNTUK MANAJEMEN SELEKSI <==
+  void toggleEventSelection(TimelineEvent event) {
+    if (_selectedEvents.contains(event)) {
+      _selectedEvents.remove(event);
+    } else {
+      _selectedEvents.add(event);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedEvents.clear();
+    notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN BANYAK EVENT <==
+  Future<void> updateSelectedEventsDate(Duration dateOffset) async {
+    if (_selectedEvents.isEmpty) return;
+
+    for (final event in _selectedEvents) {
+      final currentEventDate = DateTime.parse(event.effectiveDate);
+      final newDate = currentEventDate.add(dateOffset);
+      final formattedDate = DateFormat('yyyy-MM-dd').format(newDate);
+
+      final parentDiscussion = _allDiscussions.firstWhere(
+        (d) => d.discussion == event.parentDiscussion.discussion,
+      );
+
+      if (event.type == TimelineEventType.discussion) {
+        parentDiscussion.date = formattedDate;
+      } else if (event.type == TimelineEventType.point && event.point != null) {
+        final pointToUpdate = parentDiscussion.points.firstWhere(
+          (p) => p.pointText == event.point!.pointText,
+        );
+        pointToUpdate.date = formattedDate;
+      }
+    }
+
+    await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
+    processDiscussions(); // proses ulang untuk refresh
   }
 
   void zoomIn() {
@@ -48,11 +95,9 @@ class DiscussionTimelineProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK UPDATE TANGGAL <==
   Future<void> updateEventDate(TimelineEvent event, DateTime newDate) async {
     final formattedDate = DateFormat('yyyy-MM-dd').format(newDate);
 
-    // Cari diskusi induk di list utama
     final parentDiscussion = _allDiscussions.firstWhere(
       (d) => d.discussion == event.parentDiscussion.discussion,
     );
@@ -60,16 +105,13 @@ class DiscussionTimelineProvider with ChangeNotifier {
     if (event.type == TimelineEventType.discussion) {
       parentDiscussion.date = formattedDate;
     } else if (event.type == TimelineEventType.point && event.point != null) {
-      // Cari poin yang spesifik di dalam diskusi induk
       final pointToUpdate = parentDiscussion.points.firstWhere(
         (p) => p.pointText == event.point!.pointText,
       );
       pointToUpdate.date = formattedDate;
     }
 
-    // Simpan semua perubahan ke file
     await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
-    // Proses ulang data untuk memperbarui tampilan linimasa
     processDiscussions();
   }
 
@@ -85,7 +127,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
       }
     } finally {
       _isProcessing = false;
-      // Jangan panggil notifyListeners di sini agar tidak rebuild saat proses masih berjalan
     }
   }
 
