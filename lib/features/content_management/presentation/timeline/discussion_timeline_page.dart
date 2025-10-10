@@ -137,23 +137,35 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onPanStart: (details) =>
-                      setState(() => _pointerPosition = details.localPosition),
-                  onPanUpdate: (details) =>
-                      setState(() => _pointerPosition = details.localPosition),
-                  onPanEnd: (_) => setState(() => _pointerPosition = null),
-                  onTapDown: (details) =>
-                      setState(() => _pointerPosition = details.localPosition),
-                  onTapUp: (_) => setState(() => _pointerPosition = null),
-                  child: SizedBox(
-                    height: 300,
-                    child: CustomPaint(
-                      size: Size.infinite,
-                      painter: TimelinePainter(
-                        timelineData: timelineData,
-                        context: context,
-                        pointerPosition: _pointerPosition,
+                MouseRegion(
+                  onHover: (event) =>
+                      setState(() => _pointerPosition = event.localPosition),
+                  onExit: (_) => setState(() => _pointerPosition = null),
+                  child: GestureDetector(
+                    onLongPressStart: (details) => setState(
+                      () => _pointerPosition = details.localPosition,
+                    ),
+                    onLongPressMoveUpdate: (details) => setState(
+                      () => _pointerPosition = details.localPosition,
+                    ),
+                    onLongPressEnd: (_) =>
+                        setState(() => _pointerPosition = null),
+                    onLongPressCancel: () =>
+                        setState(() => _pointerPosition = null),
+                    // Menambahkan onTapDown dan onTapUp agar tetap responsif pada klik singkat
+                    onTapDown: (details) => setState(
+                      () => _pointerPosition = details.localPosition,
+                    ),
+                    onTapUp: (_) => setState(() => _pointerPosition = null),
+                    child: SizedBox(
+                      height: 300,
+                      child: CustomPaint(
+                        size: Size.infinite,
+                        painter: TimelinePainter(
+                          timelineData: timelineData,
+                          context: context,
+                          pointerPosition: _pointerPosition,
+                        ),
                       ),
                     ),
                   ),

@@ -25,27 +25,137 @@ class TimelinePainter extends CustomPainter {
     final double timelineWidth = endX - startX;
     const double discussionRadius = 6.0;
     const double pointRadius = 4.0;
-    final Map<String, Offset> discussionPositions = {};
 
+    // --- Langkah 1: Kalkulasi Semua Posisi Terlebih Dahulu ---
+    final Map<String, Offset> discussionPositions = {};
+    _calculateAllPositions(
+      startX,
+      timelineWidth,
+      timelineY,
+      discussionRadius,
+      pointRadius,
+      discussionPositions,
+    );
+
+    // --- Langkah 2: Deteksi Item yang Disorot (Hovered) ---
+    TimelineEvent? hoveredEvent = _findHoveredEvent(
+      discussionRadius,
+      pointRadius,
+    );
+
+    // --- Langkah 3: Gambar Semua Komponen ---
+    _drawTimelineAxis(canvas, startX, endX, timelineY);
+    _drawVerticalLines(
+      canvas,
+      startX,
+      timelineWidth,
+      timelineY,
+      discussionPositions,
+    );
+    _drawConnectors(
+      canvas,
+      hoveredEvent,
+      discussionPositions,
+      connectorPaint,
+      highlightedConnectorPaint(context),
+    );
+    _drawEvents(canvas, hoveredEvent, discussionRadius, pointRadius);
+
+    if (hoveredEvent != null) {
+      _drawTooltip(canvas, size, hoveredEvent);
+    }
+  }
+
+  void _calculateAllPositions(
+    double startX,
+    double timelineWidth,
+    double timelineY,
+    double discussionRadius,
+    double pointRadius,
+    Map<String, Offset> discussionPositions,
+  ) {
+    final Map<DateTime, List<TimelineEvent>> eventsByDay = {};
+    for (final event in timelineData.events) {
+      final dateOnly = DateUtils.dateOnly(DateTime.parse(event.effectiveDate));
+      eventsByDay.putIfAbsent(dateOnly, () => []).add(event);
+    }
+
+    eventsByDay.forEach((date, eventsOnDay) {
+      final double xPos = timelineData.totalDays > 0
+          ? startX +
+                (date.difference(timelineData.startDate).inDays /
+                        timelineData.totalDays) *
+                    timelineWidth
+          : startX;
+
+      double currentY = timelineY - 40;
+
+      // Posisikan diskusi terlebih dahulu
+      for (final event in eventsOnDay) {
+        if (event.type == TimelineEventType.discussion) {
+          event.position = Offset(xPos, currentY);
+          discussionPositions[event.parentDiscussion.discussion] =
+              event.position;
+          currentY -= (discussionRadius * 2 + 10);
+        }
+      }
+
+      // Kemudian posisikan poin
+      for (final event in eventsOnDay) {
+        if (event.type == TimelineEventType.point) {
+          event.position = Offset(xPos, currentY);
+          currentY -= (pointRadius * 2 + 8);
+        }
+      }
+    });
+  }
+
+  TimelineEvent? _findHoveredEvent(
+    double discussionRadius,
+    double pointRadius,
+  ) {
+    if (pointerPosition == null) return null;
+
+    TimelineEvent? foundEvent;
+    double closestDistance = double.infinity;
+
+    for (final event in timelineData.events) {
+      final distance = (event.position - pointerPosition!).distance;
+      final radius = event.type == TimelineEventType.discussion
+          ? discussionRadius
+          : pointRadius;
+      if (distance < closestDistance && distance < (radius + 8)) {
+        closestDistance = distance;
+        foundEvent = event;
+      }
+    }
+    return foundEvent;
+  }
+
+  Paint get connectorPaint => Paint()
+    ..color = Colors.grey.shade400
+    ..strokeWidth = 1.0
+    ..style = PaintingStyle.stroke;
+
+  Paint highlightedConnectorPaint(BuildContext context) => Paint()
+    ..color = Theme.of(context).primaryColor
+    ..strokeWidth = 2.0
+    ..style = PaintingStyle.stroke;
+
+  void _drawTimelineAxis(
+    Canvas canvas,
+    double startX,
+    double endX,
+    double timelineY,
+  ) {
     final linePaint = Paint()
       ..color = Colors.grey.shade400
       ..strokeWidth = 2.0;
-
-    final verticalLinePaint = Paint()
-      ..color = Colors.grey.shade300
-      ..strokeWidth = 1.0;
-
-    final connectorPaint = Paint()
-      ..color = Colors.grey.shade400
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
     canvas.drawLine(
       Offset(startX, timelineY),
       Offset(endX, timelineY),
       linePaint,
     );
-
     _drawText(
       canvas,
       DateFormat('d MMM').format(timelineData.startDate),
@@ -58,108 +168,110 @@ class TimelinePainter extends CustomPainter {
       Offset(endX, timelineY + 15),
       textAlign: TextAlign.right,
     );
+  }
 
-    final Map<DateTime, List<TimelineEvent>> eventsByDay = {};
-    for (final event in timelineData.events) {
-      final dateOnly = DateUtils.dateOnly(DateTime.parse(event.effectiveDate));
-      eventsByDay.putIfAbsent(dateOnly, () => []).add(event);
-    }
-
-    final List<TimelineEvent> positionedEvents = [];
-    eventsByDay.forEach((date, eventsOnDay) {
+  void _drawVerticalLines(
+    Canvas canvas,
+    double startX,
+    double timelineWidth,
+    double timelineY,
+    Map<String, Offset> discussionPositions,
+  ) {
+    final verticalLinePaint = Paint()
+      ..color = Colors.grey.shade300
+      ..strokeWidth = 1.0;
+    timelineData.discussionCounts.forEach((date, count) {
       final double xPos = timelineData.totalDays > 0
           ? startX +
                 (date.difference(timelineData.startDate).inDays /
                         timelineData.totalDays) *
                     timelineWidth
           : startX;
-
-      double currentY = timelineY - 40;
-
-      // Simpan posisi diskusi terlebih dahulu
-      for (final event in eventsOnDay) {
-        if (event.type == TimelineEventType.discussion) {
-          event.position = Offset(xPos, currentY);
-          positionedEvents.add(event);
-          discussionPositions[event.parentDiscussion.discussion] =
-              event.position;
-          currentY -= (discussionRadius * 2 + 10);
-        }
-      }
-
-      // Kemudian posisikan poin relatif terhadap diskusi
-      for (final event in eventsOnDay) {
-        if (event.type == TimelineEventType.point) {
-          event.position = Offset(xPos, currentY);
-          positionedEvents.add(event);
-          currentY -= (pointRadius * 2 + 8);
-        }
-      }
-
-      if (eventsOnDay.isNotEmpty) {
+      double minY = timelineY;
+      timelineData.events
+          .where(
+            (e) => DateUtils.isSameDay(DateTime.parse(e.effectiveDate), date),
+          )
+          .forEach((e) {
+            if (e.position.dy < minY) minY = e.position.dy;
+          });
+      if (count > 0) {
         canvas.drawLine(
           Offset(xPos, timelineY),
-          Offset(xPos, currentY + (pointRadius * 2 + 8)),
+          Offset(xPos, minY),
           verticalLinePaint,
         );
       }
     });
+  }
 
-    // Gambar garis penghubung dan item
-    for (final event in positionedEvents) {
+  void _drawConnectors(
+    Canvas canvas,
+    TimelineEvent? hoveredEvent,
+    Map<String, Offset> discussionPositions,
+    Paint defaultPaint,
+    Paint highlightedPaint,
+  ) {
+    for (final event in timelineData.events) {
       if (event.type == TimelineEventType.point) {
         final parentPosition =
             discussionPositions[event.parentDiscussion.discussion];
         if (parentPosition != null) {
-          // Gambar garis dari titik tengah lingkaran diskusi ke titik tengah kotak poin
+          final isHoveredGroup =
+              hoveredEvent != null &&
+              event.parentDiscussion.discussion ==
+                  hoveredEvent.parentDiscussion.discussion;
           canvas.drawLine(
-            Offset(parentPosition.dx, parentPosition.dy),
-            Offset(event.position.dx, event.position.dy),
-            connectorPaint,
+            parentPosition,
+            event.position,
+            isHoveredGroup ? highlightedPaint : defaultPaint,
           );
         }
-        final rect = Rect.fromCenter(
-          center: event.position,
-          width: pointRadius * 2,
-          height: pointRadius * 2,
-        );
-        canvas.drawRect(rect, Paint()..color = event.color);
-      } else {
-        // Discussion
-        canvas.drawCircle(
-          event.position,
-          discussionRadius,
-          Paint()..color = event.color,
-        );
       }
     }
+  }
 
-    if (pointerPosition != null) {
-      TimelineEvent? hoveredEvent;
-      double closestDistance = double.infinity;
+  void _drawEvents(
+    Canvas canvas,
+    TimelineEvent? hoveredEvent,
+    double discussionRadius,
+    double pointRadius,
+  ) {
+    for (final event in timelineData.events) {
+      final isHoveredGroup =
+          hoveredEvent != null &&
+          event.parentDiscussion.discussion ==
+              hoveredEvent.parentDiscussion.discussion;
+      final paint = Paint()..color = event.color;
 
-      for (final event in positionedEvents) {
-        final distance = (event.position - pointerPosition!).distance;
-        final radius = event.type == TimelineEventType.discussion
-            ? discussionRadius
-            : pointRadius;
-        if (distance < closestDistance && distance < (radius + 5)) {
-          closestDistance = distance;
-          hoveredEvent = event;
+      if (event.type == TimelineEventType.discussion) {
+        final radius = isHoveredGroup
+            ? discussionRadius * 1.5
+            : discussionRadius;
+        if (isHoveredGroup) {
+          final glowPaint = Paint()
+            ..color = event.color.withOpacity(0.5)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+          canvas.drawCircle(event.position, radius, glowPaint);
         }
-      }
-
-      if (hoveredEvent != null) {
-        final radius = hoveredEvent.type == TimelineEventType.discussion
-            ? discussionRadius
-            : pointRadius;
-        final highlightPaint = Paint()
-          ..color = hoveredEvent.color.withOpacity(0.3)
-          ..strokeWidth = 2.0
-          ..style = PaintingStyle.stroke;
-        canvas.drawCircle(hoveredEvent.position, radius + 5, highlightPaint);
-
-        _drawTooltip(canvas, size, hoveredEvent);
+        canvas.drawCircle(event.position, radius, paint);
+      } else {
+        final sizeFactor = isHoveredGroup ? 1.8 : 1.0;
+        final rect = Rect.fromCenter(
+          center: event.position,
+          width: pointRadius * 2 * sizeFactor,
+          height: pointRadius * 2 * sizeFactor,
+        );
+        if (isHoveredGroup) {
+          final glowPaint = Paint()
+            ..color = event.color.withOpacity(0.5)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+            glowPaint,
+          );
+        }
+        canvas.drawRect(rect, paint);
       }
     }
   }
@@ -271,7 +383,7 @@ class TimelinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant TimelinePainter oldDelegate) {
-    return oldDelegate.timelineData != timelineData ||
-        oldDelegate.pointerPosition != pointerPosition;
+    // Repaint setiap kali posisi pointer berubah untuk interaktivitas
+    return true;
   }
 }
