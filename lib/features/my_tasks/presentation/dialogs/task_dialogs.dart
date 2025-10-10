@@ -196,6 +196,35 @@ void showUpdateCountDialog(
   );
 }
 
+// ==> FUNGSI BARU UNTUK DIALOG TARGET HARIAN <==
+void showUpdateTargetCountDialog(
+  BuildContext context,
+  TaskCategory category,
+  MyTask task,
+) {
+  final provider = Provider.of<MyTaskProvider>(context, listen: false);
+  showTopicTextInputDialog(
+    context: context,
+    title: 'Atur Target Harian',
+    label: 'Target Jumlah Harian (0 = tanpa target)',
+    initialValue: task.targetCountToday.toString(),
+    keyboardType: TextInputType.number,
+    onSave: (newValue) {
+      final newCount = int.tryParse(newValue);
+      if (newCount != null) {
+        provider.updateTaskTargetCount(category, task, newCount);
+        _showSnackBar(context, 'Target harian berhasil diubah.');
+      } else {
+        _showSnackBar(
+          context,
+          'Input tidak valid. Harap masukkan angka.',
+          isError: true,
+        );
+      }
+    },
+  );
+}
+
 Future<bool?> showIncrementCountConfirmationDialog(BuildContext context) async {
   return showDialog<bool>(
     context: context,
@@ -218,7 +247,6 @@ Future<bool?> showIncrementCountConfirmationDialog(BuildContext context) async {
   );
 }
 
-// ==> PERUBAHAN DI SINI: Dialog uncheck all dihapus
 void _showSnackBar(
   BuildContext context,
   String message, {

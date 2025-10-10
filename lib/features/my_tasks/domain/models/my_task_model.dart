@@ -8,9 +8,10 @@ class MyTask {
   int count;
   String date;
   bool checked;
-  // ==> PERUBAHAN DI SINI <==
   int countToday;
   String lastUpdated; // Menyimpan tanggal dalam format YYYY-MM-DD
+  // ==> FIELD BARU DITAMBAHKAN <==
+  int targetCountToday;
 
   MyTask({
     String? id,
@@ -18,11 +19,10 @@ class MyTask {
     required this.count,
     required this.date,
     required this.checked,
-    // ==> PERUBAHAN DI SINI <==
     this.countToday = 0,
     String? lastUpdated,
+    this.targetCountToday = 0, // ==> TAMBAHAN DI KONSTRUKTOR
   }) : id = id ?? const Uuid().v4(),
-       // Set lastUpdated ke hari ini jika tidak ada nilai
        lastUpdated =
            lastUpdated ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
 
@@ -35,14 +35,13 @@ class MyTask {
       name: json['name'] ?? 'Untitled Task',
       count: json['count'] ?? 0,
       date: json['date'] ?? '',
-      checked:
-          json['checked'] ?? false, // Tetap ada untuk kompatibilitas data lama
-      // ==> PERUBAHAN DI SINI <==
-      // Jika tanggal update terakhir bukan hari ini, reset countToday
+      checked: json['checked'] ?? false,
       countToday: lastUpdatedString == todayString
           ? json['countToday'] ?? 0
           : 0,
       lastUpdated: lastUpdatedString,
+      // ==> MEMBACA DATA DARI JSON <==
+      targetCountToday: json['targetCountToday'] as int? ?? 0,
     );
   }
 
@@ -52,10 +51,11 @@ class MyTask {
       'name': name,
       'count': count,
       'date': date,
-      'checked': checked, // Tetap disimpan untuk kompatibilitas data lama
-      // ==> PERUBAHAN DI SINI <==
+      'checked': checked,
       'countToday': countToday,
       'lastUpdated': lastUpdated,
+      // ==> MENYIMPAN DATA KE JSON <==
+      'targetCountToday': targetCountToday,
     };
   }
 }

@@ -340,5 +340,24 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  // ==> PERUBAHAN DI SINI: FUNGSI UNCHECK ALL DIHAPUS <==
+  // ==> FUNGSI BARU UNTUK MENGUPDATE TARGET HARIAN <==
+  Future<void> updateTaskTargetCount(
+    TaskCategory category,
+    MyTask task,
+    int newTarget,
+  ) async {
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
+    if (categoryIndex != -1) {
+      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
+        (t) => t.id == task.id,
+      );
+      if (taskIndex != -1) {
+        _allCategories[categoryIndex].tasks[taskIndex].targetCountToday =
+            newTarget < 0 ? 0 : newTarget;
+        await _saveTasks();
+      }
+    }
+  }
 }
