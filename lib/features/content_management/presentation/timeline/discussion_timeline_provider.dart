@@ -164,10 +164,10 @@ class DiscussionTimelineProvider with ChangeNotifier {
     processDiscussions();
   }
 
-  // ==> FUNGSI INI DITULIS ULANG <==
-  List<TimelineEvent> _getAllFutureEvents() {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final allEvents = <TimelineEvent>[];
+  // ==> FUNGSI INI DITULIS ULANG UNTUK MEMPERBAIKI ERROR 'FINAL' <==
+  List<TimelineEvent> _getEventsToReschedule(DateTime startDate) {
+    final eventsToReschedule = <TimelineEvent>[];
+    final dateOnlyStartDate = DateUtils.dateOnly(startDate);
 
     for (final discussion in _allDiscussions) {
       if (discussion.finished) continue;
@@ -175,13 +175,16 @@ class DiscussionTimelineProvider with ChangeNotifier {
       if (discussion.points.isEmpty) {
         if (discussion.date != null) {
           final eventDate = DateTime.tryParse(discussion.date!);
-          if (eventDate != null && !eventDate.isBefore(today)) {
-            allEvents.add(
+          if (eventDate != null) {
+            final effectiveDate = eventDate.isBefore(dateOnlyStartDate)
+                ? dateOnlyStartDate
+                : eventDate;
+            eventsToReschedule.add(
               TimelineEvent(
                 parentDiscussion: discussion,
                 type: TimelineEventType.discussion,
                 title: discussion.discussion,
-                effectiveDate: discussion.date!,
+                effectiveDate: DateFormat('yyyy-MM-dd').format(effectiveDate),
                 effectiveRepetitionCode: discussion.repetitionCode,
               ),
             );
@@ -191,14 +194,17 @@ class DiscussionTimelineProvider with ChangeNotifier {
         for (final point in discussion.points) {
           if (!point.finished) {
             final eventDate = DateTime.tryParse(point.date);
-            if (eventDate != null && !eventDate.isBefore(today)) {
-              allEvents.add(
+            if (eventDate != null) {
+              final effectiveDate = eventDate.isBefore(dateOnlyStartDate)
+                  ? dateOnlyStartDate
+                  : eventDate;
+              eventsToReschedule.add(
                 TimelineEvent(
                   parentDiscussion: discussion,
                   point: point,
                   type: TimelineEventType.point,
                   title: point.pointText,
-                  effectiveDate: point.date,
+                  effectiveDate: DateFormat('yyyy-MM-dd').format(effectiveDate),
                   effectiveRepetitionCode: point.repetitionCode,
                 ),
               );
@@ -207,12 +213,13 @@ class DiscussionTimelineProvider with ChangeNotifier {
         }
       }
     }
-    allEvents.sort(
+
+    eventsToReschedule.sort(
       (a, b) => DateTime.parse(
         a.effectiveDate,
       ).compareTo(DateTime.parse(b.effectiveDate)),
     );
-    return allEvents;
+    return eventsToReschedule;
   }
 
   Future<String> rescheduleDiscussions(RescheduleDialogResult result) async {
@@ -221,32 +228,33 @@ class DiscussionTimelineProvider with ChangeNotifier {
 
     try {
       if (result.algorithm == RescheduleAlgorithm.balance) {
-        return await _balanceSchedule(result.maxMoveDays);
+        return await _balanceSchedule(result);
       } else {
-        return await _spreadSchedule();
+        return await _spreadSchedule(result);
       }
     } finally {
       _isProcessing = false;
     }
   }
 
-  // ==> FUNGSI INI DITULIS ULANG TOTAL <==
-  Future<String> _balanceSchedule(int maxMoveDays) async {
-    final eventsToReschedule = _getAllFutureEvents();
+  Future<String> _balanceSchedule(RescheduleDialogResult result) async {
+    final eventsToReschedule = _getEventsToReschedule(result.startDate);
 
     if (eventsToReschedule.length < 2) {
-      return "Tidak cukup item di masa depan untuk dijadwalkan ulang.";
+      return "Tidak cukup item pada rentang waktu yang dipilih untuk dijadwalkan ulang.";
     }
 
-    final startDate = DateUtils.dateOnly(DateTime.now());
+    final startDate = result.startDate;
     final endDate = DateTime.parse(eventsToReschedule.last.effectiveDate);
     final totalDays = endDate.difference(startDate).inDays;
 
-    if (totalDays <= 0) {
-      return "Rentang waktu tidak cukup untuk penjadwalan ulang.";
+    if (totalDays < 0) {
+      return "Tanggal mulai tidak boleh lebih akhir dari jadwal terjauh.";
     }
 
-    final double idealInterval = totalDays / (eventsToReschedule.length - 1);
+    final double idealInterval = totalDays > 0
+        ? totalDays / (eventsToReschedule.length - 1)
+        : 0;
     int updatedCount = 0;
 
     for (int i = 0; i < eventsToReschedule.length; i++) {
@@ -256,8 +264,12 @@ class DiscussionTimelineProvider with ChangeNotifier {
         Duration(days: (i * idealInterval).round()),
       );
 
-      final minAllowedDate = originalDate.subtract(Duration(days: maxMoveDays));
-      final maxAllowedDate = originalDate.add(Duration(days: maxMoveDays));
+      final minAllowedDate = originalDate.subtract(
+        Duration(days: result.maxMoveDays),
+      );
+      final maxAllowedDate = originalDate.add(
+        Duration(days: result.maxMoveDays),
+      );
 
       DateTime newDate;
       if (idealDate.isBefore(minAllowedDate)) {
@@ -270,40 +282,38 @@ class DiscussionTimelineProvider with ChangeNotifier {
 
       if (newDate.isBefore(startDate)) newDate = startDate;
 
-      // Perbarui tanggal di objek yang sebenarnya
       await updateEventDate(event, newDate);
       updatedCount++;
     }
 
-    // Panggil processDiscussions setelah semua pembaruan selesai
     processDiscussions();
     return "$updatedCount item berhasil diseimbangkan jadwalnya.";
   }
 
-  // ==> FUNGSI INI DITULIS ULANG TOTAL <==
-  Future<String> _spreadSchedule() async {
-    final eventsToReschedule = _getAllFutureEvents();
+  Future<String> _spreadSchedule(RescheduleDialogResult result) async {
+    final eventsToReschedule = _getEventsToReschedule(result.startDate);
 
     if (eventsToReschedule.length < 2) {
-      return "Tidak cukup item di masa depan untuk dijadwalkan ulang.";
+      return "Tidak cukup item pada rentang waktu yang dipilih untuk dijadwalkan ulang.";
     }
 
-    final startDate = DateUtils.dateOnly(DateTime.now());
+    final startDate = result.startDate;
     final endDate = DateTime.parse(eventsToReschedule.last.effectiveDate);
     final totalDays = endDate.difference(startDate).inDays;
 
-    if (totalDays <= 0) {
-      return "Rentang waktu tidak cukup untuk penjadwalan ulang.";
+    if (totalDays < 0) {
+      return "Tanggal mulai tidak boleh lebih akhir dari jadwal terjauh.";
     }
 
-    final double evenInterval = totalDays / (eventsToReschedule.length - 1);
+    final double evenInterval = totalDays > 0
+        ? totalDays / (eventsToReschedule.length - 1)
+        : 0;
     int updatedCount = 0;
 
     for (int i = 0; i < eventsToReschedule.length; i++) {
       final event = eventsToReschedule[i];
       final newDate = startDate.add(Duration(days: (i * evenInterval).round()));
 
-      // Perbarui tanggal di objek yang sebenarnya
       await updateEventDate(event, newDate);
       updatedCount++;
     }

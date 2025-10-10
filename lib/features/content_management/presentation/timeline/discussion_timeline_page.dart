@@ -1,7 +1,6 @@
 // lib/features/content_management/presentation/timeline/discussion_timeline_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/timeline_models.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/discussion_model.dart';
@@ -44,7 +43,6 @@ class _DiscussionTimelineView extends StatefulWidget {
 class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   Offset? _pointerPosition;
   final ScrollController _horizontalScrollController = ScrollController();
-  // ==> CONTROLLER BARU UNTUK SCROLL VERTIKAL <==
   final ScrollController _verticalScrollController = ScrollController();
 
   bool _isDragMode = false;
@@ -56,7 +54,7 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   @override
   void dispose() {
     _horizontalScrollController.dispose();
-    _verticalScrollController.dispose(); // ==> JANGAN LUPA DISPOSE
+    _verticalScrollController.dispose();
     super.dispose();
   }
 
@@ -157,28 +155,58 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
     }
   }
 
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENAMBAHKAN KONFIRMASI <==
   Future<void> _handleReschedule(BuildContext context) async {
     final provider = Provider.of<DiscussionTimelineProvider>(
       context,
       listen: false,
     );
 
+    // Langkah 1: Tampilkan dialog pengaturan
     final RescheduleDialogResult? result =
         await showRescheduleDiscussionsDialog(context);
 
+    // Jika pengguna memilih pengaturan dan tidak membatalkan
     if (result != null && mounted) {
-      try {
-        final resultMessage = await provider.rescheduleDiscussions(result);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resultMessage), backgroundColor: Colors.green),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+      // Langkah 2: Tampilkan dialog konfirmasi
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Konfirmasi Penjadwalan Ulang'),
+          content: const Text(
+            'Anda yakin ingin melanjutkan? Tindakan ini akan mengubah tanggal item yang sudah lewat dan mengurutkan ulang jadwal di masa depan.',
           ),
-        );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ya, Lanjutkan'),
+            ),
+          ],
+        ),
+      );
+
+      // Langkah 3: Jika dikonfirmasi, jalankan prosesnya
+      if (confirmed == true && mounted) {
+        try {
+          final resultMessage = await provider.rescheduleDiscussions(result);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resultMessage),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -303,22 +331,18 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
               (maxStackPerDay *
                   (provider.discussionRadius * 2 + provider.discussionSpacing));
 
-          // ==> PERUBAHAN UTAMA DI SINI <==
           return Scrollbar(
             controller: _verticalScrollController,
-            thumbVisibility: true, // Selalu tampilkan scrollbar vertikal
+            thumbVisibility: true,
             child: SingleChildScrollView(
-              // Scroll Vertikal
               controller: _verticalScrollController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Scrollbar(
                     controller: _horizontalScrollController,
-                    thumbVisibility:
-                        true, // Selalu tampilkan scrollbar horizontal
+                    thumbVisibility: true,
                     child: SingleChildScrollView(
-                      // Scroll Horizontal
                       scrollDirection: Axis.horizontal,
                       controller: _horizontalScrollController,
                       child: Padding(
