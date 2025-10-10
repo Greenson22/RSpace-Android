@@ -22,6 +22,8 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
   final VoidCallback onCopy;
+  // ==> CALLBACK BARU <==
+  final VoidCallback onReorderPoints;
 
   const DiscussionActionMenu({
     super.key,
@@ -44,13 +46,13 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onReactivate,
     required this.onDelete,
     required this.onCopy,
+    required this.onReorderPoints, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       onSelected: (value) {
-        // Pemetaan nilai ke fungsi callback
         final actions = {
           'add_point': onAddPoint,
           'rename': onRename,
@@ -67,6 +69,7 @@ class DiscussionActionMenu extends StatelessWidget {
           'delete': onDelete,
           'smart_link': onSmartLink,
           'copy': onCopy,
+          'reorder_points': onReorderPoints, // ==> TAMBAHKAN AKSI
         };
         actions[value]?.call();
       },
@@ -79,7 +82,10 @@ class DiscussionActionMenu extends StatelessWidget {
       if (!isFinished)
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
 
-      // ==> PERUBAHAN LABEL DI SINI <==
+      // ==> TAMBAHKAN ITEM MENU BARU JIKA ADA POIN <==
+      if (!isFinished && hasPoints)
+        _buildMenuItem('reorder_points', Icons.sort, 'Urutkan Poin'),
+
       _buildMenuItem('copy', Icons.copy_outlined, 'Salin Judul'),
 
       _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),

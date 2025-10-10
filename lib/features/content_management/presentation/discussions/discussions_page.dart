@@ -39,6 +39,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
 
+  // ==> STATE BARU UNTUK MENGELOLA MODE URUT POIN <==
+  int? _reorderingDiscussionIndex;
+
   @override
   void initState() {
     super.initState();
@@ -60,8 +63,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     _focusTimer?.cancel();
     super.dispose();
   }
-
-  // ... (fungsi _moveSelectedDiscussions, _showSnackBar, _handleKeyEvent, _togglePointsVisibility, _deleteDiscussion tidak berubah) ...
 
   void _moveSelectedDiscussions(DiscussionProvider provider) async {
     final targetInfo = await showMoveDiscussionDialog(context);
@@ -189,6 +190,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   void _togglePointsVisibility(int index) {
     setState(() {
       _arePointsVisible[index] = !(_arePointsVisible[index] ?? false);
+      // Jika menutup panel, nonaktifkan mode reorder
+      if (_arePointsVisible[index] == false) {
+        if (_reorderingDiscussionIndex == index) {
+          _reorderingDiscussionIndex = null;
+        }
+      }
     });
   }
 
@@ -270,8 +277,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             const AdBannerWidget(),
           ],
         ),
-        // ==> PERUBAHAN UTAMA DI SINI: Urutan SpeedDialChild diubah
-        floatingActionButton: provider.isSelectionMode
+        floatingActionButton:
+            provider.isSelectionMode || _reorderingDiscussionIndex != null
             ? null
             : SpeedDial(
                 icon: Icons.add,
@@ -361,14 +368,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         ),
         IconButton(
           icon: const Icon(Icons.sort),
-          tooltip: 'Urutkan Diskusi',
+          tooltip: 'Urutkan Diskusi & Poin',
           onPressed: () => showSortDialog(
             context: context,
             initialSortType: provider.sortType,
             initialSortAscending: provider.sortAscending,
             onApplySort: (sortType, sortAscending) {
               provider.applySort(sortType, sortAscending);
-              _showSnackBar('Diskusi telah diurutkan.');
+              _showSnackBar('Diskusi dan poin telah diurutkan.');
             },
           ),
         ),
@@ -420,6 +427,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 final originalIndex = provider.allDiscussions.indexOf(
                   discussion,
                 );
+                final isPointReorderMode =
+                    originalIndex == _reorderingDiscussionIndex;
+
                 return DiscussionListItem(
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
@@ -430,6 +440,19 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   subjectName: widget.subjectName,
                   subjectLinkedPath: widget.linkedPath,
                   onDelete: () => _deleteDiscussion(provider, discussion),
+                  isPointReorderMode: isPointReorderMode,
+                  onToggleReorder: () {
+                    setState(() {
+                      if (isPointReorderMode) {
+                        _reorderingDiscussionIndex = null;
+                      } else {
+                        _reorderingDiscussionIndex = originalIndex;
+                        if (!(_arePointsVisible[originalIndex] ?? false)) {
+                          _arePointsVisible[originalIndex] = true;
+                        }
+                      }
+                    });
+                  },
                 );
               },
             ),
@@ -483,6 +506,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         final discussion = discussionList[index];
         final originalIndex = provider.allDiscussions.indexOf(discussion);
         final overallIndex = index + indexOffset;
+        final isPointReorderMode = originalIndex == _reorderingDiscussionIndex;
+
         return DiscussionListItem(
           key: ValueKey(discussion.hashCode),
           discussion: discussion,
@@ -493,6 +518,19 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           subjectName: widget.subjectName,
           subjectLinkedPath: widget.linkedPath,
           onDelete: () => _deleteDiscussion(provider, discussion),
+          isPointReorderMode: isPointReorderMode,
+          onToggleReorder: () {
+            setState(() {
+              if (isPointReorderMode) {
+                _reorderingDiscussionIndex = null;
+              } else {
+                _reorderingDiscussionIndex = originalIndex;
+                if (!(_arePointsVisible[originalIndex] ?? false)) {
+                  _arePointsVisible[originalIndex] = true;
+                }
+              }
+            });
+          },
         );
       },
     );

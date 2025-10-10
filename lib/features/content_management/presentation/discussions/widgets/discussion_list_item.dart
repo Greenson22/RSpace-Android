@@ -28,6 +28,9 @@ class DiscussionListItem extends StatelessWidget {
   final String subjectName;
   final String? subjectLinkedPath;
   final VoidCallback onDelete;
+  // ==> PROPERTI BARU DITAMBAHKAN <==
+  final bool isPointReorderMode;
+  final VoidCallback onToggleReorder;
 
   const DiscussionListItem({
     super.key,
@@ -39,6 +42,8 @@ class DiscussionListItem extends StatelessWidget {
     required this.subjectName,
     this.subjectLinkedPath,
     required this.onDelete,
+    required this.isPointReorderMode,
+    required this.onToggleReorder,
   });
 
   void _showSnackBar(
@@ -66,9 +71,7 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   void _copyDiscussionContent(BuildContext context, Discussion discussion) {
-    // Hanya salin judul diskusi
     Clipboard.setData(ClipboardData(text: discussion.discussion));
     _showSnackBar(context, 'Judul diskusi disalin ke clipboard.');
   }
@@ -199,15 +202,22 @@ class DiscussionListItem extends StatelessWidget {
                         _reactivateDiscussion(context, provider),
                     onDelete: onDelete,
                     onCopy: () => _copyDiscussionContent(context, discussion),
+                    onReorderPoints: onToggleReorder,
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
                     icon: Icon(
                       (arePointsVisible[index] ?? false)
-                          ? Icons.expand_less
+                          ? (isPointReorderMode
+                                ? Icons.check
+                                : Icons.expand_less)
                           : Icons.expand_more,
+                      color: isPointReorderMode ? theme.primaryColor : null,
                     ),
                     onPressed: () => onToggleVisibility(index),
+                    tooltip: isPointReorderMode
+                        ? 'Selesai Mengurutkan'
+                        : 'Tampilkan/Sembunyikan Poin',
                   ),
               ],
             ),
@@ -218,7 +228,10 @@ class DiscussionListItem extends StatelessWidget {
           if (discussion.points.isNotEmpty)
             Visibility(
               visible: arePointsVisible[index] ?? false,
-              child: DiscussionPointList(discussion: discussion),
+              child: DiscussionPointList(
+                discussion: discussion,
+                isReorderMode: isPointReorderMode,
+              ),
             ),
         ],
       ),

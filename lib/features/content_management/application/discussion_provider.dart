@@ -86,10 +86,24 @@ class DiscussionProvider
   }
 
   // ==> FUNGSI BARU UNTUK MENGURUTKAN POIN <==
+  Future<void> reorderPoints(
+    Discussion discussion,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final point = discussion.points.removeAt(oldIndex);
+    discussion.points.insert(newIndex, point);
+
+    await saveDiscussions(); // Simpan urutan baru ke file JSON
+    notifyListeners();
+  }
+
   List<Point> getSortedPoints(Discussion discussion) {
     final allPoints = List<Point>.from(discussion.points);
 
-    // Jika tipe urutan adalah 'posisi', kembalikan urutan asli.
     if (sortType == 'position') {
       return allPoints;
     }
