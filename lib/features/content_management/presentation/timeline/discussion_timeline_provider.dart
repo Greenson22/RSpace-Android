@@ -29,6 +29,10 @@ class DiscussionTimelineProvider with ChangeNotifier {
   DateTimeRange? _selectedDateRange;
   DateTimeRange? get selectedDateRange => _selectedDateRange;
 
+  // ==> STATE BARU UNTUK ZOOM <==
+  double _zoomLevel = 1.0;
+  double get zoomLevel => _zoomLevel;
+
   // ==> PERBARUI KONSTRUKTOR <==
   DiscussionTimelineProvider(
     List<Discussion>? initialDiscussions,
@@ -36,6 +40,20 @@ class DiscussionTimelineProvider with ChangeNotifier {
   ) {
     _allDiscussions = initialDiscussions ?? [];
     processDiscussions();
+  }
+
+  // ==> FUNGSI BARU UNTUK ZOOM <==
+  void zoomIn() {
+    _zoomLevel = (_zoomLevel + 0.25).clamp(0.5, 5.0); // Batasi zoom maksimal 5x
+    notifyListeners();
+  }
+
+  void zoomOut() {
+    _zoomLevel = (_zoomLevel - 0.25).clamp(
+      0.5,
+      5.0,
+    ); // Batasi zoom minimal 0.5x
+    notifyListeners();
   }
 
   Future<String> rescheduleDiscussions(RescheduleDialogResult result) async {

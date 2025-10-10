@@ -44,6 +44,13 @@ class _DiscussionTimelineView extends StatefulWidget {
 
 class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   Offset? _pointerPosition;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleReschedule(BuildContext context) async {
     final provider = Provider.of<DiscussionTimelineProvider>(
@@ -80,6 +87,17 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       appBar: AppBar(
         title: Text('Linimasa: ${widget.subjectName}'),
         actions: [
+          // ==> TOMBOL-TOMBOL ZOOM DITAMBAHKAN DI SINI <==
+          IconButton(
+            icon: const Icon(Icons.zoom_out),
+            onPressed: provider.zoomLevel > 0.5 ? provider.zoomOut : null,
+            tooltip: 'Perkecil',
+          ),
+          IconButton(
+            icon: const Icon(Icons.zoom_in),
+            onPressed: provider.zoomLevel < 5.0 ? provider.zoomIn : null,
+            tooltip: 'Perbesar',
+          ),
           IconButton(
             icon: const Icon(Icons.auto_awesome),
             onPressed: provider.isProcessing
@@ -131,75 +149,84 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
           }
 
           final timelineData = provider.timelineData!;
+          // Lebar canvas disesuaikan dengan level zoom
+          final canvasWidth =
+              MediaQuery.of(context).size.width * provider.zoomLevel;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MouseRegion(
-                  onHover: (event) =>
-                      setState(() => _pointerPosition = event.localPosition),
-                  onExit: (_) => setState(() => _pointerPosition = null),
-                  child: GestureDetector(
-                    onLongPressStart: (details) => setState(
-                      () => _pointerPosition = details.localPosition,
-                    ),
-                    onLongPressMoveUpdate: (details) => setState(
-                      () => _pointerPosition = details.localPosition,
-                    ),
-                    onLongPressEnd: (_) =>
-                        setState(() => _pointerPosition = null),
-                    onLongPressCancel: () =>
-                        setState(() => _pointerPosition = null),
-                    // Menambahkan onTapDown dan onTapUp agar tetap responsif pada klik singkat
-                    onTapDown: (details) => setState(
-                      () => _pointerPosition = details.localPosition,
-                    ),
-                    onTapUp: (_) => setState(() => _pointerPosition = null),
-                    child: SizedBox(
-                      height: 300,
-                      child: CustomPaint(
-                        size: Size.infinite,
-                        painter: TimelinePainter(
-                          timelineData: timelineData,
-                          context: context,
-                          pointerPosition: _pointerPosition,
+            // ==> WRAP DENGAN SCROLLVIEW HORIZONTAL <==
+            scrollDirection: Axis.horizontal,
+            controller: _scrollController,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  MouseRegion(
+                    onHover: (event) =>
+                        setState(() => _pointerPosition = event.localPosition),
+                    onExit: (_) => setState(() => _pointerPosition = null),
+                    child: GestureDetector(
+                      onLongPressStart: (details) => setState(
+                        () => _pointerPosition = details.localPosition,
+                      ),
+                      onLongPressMoveUpdate: (details) => setState(
+                        () => _pointerPosition = details.localPosition,
+                      ),
+                      onLongPressEnd: (_) =>
+                          setState(() => _pointerPosition = null),
+                      onLongPressCancel: () =>
+                          setState(() => _pointerPosition = null),
+                      onTapDown: (details) => setState(
+                        () => _pointerPosition = details.localPosition,
+                      ),
+                      onTapUp: (_) => setState(() => _pointerPosition = null),
+                      child: SizedBox(
+                        // ==> UKURAN CANVAS SEKARANG DINAMIS <==
+                        height: 300,
+                        width: canvasWidth - 32, // Kurangi padding
+                        child: CustomPaint(
+                          size: Size.infinite,
+                          painter: TimelinePainter(
+                            timelineData: timelineData,
+                            context: context,
+                            pointerPosition: _pointerPosition,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const Divider(height: 32),
-                Text('Legenda', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 16.0,
-                  runSpacing: 8.0,
-                  children: [
-                    const Chip(
-                      avatar: CircleAvatar(backgroundColor: Colors.blue),
-                      label: Text('Diskusi'),
-                    ),
-                    Chip(
-                      avatar: Container(
-                        width: 12,
-                        height: 12,
-                        color: Colors.blue,
+                  const Divider(height: 32),
+                  Text('Legenda', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 16.0,
+                    runSpacing: 8.0,
+                    children: [
+                      const Chip(
+                        avatar: CircleAvatar(backgroundColor: Colors.blue),
+                        label: Text('Diskusi'),
                       ),
-                      label: const Text('Poin'),
-                    ),
-                    ...kRepetitionCodes.map((code) {
-                      return Chip(
-                        avatar: CircleAvatar(
-                          backgroundColor: getColorForRepetitionCode(code),
+                      Chip(
+                        avatar: Container(
+                          width: 12,
+                          height: 12,
+                          color: Colors.blue,
                         ),
-                        label: Text(code),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              ],
+                        label: const Text('Poin'),
+                      ),
+                      ...kRepetitionCodes.map((code) {
+                        return Chip(
+                          avatar: CircleAvatar(
+                            backgroundColor: getColorForRepetitionCode(code),
+                          ),
+                          label: Text(code),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
