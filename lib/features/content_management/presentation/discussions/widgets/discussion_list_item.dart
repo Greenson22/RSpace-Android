@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../domain/models/discussion_model.dart';
@@ -63,6 +64,13 @@ class DiscussionListItem extends StatelessWidget {
             : null,
       ),
     );
+  }
+
+  // ==> FUNGSI INI DIPERBARUI <==
+  void _copyDiscussionContent(BuildContext context, Discussion discussion) {
+    // Hanya salin judul diskusi
+    Clipboard.setData(ClipboardData(text: discussion.discussion));
+    _showSnackBar(context, 'Judul diskusi disalin ke clipboard.');
   }
 
   @override
@@ -190,6 +198,7 @@ class DiscussionListItem extends StatelessWidget {
                     onReactivate: () =>
                         _reactivateDiscussion(context, provider),
                     onDelete: onDelete,
+                    onCopy: () => _copyDiscussionContent(context, discussion),
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(

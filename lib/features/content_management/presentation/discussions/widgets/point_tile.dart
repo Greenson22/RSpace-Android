@@ -1,6 +1,7 @@
 // lib/features/content_management/presentation/discussions/widgets/point_tile.dart
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
@@ -106,6 +107,11 @@ class PointTile extends StatelessWidget {
 
     return ListTile(
       dense: true,
+      // ==> TAMBAHKAN onLongPress DI SINI <==
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: point.pointText));
+        _showSnackBar(context, 'Teks poin disalin ke clipboard.');
+      },
       leading: Icon(
         isFinished ? Icons.check_circle_outline : Icons.arrow_right,
         color: isFinished ? Colors.green : Colors.grey,
@@ -146,8 +152,6 @@ class PointTile extends StatelessWidget {
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
-                        // ==> PERBAIKAN DIMULAI DI SINI <==
-                        // 1. Simpan context sebelum await
                         final currentContext = context;
                         final scaffoldMessenger = ScaffoldMessenger.of(
                           currentContext,
@@ -163,7 +167,6 @@ class PointTile extends StatelessWidget {
                           final nextCode =
                               provider.repetitionCodes[currentIndex + 1];
 
-                          // 2. Lakukan operasi async (await)
                           final confirmed =
                               await showRepetitionCodeUpdateConfirmationDialog(
                                 context: currentContext,
@@ -171,7 +174,6 @@ class PointTile extends StatelessWidget {
                                 nextCode: nextCode,
                               );
 
-                          // 3. Setelah await, cek apakah widget masih mounted
                           if (!currentContext.mounted) return;
 
                           if (confirmed) {
@@ -195,7 +197,6 @@ class PointTile extends StatelessWidget {
                             );
                           }
                         }
-                        // ==> PERBAIKAN SELESAI <==
                       },
                   ),
                 ],

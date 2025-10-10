@@ -123,6 +123,7 @@ class DiscussionTile extends StatelessWidget {
               onFinish: onFinish,
               onReactivate: onReactivate,
               onDelete: onDelete,
+              onCopy: () {},
             ),
           if (discussion.points.isNotEmpty && !provider.isSelectionMode)
             IconButton(

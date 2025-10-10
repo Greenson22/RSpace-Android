@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/widgets/discussion_action_menu.dart
+// lib/features/content_management/presentation/discussions/widgets/discussion_action_menu.dart
 import 'package:flutter/material.dart';
 
 class DiscussionActionMenu extends StatelessWidget {
@@ -21,6 +21,7 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onFinish;
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
+  final VoidCallback onCopy;
 
   const DiscussionActionMenu({
     super.key,
@@ -42,6 +43,7 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onFinish,
     required this.onReactivate,
     required this.onDelete,
+    required this.onCopy,
   });
 
   @override
@@ -64,6 +66,7 @@ class DiscussionActionMenu extends StatelessWidget {
           'reactivate': onReactivate,
           'delete': onDelete,
           'smart_link': onSmartLink,
+          'copy': onCopy,
         };
         actions[value]?.call();
       },
@@ -75,6 +78,9 @@ class DiscussionActionMenu extends StatelessWidget {
     return <PopupMenuEntry<String>>[
       if (!isFinished)
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
+
+      // ==> PERUBAHAN LABEL DI SINI <==
+      _buildMenuItem('copy', Icons.copy_outlined, 'Salin Judul'),
 
       _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
 
