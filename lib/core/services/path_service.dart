@@ -156,10 +156,8 @@ class PathService {
     return assetsDir.path;
   }
 
-  // ==> FUNGSI BARU UNTUK LOKASI FILE KONFIGURASI API <==
   Future<String> get apiConfigPath async {
     final appBase = await _appBasePath;
-    // File ini sekarang berada di RSpace_App/api_config.json
     return path.join(appBase, 'api_config.json');
   }
 
@@ -183,9 +181,6 @@ class PathService {
 
   Future<String> get pointPresetsPath async =>
       path.join(await contentsPath, 'point_presets.json');
-
-  Future<String> get feedbackPath async =>
-      path.join(await contentsPath, 'feedback.json');
 
   Future<String> get promptLibraryPath async =>
       path.join(await contentsPath, 'prompt_library');

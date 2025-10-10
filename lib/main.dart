@@ -14,12 +14,10 @@ import 'package:my_aplication/features/content_management/application/topic_prov
 import 'package:provider/provider.dart';
 import 'features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/backup_management/application/sync_provider.dart';
-import 'features/feedback/application/feedback_provider.dart';
 import 'core/providers/neuron_provider.dart';
 import 'features/snake_game/application/snake_game_provider.dart';
 
 import 'features/auth/application/auth_provider.dart';
-// ==> 1. IMPORT WIDGET YANG DIPERLUKAN <==
 import 'core/widgets/draggable_fab_view.dart';
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
 
@@ -44,7 +42,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TimeLogProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
-        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
         ChangeNotifierProvider(create: (_) => NeuronProvider()),
         ChangeNotifierProvider(create: (_) => QuizCategoryProvider()),
         ChangeNotifierProvider(create: (_) => PerpuskuProvider()),
@@ -66,7 +63,6 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          // ==> 2. GUNAKAN BUILDER UNTUK MENAMBAHKAN STACK DI ATAS SEMUA HALAMAN <==
           builder: (context, child) {
             return Stack(
               children: [

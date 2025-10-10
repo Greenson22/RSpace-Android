@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/archive/presentation/pages/archive_hub_page.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart';
 import 'package:my_aplication/features/prompt_library/presentation/prompt_library_page.dart';
-// ==> IMPORT UNTUK SNAKE GAME DIHAPUS
 import 'package:provider/provider.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -13,7 +12,6 @@ import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../backup_management/presentation/pages/backup_management_page.dart';
 import '../../../file_management/presentation/pages/file_list_page.dart';
-import '../../../feedback/presentation/pages/feedback_center_page.dart';
 import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
@@ -66,13 +64,8 @@ List<VoidCallback> buildDashboardActions(
     () => showDataManagementDialog(context),
     () => Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const FeedbackCenterPage()),
-    ),
-    () => Navigator.push(
-      context,
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
-    // ==> NAVIGASI KE SNAKE GAME DIHAPUS DARI SINI
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
@@ -174,18 +167,11 @@ class DashboardGrid extends StatelessWidget {
             'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
           },
           {
-            'icon': Icons.lightbulb_outline,
-            'label': 'Umpan Balik',
-            'subtitle': 'Kirim ide, bug, atau saran',
-            'colors': AppTheme.gradientColors6,
-          },
-          {
             'icon': Icons.library_books_outlined,
             'label': 'Pustaka Prompt',
             'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
           },
-          // ==> ITEM UNTUK GAME ULAR DIHAPUS DARI SINI
           if (Platform.isAndroid)
             {
               'icon': Icons.public,
