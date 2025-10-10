@@ -20,6 +20,8 @@ import 'package:my_aplication/features/content_management/presentation/subjects/
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_password_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
+// ==> IMPORT DIALOG BARU <==
+import 'dialogs/view_json_dialog.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -127,6 +129,15 @@ class _SubjectsPageState extends State<SubjectsPage> {
         backgroundColor: isError ? Colors.red : null,
       ),
     );
+  }
+
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG JSON <==
+  Future<void> _showJsonContent(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final content = await provider.getRawJsonContent(subject);
+    if (mounted) {
+      showViewJsonDialog(context, subject.name, content);
+    }
   }
 
   Future<void> _toggleLock(BuildContext context, Subject subject) async {
@@ -568,7 +579,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       '${subject.name}.json',
     );
 
-    // ==> PERBAIKAN DI SINI: BUNGKUS DENGAN PROVIDER YANG SUDAH ADA <==
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -740,6 +750,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onToggleFreeze: () => _toggleFreeze(context, subject),
               onToggleLock: () => _toggleLock(context, subject),
               onTimeline: () => _navigateToTimelinePage(context, subject),
+              onViewJson: () => _showJsonContent(context, subject),
             );
           },
         );
@@ -789,6 +800,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onToggleFreeze: () => _toggleFreeze(context, subject),
               onToggleLock: () => _toggleLock(context, subject),
               onTimeline: () => _navigateToTimelinePage(context, subject),
+              onViewJson: () => _showJsonContent(context, subject),
             );
           },
         );

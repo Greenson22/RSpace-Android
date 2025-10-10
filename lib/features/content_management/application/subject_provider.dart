@@ -11,6 +11,9 @@ import 'package:my_aplication/features/settings/application/services/gemini_serv
 import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
 import '../domain/services/encryption_service.dart';
+import 'dart:convert'; // ==> IMPORT DIPERLUKAN
+import 'dart:io'; // ==> IMPORT DIPERLUKAN
+import 'package:path/path.dart' as path; // ==> IMPORT DIPERLUKAN
 
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
@@ -18,7 +21,6 @@ class SubjectProvider with ChangeNotifier {
   final GeminiService _geminiService = GeminiService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final EncryptionService _encryptionService = EncryptionService();
-  // ==> TAMBAHKAN PATH SERVICE <==
   final PathService _pathService = PathService();
   final String topicPath;
 
@@ -55,12 +57,32 @@ class SubjectProvider with ChangeNotifier {
   bool isUnlocked(String subjectName) =>
       _unlockedSubjects.contains(subjectName);
 
-  // ==> STATE BARU UNTUK SELEKSI <==
   final Set<Subject> _selectedSubjects = {};
   Set<Subject> get selectedSubjects => _selectedSubjects;
   bool get isSelectionMode => _selectedSubjects.isNotEmpty;
 
-  // ==> FUNGSI BARU UNTUK MANAJEMEN SELEKSI <==
+  // ==> FUNGSI BARU DITAMBAHKAN <==
+  Future<String> getRawJsonContent(Subject subject) async {
+    final subjectPath = await _pathService.getSubjectPath(
+      topicPath,
+      subject.name,
+    );
+    final file = File(subjectPath);
+
+    if (subject.isLocked) {
+      return 'Konten dienkripsi. Buka kunci subjek terlebih dahulu untuk melihatnya.';
+    }
+
+    try {
+      final rawContent = await file.readAsString();
+      final jsonObject = jsonDecode(rawContent);
+      const encoder = JsonEncoder.withIndent('  ');
+      return encoder.convert(jsonObject);
+    } catch (e) {
+      return 'Gagal memformat JSON: $e';
+    }
+  }
+
   void toggleSubjectSelection(Subject subject) {
     if (_selectedSubjects.contains(subject)) {
       _selectedSubjects.remove(subject);
@@ -132,7 +154,6 @@ class SubjectProvider with ChangeNotifier {
     _sortAscending = sortPrefs['sortAscending'] ?? true;
   }
 
-  // ==> FUNGSI HELPER BARU UNTUK MENGELOLA FILE HTML <==
   Future<void> _processHtmlFiles(
     Subject subject,
     String password,
@@ -151,7 +172,6 @@ class SubjectProvider with ChangeNotifier {
           }
         } catch (e) {
           debugPrint("Gagal memproses file ${discussion.filePath}: $e");
-          // Lanjutkan proses meskipun satu file gagal
         }
       }
     }
@@ -166,9 +186,8 @@ class SubjectProvider with ChangeNotifier {
       subjectName,
     );
 
-    // Enkripsi file JSON dan semua file HTML terkait
     await _subjectService.saveEncryptedSubject(topicPath, subject, password);
-    await _processHtmlFiles(subject, password, true); // true = encrypt
+    await _processHtmlFiles(subject, password, true);
 
     _unlockedSubjects.remove(subjectName);
     await fetchSubjects();
@@ -182,15 +201,13 @@ class SubjectProvider with ChangeNotifier {
       throw Exception('Password salah.');
     }
 
-    // Dekripsi konten JSON dan muat diskusi
     subject.discussions = await _subjectService.getDecryptedDiscussions(
       topicPath,
       subject.name,
       password,
     );
 
-    // Dekripsi juga semua file HTML terkait
-    await _processHtmlFiles(subject, password, false); // false = decrypt
+    await _processHtmlFiles(subject, password, false);
 
     _unlockedSubjects.add(subjectName);
     notifyListeners();
@@ -212,7 +229,6 @@ class SubjectProvider with ChangeNotifier {
       password,
     );
 
-    // Simpan kembali file JSON dalam keadaan tidak terenkripsi
     await _subjectService.saveDiscussionsForSubject(
       topicPath,
       subject.name,
@@ -220,14 +236,11 @@ class SubjectProvider with ChangeNotifier {
     );
     await _subjectService.updateSubjectMetadata(topicPath, subject);
 
-    // Dekripsi semua file HTML terkait secara permanen
-    await _processHtmlFiles(subject, password, false); // false = decrypt
+    await _processHtmlFiles(subject, password, false);
 
     _unlockedSubjects.remove(subjectName);
     await fetchSubjects();
   }
-
-  // ... Sisa kode provider (filter, sort, add, rename, dll) tidak berubah ...
 
   Future<void> applySort(String sortType, bool sortAscending) async {
     _sortType = sortType;

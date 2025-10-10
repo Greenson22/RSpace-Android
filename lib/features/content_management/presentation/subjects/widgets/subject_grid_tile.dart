@@ -17,7 +17,9 @@ class SubjectGridTile extends StatelessWidget {
   final VoidCallback onMove;
   final VoidCallback onToggleFreeze;
   final VoidCallback onToggleLock;
-  final VoidCallback onTimeline; // ==> TAMBAHKAN CALLBACK
+  final VoidCallback onTimeline;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onViewJson;
   final bool isFocused;
 
   const SubjectGridTile({
@@ -33,7 +35,8 @@ class SubjectGridTile extends StatelessWidget {
     required this.onMove,
     required this.onToggleFreeze,
     required this.onToggleLock,
-    required this.onTimeline, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onTimeline,
+    required this.onViewJson, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.isFocused = false,
   });
 
@@ -130,6 +133,8 @@ class SubjectGridTile extends StatelessWidget {
                         if (value == 'toggle_freeze') onToggleFreeze();
                         if (value == 'toggle_lock') onToggleLock();
                         if (value == 'timeline') onTimeline();
+                        if (value == 'view_json')
+                          onViewJson(); // ==> TAMBAHKAN AKSI
                       },
                       itemBuilder: (context) => [
                         const PopupMenuItem(
@@ -139,6 +144,17 @@ class SubjectGridTile extends StatelessWidget {
                               Icon(Icons.timeline),
                               SizedBox(width: 8),
                               Text('Lihat Linimasa'),
+                            ],
+                          ),
+                        ),
+                        // ==> TAMBAHKAN ITEM MENU BARU <==
+                        const PopupMenuItem(
+                          value: 'view_json',
+                          child: Row(
+                            children: [
+                              Icon(Icons.data_object),
+                              SizedBox(width: 8),
+                              Text('Lihat JSON Mentah'),
                             ],
                           ),
                         ),

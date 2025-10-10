@@ -9,6 +9,19 @@ class SubjectRepository {
   final PathService _pathService = PathService();
   static const String _defaultIcon = '📄';
 
+  // ==> FUNGSI BARU DITAMBAHKAN <==
+  /// Membaca konten mentah dari file JSON sebagai string.
+  Future<String> readSubjectRawJson(File subjectFile) async {
+    try {
+      if (await subjectFile.exists()) {
+        return await subjectFile.readAsString();
+      }
+      return '{}'; // Kembalikan objek JSON kosong jika file tidak ada
+    } catch (e) {
+      return '{"error": "Gagal membaca file: $e"}';
+    }
+  }
+
   /// Membaca semua file subject .json dari sebuah direktori topik.
   Future<List<File>> getSubjectFiles(String topicPath) async {
     final directory = Directory(topicPath);

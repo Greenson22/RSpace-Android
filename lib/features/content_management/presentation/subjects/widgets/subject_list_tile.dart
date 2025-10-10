@@ -17,7 +17,9 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onMove;
   final VoidCallback onToggleFreeze;
   final VoidCallback onToggleLock;
-  final VoidCallback onTimeline; // ==> TAMBAHKAN CALLBACK
+  final VoidCallback onTimeline;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onViewJson;
   final bool isFocused;
 
   const SubjectListTile({
@@ -33,7 +35,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onMove,
     required this.onToggleFreeze,
     required this.onToggleLock,
-    required this.onTimeline, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onTimeline,
+    required this.onViewJson, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.isFocused = false,
   });
 
@@ -74,8 +77,8 @@ class SubjectListTile extends StatelessWidget {
         onTap: onTap,
         onLongPress: () => provider.toggleSubjectSelection(subject),
         borderRadius: BorderRadius.circular(15),
-        splashColor: theme.primaryColor.withOpacity(0.1),
-        highlightColor: theme.primaryColor.withOpacity(0.05),
+        splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
+        highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
         child: Padding(
           padding: padding,
           child: Row(
@@ -170,6 +173,8 @@ class SubjectListTile extends StatelessWidget {
                     if (value == 'toggle_freeze') onToggleFreeze();
                     if (value == 'toggle_lock') onToggleLock();
                     if (value == 'timeline') onTimeline();
+                    if (value == 'view_json')
+                      onViewJson(); // ==> TAMBAHKAN AKSI
                   },
                   itemBuilder: (context) => [
                     const PopupMenuItem(
@@ -179,6 +184,17 @@ class SubjectListTile extends StatelessWidget {
                           Icon(Icons.timeline),
                           SizedBox(width: 8),
                           Text('Lihat Linimasa'),
+                        ],
+                      ),
+                    ),
+                    // ==> TAMBAHKAN ITEM MENU BARU <==
+                    const PopupMenuItem(
+                      value: 'view_json',
+                      child: Row(
+                        children: [
+                          Icon(Icons.data_object),
+                          SizedBox(width: 8),
+                          Text('Lihat JSON Mentah'),
                         ],
                       ),
                     ),
