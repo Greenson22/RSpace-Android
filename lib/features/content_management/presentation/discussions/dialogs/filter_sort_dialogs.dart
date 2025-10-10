@@ -159,7 +159,7 @@ Future<void> showSortDialog({
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('Urutkan Diskusi'),
+            title: const Text('Urutkan Diskusi & Poin'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,6 +167,13 @@ Future<void> showSortDialog({
                 const Text(
                   'Urutkan berdasarkan:',
                   style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                // ==> OPSI BARU DITAMBAHKAN DI SINI <==
+                RadioListTile<String>(
+                  title: const Text('Posisi (Default)'),
+                  value: 'position',
+                  groupValue: sortType,
+                  onChanged: (value) => setDialogState(() => sortType = value!),
                 ),
                 RadioListTile<String>(
                   title: const Text('Tanggal'),
@@ -186,7 +193,6 @@ Future<void> showSortDialog({
                   groupValue: sortType,
                   onChanged: (value) => setDialogState(() => sortType = value!),
                 ),
-                // ==> PERUBAHAN PADA PEMANGGILAN DIALOG <==
                 if (sortType == 'code')
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0, right: 16.0),
@@ -199,7 +205,6 @@ Future<void> showSortDialog({
                           context,
                           initialOrder: provider.repetitionCodeOrder,
                         );
-                        // Jika pengguna menyimpan, panggil provider untuk update
                         if (newOrder != null) {
                           provider.saveRepetitionCodeOrder(newOrder);
                         }

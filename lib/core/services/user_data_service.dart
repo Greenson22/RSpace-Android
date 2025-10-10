@@ -16,7 +16,6 @@ class UserDataService {
       'repetition_code_display_order';
   static const String _repetitionCodeDaysKey = 'repetition_code_days';
 
-  // ==> FUNGSI GENERIK BARU
   Future<void> saveString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, value);
@@ -52,7 +51,8 @@ class UserDataService {
 
   Future<Map<String, dynamic>> loadSortPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    final sortType = prefs.getString(_sortTypeKey) ?? 'date';
+    // ==> NILAI DEFAULT DIPERBARUI <==
+    final sortType = prefs.getString(_sortTypeKey) ?? 'position';
     final sortAscending = prefs.getBool(_sortAscendingKey) ?? true;
     return {'sortType': sortType, 'sortAscending': sortAscending};
   }

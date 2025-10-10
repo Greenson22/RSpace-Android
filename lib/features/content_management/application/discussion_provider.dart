@@ -85,6 +85,53 @@ class DiscussionProvider
     return counts;
   }
 
+  // ==> FUNGSI BARU UNTUK MENGURUTKAN POIN <==
+  List<Point> getSortedPoints(Discussion discussion) {
+    final allPoints = List<Point>.from(discussion.points);
+
+    // Jika tipe urutan adalah 'posisi', kembalikan urutan asli.
+    if (sortType == 'position') {
+      return allPoints;
+    }
+
+    allPoints.sort((a, b) {
+      int result;
+      switch (sortType) {
+        case 'name':
+          result = a.pointText.toLowerCase().compareTo(
+            b.pointText.toLowerCase(),
+          );
+          break;
+        case 'code':
+          result =
+              getRepetitionCodeIndex(
+                a.repetitionCode,
+                customOrder: repetitionCodeOrder,
+              ).compareTo(
+                getRepetitionCodeIndex(
+                  b.repetitionCode,
+                  customOrder: repetitionCodeOrder,
+                ),
+              );
+          break;
+        default: // date
+          final dateA = DateTime.tryParse(a.date);
+          final dateB = DateTime.tryParse(b.date);
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return sortAscending ? 1 : -1;
+          if (dateB == null) return sortAscending ? -1 : 1;
+          result = dateA.compareTo(dateB);
+          break;
+      }
+      return result;
+    });
+
+    if (!sortAscending) {
+      return allPoints.reversed.toList();
+    }
+    return allPoints;
+  }
+
   Future<void> loadInitialData() async {
     await loadPreferences();
     await loadDiscussions();
@@ -158,7 +205,6 @@ class DiscussionProvider
     await _savePointPresets();
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENANGANI TIPE LINK BARU
   Future<void> addDiscussion(AddDiscussionResult result) async {
     String? newFileName;
     if (result.linkType == DiscussionLinkType.html &&

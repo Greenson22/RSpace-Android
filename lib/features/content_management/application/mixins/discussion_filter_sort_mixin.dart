@@ -6,15 +6,12 @@ import '../../../../core/services/storage_service.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 
 mixin DiscussionFilterSortMixin on ChangeNotifier {
-  // DEPENDENCIES
   SharedPreferencesService get prefsService;
   List<Discussion> get allDiscussions;
   List<Discussion> get filteredDiscussions;
   set filteredDiscussions(List<Discussion> value);
-  // ==> TAMBAHKAN DEPENDENSI BARU <==
   List<String> get repetitionCodeOrder;
 
-  // STATE
   String _searchQuery = '';
   set searchQuery(String value) {
     _searchQuery = value;
@@ -27,7 +24,7 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
   String? _selectedRepetitionCode;
   DateTimeRange? _selectedDateRange;
 
-  String _sortType = 'date';
+  String _sortType = 'position'; // ==> NILAI DEFAULT DIPERBARUI
   String get sortType => _sortType;
 
   bool _sortAscending = true;
@@ -36,11 +33,10 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
   bool _showFinishedDiscussions = false;
   bool get showFinishedDiscussions => _showFinishedDiscussions;
 
-  // METHODS
   Future<void> loadPreferences() async {
     final sortPrefs = await prefsService.loadSortPreferences();
-    _sortType = sortPrefs['sortType'];
-    _sortAscending = sortPrefs['sortAscending'];
+    _sortType = sortPrefs['sortType'] ?? 'position';
+    _sortAscending = sortPrefs['sortAscending'] ?? true;
 
     final filterPrefs = await prefsService.loadFilterPreference();
     _activeFilterType = filterPrefs['filterType'];
@@ -94,48 +90,51 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
       return true;
     }).toList();
 
-    filteredActive.sort((a, b) {
-      final infoA = _getEffectiveDiscussionInfoForSorting(a);
-      final infoB = _getEffectiveDiscussionInfoForSorting(b);
-      int result;
-      switch (_sortType) {
-        case 'name':
-          result = a.discussion.toLowerCase().compareTo(
-            b.discussion.toLowerCase(),
-          );
-          break;
-        case 'code':
-          // ==> GUNAKAN URUTAN KUSTOM DI SINI <==
-          result =
-              getRepetitionCodeIndex(
-                infoA['code'] ?? '',
-                customOrder: repetitionCodeOrder,
-              ).compareTo(
+    // ==> LOGIKA PENGURUTAN DIPERBARUI DI SINI <==
+    if (_sortType != 'position') {
+      filteredActive.sort((a, b) {
+        final infoA = _getEffectiveDiscussionInfoForSorting(a);
+        final infoB = _getEffectiveDiscussionInfoForSorting(b);
+        int result;
+        switch (_sortType) {
+          case 'name':
+            result = a.discussion.toLowerCase().compareTo(
+              b.discussion.toLowerCase(),
+            );
+            break;
+          case 'code':
+            result =
                 getRepetitionCodeIndex(
-                  infoB['code'] ?? '',
+                  infoA['code'] ?? '',
                   customOrder: repetitionCodeOrder,
-                ),
-              );
-          break;
-        default:
-          final dateA = infoA['date'];
-          final dateB = infoB['date'];
-          if (dateA == null && dateB == null)
-            result = 0;
-          else if (dateA == null)
-            result = 1;
-          else if (dateB == null)
-            result = -1;
-          else
-            result = DateTime.parse(dateA).compareTo(DateTime.parse(dateB));
-          break;
-      }
-      return result;
-    });
+                ).compareTo(
+                  getRepetitionCodeIndex(
+                    infoB['code'] ?? '',
+                    customOrder: repetitionCodeOrder,
+                  ),
+                );
+            break;
+          default: // date
+            final dateA = infoA['date'];
+            final dateB = infoB['date'];
+            if (dateA == null && dateB == null)
+              result = 0;
+            else if (dateA == null)
+              result = 1;
+            else if (dateB == null)
+              result = -1;
+            else
+              result = DateTime.parse(dateA).compareTo(DateTime.parse(dateB));
+            break;
+        }
+        return result;
+      });
+    }
 
-    if (!_sortAscending) {
+    if (!_sortAscending && _sortType != 'position') {
       filteredActive = filteredActive.reversed.toList();
     }
+    // --- AKHIR PERUBAHAN ---
 
     filteredDiscussions = filteredActive;
 
@@ -166,7 +165,6 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
 
     if (visiblePoints.isNotEmpty) {
       visiblePoints.sort((a, b) {
-        // ==> GUNAKAN URUTAN KUSTOM DI SINI <==
         int codeComp =
             getRepetitionCodeIndex(
               a.repetitionCode,
@@ -209,7 +207,6 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
     return true;
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN <==
   bool doesDiscussionMatchFilter(Discussion discussion) {
     if (discussion.finished) return false;
 
@@ -225,7 +222,7 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
         return false;
       }
     }
-    return true; // Return true jika tidak ada filter aktif
+    return true;
   }
 
   void applySort(String sortType, bool sortAscending) {
