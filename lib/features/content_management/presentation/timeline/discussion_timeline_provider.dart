@@ -67,12 +67,10 @@ class DiscussionTimelineProvider with ChangeNotifier {
     _pointRadius = settings['pointRadius']!;
     _discussionSpacing = settings['discussionSpacing']!;
     _pointSpacing = settings['pointSpacing']!;
-    // ==> MUAT ZOOM LEVEL DARI PENYIMPANAN <==
     _zoomLevel = settings['zoomLevel']!;
     notifyListeners();
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENYIMPAN ZOOM <==
   Future<void> updateAppearanceSettings({
     double? discussionRadius,
     double? pointRadius,
@@ -166,6 +164,57 @@ class DiscussionTimelineProvider with ChangeNotifier {
     processDiscussions();
   }
 
+  // ==> FUNGSI INI DITULIS ULANG <==
+  List<TimelineEvent> _getAllFutureEvents() {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final allEvents = <TimelineEvent>[];
+
+    for (final discussion in _allDiscussions) {
+      if (discussion.finished) continue;
+
+      if (discussion.points.isEmpty) {
+        if (discussion.date != null) {
+          final eventDate = DateTime.tryParse(discussion.date!);
+          if (eventDate != null && !eventDate.isBefore(today)) {
+            allEvents.add(
+              TimelineEvent(
+                parentDiscussion: discussion,
+                type: TimelineEventType.discussion,
+                title: discussion.discussion,
+                effectiveDate: discussion.date!,
+                effectiveRepetitionCode: discussion.repetitionCode,
+              ),
+            );
+          }
+        }
+      } else {
+        for (final point in discussion.points) {
+          if (!point.finished) {
+            final eventDate = DateTime.tryParse(point.date);
+            if (eventDate != null && !eventDate.isBefore(today)) {
+              allEvents.add(
+                TimelineEvent(
+                  parentDiscussion: discussion,
+                  point: point,
+                  type: TimelineEventType.point,
+                  title: point.pointText,
+                  effectiveDate: point.date,
+                  effectiveRepetitionCode: point.repetitionCode,
+                ),
+              );
+            }
+          }
+        }
+      }
+    }
+    allEvents.sort(
+      (a, b) => DateTime.parse(
+        a.effectiveDate,
+      ).compareTo(DateTime.parse(b.effectiveDate)),
+    );
+    return allEvents;
+  }
+
   Future<String> rescheduleDiscussions(RescheduleDialogResult result) async {
     _isProcessing = true;
     notifyListeners();
@@ -181,39 +230,28 @@ class DiscussionTimelineProvider with ChangeNotifier {
     }
   }
 
+  // ==> FUNGSI INI DITULIS ULANG TOTAL <==
   Future<String> _balanceSchedule(int maxMoveDays) async {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final discussionsToReschedule =
-        _allDiscussions.where((d) {
-          if (d.effectiveDate == null) return false;
-          final date = DateTime.tryParse(d.effectiveDate!);
-          return date != null && !date.isBefore(today);
-        }).toList()..sort(
-          (a, b) => DateTime.parse(
-            a.effectiveDate!,
-          ).compareTo(DateTime.parse(b.effectiveDate!)),
-        );
+    final eventsToReschedule = _getAllFutureEvents();
 
-    if (discussionsToReschedule.length < 2) {
-      return "Tidak cukup diskusi di masa depan untuk dijadwalkan ulang.";
+    if (eventsToReschedule.length < 2) {
+      return "Tidak cukup item di masa depan untuk dijadwalkan ulang.";
     }
 
-    final startDate = today;
-    final endDate = DateTime.parse(discussionsToReschedule.last.effectiveDate!);
+    final startDate = DateUtils.dateOnly(DateTime.now());
+    final endDate = DateTime.parse(eventsToReschedule.last.effectiveDate);
     final totalDays = endDate.difference(startDate).inDays;
 
     if (totalDays <= 0) {
       return "Rentang waktu tidak cukup untuk penjadwalan ulang.";
     }
 
-    final double idealInterval =
-        totalDays / (discussionsToReschedule.length - 1);
+    final double idealInterval = totalDays / (eventsToReschedule.length - 1);
     int updatedCount = 0;
 
-    for (int i = 0; i < discussionsToReschedule.length; i++) {
-      final discussion = discussionsToReschedule[i];
-      final originalDate = DateTime.parse(discussion.effectiveDate!);
-
+    for (int i = 0; i < eventsToReschedule.length; i++) {
+      final event = eventsToReschedule[i];
+      final originalDate = DateTime.parse(event.effectiveDate);
       final idealDate = startDate.add(
         Duration(days: (i * idealInterval).round()),
       );
@@ -230,83 +268,48 @@ class DiscussionTimelineProvider with ChangeNotifier {
         newDate = idealDate;
       }
 
-      if (newDate.isBefore(today)) {
-        newDate = today;
-      }
+      if (newDate.isBefore(startDate)) newDate = startDate;
 
-      if (discussion.points.isEmpty) {
-        discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
-      } else {
-        try {
-          final pointToUpdate = discussion.points.firstWhere(
-            (p) => p.date == discussion.effectiveDate,
-          );
-          pointToUpdate.date = DateFormat('yyyy-MM-dd').format(newDate);
-        } catch (e) {
-          discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
-        }
-      }
+      // Perbarui tanggal di objek yang sebenarnya
+      await updateEventDate(event, newDate);
       updatedCount++;
     }
 
-    await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
+    // Panggil processDiscussions setelah semua pembaruan selesai
     processDiscussions();
-
-    return "$updatedCount diskusi berhasil diseimbangkan jadwalnya.";
+    return "$updatedCount item berhasil diseimbangkan jadwalnya.";
   }
 
+  // ==> FUNGSI INI DITULIS ULANG TOTAL <==
   Future<String> _spreadSchedule() async {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final discussionsToReschedule =
-        _allDiscussions.where((d) {
-          if (d.effectiveDate == null) return false;
-          final date = DateTime.tryParse(d.effectiveDate!);
-          return date != null && !date.isBefore(today);
-        }).toList()..sort(
-          (a, b) => DateTime.parse(
-            a.effectiveDate!,
-          ).compareTo(DateTime.parse(b.effectiveDate!)),
-        );
+    final eventsToReschedule = _getAllFutureEvents();
 
-    if (discussionsToReschedule.length < 2) {
-      return "Tidak cukup diskusi di masa depan untuk dijadwalkan ulang.";
+    if (eventsToReschedule.length < 2) {
+      return "Tidak cukup item di masa depan untuk dijadwalkan ulang.";
     }
 
-    final startDate = today;
-    final endDate = DateTime.parse(discussionsToReschedule.last.effectiveDate!);
+    final startDate = DateUtils.dateOnly(DateTime.now());
+    final endDate = DateTime.parse(eventsToReschedule.last.effectiveDate);
     final totalDays = endDate.difference(startDate).inDays;
 
     if (totalDays <= 0) {
       return "Rentang waktu tidak cukup untuk penjadwalan ulang.";
     }
 
-    final double evenInterval =
-        totalDays / (discussionsToReschedule.length - 1);
+    final double evenInterval = totalDays / (eventsToReschedule.length - 1);
     int updatedCount = 0;
 
-    for (int i = 0; i < discussionsToReschedule.length; i++) {
-      final discussion = discussionsToReschedule[i];
+    for (int i = 0; i < eventsToReschedule.length; i++) {
+      final event = eventsToReschedule[i];
       final newDate = startDate.add(Duration(days: (i * evenInterval).round()));
 
-      if (discussion.points.isEmpty) {
-        discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
-      } else {
-        try {
-          final pointToUpdate = discussion.points.firstWhere(
-            (p) => p.date == discussion.effectiveDate,
-          );
-          pointToUpdate.date = DateFormat('yyyy-MM-dd').format(newDate);
-        } catch (e) {
-          discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
-        }
-      }
+      // Perbarui tanggal di objek yang sebenarnya
+      await updateEventDate(event, newDate);
       updatedCount++;
     }
 
-    await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
     processDiscussions();
-
-    return "$updatedCount diskusi berhasil diratakan jadwalnya.";
+    return "$updatedCount item berhasil diratakan jadwalnya.";
   }
 
   void processDiscussions() {
