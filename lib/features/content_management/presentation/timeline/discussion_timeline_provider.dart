@@ -38,7 +38,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
   double _pointRadius = 4.0;
   double get pointRadius => _pointRadius;
 
-  // ==> STATE BARU UNTUK JARAK <==
   double _discussionSpacing = 10.0;
   double get discussionSpacing => _discussionSpacing;
 
@@ -68,25 +67,31 @@ class DiscussionTimelineProvider with ChangeNotifier {
     _pointRadius = settings['pointRadius']!;
     _discussionSpacing = settings['discussionSpacing']!;
     _pointSpacing = settings['pointSpacing']!;
+    // ==> MUAT ZOOM LEVEL DARI PENYIMPANAN <==
+    _zoomLevel = settings['zoomLevel']!;
     notifyListeners();
   }
 
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENYIMPAN ZOOM <==
   Future<void> updateAppearanceSettings({
     double? discussionRadius,
     double? pointRadius,
     double? discussionSpacing,
     double? pointSpacing,
+    double? zoomLevel,
   }) async {
     if (discussionRadius != null) _discussionRadius = discussionRadius;
     if (pointRadius != null) _pointRadius = pointRadius;
     if (discussionSpacing != null) _discussionSpacing = discussionSpacing;
     if (pointSpacing != null) _pointSpacing = pointSpacing;
+    if (zoomLevel != null) _zoomLevel = zoomLevel;
 
     await _userDataService.saveTimelineAppearance(
       discussionRadius: _discussionRadius,
       pointRadius: _pointRadius,
       discussionSpacing: _discussionSpacing,
       pointSpacing: _pointSpacing,
+      zoomLevel: _zoomLevel,
     );
     notifyListeners();
   }
@@ -132,13 +137,13 @@ class DiscussionTimelineProvider with ChangeNotifier {
   }
 
   void zoomIn() {
-    _zoomLevel = (_zoomLevel + 0.25).clamp(0.5, 5.0);
-    notifyListeners();
+    final newZoom = (_zoomLevel + 0.25).clamp(0.5, 5.0);
+    updateAppearanceSettings(zoomLevel: newZoom);
   }
 
   void zoomOut() {
-    _zoomLevel = (_zoomLevel - 0.25).clamp(0.5, 5.0);
-    notifyListeners();
+    final newZoom = (_zoomLevel - 0.25).clamp(0.5, 5.0);
+    updateAppearanceSettings(zoomLevel: newZoom);
   }
 
   Future<void> updateEventDate(TimelineEvent event, DateTime newDate) async {

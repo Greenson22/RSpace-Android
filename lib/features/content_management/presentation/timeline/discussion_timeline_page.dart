@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/timeline/discussion_timeline_page.dart
 
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/timeline_models.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/discussion_model.dart';
@@ -43,12 +43,22 @@ class _DiscussionTimelineView extends StatefulWidget {
 
 class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   Offset? _pointerPosition;
+  final ScrollController _horizontalScrollController = ScrollController();
+  // ==> CONTROLLER BARU UNTUK SCROLL VERTIKAL <==
+  final ScrollController _verticalScrollController = ScrollController();
 
   bool _isDragMode = false;
   TimelineEvent? _draggedEvent;
   Offset? _dragStartPosition;
 
   bool _isSelectionMode = false;
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    _verticalScrollController.dispose(); // ==> JANGAN LUPA DISPOSE
+    super.dispose();
+  }
 
   void _onPanStart(DragStartDetails details) {
     if (!_isDragMode) return;
@@ -284,7 +294,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
           final canvasWidth =
               MediaQuery.of(context).size.width * provider.zoomLevel;
 
-          // ==> KALKULASI TINGGI CANVAS SECARA DINAMIS <==
           final maxStackPerDay = timelineData.discussionCounts.values.fold(
             0,
             (max, current) => current > max ? current : max,
@@ -294,103 +303,118 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
               (maxStackPerDay *
                   (provider.discussionRadius * 2 + provider.discussionSpacing));
 
-          return SingleChildScrollView(
-            // Scroll Vertikal
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  // Scroll Horizontal
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: MouseRegion(
-                      onHover: (event) => setState(
-                        () => _pointerPosition = event.localPosition,
-                      ),
-                      onExit: (_) => setState(() => _pointerPosition = null),
-                      child: GestureDetector(
-                        onLongPressStart: (details) => setState(
-                          () => _pointerPosition = details.localPosition,
-                        ),
-                        onLongPressMoveUpdate: (details) => setState(
-                          () => _pointerPosition = details.localPosition,
-                        ),
-                        onLongPressEnd: (_) =>
-                            setState(() => _pointerPosition = null),
-                        onLongPressCancel: () =>
-                            setState(() => _pointerPosition = null),
-                        onTapDown: _onTapDown,
-                        onTapUp: (_) {
-                          if (!_isSelectionMode) {
-                            setState(() => _pointerPosition = null);
-                          }
-                        },
-                        onPanStart: _onPanStart,
-                        onPanUpdate: _onPanUpdate,
-                        onPanEnd: _onPanEnd,
-                        child: SizedBox(
-                          height: canvasHeight, // Terapkan tinggi dinamis
-                          width: canvasWidth - 32,
-                          child: CustomPaint(
-                            size: Size.infinite,
-                            painter: TimelinePainter(
-                              timelineData: timelineData,
-                              context: context,
-                              pointerPosition: _pointerPosition,
-                              draggedEvent: _draggedEvent,
-                              selectedEvents: provider.selectedEvents,
-                              discussionRadius: provider.discussionRadius,
-                              pointRadius: provider.pointRadius,
-                              discussionSpacing: provider.discussionSpacing,
-                              pointSpacing: provider.pointSpacing,
+          // ==> PERUBAHAN UTAMA DI SINI <==
+          return Scrollbar(
+            controller: _verticalScrollController,
+            thumbVisibility: true, // Selalu tampilkan scrollbar vertikal
+            child: SingleChildScrollView(
+              // Scroll Vertikal
+              controller: _verticalScrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Scrollbar(
+                    controller: _horizontalScrollController,
+                    thumbVisibility:
+                        true, // Selalu tampilkan scrollbar horizontal
+                    child: SingleChildScrollView(
+                      // Scroll Horizontal
+                      scrollDirection: Axis.horizontal,
+                      controller: _horizontalScrollController,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: MouseRegion(
+                          onHover: (event) => setState(
+                            () => _pointerPosition = event.localPosition,
+                          ),
+                          onExit: (_) =>
+                              setState(() => _pointerPosition = null),
+                          child: GestureDetector(
+                            onLongPressStart: (details) => setState(
+                              () => _pointerPosition = details.localPosition,
+                            ),
+                            onLongPressMoveUpdate: (details) => setState(
+                              () => _pointerPosition = details.localPosition,
+                            ),
+                            onLongPressEnd: (_) =>
+                                setState(() => _pointerPosition = null),
+                            onLongPressCancel: () =>
+                                setState(() => _pointerPosition = null),
+                            onTapDown: _onTapDown,
+                            onTapUp: (_) {
+                              if (!_isSelectionMode) {
+                                setState(() => _pointerPosition = null);
+                              }
+                            },
+                            onPanStart: _onPanStart,
+                            onPanUpdate: _onPanUpdate,
+                            onPanEnd: _onPanEnd,
+                            child: SizedBox(
+                              height: canvasHeight,
+                              width: canvasWidth - 32,
+                              child: CustomPaint(
+                                size: Size.infinite,
+                                painter: TimelinePainter(
+                                  timelineData: timelineData,
+                                  context: context,
+                                  pointerPosition: _pointerPosition,
+                                  draggedEvent: _draggedEvent,
+                                  selectedEvents: provider.selectedEvents,
+                                  discussionRadius: provider.discussionRadius,
+                                  pointRadius: provider.pointRadius,
+                                  discussionSpacing: provider.discussionSpacing,
+                                  pointSpacing: provider.pointSpacing,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const Divider(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text('Legenda', style: theme.textTheme.titleLarge),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      const Chip(
-                        avatar: CircleAvatar(backgroundColor: Colors.blue),
-                        label: Text('Diskusi'),
-                      ),
-                      const SizedBox(width: 8),
-                      Chip(
-                        avatar: Container(
-                          width: 12,
-                          height: 12,
-                          color: Colors.blue,
-                        ),
-                        label: const Text('Poin'),
-                      ),
-                      ...kRepetitionCodes.map((code) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Chip(
-                            avatar: CircleAvatar(
-                              backgroundColor: getColorForRepetitionCode(code),
-                            ),
-                            label: Text(code),
-                          ),
-                        );
-                      }).toList(),
-                    ],
+                  const Divider(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text('Legenda', style: theme.textTheme.titleLarge),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        const Chip(
+                          avatar: CircleAvatar(backgroundColor: Colors.blue),
+                          label: Text('Diskusi'),
+                        ),
+                        const SizedBox(width: 8),
+                        Chip(
+                          avatar: Container(
+                            width: 12,
+                            height: 12,
+                            color: Colors.blue,
+                          ),
+                          label: const Text('Poin'),
+                        ),
+                        ...kRepetitionCodes.map((code) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Chip(
+                              avatar: CircleAvatar(
+                                backgroundColor: getColorForRepetitionCode(
+                                  code,
+                                ),
+                              ),
+                              label: Text(code),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           );
         },
