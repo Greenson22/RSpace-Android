@@ -193,29 +193,55 @@ class DiscussionTimelineProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final activeDiscussions = _allDiscussions
-        .where((d) => d.effectiveDate != null)
-        .toList();
+    final allEvents = <TimelineEvent>[];
+    for (final discussion in _allDiscussions) {
+      if (discussion.finished) continue;
 
-    if (activeDiscussions.isEmpty) {
+      if (discussion.points.isEmpty) {
+        if (discussion.date != null) {
+          allEvents.add(
+            TimelineEvent(
+              parentDiscussion: discussion,
+              type: TimelineEventType.discussion,
+              title: discussion.discussion,
+              effectiveDate: discussion.date!,
+              effectiveRepetitionCode: discussion.repetitionCode,
+            ),
+          );
+        }
+      } else {
+        for (final point in discussion.points) {
+          if (!point.finished) {
+            allEvents.add(
+              TimelineEvent(
+                parentDiscussion: discussion,
+                point: point,
+                type: TimelineEventType.point,
+                title: point.pointText,
+                effectiveDate: point.date,
+                effectiveRepetitionCode: point.repetitionCode,
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    if (allEvents.isEmpty) {
       _timelineData = null;
       _isLoading = false;
       notifyListeners();
       return;
     }
 
-    activeDiscussions.sort(
+    allEvents.sort(
       (a, b) => DateTime.parse(
-        a.effectiveDate!,
-      ).compareTo(DateTime.parse(b.effectiveDate!)),
+        a.effectiveDate,
+      ).compareTo(DateTime.parse(b.effectiveDate)),
     );
 
-    DateTime overallStartDate = DateTime.parse(
-      activeDiscussions.first.effectiveDate!,
-    );
-    DateTime overallEndDate = DateTime.parse(
-      activeDiscussions.last.effectiveDate!,
-    );
+    DateTime overallStartDate = DateTime.parse(allEvents.first.effectiveDate);
+    DateTime overallEndDate = DateTime.parse(allEvents.last.effectiveDate);
 
     if (DateUtils.isSameDay(overallStartDate, overallEndDate)) {
       overallEndDate = overallStartDate.add(const Duration(days: 7));
@@ -224,25 +250,28 @@ class DiscussionTimelineProvider with ChangeNotifier {
     final displayStartDate = _selectedDateRange?.start ?? overallStartDate;
     final displayEndDate = _selectedDateRange?.end ?? overallEndDate;
 
-    final filteredDiscussions = activeDiscussions.where((d) {
-      final date = DateTime.tryParse(d.effectiveDate!);
+    final filteredEvents = allEvents.where((e) {
+      final date = DateTime.tryParse(e.effectiveDate);
       if (date == null) return false;
       return !date.isBefore(DateUtils.dateOnly(displayStartDate)) &&
           !date.isAfter(DateUtils.dateOnly(displayEndDate));
     }).toList();
 
+    // ==> TAMBAHKAN LOGIKA PEMBERIAN WARNA DI SINI <==
+    for (final event in filteredEvents) {
+      event.color = getColorForRepetitionCode(event.effectiveRepetitionCode);
+    }
+
     final Map<DateTime, int> discussionCounts = {};
-    for (var discussion in filteredDiscussions) {
-      final dateOnly = DateUtils.dateOnly(
-        DateTime.parse(discussion.effectiveDate!),
-      );
+    for (var event in filteredEvents) {
+      final dateOnly = DateUtils.dateOnly(DateTime.parse(event.effectiveDate));
       discussionCounts[dateOnly] = (discussionCounts[dateOnly] ?? 0) + 1;
     }
 
     final int totalDays = displayEndDate.difference(displayStartDate).inDays;
 
     _timelineData = TimelineData(
-      discussions: [],
+      events: filteredEvents,
       startDate: displayStartDate,
       endDate: displayEndDate,
       totalDays: totalDays,

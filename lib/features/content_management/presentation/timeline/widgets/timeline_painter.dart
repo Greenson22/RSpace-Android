@@ -23,7 +23,9 @@ class TimelinePainter extends CustomPainter {
     final double startX = 30;
     final double endX = size.width - 30;
     final double timelineWidth = endX - startX;
-    const double dotRadius = 5.0;
+    const double discussionRadius = 6.0;
+    const double pointRadius = 4.0;
+    final Map<String, Offset> discussionPositions = {};
 
     final linePaint = Paint()
       ..color = Colors.grey.shade400
@@ -32,6 +34,11 @@ class TimelinePainter extends CustomPainter {
     final verticalLinePaint = Paint()
       ..color = Colors.grey.shade300
       ..strokeWidth = 1.0;
+
+    final connectorPaint = Paint()
+      ..color = Colors.grey.shade400
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
 
     canvas.drawLine(
       Offset(startX, timelineY),
@@ -52,8 +59,14 @@ class TimelinePainter extends CustomPainter {
       textAlign: TextAlign.right,
     );
 
-    final List<TimelineDiscussion> positionedDiscussions = [];
-    timelineData.discussionCounts.forEach((date, count) {
+    final Map<DateTime, List<TimelineEvent>> eventsByDay = {};
+    for (final event in timelineData.events) {
+      final dateOnly = DateUtils.dateOnly(DateTime.parse(event.effectiveDate));
+      eventsByDay.putIfAbsent(dateOnly, () => []).add(event);
+    }
+
+    final List<TimelineEvent> positionedEvents = [];
+    eventsByDay.forEach((date, eventsOnDay) {
       final double xPos = timelineData.totalDays > 0
           ? startX +
                 (date.difference(timelineData.startDate).inDays /
@@ -61,76 +74,98 @@ class TimelinePainter extends CustomPainter {
                     timelineWidth
           : startX;
 
-      final discussionsOnThisDay = timelineData.discussions
-          .where(
-            (d) => DateUtils.isSameDay(
-              DateTime.parse(d.discussion.effectiveDate!),
-              date,
-            ),
-          )
-          .toList();
+      double currentY = timelineY - 40;
 
-      double highestY = timelineY;
-
-      for (int i = 0; i < discussionsOnThisDay.length; i++) {
-        final item = discussionsOnThisDay[i];
-        final yPos = timelineY - 40 - (i * (dotRadius * 2 + 5));
-        if (yPos < highestY) {
-          highestY = yPos;
+      // Simpan posisi diskusi terlebih dahulu
+      for (final event in eventsOnDay) {
+        if (event.type == TimelineEventType.discussion) {
+          event.position = Offset(xPos, currentY);
+          positionedEvents.add(event);
+          discussionPositions[event.parentDiscussion.discussion] =
+              event.position;
+          currentY -= (discussionRadius * 2 + 10);
         }
-        positionedDiscussions.add(
-          TimelineDiscussion(
-            discussion: item.discussion,
-            position: Offset(xPos, yPos),
-            color: item.color,
-          ),
-        );
       }
 
-      if (discussionsOnThisDay.isNotEmpty) {
+      // Kemudian posisikan poin relatif terhadap diskusi
+      for (final event in eventsOnDay) {
+        if (event.type == TimelineEventType.point) {
+          event.position = Offset(xPos, currentY);
+          positionedEvents.add(event);
+          currentY -= (pointRadius * 2 + 8);
+        }
+      }
+
+      if (eventsOnDay.isNotEmpty) {
         canvas.drawLine(
           Offset(xPos, timelineY),
-          Offset(xPos, highestY),
+          Offset(xPos, currentY + (pointRadius * 2 + 8)),
           verticalLinePaint,
         );
       }
     });
 
-    for (final item in positionedDiscussions) {
-      final dotPaint = Paint()..color = item.color;
-      canvas.drawCircle(item.position, dotRadius, dotPaint);
+    // Gambar garis penghubung dan item
+    for (final event in positionedEvents) {
+      if (event.type == TimelineEventType.point) {
+        final parentPosition =
+            discussionPositions[event.parentDiscussion.discussion];
+        if (parentPosition != null) {
+          // Gambar garis dari titik tengah lingkaran diskusi ke titik tengah kotak poin
+          canvas.drawLine(
+            Offset(parentPosition.dx, parentPosition.dy),
+            Offset(event.position.dx, event.position.dy),
+            connectorPaint,
+          );
+        }
+        final rect = Rect.fromCenter(
+          center: event.position,
+          width: pointRadius * 2,
+          height: pointRadius * 2,
+        );
+        canvas.drawRect(rect, Paint()..color = event.color);
+      } else {
+        // Discussion
+        canvas.drawCircle(
+          event.position,
+          discussionRadius,
+          Paint()..color = event.color,
+        );
+      }
     }
 
     if (pointerPosition != null) {
-      TimelineDiscussion? hoveredDiscussion;
+      TimelineEvent? hoveredEvent;
       double closestDistance = double.infinity;
 
-      for (final item in positionedDiscussions) {
-        final distance = (item.position - pointerPosition!).distance;
-        if (distance < closestDistance && distance < (dotRadius + 5)) {
+      for (final event in positionedEvents) {
+        final distance = (event.position - pointerPosition!).distance;
+        final radius = event.type == TimelineEventType.discussion
+            ? discussionRadius
+            : pointRadius;
+        if (distance < closestDistance && distance < (radius + 5)) {
           closestDistance = distance;
-          hoveredDiscussion = item;
+          hoveredEvent = event;
         }
       }
 
-      if (hoveredDiscussion != null) {
+      if (hoveredEvent != null) {
+        final radius = hoveredEvent.type == TimelineEventType.discussion
+            ? discussionRadius
+            : pointRadius;
         final highlightPaint = Paint()
-          ..color = hoveredDiscussion.color.withOpacity(0.3)
+          ..color = hoveredEvent.color.withOpacity(0.3)
           ..strokeWidth = 2.0
           ..style = PaintingStyle.stroke;
-        canvas.drawCircle(
-          hoveredDiscussion.position,
-          dotRadius + 5,
-          highlightPaint,
-        );
+        canvas.drawCircle(hoveredEvent.position, radius + 5, highlightPaint);
 
-        _drawTooltip(canvas, size, hoveredDiscussion);
+        _drawTooltip(canvas, size, hoveredEvent);
       }
     }
   }
 
-  // ==> FUNGSI INI YANG DIPERBARUI <==
-  void _drawTooltip(Canvas canvas, Size size, TimelineDiscussion item) {
+  void _drawTooltip(Canvas canvas, Size size, TimelineEvent item) {
+    final isPoint = item.type == TimelineEventType.point;
     final textStyle = TextStyle(color: Colors.white, fontSize: 11);
     final dateStyle = TextStyle(
       color: Colors.white.withOpacity(0.8),
@@ -138,21 +173,25 @@ class TimelinePainter extends CustomPainter {
     );
 
     final titleSpan = TextSpan(
-      text: item.discussion.discussion,
+      text: (isPoint ? "Poin: " : "") + item.title,
       style: textStyle,
     );
 
-    // Buat TextSpan untuk tanggal dan kode repetisi
+    final parentDiscussionSpan = isPoint
+        ? TextSpan(
+            text: "\nDiskusi: ${item.parentDiscussion.discussion}",
+            style: dateStyle,
+          )
+        : const TextSpan();
+
     final dateAndCodeSpan = TextSpan(
       style: dateStyle,
       children: [
-        TextSpan(text: '\n${item.discussion.effectiveDate} | '),
+        TextSpan(text: '\n${item.effectiveDate} | '),
         TextSpan(
-          text: item.discussion.effectiveRepetitionCode,
+          text: item.effectiveRepetitionCode,
           style: TextStyle(
-            color: getColorForRepetitionCode(
-              item.discussion.effectiveRepetitionCode,
-            ),
+            color: getColorForRepetitionCode(item.effectiveRepetitionCode),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -160,13 +199,14 @@ class TimelinePainter extends CustomPainter {
     );
 
     final textPainter = TextPainter(
-      // Gabungkan semua TextSpan
-      text: TextSpan(children: [titleSpan, dateAndCodeSpan]),
+      text: TextSpan(
+        children: [titleSpan, parentDiscussionSpan, dateAndCodeSpan],
+      ),
       textAlign: TextAlign.left,
       textDirection: Directionality.of(context),
     );
 
-    textPainter.layout(maxWidth: 150);
+    textPainter.layout(maxWidth: 200);
 
     final tooltipPadding = 8.0;
     double xPos = item.position.dx + 15;

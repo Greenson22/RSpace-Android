@@ -123,7 +123,7 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
               child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text(
-                  'Tidak ada diskusi dengan jadwal aktif di dalam subjek ini untuk ditampilkan di linimasa.',
+                  'Tidak ada diskusi atau poin dengan jadwal aktif di dalam subjek ini untuk ditampilkan di linimasa.',
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -131,36 +131,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
           }
 
           final timelineData = provider.timelineData!;
-
-          final List<TimelineDiscussion> timelineDiscussions = [];
-
-          final discussionsToDisplay = provider.discussions.where((d) {
-            if (d.effectiveDate == null) return false;
-            final date = DateTime.tryParse(d.effectiveDate!);
-            if (date == null) return false;
-            return !date.isBefore(DateUtils.dateOnly(timelineData.startDate)) &&
-                !date.isAfter(DateUtils.dateOnly(timelineData.endDate));
-          }).toList();
-
-          for (var discussion in discussionsToDisplay) {
-            timelineDiscussions.add(
-              TimelineDiscussion(
-                discussion: discussion,
-                position: Offset.zero,
-                color: getColorForRepetitionCode(
-                  discussion.effectiveRepetitionCode,
-                ),
-              ),
-            );
-          }
-
-          final finalTimelineData = TimelineData(
-            discussions: timelineDiscussions,
-            startDate: timelineData.startDate,
-            endDate: timelineData.endDate,
-            totalDays: timelineData.totalDays,
-            discussionCounts: timelineData.discussionCounts,
-          );
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -181,7 +151,7 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                     child: CustomPaint(
                       size: Size.infinite,
                       painter: TimelinePainter(
-                        timelineData: finalTimelineData,
+                        timelineData: timelineData,
                         context: context,
                         pointerPosition: _pointerPosition,
                       ),
@@ -194,14 +164,28 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                 Wrap(
                   spacing: 16.0,
                   runSpacing: 8.0,
-                  children: kRepetitionCodes.map((code) {
-                    return Chip(
-                      avatar: CircleAvatar(
-                        backgroundColor: getColorForRepetitionCode(code),
+                  children: [
+                    const Chip(
+                      avatar: CircleAvatar(backgroundColor: Colors.blue),
+                      label: Text('Diskusi'),
+                    ),
+                    Chip(
+                      avatar: Container(
+                        width: 12,
+                        height: 12,
+                        color: Colors.blue,
                       ),
-                      label: Text(code),
-                    );
-                  }).toList(),
+                      label: const Text('Poin'),
+                    ),
+                    ...kRepetitionCodes.map((code) {
+                      return Chip(
+                        avatar: CircleAvatar(
+                          backgroundColor: getColorForRepetitionCode(code),
+                        ),
+                        label: Text(code),
+                      );
+                    }).toList(),
+                  ],
                 ),
               ],
             ),
