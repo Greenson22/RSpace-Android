@@ -23,17 +23,23 @@ class AppStatistics {
   final int finishedDiscussionCount;
   final int pointCount;
   final int taskCategoryCount;
-  final int taskCount;
-  final int completedTaskCount;
+  // ==> NAMA FIELD DIPERJELAS <==
+  final int totalTaskCount;
+  final int dailyTargetTaskCount;
+  final int dailyTargetsCompleted;
   final List<TopicStatistics> perTopicStats;
-  // ==> FIELD BARU UNTUK MENYIMPAN JUMLAH SETIAP REPETITION CODE <==
   final Map<String, int> repetitionCodeCounts;
 
-  // ==> FIELD BARU UNTUK JURNAL AKTIVITAS <==
   final Duration totalTimeLogged;
   final Duration averageTimePerDay;
-  final String? mostActiveDay; // Format: "Senin, 1 Jan 2024"
+  final String? mostActiveDay;
   final int mostActiveDayMinutes;
+
+  // ==> FIELD-FIELD BARU UNTUK KUIS <==
+  final int quizCategoryCount;
+  final int quizTopicCount;
+  final int quizSetCount;
+  final int quizQuestionCount;
 
   AppStatistics({
     this.topicCount = 0,
@@ -42,14 +48,19 @@ class AppStatistics {
     this.finishedDiscussionCount = 0,
     this.pointCount = 0,
     this.taskCategoryCount = 0,
-    this.taskCount = 0,
-    this.completedTaskCount = 0,
+    this.totalTaskCount = 0,
+    this.dailyTargetTaskCount = 0,
+    this.dailyTargetsCompleted = 0,
     this.perTopicStats = const [],
     this.repetitionCodeCounts = const {},
-    // ==> INISIALISASI NILAI DEFAULT <==
     this.totalTimeLogged = Duration.zero,
     this.averageTimePerDay = Duration.zero,
     this.mostActiveDay,
     this.mostActiveDayMinutes = 0,
+    // ==> INISIALISASI FIELD BARU <==
+    this.quizCategoryCount = 0,
+    this.quizTopicCount = 0,
+    this.quizSetCount = 0,
+    this.quizQuestionCount = 0,
   });
 }

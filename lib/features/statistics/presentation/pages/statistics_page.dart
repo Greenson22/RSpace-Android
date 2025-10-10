@@ -28,9 +28,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   void initState() {
     super.initState();
-    // PERBAIKAN: Menghapus logika pemuatan data yang tidak aman.
-    // Provider sudah memuat data secara otomatis di konstruktornya.
-    // Kita hanya perlu meminta fokus setelah frame pertama selesai di-build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         FocusScope.of(context).requestFocus(_focusNode);
@@ -60,11 +57,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
         });
 
         if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          // Jika ada topik dan fokus belum di item terakhir
           if (totalTopics > 0 && _focusedTopicIndex < totalTopics - 1) {
             setState(() => _focusedTopicIndex++);
           } else {
-            // Jika tidak, scroll ke bawah
             _scrollController.animateTo(
               _scrollController.offset + 100,
               duration: const Duration(milliseconds: 200),
@@ -72,11 +67,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
             );
           }
         } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          // Jika fokus ada di salah satu topik
           if (_focusedTopicIndex > -1) {
             setState(() => _focusedTopicIndex--);
           } else {
-            // Jika tidak, scroll ke atas
             _scrollController.animateTo(
               _scrollController.offset - 100,
               duration: const Duration(milliseconds: 200),
@@ -85,7 +78,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
           }
         }
       } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-        // Buka/tutup panel jika salah satu topik sedang fokus
         if (_focusedTopicIndex >= 0 && _focusedTopicIndex < totalTopics) {
           setState(() {
             _isPanelExpanded[_focusedTopicIndex] =
@@ -103,7 +95,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
     await provider.generateStatistics();
     if (mounted) {
       setState(() {
-        // Reset state panel dan fokus setelah data diperbarui
         _isPanelExpanded = List<bool>.filled(
           provider.stats.perTopicStats.length,
           false,
@@ -136,7 +127,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
             }
 
             final stats = provider.stats;
-            // Pastikan _isPanelExpanded diinisialisasi ulang jika data berubah
             if (stats.perTopicStats.isNotEmpty &&
                 _isPanelExpanded.length != stats.perTopicStats.length) {
               _isPanelExpanded = List<bool>.filled(
@@ -173,7 +163,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
         const SizedBox(height: 16),
         _buildTaskSummary(stats),
         const SizedBox(height: 16),
-        // ==> TAMBAHKAN KARTU BARU DI SINI <==
+        _buildQuizSummary(stats), // ==> TAMBAHKAN KARTU BARU
+        const SizedBox(height: 16),
         _buildActivitySummary(stats),
         const SizedBox(height: 16),
         if (stats.perTopicStats.isNotEmpty)
@@ -204,14 +195,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 const SizedBox(height: 16),
                 _buildTaskSummary(stats),
                 const SizedBox(height: 16),
-                // ==> TAMBAHKAN KARTU BARU DI SINI <==
+                _buildQuizSummary(stats), // ==> TAMBAHKAN KARTU BARU
+                const SizedBox(height: 16),
                 _buildActivitySummary(stats),
               ],
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
-            // Gunakan SingleChildScrollView di sini agar bisa di-scroll terpisah
             child: SingleChildScrollView(
               controller: _scrollController,
               child: Column(
@@ -283,6 +274,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   SummaryCard _buildTaskSummary(AppStatistics stats) {
     return SummaryCard(
       title: 'Ringkasan Tugas',
@@ -297,18 +289,59 @@ class _StatisticsPageState extends State<StatisticsPage> {
         ),
         _buildStatTile(
           context,
-          'Total Tugas',
-          stats.taskCount.toString(),
+          'Total Semua Tugas',
+          stats.totalTaskCount.toString(),
           Icons.list_alt_outlined,
         ),
         _buildStatTile(
           context,
-          'Tugas Selesai',
-          stats.completedTaskCount.toString(),
-          Icons.task_alt,
+          'Tugas dengan Target Harian',
+          stats.dailyTargetTaskCount.toString(),
+          Icons.track_changes_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Target Harian Tercapai',
+          stats.dailyTargetsCompleted.toString(),
+          Icons.check_circle_outline,
           valueColor: Theme.of(context).brightness == Brightness.light
               ? Colors.green.shade800
               : Colors.green.shade300,
+        ),
+      ],
+    );
+  }
+
+  // ==> FUNGSI BARU UNTUK KARTU KUIS <==
+  SummaryCard _buildQuizSummary(AppStatistics stats) {
+    return SummaryCard(
+      title: 'Ringkasan Kuis',
+      icon: Icons.quiz_outlined,
+      color: Colors.cyan.shade700,
+      children: [
+        _buildStatTile(
+          context,
+          'Total Kategori Kuis',
+          stats.quizCategoryCount.toString(),
+          Icons.folder_special_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Total Topik Kuis',
+          stats.quizTopicCount.toString(),
+          Icons.school_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Total Set Kuis',
+          stats.quizSetCount.toString(),
+          Icons.collections_bookmark_outlined,
+        ),
+        _buildStatTile(
+          context,
+          'Total Pertanyaan',
+          stats.quizQuestionCount.toString(),
+          Icons.question_answer_outlined,
         ),
       ],
     );
@@ -337,9 +370,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT KARTU JURNAL AKTIVITAS <==
   SummaryCard _buildActivitySummary(AppStatistics stats) {
-    // Helper untuk format durasi
     String formatDuration(Duration duration) {
       final hours = duration.inHours;
       final minutes = duration.inMinutes.remainder(60);
