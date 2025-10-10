@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/archive/presentation/pages/archive_hub_page.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_topic_page.dart';
@@ -62,10 +63,11 @@ List<VoidCallback> buildDashboardActions(
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
     () => showDataManagementDialog(context),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
-    ),
+    if (kDebugMode)
+      () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
+      ),
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
@@ -166,12 +168,14 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Perawatan & manajemen data',
             'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
           },
-          {
-            'icon': Icons.library_books_outlined,
-            'label': 'Pustaka Prompt',
-            'subtitle': 'Simpan & kelola prompt AI',
-            'colors': AppTheme.gradientColors7,
-          },
+          if (kDebugMode)
+            {
+              'icon': Icons.library_books_outlined,
+              // ==> PERUBAHAN LABEL DI SINI <==
+              'label': 'Pustaka Prompt (Debug)',
+              'subtitle': 'Simpan & kelola prompt AI',
+              'colors': AppTheme.gradientColors7,
+            },
           if (Platform.isAndroid)
             {
               'icon': Icons.public,

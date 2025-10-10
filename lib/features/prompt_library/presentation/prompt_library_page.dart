@@ -23,9 +23,14 @@ class _PromptLibraryView extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<PromptProvider>(context);
 
+    // ==> PERUBAHAN JUDUL DI SINI <==
+    final String pageTitle =
+        provider.selectedCategory ?? 'Pustaka Prompt (Debug)';
+    if (provider.selectedCategory != null) {}
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(provider.selectedCategory ?? 'Pustaka Prompt'),
+        title: Text(pageTitle),
         leading: provider.selectedCategory != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
