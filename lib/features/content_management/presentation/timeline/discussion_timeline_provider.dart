@@ -8,10 +8,12 @@ import '../../domain/models/timeline_models.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
 import '../../domain/services/discussion_service.dart';
+import '../../../../core/services/user_data_service.dart';
 
 class DiscussionTimelineProvider with ChangeNotifier {
   final String _subjectJsonPath;
   final DiscussionService _discussionService = DiscussionService();
+  final UserDataService _userDataService = UserDataService();
 
   List<Discussion> _allDiscussions = [];
   TimelineData? _timelineData;
@@ -30,7 +32,19 @@ class DiscussionTimelineProvider with ChangeNotifier {
   double _zoomLevel = 1.0;
   double get zoomLevel => _zoomLevel;
 
-  // ==> STATE BARU UNTUK SELEKSI <==
+  double _discussionRadius = 6.0;
+  double get discussionRadius => _discussionRadius;
+
+  double _pointRadius = 4.0;
+  double get pointRadius => _pointRadius;
+
+  // ==> STATE BARU UNTUK JARAK <==
+  double _discussionSpacing = 10.0;
+  double get discussionSpacing => _discussionSpacing;
+
+  double _pointSpacing = 8.0;
+  double get pointSpacing => _pointSpacing;
+
   final Set<TimelineEvent> _selectedEvents = {};
   Set<TimelineEvent> get selectedEvents => _selectedEvents;
   bool get isSelectionMode => _selectedEvents.isNotEmpty;
@@ -40,10 +54,43 @@ class DiscussionTimelineProvider with ChangeNotifier {
     this._subjectJsonPath,
   ) {
     _allDiscussions = initialDiscussions ?? [];
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _loadAppearanceSettings();
     processDiscussions();
   }
 
-  // ==> FUNGSI-FUNGSI BARU UNTUK MANAJEMEN SELEKSI <==
+  Future<void> _loadAppearanceSettings() async {
+    final settings = await _userDataService.loadTimelineAppearance();
+    _discussionRadius = settings['discussionRadius']!;
+    _pointRadius = settings['pointRadius']!;
+    _discussionSpacing = settings['discussionSpacing']!;
+    _pointSpacing = settings['pointSpacing']!;
+    notifyListeners();
+  }
+
+  Future<void> updateAppearanceSettings({
+    double? discussionRadius,
+    double? pointRadius,
+    double? discussionSpacing,
+    double? pointSpacing,
+  }) async {
+    if (discussionRadius != null) _discussionRadius = discussionRadius;
+    if (pointRadius != null) _pointRadius = pointRadius;
+    if (discussionSpacing != null) _discussionSpacing = discussionSpacing;
+    if (pointSpacing != null) _pointSpacing = pointSpacing;
+
+    await _userDataService.saveTimelineAppearance(
+      discussionRadius: _discussionRadius,
+      pointRadius: _pointRadius,
+      discussionSpacing: _discussionSpacing,
+      pointSpacing: _pointSpacing,
+    );
+    notifyListeners();
+  }
+
   void toggleEventSelection(TimelineEvent event) {
     if (_selectedEvents.contains(event)) {
       _selectedEvents.remove(event);
@@ -58,7 +105,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN BANYAK EVENT <==
   Future<void> updateSelectedEventsDate(Duration dateOffset) async {
     if (_selectedEvents.isEmpty) return;
 
@@ -82,7 +128,7 @@ class DiscussionTimelineProvider with ChangeNotifier {
     }
 
     await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
-    processDiscussions(); // proses ulang untuk refresh
+    processDiscussions();
   }
 
   void zoomIn() {

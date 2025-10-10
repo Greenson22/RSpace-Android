@@ -1,14 +1,15 @@
 // lib/features/content_management/presentation/timeline/discussion_timeline_page.dart
 
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
+import 'package:my_aplication/features/content_management/domain/models/timeline_models.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/discussion_model.dart';
 import 'discussion_timeline_provider.dart';
 import 'widgets/timeline_painter.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
-import '../../domain/models/timeline_models.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
+import 'dialogs/timeline_settings_dialog.dart';
 
 class DiscussionTimelinePage extends StatelessWidget {
   final String subjectName;
@@ -42,20 +43,12 @@ class _DiscussionTimelineView extends StatefulWidget {
 
 class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   Offset? _pointerPosition;
-  final ScrollController _scrollController = ScrollController();
 
   bool _isDragMode = false;
   TimelineEvent? _draggedEvent;
   Offset? _dragStartPosition;
 
-  // ==> STATE BARU UNTUK MODE SELEKSI <==
   bool _isSelectionMode = false;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   void _onPanStart(DragStartDetails details) {
     if (!_isDragMode) return;
@@ -77,11 +70,9 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
 
     if (eventToDrag != null) {
       setState(() {
-        // Jika item yang di-drag ada di dalam seleksi, drag semua seleksi
         if (provider.selectedEvents.contains(eventToDrag)) {
-          _draggedEvent = eventToDrag; // Tetap simpan satu event sebagai acuan
+          _draggedEvent = eventToDrag;
         } else {
-          // Jika tidak, bersihkan seleksi dan drag item ini saja
           provider.clearSelection();
           _draggedEvent = eventToDrag;
         }
@@ -118,11 +109,9 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       final int dayOffset = (timelineData.totalDays * dateRatio).round();
       final dateOffset = Duration(days: dayOffset);
 
-      // Jika ada item yang terseleksi, pindahkan semua
       if (provider.isSelectionMode) {
         provider.updateSelectedEventsDate(dateOffset);
       } else {
-        // Jika tidak, hanya pindahkan satu item yang di-drag
         final currentEventDate = DateTime.parse(_draggedEvent!.effectiveDate);
         final newDate = currentEventDate.add(dateOffset);
         provider.updateEventDate(_draggedEvent!, newDate);
@@ -141,7 +130,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       listen: false,
     );
     if (_isSelectionMode) {
-      // Logika untuk menyeleksi item
       double closestDistance = double.infinity;
       TimelineEvent? eventToSelect;
       for (final event in provider.timelineData!.events) {
@@ -155,7 +143,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
         provider.toggleEventSelection(eventToSelect);
       }
     } else {
-      // Logika untuk hover
       setState(() => _pointerPosition = details.localPosition);
     }
   }
@@ -191,7 +178,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
     final provider = Provider.of<DiscussionTimelineProvider>(context);
     final theme = Theme.of(context);
 
-    // ==> KONDISIONAL APPBAR <==
     final currentAppBar = _isSelectionMode
         ? AppBar(
             title: Text('${provider.selectedEvents.length} Item Dipilih'),
@@ -206,6 +192,11 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
         : AppBar(
             title: Text('Linimasa: ${widget.subjectName}'),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.tune),
+                onPressed: () => showTimelineSettingsDialog(context),
+                tooltip: 'Pengaturan Tampilan',
+              ),
               IconButton(
                 icon: Icon(
                   Icons.select_all,
@@ -293,13 +284,24 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
           final canvasWidth =
               MediaQuery.of(context).size.width * provider.zoomLevel;
 
+          // ==> KALKULASI TINGGI CANVAS SECARA DINAMIS <==
+          final maxStackPerDay = timelineData.discussionCounts.values.fold(
+            0,
+            (max, current) => current > max ? current : max,
+          );
+          final double canvasHeight =
+              100 +
+              (maxStackPerDay *
+                  (provider.discussionRadius * 2 + provider.discussionSpacing));
+
           return SingleChildScrollView(
+            // Scroll Vertikal
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SingleChildScrollView(
+                  // Scroll Horizontal
                   scrollDirection: Axis.horizontal,
-                  controller: _scrollController,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: MouseRegion(
@@ -328,7 +330,7 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                         onPanUpdate: _onPanUpdate,
                         onPanEnd: _onPanEnd,
                         child: SizedBox(
-                          height: 300,
+                          height: canvasHeight, // Terapkan tinggi dinamis
                           width: canvasWidth - 32,
                           child: CustomPaint(
                             size: Size.infinite,
@@ -338,6 +340,10 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                               pointerPosition: _pointerPosition,
                               draggedEvent: _draggedEvent,
                               selectedEvents: provider.selectedEvents,
+                              discussionRadius: provider.discussionRadius,
+                              pointRadius: provider.pointRadius,
+                              discussionSpacing: provider.discussionSpacing,
+                              pointSpacing: provider.pointSpacing,
                             ),
                           ),
                         ),

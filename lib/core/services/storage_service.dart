@@ -11,10 +11,8 @@ class SharedPreferencesService {
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
 
-  // ==> KUNCI BARU UNTUK LATAR LOKAL
   static const String _localBackgroundPathKey = 'local_background_path';
 
-  // ==> FUNGSI BARU UNTUK LATAR LOKAL
   Future<void> saveLocalBackgroundImagePath(String path) =>
       _userDataService.saveString(_localBackgroundPathKey, path);
   Future<String?> loadLocalBackgroundImagePath() =>
@@ -22,25 +20,19 @@ class SharedPreferencesService {
   Future<void> clearLocalBackgroundImagePath() =>
       _userDataService.remove(_localBackgroundPathKey);
 
-  // Update neuron methods to use NeuronService
   Future<void> saveNeurons(int count) => _neuronService.setNeurons(count);
   Future<int> loadNeurons() => _neuronService.getNeurons();
 
-  // Metode untuk Pengaturan
   Future<void> saveMyTasksLayoutPreference(bool isGridView) =>
       _settingsService.saveMyTasksLayoutPreference(isGridView);
   Future<bool> loadMyTasksLayoutPreference() =>
       _settingsService.loadMyTasksLayoutPreference();
 
-  // Metode untuk Path
   Future<void> saveCustomStoragePath(String path) =>
       _pathService.saveCustomStoragePath(path);
   Future<String?> loadCustomStoragePath() =>
       _pathService.loadCustomStoragePath();
 
-  // Fungsi untuk save/load customDownloadPath telah dihapus
-
-  // Metode untuk Data Pengguna
   Future<void> saveChatHistory(List<ChatMessage> messages) =>
       _userDataService.saveChatHistory(messages);
   Future<List<ChatMessage>> loadChatHistory() =>
@@ -72,4 +64,15 @@ class SharedPreferencesService {
       _userDataService.saveRepetitionCodeDays(days);
   Future<Map<String, int>> loadRepetitionCodeDays() =>
       _userDataService.loadRepetitionCodeDays();
+
+  // ==> TAMBAHKAN FUNGSI BARU DI SINI <==
+  Future<void> saveTimelineAppearance({
+    double? discussionRadius,
+    double? pointRadius,
+  }) => _userDataService.saveTimelineAppearance(
+    discussionRadius: discussionRadius,
+    pointRadius: pointRadius,
+  );
+  Future<Map<String, double>> loadTimelineAppearance() =>
+      _userDataService.loadTimelineAppearance();
 }

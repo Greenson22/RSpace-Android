@@ -15,6 +15,13 @@ class UserDataService {
   static const String _repetitionCodeDisplayOrderKey =
       'repetition_code_display_order';
   static const String _repetitionCodeDaysKey = 'repetition_code_days';
+  static const String _timelineDiscussionRadiusKey =
+      'timeline_discussion_radius';
+  static const String _timelinePointRadiusKey = 'timeline_point_radius';
+  // ==> KUNCI BARU UNTUK JARAK <==
+  static const String _timelineDiscussionSpacingKey =
+      'timeline_discussion_spacing';
+  static const String _timelinePointSpacingKey = 'timeline_point_spacing';
 
   Future<void> saveString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -29,6 +36,40 @@ class UserDataService {
   Future<void> remove(String key) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(key);
+  }
+
+  // ==> FUNGSI INI DIPERBARUI <==
+  Future<void> saveTimelineAppearance({
+    double? discussionRadius,
+    double? pointRadius,
+    double? discussionSpacing,
+    double? pointSpacing,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (discussionRadius != null) {
+      await prefs.setDouble(_timelineDiscussionRadiusKey, discussionRadius);
+    }
+    if (pointRadius != null) {
+      await prefs.setDouble(_timelinePointRadiusKey, pointRadius);
+    }
+    if (discussionSpacing != null) {
+      await prefs.setDouble(_timelineDiscussionSpacingKey, discussionSpacing);
+    }
+    if (pointSpacing != null) {
+      await prefs.setDouble(_timelinePointSpacingKey, pointSpacing);
+    }
+  }
+
+  // ==> FUNGSI INI DIPERBARUI <==
+  Future<Map<String, double>> loadTimelineAppearance() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'discussionRadius': prefs.getDouble(_timelineDiscussionRadiusKey) ?? 6.0,
+      'pointRadius': prefs.getDouble(_timelinePointRadiusKey) ?? 4.0,
+      'discussionSpacing':
+          prefs.getDouble(_timelineDiscussionSpacingKey) ?? 10.0,
+      'pointSpacing': prefs.getDouble(_timelinePointSpacingKey) ?? 8.0,
+    };
   }
 
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
@@ -51,7 +92,6 @@ class UserDataService {
 
   Future<Map<String, dynamic>> loadSortPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    // ==> NILAI DEFAULT DIPERBARUI <==
     final sortType = prefs.getString(_sortTypeKey) ?? 'position';
     final sortAscending = prefs.getBool(_sortAscendingKey) ?? true;
     return {'sortType': sortType, 'sortAscending': sortAscending};

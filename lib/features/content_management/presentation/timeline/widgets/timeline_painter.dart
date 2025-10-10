@@ -11,15 +11,23 @@ class TimelinePainter extends CustomPainter {
   final BuildContext context;
   final Offset? pointerPosition;
   final TimelineEvent? draggedEvent;
-  // ==> PROPERTI BARU UNTUK SELEKSI <==
   final Set<TimelineEvent> selectedEvents;
+  final double discussionRadius;
+  final double pointRadius;
+  // ==> PROPERTI BARU UNTUK JARAK <==
+  final double discussionSpacing;
+  final double pointSpacing;
 
   TimelinePainter({
     required this.timelineData,
     required this.context,
     this.pointerPosition,
     this.draggedEvent,
-    this.selectedEvents = const {}, // Nilai default
+    this.selectedEvents = const {},
+    required this.discussionRadius,
+    required this.pointRadius,
+    required this.discussionSpacing, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.pointSpacing, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -28,8 +36,6 @@ class TimelinePainter extends CustomPainter {
     final double startX = 30;
     final double endX = size.width - 30;
     final double timelineWidth = endX - startX;
-    const double discussionRadius = 6.0;
-    const double pointRadius = 4.0;
     final Map<String, Offset> discussionPositions = {};
 
     _calculateAllPositions(
@@ -112,14 +118,16 @@ class TimelinePainter extends CustomPainter {
           event.position = Offset(xPos, currentY);
           discussionPositions[event.parentDiscussion.discussion] =
               event.position;
-          currentY -= (discussionRadius * 2 + 10);
+          // ==> GUNAKAN JARAK DARI KONFIGURASI <==
+          currentY -= (discussionRadius * 2 + discussionSpacing);
         }
       }
 
       for (final event in eventsOnDay) {
         if (event.type == TimelineEventType.point) {
           event.position = Offset(xPos, currentY);
-          currentY -= (pointRadius * 2 + 8);
+          // ==> GUNAKAN JARAK DARI KONFIGURASI <==
+          currentY -= (pointRadius * 2 + pointSpacing);
         }
       }
     });
@@ -317,7 +325,6 @@ class TimelinePainter extends CustomPainter {
     final event = draggedEvent!;
     final position = pointerPosition!;
 
-    // Gambar garis target drop
     final dropLinePaint = Paint()
       ..color = Theme.of(context).primaryColor
       ..strokeWidth = 2.0
@@ -325,7 +332,6 @@ class TimelinePainter extends CustomPainter {
     final dropX = position.dx.clamp(startX, endX);
     canvas.drawLine(Offset(dropX, 0), Offset(dropX, timelineY), dropLinePaint);
 
-    // Gambar semua item yang terseleksi di posisi baru
     final dx = position.dx - _findEventPositionInList(event)!.dx;
 
     final eventsToDraw = selectedEvents.isNotEmpty ? selectedEvents : {event};
