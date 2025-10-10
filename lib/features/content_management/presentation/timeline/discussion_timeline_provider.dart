@@ -7,11 +7,9 @@ import '../../domain/models/discussion_model.dart';
 import '../../domain/models/timeline_models.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
-// ==> IMPORT SERVICE YANG DIPERLUKAN <==
 import '../../domain/services/discussion_service.dart';
 
 class DiscussionTimelineProvider with ChangeNotifier {
-  // ==> TAMBAHKAN SERVICE DAN PATH <==
   final String _subjectJsonPath;
   final DiscussionService _discussionService = DiscussionService();
 
@@ -29,11 +27,9 @@ class DiscussionTimelineProvider with ChangeNotifier {
   DateTimeRange? _selectedDateRange;
   DateTimeRange? get selectedDateRange => _selectedDateRange;
 
-  // ==> STATE BARU UNTUK ZOOM <==
   double _zoomLevel = 1.0;
   double get zoomLevel => _zoomLevel;
 
-  // ==> PERBARUI KONSTRUKTOR <==
   DiscussionTimelineProvider(
     List<Discussion>? initialDiscussions,
     this._subjectJsonPath,
@@ -42,18 +38,39 @@ class DiscussionTimelineProvider with ChangeNotifier {
     processDiscussions();
   }
 
-  // ==> FUNGSI BARU UNTUK ZOOM <==
   void zoomIn() {
-    _zoomLevel = (_zoomLevel + 0.25).clamp(0.5, 5.0); // Batasi zoom maksimal 5x
+    _zoomLevel = (_zoomLevel + 0.25).clamp(0.5, 5.0);
     notifyListeners();
   }
 
   void zoomOut() {
-    _zoomLevel = (_zoomLevel - 0.25).clamp(
-      0.5,
-      5.0,
-    ); // Batasi zoom minimal 0.5x
+    _zoomLevel = (_zoomLevel - 0.25).clamp(0.5, 5.0);
     notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK UPDATE TANGGAL <==
+  Future<void> updateEventDate(TimelineEvent event, DateTime newDate) async {
+    final formattedDate = DateFormat('yyyy-MM-dd').format(newDate);
+
+    // Cari diskusi induk di list utama
+    final parentDiscussion = _allDiscussions.firstWhere(
+      (d) => d.discussion == event.parentDiscussion.discussion,
+    );
+
+    if (event.type == TimelineEventType.discussion) {
+      parentDiscussion.date = formattedDate;
+    } else if (event.type == TimelineEventType.point && event.point != null) {
+      // Cari poin yang spesifik di dalam diskusi induk
+      final pointToUpdate = parentDiscussion.points.firstWhere(
+        (p) => p.pointText == event.point!.pointText,
+      );
+      pointToUpdate.date = formattedDate;
+    }
+
+    // Simpan semua perubahan ke file
+    await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
+    // Proses ulang data untuk memperbarui tampilan linimasa
+    processDiscussions();
   }
 
   Future<String> rescheduleDiscussions(RescheduleDialogResult result) async {
@@ -125,8 +142,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
         newDate = today;
       }
 
-      // ==> PERBAIKAN LOGIKA UPDATE TANGGAL <==
-      // Langsung ubah tanggal pada objek discussion atau point
       if (discussion.points.isEmpty) {
         discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
       } else {
@@ -136,16 +151,13 @@ class DiscussionTimelineProvider with ChangeNotifier {
           );
           pointToUpdate.date = DateFormat('yyyy-MM-dd').format(newDate);
         } catch (e) {
-          // Fallback jika point tidak ditemukan (seharusnya tidak terjadi)
           discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
         }
       }
       updatedCount++;
     }
 
-    // ==> SIMPAN PERUBAHAN KE FILE <==
     await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
-    // Muat ulang data di provider ini setelah menyimpan
     processDiscussions();
 
     return "$updatedCount diskusi berhasil diseimbangkan jadwalnya.";
@@ -184,7 +196,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
       final discussion = discussionsToReschedule[i];
       final newDate = startDate.add(Duration(days: (i * evenInterval).round()));
 
-      // ==> PERBAIKAN LOGIKA UPDATE TANGGAL <==
       if (discussion.points.isEmpty) {
         discussion.date = DateFormat('yyyy-MM-dd').format(newDate);
       } else {
@@ -200,7 +211,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
       updatedCount++;
     }
 
-    // ==> SIMPAN PERUBAHAN KE FILE <==
     await _discussionService.saveDiscussions(_subjectJsonPath, _allDiscussions);
     processDiscussions();
 
@@ -275,7 +285,6 @@ class DiscussionTimelineProvider with ChangeNotifier {
           !date.isAfter(DateUtils.dateOnly(displayEndDate));
     }).toList();
 
-    // ==> TAMBAHKAN LOGIKA PEMBERIAN WARNA DI SINI <==
     for (final event in filteredEvents) {
       event.color = getColorForRepetitionCode(event.effectiveRepetitionCode);
     }

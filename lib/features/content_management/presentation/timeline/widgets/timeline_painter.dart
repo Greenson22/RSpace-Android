@@ -10,11 +10,13 @@ class TimelinePainter extends CustomPainter {
   final TimelineData timelineData;
   final BuildContext context;
   final Offset? pointerPosition;
+  final TimelineEvent? draggedEvent; // ==> PROPERTI BARU
 
   TimelinePainter({
     required this.timelineData,
     required this.context,
     this.pointerPosition,
+    this.draggedEvent, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -25,9 +27,8 @@ class TimelinePainter extends CustomPainter {
     final double timelineWidth = endX - startX;
     const double discussionRadius = 6.0;
     const double pointRadius = 4.0;
-
-    // --- Langkah 1: Kalkulasi Semua Posisi Terlebih Dahulu ---
     final Map<String, Offset> discussionPositions = {};
+
     _calculateAllPositions(
       startX,
       timelineWidth,
@@ -37,13 +38,16 @@ class TimelinePainter extends CustomPainter {
       discussionPositions,
     );
 
-    // --- Langkah 2: Deteksi Item yang Disorot (Hovered) ---
     TimelineEvent? hoveredEvent = _findHoveredEvent(
       discussionRadius,
       pointRadius,
     );
 
-    // --- Langkah 3: Gambar Semua Komponen ---
+    // Jangan tampilkan hover pada item yang sedang di-drag
+    if (draggedEvent != null && hoveredEvent == draggedEvent) {
+      hoveredEvent = null;
+    }
+
     _drawTimelineAxis(canvas, startX, endX, timelineY);
     _drawVerticalLines(
       canvas,
@@ -60,6 +64,18 @@ class TimelinePainter extends CustomPainter {
       highlightedConnectorPaint(context),
     );
     _drawEvents(canvas, hoveredEvent, discussionRadius, pointRadius);
+
+    // ==> LOGIKA BARU UNTUK MENGGAMBAR ITEM YANG DI-DRAG <==
+    if (draggedEvent != null && pointerPosition != null) {
+      _drawDraggedEvent(
+        canvas,
+        discussionRadius,
+        pointRadius,
+        startX,
+        endX,
+        timelineY,
+      );
+    }
 
     if (hoveredEvent != null) {
       _drawTooltip(canvas, size, hoveredEvent);
@@ -90,7 +106,6 @@ class TimelinePainter extends CustomPainter {
 
       double currentY = timelineY - 40;
 
-      // Posisikan diskusi terlebih dahulu
       for (final event in eventsOnDay) {
         if (event.type == TimelineEventType.discussion) {
           event.position = Offset(xPos, currentY);
@@ -100,7 +115,6 @@ class TimelinePainter extends CustomPainter {
         }
       }
 
-      // Kemudian posisikan poin
       for (final event in eventsOnDay) {
         if (event.type == TimelineEventType.point) {
           event.position = Offset(xPos, currentY);
@@ -114,7 +128,8 @@ class TimelinePainter extends CustomPainter {
     double discussionRadius,
     double pointRadius,
   ) {
-    if (pointerPosition == null) return null;
+    if (pointerPosition == null || draggedEvent != null)
+      return null; // Jangan cari hover jika sedang drag
 
     TimelineEvent? foundEvent;
     double closestDistance = double.infinity;
@@ -213,6 +228,8 @@ class TimelinePainter extends CustomPainter {
     Paint highlightedPaint,
   ) {
     for (final event in timelineData.events) {
+      if (event == draggedEvent)
+        continue; // Jangan gambar konektor untuk item yang di-drag
       if (event.type == TimelineEventType.point) {
         final parentPosition =
             discussionPositions[event.parentDiscussion.discussion];
@@ -238,6 +255,9 @@ class TimelinePainter extends CustomPainter {
     double pointRadius,
   ) {
     for (final event in timelineData.events) {
+      if (event == draggedEvent)
+        continue; // Jangan gambar event yang sedang di-drag di posisi aslinya
+
       final isHoveredGroup =
           hoveredEvent != null &&
           event.parentDiscussion.discussion ==
@@ -274,6 +294,42 @@ class TimelinePainter extends CustomPainter {
         canvas.drawRect(rect, paint);
       }
     }
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGGAMBAR ITEM YANG DI-DRAG & DROP TARGET <==
+  void _drawDraggedEvent(
+    Canvas canvas,
+    double discussionRadius,
+    double pointRadius,
+    double startX,
+    double endX,
+    double timelineY,
+  ) {
+    final event = draggedEvent!;
+    final position = pointerPosition!;
+    final paint = Paint()
+      ..color = event.color.withOpacity(0.7); // Buat semi-transparan
+
+    // Gambar garis target drop
+    final dropLinePaint = Paint()
+      ..color = Theme.of(context).primaryColor
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+    final dropX = position.dx.clamp(startX, endX);
+    canvas.drawLine(Offset(dropX, 0), Offset(dropX, timelineY), dropLinePaint);
+
+    // Gambar item yang di-drag di posisi pointer
+    if (event.type == TimelineEventType.discussion) {
+      canvas.drawCircle(position, discussionRadius * 1.5, paint);
+    } else {
+      final rect = Rect.fromCenter(
+        center: position,
+        width: pointRadius * 2 * 1.8,
+        height: pointRadius * 2 * 1.8,
+      );
+      canvas.drawRect(rect, paint);
+    }
+    _drawTooltip(canvas, Size(endX + startX, timelineY + 50), event);
   }
 
   void _drawTooltip(Canvas canvas, Size size, TimelineEvent item) {
@@ -383,7 +439,6 @@ class TimelinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant TimelinePainter oldDelegate) {
-    // Repaint setiap kali posisi pointer berubah untuk interaktivitas
     return true;
   }
 }

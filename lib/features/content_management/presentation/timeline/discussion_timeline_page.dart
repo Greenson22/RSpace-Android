@@ -1,13 +1,12 @@
 // lib/features/content_management/presentation/timeline/discussion_timeline_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
+import 'package:my_aplication/features/content_management/domain/models/timeline_models.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/discussion_model.dart';
 import 'discussion_timeline_provider.dart';
 import 'widgets/timeline_painter.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
-import '../../domain/models/timeline_models.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
 
 class DiscussionTimelinePage extends StatelessWidget {
@@ -24,8 +23,6 @@ class DiscussionTimelinePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Di sini kita tidak perlu `Provider.of` karena kita membuat instance baru.
-    // Provider yang ada di `subjects_page` tidak dibawa ke sini.
     return ChangeNotifierProvider(
       create: (_) => DiscussionTimelineProvider(discussions, subjectJsonPath),
       child: _DiscussionTimelineView(subjectName: subjectName),
@@ -46,10 +43,81 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
   Offset? _pointerPosition;
   final ScrollController _scrollController = ScrollController();
 
+  // ==> STATE BARU UNTUK DRAG & DROP <==
+  bool _isDragMode = false;
+  TimelineEvent? _draggedEvent;
+  Offset? _dragStartPosition;
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    if (!_isDragMode) return;
+    final provider = Provider.of<DiscussionTimelineProvider>(
+      context,
+      listen: false,
+    );
+    if (provider.timelineData == null) return;
+
+    // Temukan event terdekat dengan titik awal drag
+    double closestDistance = double.infinity;
+    TimelineEvent? eventToDrag;
+    for (final event in provider.timelineData!.events) {
+      final distance = (event.position - details.localPosition).distance;
+      if (distance < 20 && distance < closestDistance) {
+        // Perluas area deteksi
+        closestDistance = distance;
+        eventToDrag = event;
+      }
+    }
+
+    if (eventToDrag != null) {
+      setState(() {
+        _draggedEvent = eventToDrag;
+        _dragStartPosition = details.localPosition;
+      });
+    }
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_draggedEvent != null) {
+      setState(() {
+        _pointerPosition = details.localPosition;
+      });
+    }
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (_draggedEvent != null && _pointerPosition != null) {
+      final provider = Provider.of<DiscussionTimelineProvider>(
+        context,
+        listen: false,
+      );
+      final timelineData = provider.timelineData!;
+
+      final double startX = 30;
+      final double endX =
+          (MediaQuery.of(context).size.width * provider.zoomLevel) - 32 - 30;
+      final double timelineWidth = endX - startX;
+
+      final double dropX = _pointerPosition!.dx.clamp(startX, endX);
+      final double ratio = (dropX - startX) / timelineWidth;
+
+      final int daysToAdd = (timelineData.totalDays * ratio).round();
+      final DateTime newDate = timelineData.startDate.add(
+        Duration(days: daysToAdd),
+      );
+
+      provider.updateEventDate(_draggedEvent!, newDate);
+    }
+    setState(() {
+      _draggedEvent = null;
+      _dragStartPosition = null;
+      _pointerPosition = null;
+    });
   }
 
   Future<void> _handleReschedule(BuildContext context) async {
@@ -87,6 +155,27 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       appBar: AppBar(
         title: Text('Linimasa: ${widget.subjectName}'),
         actions: [
+          // ==> TOMBOL BARU UNTUK MODE DRAG <==
+          IconButton(
+            icon: Icon(
+              Icons.pan_tool_alt_outlined,
+              color: _isDragMode ? theme.primaryColorLight : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _isDragMode = !_isDragMode;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isDragMode ? 'Mode Pindah Aktif' : 'Mode Pindah Nonaktif',
+                  ),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            tooltip: 'Mode Pindah (Drag & Drop)',
+          ),
           IconButton(
             icon: const Icon(Icons.zoom_out),
             onPressed: provider.zoomLevel > 0.5 ? provider.zoomOut : null,
@@ -120,20 +209,7 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       body: Builder(
         builder: (context) {
           if (provider.isLoading || provider.isProcessing) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(
-                    provider.isProcessing
-                        ? 'Menjadwalkan ulang...'
-                        : 'Memuat data...',
-                  ),
-                ],
-              ),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
           if (provider.timelineData == null) {
             return const Center(
@@ -148,7 +224,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
           }
 
           final timelineData = provider.timelineData!;
-          // Lebar canvas disesuaikan dengan level zoom
           final canvasWidth =
               MediaQuery.of(context).size.width * provider.zoomLevel;
 
@@ -181,6 +256,10 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                           () => _pointerPosition = details.localPosition,
                         ),
                         onTapUp: (_) => setState(() => _pointerPosition = null),
+                        // ==> TAMBAHKAN GESTUR PAN <==
+                        onPanStart: _onPanStart,
+                        onPanUpdate: _onPanUpdate,
+                        onPanEnd: _onPanEnd,
                         child: SizedBox(
                           height: 300,
                           width: canvasWidth - 32,
@@ -190,6 +269,8 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                               timelineData: timelineData,
                               context: context,
                               pointerPosition: _pointerPosition,
+                              // Kirim event yang sedang di-drag ke painter
+                              draggedEvent: _draggedEvent,
                             ),
                           ),
                         ),
@@ -203,8 +284,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                   child: Text('Legenda', style: theme.textTheme.titleLarge),
                 ),
                 const SizedBox(height: 8),
-                // ==> PERBAIKAN UTAMA DI SINI <==
-                // Menggunakan SingleChildScrollView dengan Row
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
