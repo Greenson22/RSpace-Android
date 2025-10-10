@@ -19,7 +19,6 @@ import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
-// ==> IMPORT SERVICE BARU & HAPUS STORAGE_SERVICE <==
 import '../../../settings/application/services/dashboard_settings_service.dart';
 
 class _HeaderStats {
@@ -54,7 +53,6 @@ class DashboardHeader extends StatefulWidget {
 class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
-  // ==> GUNAKAN SERVICE BARU <==
   final DashboardSettingsService _settingsService = DashboardSettingsService();
   final GeminiService _geminiService = GeminiService();
   late Future<_HeaderStats> _statsFuture;
@@ -64,7 +62,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
-    // >> UBAH PEMANGGILAN FUNGSI
     _displayQuoteFromCache();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -82,7 +79,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (mounted) {
         setState(() {
           _statsFuture = _loadHeaderStats();
-          // >> UBAH PEMANGGILAN FUNGSI
           _displayQuoteFromCache();
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
@@ -90,7 +86,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
     }
   }
 
-  // >> NAMA FUNGSI DIUBAH DAN LOGIKA DIPERBARUI
   Future<void> _displayQuoteFromCache() async {
     const fallbackQuote = 'Teruslah belajar setiap hari.';
     final random = Random();
@@ -114,16 +109,13 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return 'Selamat Malam!';
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<_HeaderStats> _loadHeaderStats() async {
-    // Muat pengaturan dari file JSON terlebih dahulu
     final dashboardSettings = await _settingsService.loadSettings();
     final excludedTaskCategories =
         dashboardSettings['excludedTaskCategories'] ?? <String>{};
     final excludedSubjects =
         dashboardSettings['excludedSubjects'] ?? <String>{};
 
-    // Jalankan pengambilan data secara paralel dengan pengaturan yang sudah didapat
     final results = await Future.wait([
       _getTaskStats(excludedTaskCategories),
       _getDiscussionStats(excludedSubjects),
@@ -142,32 +134,45 @@ class _DashboardHeaderState extends State<DashboardHeader>
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENERIMA PARAMETER <==
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<Map<String, int>> _getTaskStats(Set<String> excludedCategories) async {
     try {
       final myTaskService = MyTaskService();
       final categories = await myTaskService.loadMyTasks();
       int pendingCount = 0;
-      int totalCount = 0;
       int finishedCount = 0;
+      int totalWithTarget = 0;
+
       for (final category in categories) {
-        if (!category.isHidden && !excludedCategories.contains(category.name)) {
-          totalCount += category.tasks.length;
-          pendingCount += category.tasks.where((task) => !task.checked).length;
-          finishedCount += category.tasks.where((task) => task.checked).length;
+        if (category.isHidden || excludedCategories.contains(category.name)) {
+          continue;
+        }
+
+        for (final task in category.tasks) {
+          // Hanya hitung tugas yang punya target harian
+          if (task.targetCountToday > 0) {
+            totalWithTarget++;
+            if (task.countToday >= task.targetCountToday) {
+              finishedCount++;
+            } else {
+              pendingCount++;
+            }
+          }
         }
       }
       return {
         'pending': pendingCount,
-        'total': totalCount,
+        'total': totalWithTarget,
         'finished': finishedCount,
       };
     } catch (e) {
+      if (kDebugMode) {
+        print('Error getting task stats: $e');
+      }
       return {'pending': 0, 'total': 0, 'finished': 0};
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENERIMA PARAMETER <==
   Future<Map<String, int>> _getDiscussionStats(
     Set<String> excludedSubjects,
   ) async {
@@ -350,9 +355,10 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 runSpacing: 16,
                 alignment: WrapAlignment.center,
                 children: [
+                  // ==> LABEL-LABEL DI BAWAH INI TELAH DIPERBARUI <==
                   _StatPill(
                     icon: Icons.list_alt_outlined,
-                    label: 'Total Tugas',
+                    label: 'Tugas Harian',
                     value: stats.totalTasks.toString(),
                     color: Colors.teal.shade700,
                     onTap: () => Navigator.push(
@@ -362,7 +368,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                   ),
                   _StatPill(
                     icon: Icons.task_alt,
-                    label: 'Tugas Belum Selesai',
+                    label: 'Target Belum Tercapai',
                     value: stats.pendingTasks.toString(),
                     color: Colors.orange.shade700,
                     onTap: () => Navigator.push(
@@ -372,7 +378,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                   ),
                   _StatPill(
                     icon: Icons.check_circle_outline,
-                    label: 'Tugas Selesai',
+                    label: 'Target Tercapai',
                     value: stats.finishedTasks.toString(),
                     color: Colors.green.shade700,
                     onTap: () => Navigator.push(
