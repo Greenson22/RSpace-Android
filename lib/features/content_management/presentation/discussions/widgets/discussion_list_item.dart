@@ -107,8 +107,6 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            // ==> PERUBAIKAN DI SINI <==
-            // Menghapus kondisi 'isWebLink' agar onTap selalu membuka daftar poin.
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
@@ -225,6 +223,7 @@ class DiscussionListItem extends StatelessWidget {
     }
 
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final provider = Provider.of<DiscussionProvider>(context, listen: false);
     final uri = Uri.parse(discussion.url!);
 
     if (themeProvider.openInAppBrowser &&
@@ -232,9 +231,13 @@ class DiscussionListItem extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => WebViewPage(
-            initialUrl: uri.toString(),
-            title: discussion.discussion,
+          builder: (_) => ChangeNotifierProvider.value(
+            value: provider,
+            child: WebViewPage(
+              initialUrl: uri.toString(),
+              title: discussion.discussion,
+              discussion: discussion,
+            ),
           ),
         ),
       );
