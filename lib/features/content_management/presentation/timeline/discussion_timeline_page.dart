@@ -87,7 +87,6 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
       appBar: AppBar(
         title: Text('Linimasa: ${widget.subjectName}'),
         actions: [
-          // ==> TOMBOL-TOMBOL ZOOM DITAMBAHKAN DI SINI <==
           IconButton(
             icon: const Icon(Icons.zoom_out),
             onPressed: provider.zoomLevel > 0.5 ? provider.zoomOut : null,
@@ -154,59 +153,68 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
               MediaQuery.of(context).size.width * provider.zoomLevel;
 
           return SingleChildScrollView(
-            // ==> WRAP DENGAN SCROLLVIEW HORIZONTAL <==
-            scrollDirection: Axis.horizontal,
-            controller: _scrollController,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  MouseRegion(
-                    onHover: (event) =>
-                        setState(() => _pointerPosition = event.localPosition),
-                    onExit: (_) => setState(() => _pointerPosition = null),
-                    child: GestureDetector(
-                      onLongPressStart: (details) => setState(
-                        () => _pointerPosition = details.localPosition,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: MouseRegion(
+                      onHover: (event) => setState(
+                        () => _pointerPosition = event.localPosition,
                       ),
-                      onLongPressMoveUpdate: (details) => setState(
-                        () => _pointerPosition = details.localPosition,
-                      ),
-                      onLongPressEnd: (_) =>
-                          setState(() => _pointerPosition = null),
-                      onLongPressCancel: () =>
-                          setState(() => _pointerPosition = null),
-                      onTapDown: (details) => setState(
-                        () => _pointerPosition = details.localPosition,
-                      ),
-                      onTapUp: (_) => setState(() => _pointerPosition = null),
-                      child: SizedBox(
-                        // ==> UKURAN CANVAS SEKARANG DINAMIS <==
-                        height: 300,
-                        width: canvasWidth - 32, // Kurangi padding
-                        child: CustomPaint(
-                          size: Size.infinite,
-                          painter: TimelinePainter(
-                            timelineData: timelineData,
-                            context: context,
-                            pointerPosition: _pointerPosition,
+                      onExit: (_) => setState(() => _pointerPosition = null),
+                      child: GestureDetector(
+                        onLongPressStart: (details) => setState(
+                          () => _pointerPosition = details.localPosition,
+                        ),
+                        onLongPressMoveUpdate: (details) => setState(
+                          () => _pointerPosition = details.localPosition,
+                        ),
+                        onLongPressEnd: (_) =>
+                            setState(() => _pointerPosition = null),
+                        onLongPressCancel: () =>
+                            setState(() => _pointerPosition = null),
+                        onTapDown: (details) => setState(
+                          () => _pointerPosition = details.localPosition,
+                        ),
+                        onTapUp: (_) => setState(() => _pointerPosition = null),
+                        child: SizedBox(
+                          height: 300,
+                          width: canvasWidth - 32,
+                          child: CustomPaint(
+                            size: Size.infinite,
+                            painter: TimelinePainter(
+                              timelineData: timelineData,
+                              context: context,
+                              pointerPosition: _pointerPosition,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const Divider(height: 32),
-                  Text('Legenda', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 16.0,
-                    runSpacing: 8.0,
+                ),
+                const Divider(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('Legenda', style: theme.textTheme.titleLarge),
+                ),
+                const SizedBox(height: 8),
+                // ==> PERBAIKAN UTAMA DI SINI <==
+                // Menggunakan SingleChildScrollView dengan Row
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
                     children: [
                       const Chip(
                         avatar: CircleAvatar(backgroundColor: Colors.blue),
                         label: Text('Diskusi'),
                       ),
+                      const SizedBox(width: 8),
                       Chip(
                         avatar: Container(
                           width: 12,
@@ -216,17 +224,21 @@ class _DiscussionTimelineViewState extends State<_DiscussionTimelineView> {
                         label: const Text('Poin'),
                       ),
                       ...kRepetitionCodes.map((code) {
-                        return Chip(
-                          avatar: CircleAvatar(
-                            backgroundColor: getColorForRepetitionCode(code),
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Chip(
+                            avatar: CircleAvatar(
+                              backgroundColor: getColorForRepetitionCode(code),
+                            ),
+                            label: Text(code),
                           ),
-                          label: Text(code),
                         );
                       }).toList(),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
           );
         },
