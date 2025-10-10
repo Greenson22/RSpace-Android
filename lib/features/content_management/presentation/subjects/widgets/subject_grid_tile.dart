@@ -18,7 +18,6 @@ class SubjectGridTile extends StatelessWidget {
   final VoidCallback onToggleFreeze;
   final VoidCallback onToggleLock;
   final VoidCallback onTimeline;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onViewJson;
   final bool isFocused;
 
@@ -36,7 +35,7 @@ class SubjectGridTile extends StatelessWidget {
     required this.onToggleFreeze,
     required this.onToggleLock,
     required this.onTimeline,
-    required this.onViewJson, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onViewJson,
     this.isFocused = false,
   });
 
@@ -133,145 +132,96 @@ class SubjectGridTile extends StatelessWidget {
                         if (value == 'toggle_freeze') onToggleFreeze();
                         if (value == 'toggle_lock') onToggleLock();
                         if (value == 'timeline') onTimeline();
-                        if (value == 'view_json')
-                          onViewJson(); // ==> TAMBAHKAN AKSI
+                        if (value == 'view_json') onViewJson();
                       },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'timeline',
-                          child: Row(
-                            children: [
-                              Icon(Icons.timeline),
-                              SizedBox(width: 8),
-                              Text('Lihat Linimasa'),
-                            ],
-                          ),
+                      itemBuilder: (context) => <PopupMenuEntry<String>>[
+                        _buildMenuItem(
+                          'timeline',
+                          Icons.timeline,
+                          'Lihat Linimasa',
                         ),
-                        // ==> TAMBAHKAN ITEM MENU BARU <==
-                        const PopupMenuItem(
-                          value: 'view_json',
-                          child: Row(
-                            children: [
-                              Icon(Icons.data_object),
-                              SizedBox(width: 8),
-                              Text('Lihat JSON Mentah'),
-                            ],
-                          ),
+                        _buildMenuItem(
+                          'move',
+                          Icons.move_up_outlined,
+                          'Pindahkan',
                         ),
                         const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: 'rename',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Text('Ubah Nama'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'change_icon',
-                          child: Row(
-                            children: [
-                              Icon(Icons.emoji_emotions_outlined),
-                              SizedBox(width: 8),
-                              Text('Ubah Ikon'),
-                            ],
-                          ),
-                        ),
-                        if (subject.linkedPath != null &&
-                            subject.linkedPath!.isNotEmpty)
-                          const PopupMenuItem<String>(
-                            value: 'edit_index',
-                            child: Row(
-                              children: [
-                                Icon(Icons.code_outlined),
-                                SizedBox(width: 8),
-                                Text('Edit Template Induk'),
-                              ],
+                        _buildSubMenu(
+                          icon: Icons.edit_outlined,
+                          label: 'Edit',
+                          children: [
+                            _buildMenuItem(
+                              'rename',
+                              Icons.drive_file_rename_outline,
+                              'Ubah Nama',
                             ),
-                          ),
-                        PopupMenuItem<String>(
-                          value: 'link_path',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.link_outlined),
-                              const SizedBox(width: 8),
-                              Text(
-                                subject.linkedPath == null
-                                    ? 'Link ke PerpusKu'
-                                    : 'Ubah Link PerpusKu',
-                              ),
-                            ],
-                          ),
+                            _buildMenuItem(
+                              'change_icon',
+                              Icons.emoji_emotions_outlined,
+                              'Ubah Ikon',
+                            ),
+                          ],
                         ),
-                        const PopupMenuItem<String>(
-                          value: 'move',
-                          child: Row(
-                            children: [
-                              Icon(Icons.move_up_outlined),
-                              SizedBox(width: 8),
-                              Text('Pindahkan'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'toggle_freeze',
-                          child: Row(
-                            children: [
-                              Icon(
-                                isFrozen
-                                    ? Icons.play_arrow_outlined
-                                    : Icons.ac_unit,
+                        _buildSubMenu(
+                          icon: Icons.link_outlined,
+                          label: 'File & Tautan',
+                          children: [
+                            if (subject.linkedPath != null &&
+                                subject.linkedPath!.isNotEmpty)
+                              _buildMenuItem(
+                                'edit_index',
+                                Icons.code_outlined,
+                                'Edit Template Induk',
                               ),
-                              SizedBox(width: 8),
-                              Text(isFrozen ? 'Unfreeze' : 'Freeze'),
-                            ],
-                          ),
+                            _buildMenuItem(
+                              'link_path',
+                              subject.linkedPath == null
+                                  ? Icons.link_outlined
+                                  : Icons.link_off_outlined,
+                              subject.linkedPath == null
+                                  ? 'Link ke PerpusKu'
+                                  : 'Ubah Link PerpusKu',
+                            ),
+                            _buildMenuItem(
+                              'view_json',
+                              Icons.data_object,
+                              'Lihat JSON Mentah',
+                            ),
+                          ],
                         ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem<String>(
-                          value: 'toggle_lock',
-                          child: Row(
-                            children: [
-                              Icon(
-                                isLocked
-                                    ? Icons.lock_open_outlined
-                                    : Icons.lock_outline,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(isLocked ? 'Buka Kunci' : 'Kunci Subject'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem<String>(
-                          value: 'toggle_visibility',
-                          child: Row(
-                            children: [
-                              Icon(
-                                isHidden
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-                            ],
-                          ),
+                        _buildSubMenu(
+                          icon: Icons.settings_outlined,
+                          label: 'Status',
+                          children: [
+                            _buildMenuItem(
+                              'toggle_freeze',
+                              isFrozen
+                                  ? Icons.play_arrow_outlined
+                                  : Icons.ac_unit,
+                              isFrozen ? 'Unfreeze' : 'Freeze',
+                            ),
+                            _buildMenuItem(
+                              'toggle_visibility',
+                              isHidden
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              isHidden ? 'Tampilkan' : 'Sembunyikan',
+                            ),
+                            _buildMenuItem(
+                              'toggle_lock',
+                              isLocked
+                                  ? Icons.lock_open_outlined
+                                  : Icons.lock_outline,
+                              isLocked ? 'Buka Kunci' : 'Kunci Subject',
+                            ),
+                          ],
                         ),
                         const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
+                        _buildMenuItem(
+                          'delete',
+                          Icons.delete_outline,
+                          'Hapus',
+                          color: Colors.red,
                         ),
                       ],
                     ),
@@ -312,6 +262,45 @@ class SubjectGridTile extends StatelessWidget {
             : BorderSide.none,
       ),
       child: tileContent,
+    );
+  }
+
+  PopupMenuItem<String> _buildMenuItem(
+    String value,
+    IconData icon,
+    String text, {
+    Color? color,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Text(text, style: TextStyle(color: color)),
+        ],
+      ),
+    );
+  }
+
+  // ==> FUNGSI INI TELAH DIPERBAIKI <==
+  PopupMenuEntry<String> _buildSubMenu({
+    required IconData icon,
+    required String label,
+    required List<PopupMenuEntry<String>> children,
+  }) {
+    return PopupMenuItem(
+      padding: EdgeInsets.zero,
+      enabled: false,
+      child: SubmenuButton(
+        menuChildren: children,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Row(
+            children: [Icon(icon), const SizedBox(width: 12), Text(label)],
+          ),
+        ),
+      ),
     );
   }
 
