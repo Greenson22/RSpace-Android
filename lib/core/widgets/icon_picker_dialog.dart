@@ -2,7 +2,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../features/settings/application/services/gemini_service.dart';
+// Impor service baru dan hapus yang lama
+import '../../features/settings/application/services/gemini_service_flutter_gemini.dart';
 
 // Fungsi utama sekarang memanggil widget dialog
 Future<void> showIconPickerDialog({
@@ -34,7 +35,9 @@ class IconPickerDialog extends StatefulWidget {
 
 class _IconPickerDialogState extends State<IconPickerDialog> {
   final TextEditingController _iconController = TextEditingController();
-  final GeminiService _geminiService = GeminiService();
+  // Gunakan instance dari service baru
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   Future<List<String>>? _geminiSuggestions;
 
   @override
@@ -45,6 +48,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
 
   void _fetchGeminiSuggestions() {
     setState(() {
+      // Panggil metode dari service baru
       _geminiSuggestions = _geminiService.suggestIcon(name: widget.name);
     });
   }
