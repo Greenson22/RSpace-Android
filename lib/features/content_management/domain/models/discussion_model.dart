@@ -2,8 +2,7 @@
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// BARU: Enum untuk tipe tautan diskusi
-enum DiscussionLinkType { html, quiz, none, link } // Ditambahkan 'link'
+enum DiscussionLinkType { html, quiz, none, link, perpuskuQuiz }
 
 class Point {
   String pointText;
@@ -53,8 +52,9 @@ class Discussion {
 
   final DiscussionLinkType linkType;
   final String? quizTopicPath;
-  // ==> FIELD BARU DITAMBAHKAN
   final String? url;
+  // ==> NAMA FIELD DIPERBARUI UNTUK KEJELASAN <==
+  final String? perpuskuQuizName;
 
   Discussion({
     required this.discussion,
@@ -67,7 +67,8 @@ class Discussion {
     this.archivedHtmlContent,
     this.linkType = DiscussionLinkType.html,
     this.quizTopicPath,
-    this.url, // ==> TAMBAHAN DI KONSTRUKTOR
+    this.url,
+    this.perpuskuQuizName, // ==> DIPERBARUI DI KONSTRUKTOR
   });
 
   Point? get _pointWithMinRepetitionCode {
@@ -122,7 +123,9 @@ class Discussion {
       filePath: json['filePath'],
       linkType: DiscussionLinkType.values[json['linkType'] as int? ?? 0],
       quizTopicPath: json['quizTopicPath'] as String?,
-      url: json['url'] as String?, // ==> BACA DARI JSON
+      url: json['url'] as String?,
+      perpuskuQuizName:
+          json['perpuskuQuizName'] as String?, // ==> BACA DARI JSON
     );
   }
 
@@ -137,7 +140,8 @@ class Discussion {
       'filePath': filePath,
       'linkType': linkType.index,
       'quizTopicPath': quizTopicPath,
-      'url': url, // ==> SIMPAN KE JSON
+      'url': url,
+      'perpuskuQuizName': perpuskuQuizName, // ==> SIMPAN KE JSON
     };
   }
 }

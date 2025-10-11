@@ -15,12 +15,14 @@ import '../../../core/services/storage_service.dart';
 import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
 
 class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {
   @override
   final DiscussionService discussionService = DiscussionService();
   final PointPresetService _pointPresetService = PointPresetService();
+  final PerpuskuQuizService _perpuskuQuizService = PerpuskuQuizService();
   @override
   final SharedPreferencesService prefsService = SharedPreferencesService();
   @override
@@ -30,6 +32,8 @@ class DiscussionProvider
   @override
   final String? sourceSubjectLinkedPath;
   final Subject subject;
+
+  // ... (Sisa provider tidak berubah, hanya fungsi addDiscussion)
 
   DiscussionProvider(
     this._jsonFilePath, {
@@ -85,7 +89,6 @@ class DiscussionProvider
     return counts;
   }
 
-  // ==> FUNGSI BARU UNTUK MENGURUTKAN POIN <==
   Future<void> reorderPoints(
     Discussion discussion,
     int oldIndex,
@@ -97,7 +100,7 @@ class DiscussionProvider
     final point = discussion.points.removeAt(oldIndex);
     discussion.points.insert(newIndex, point);
 
-    await saveDiscussions(); // Simpan urutan baru ke file JSON
+    await saveDiscussions();
     notifyListeners();
   }
 
@@ -219,21 +222,36 @@ class DiscussionProvider
     await _savePointPresets();
   }
 
+  // ==> FUNGSI INI DIPERBARUI SECARA SIGNIFIKAN <==
   Future<void> addDiscussion(AddDiscussionResult result) async {
-    String? newFileName;
-    if (result.linkType == DiscussionLinkType.html &&
-        result.linkData == 'create_new') {
-      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
+    String? newFilePath;
+    String? newPerpuskuQuizName;
+
+    if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
+      if (result.linkType == DiscussionLinkType.html ||
+          result.linkType == DiscussionLinkType.perpuskuQuiz) {
         throw Exception(
-          "Tidak dapat membuat file HTML karena Subject ini belum ditautkan ke folder PerpusKu.",
+          "Tidak dapat membuat file karena Subject ini belum ditautkan ke folder PerpusKu.",
         );
       }
-      final createdFileName = await discussionService.createDiscussionFile(
-        perpuskuBasePath: await getPerpuskuHtmlBasePath(),
-        subjectLinkedPath: sourceSubjectLinkedPath!,
-        discussionName: result.name,
-      );
-      newFileName = path.join(sourceSubjectLinkedPath!, createdFileName);
+    } else {
+      if (result.linkType == DiscussionLinkType.html &&
+          result.linkData == 'create_new') {
+        final createdFileName = await discussionService.createDiscussionFile(
+          perpuskuBasePath: await getPerpuskuHtmlBasePath(),
+          subjectLinkedPath: sourceSubjectLinkedPath!,
+          discussionName: result.name,
+        );
+        newFilePath = path.join(sourceSubjectLinkedPath!, createdFileName);
+      }
+      // Logika baru untuk membuat entri kuis kosong di quizzes.json
+      else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
+        await _perpuskuQuizService.addQuizSet(
+          sourceSubjectLinkedPath!,
+          result.name,
+        );
+        newPerpuskuQuizName = result.name; // Simpan nama kuis sebagai referensi
+      }
     }
 
     final newDiscussion = Discussion(
@@ -242,11 +260,12 @@ class DiscussionProvider
       repetitionCode: 'R0D',
       points: [],
       linkType: result.linkType,
-      filePath: newFileName,
+      filePath: newFilePath,
       quizTopicPath: result.linkType == DiscussionLinkType.quiz
           ? result.linkData
           : null,
       url: result.linkType == DiscussionLinkType.link ? result.linkData : null,
+      perpuskuQuizName: newPerpuskuQuizName,
     );
     _allDiscussions.add(newDiscussion);
 

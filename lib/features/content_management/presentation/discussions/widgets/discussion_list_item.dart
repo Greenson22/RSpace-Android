@@ -18,6 +18,7 @@ import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
+// Import PerpuskuQuizService dihapus
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -28,7 +29,6 @@ class DiscussionListItem extends StatelessWidget {
   final String subjectName;
   final String? subjectLinkedPath;
   final VoidCallback onDelete;
-  // ==> PROPERTI BARU DITAMBAHKAN <==
   final bool isPointReorderMode;
   final VoidCallback onToggleReorder;
 
@@ -86,10 +86,13 @@ class DiscussionListItem extends StatelessWidget {
         discussion.filePath != null && discussion.filePath!.isNotEmpty;
     final isQuizLink = discussion.linkType == DiscussionLinkType.quiz;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
+    // Pengecekan isPerpuskuQuiz dihapus
+
     final iconColor = isFinished
         ? Colors.green
         : (isSelected ? theme.primaryColor : null);
 
+    // Logika ikon dikembalikan ke versi sebelumnya
     IconData iconData;
     if (isFinished) {
       iconData = Icons.check_circle;
@@ -130,6 +133,7 @@ class DiscussionListItem extends StatelessWidget {
             },
             leading: IconButton(
               icon: Icon(iconData, color: iconColor),
+              // Logika onPressed dikembalikan
               onPressed: () {
                 if (isQuizLink) {
                   _startQuiz(context);
@@ -139,8 +143,9 @@ class DiscussionListItem extends StatelessWidget {
                   provider.openDiscussionFile(discussion, context);
                 }
               },
+              // Tooltip dikembalikan
               tooltip: isQuizLink
-                  ? 'Mulai Kuis'
+                  ? 'Mulai Kuis (v1)'
                   : (isWebLink
                         ? 'Buka Tautan'
                         : (hasFile ? 'Buka File' : null)),
@@ -238,6 +243,9 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
+  // Fungsi _startPerpuskuQuiz dihapus karena tidak lagi relevan
+
+  // ... sisa fungsi helper (tidak berubah)
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);

@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
 import 'package:provider/provider.dart';
+// import 'perpusku:quiz_picker_dialog.dart';
 
 class AddDiscussionResult {
   final String name;
   final DiscussionLinkType linkType;
   final String?
-  linkData; // Berisi 'create_new' (HTML), quiz topic path (Kuis), URL (Link), atau null (None)
+  linkData; // Berisi 'create_new' (HTML), 'create_new_quiz' (Kuis v2), quiz topic path (Kuis v1), URL (Link), atau null (None)
 
   AddDiscussionResult({
     required this.name,
@@ -71,11 +72,14 @@ class _AddDiscussionDialogContentState
 
   @override
   Widget build(BuildContext context) {
-    final bool canCreateHtml =
+    final bool canCreateHtmlOrQuizV2 =
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
 
-    if (!canCreateHtml && _linkType == DiscussionLinkType.html) {
+    // Jika subjek tidak tertaut, reset pilihan ke 'none'
+    if (!canCreateHtmlOrQuizV2 &&
+        (_linkType == DiscussionLinkType.html ||
+            _linkType == DiscussionLinkType.perpuskuQuiz)) {
       _linkType = DiscussionLinkType.none;
     }
 
@@ -113,7 +117,6 @@ class _AddDiscussionDialogContentState
                       hintText: 'https://contoh.com',
                     ),
                     keyboardType: TextInputType.url,
-                    // ==> PERBAIKAN DI BLOK VALIDATOR INI <==
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'URL tidak boleh kosong.';
@@ -144,24 +147,41 @@ class _AddDiscussionDialogContentState
               RadioListTile<DiscussionLinkType>(
                 title: const Text("File HTML Baru"),
                 subtitle: Text(
-                  canCreateHtml
+                  canCreateHtmlOrQuizV2
                       ? "Membuat file .html baru di folder subjek."
                       : "Subjek ini tidak tertaut ke PerpusKu.",
                   style: TextStyle(
                     fontSize: 12,
-                    color: canCreateHtml ? null : Colors.orange,
+                    color: canCreateHtmlOrQuizV2 ? null : Colors.orange,
                   ),
                 ),
                 value: DiscussionLinkType.html,
                 groupValue: _linkType,
-                onChanged: canCreateHtml
+                onChanged: canCreateHtmlOrQuizV2
                     ? (value) => setState(() => _linkType = value!)
                     : null,
               ),
               RadioListTile<DiscussionLinkType>(
-                title: const Text("Topik Kuis"),
+                title: const Text("Kuis Perpusku (v2)"),
+                subtitle: Text(
+                  canCreateHtmlOrQuizV2
+                      ? "Membuat file kuis .json baru di folder subjek."
+                      : "Subjek ini tidak tertaut ke Perpusku.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: canCreateHtmlOrQuizV2 ? null : Colors.orange,
+                  ),
+                ),
+                value: DiscussionLinkType.perpuskuQuiz,
+                groupValue: _linkType,
+                onChanged: canCreateHtmlOrQuizV2
+                    ? (value) => setState(() => _linkType = value!)
+                    : null,
+              ),
+              RadioListTile<DiscussionLinkType>(
+                title: const Text("Topik Kuis (v1)"),
                 subtitle: const Text(
-                  "Membuka sesi kuis saat diskusi diklik.",
+                  "Membuka sesi kuis v1 saat diskusi diklik.",
                   style: TextStyle(fontSize: 12),
                 ),
                 value: DiscussionLinkType.quiz,
@@ -198,7 +218,9 @@ class _AddDiscussionDialogContentState
                   _selectedQuizTopicPath == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Silakan pilih topik kuis terlebih dahulu.'),
+                    content: Text(
+                      'Silakan pilih topik kuis v1 terlebih dahulu.',
+                    ),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -207,11 +229,14 @@ class _AddDiscussionDialogContentState
 
               String? linkData;
               if (_linkType == DiscussionLinkType.html) {
-                linkData = canCreateHtml ? 'create_new' : null;
+                linkData = canCreateHtmlOrQuizV2 ? 'create_new' : null;
               } else if (_linkType == DiscussionLinkType.quiz) {
                 linkData = _selectedQuizTopicPath;
               } else if (_linkType == DiscussionLinkType.link) {
                 linkData = _urlController.text.trim();
+              } else if (_linkType == DiscussionLinkType.perpuskuQuiz) {
+                // ==> KIRIM SINYAL UNTUK MEMBUAT KUIS BARU <==
+                linkData = 'create_new_quiz';
               }
 
               Navigator.pop(
@@ -251,7 +276,7 @@ class _AddDiscussionDialogContentState
 
         return DropdownButtonFormField<String>(
           value: _selectedQuizTopicPath,
-          hint: const Text('Pilih Topik Kuis...'),
+          hint: const Text('Pilih Topik Kuis v1...'),
           isExpanded: true,
           items: items,
           onChanged: (value) {
