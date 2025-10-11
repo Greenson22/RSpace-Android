@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter_gemini/flutter_gemini.dart';
-// ==> PERBAIKAN DI SINI <==
 import '../gemini_settings_service.dart';
 
 class GeminiServiceFlutterGemini {
@@ -63,6 +62,31 @@ Contoh Jawaban:
         );
       }
       // Lemparkan kembali error lain untuk ditangani oleh UI
+      rethrow;
+    }
+  }
+
+  /// Mendapatkan balasan chat dari model Gemini menggunakan package flutter_gemini.
+  Future<String?> getChatCompletion(List<Content> contents) async {
+    // Inisialisasi ulang untuk memastikan kunci API terbaru digunakan
+    await _initializeGeminiWithActiveKey();
+    final gemini = Gemini.instance;
+
+    try {
+      final result = await gemini.chat(contents);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
+        return textResponse;
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
       rethrow;
     }
   }

@@ -12,9 +12,13 @@ import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart'; // Import material for DateUtils
+import 'package:flutter_gemini/flutter_gemini.dart';
+import '../../settings/application/services/gemini_service_flutter_gemini.dart';
 
 class ChatService {
   final GeminiService _geminiService = GeminiService();
+  final GeminiServiceFlutterGemini _geminiServiceFlutterGemini =
+      GeminiServiceFlutterGemini();
   final PathService _pathService = PathService();
   final TopicService _topicService = TopicService();
   final SubjectService _subjectService = SubjectService();
@@ -22,6 +26,7 @@ class ChatService {
   final MyTaskService _myTaskService = MyTaskService();
   final TimeLogService _timeLogService = TimeLogService();
 
+  /// Metode lama yang menggunakan http
   Future<ChatMessage> getResponse(String userQuery) async {
     try {
       final context = await _gatherApplicationContext();
@@ -30,6 +35,76 @@ class ChatService {
         context: context,
       );
       return ChatMessage(text: responseText, role: ChatRole.model);
+    } catch (e) {
+      return ChatMessage(
+        text: 'Maaf, terjadi kesalahan: ${e.toString()}',
+        role: ChatRole.error,
+      );
+    }
+  }
+
+  /// Metode baru yang menggunakan flutter_gemini
+  Future<ChatMessage> getResponseFlutterGemini(
+    List<ChatMessage> history,
+  ) async {
+    try {
+      // 1. Kumpulkan konteks dari aplikasi
+      final String appContext = await _gatherApplicationContext();
+
+      // 2. Konversi riwayat ChatMessage ke daftar Content untuk flutter_gemini
+      final List<Content> contents = history.map((msg) {
+        // Abaikan pesan error dari riwayat
+        if (msg.role == ChatRole.user) {
+          return Content(parts: [Part.text(msg.text)], role: 'user');
+        } else {
+          return Content(parts: [Part.text(msg.text)], role: 'model');
+        }
+      }).toList();
+
+      // 3. Tambahkan instruksi sistem dan konteks ke pesan terakhir pengguna
+      if (contents.isNotEmpty && contents.last.role == 'user') {
+        final lastUserContent = contents.removeLast();
+        String userQuery = '';
+
+        // ==> PERBAIKAN UTAMA DI SINI <==
+        // Cek jika 'parts' tidak null dan tidak kosong
+        if (lastUserContent.parts != null &&
+            lastUserContent.parts!.isNotEmpty) {
+          final part = lastUserContent.parts!.first;
+          // Cek apakah 'part' adalah TextPart, lalu ambil teksnya
+          if (part is TextPart) {
+            userQuery = part.text;
+          }
+        }
+        // --- AKHIR PERBAIKAN ---
+
+        final fullPrompt =
+            '''
+Anda adalah "Flo", asisten AI yang terintegrasi di dalam aplikasi bernama RSpace.
+Tugas Anda adalah menjawab pertanyaan pengguna berdasarkan data yang mereka miliki di dalam aplikasi.
+Selalu jawab dalam Bahasa Indonesia dengan gaya yang ramah dan membantu.
+
+Berikut adalah ringkasan data pengguna saat ini (Tanggal: ${DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now())}):
+---
+$appContext
+---
+
+Pertanyaan Pengguna: "$userQuery"
+
+Jawaban Anda:
+''';
+        contents.add(Content(parts: [Part.text(fullPrompt)], role: 'user'));
+      }
+
+      // 4. Panggil service baru
+      final responseText = await _geminiServiceFlutterGemini.getChatCompletion(
+        contents,
+      );
+
+      return ChatMessage(
+        text: responseText ?? "Maaf, saya tidak mendapat balasan.",
+        role: ChatRole.model,
+      );
     } catch (e) {
       return ChatMessage(
         text: 'Maaf, terjadi kesalahan: ${e.toString()}',

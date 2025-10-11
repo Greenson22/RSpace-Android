@@ -44,15 +44,21 @@ class ChatProvider with ChangeNotifier {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    _messages.add(ChatMessage(text: text.trim(), role: ChatRole.user));
+    final userMessage = ChatMessage(text: text.trim(), role: ChatRole.user);
+    _messages.add(userMessage);
     _isTyping = true;
     notifyListeners();
-    await _saveHistory();
 
-    final response = await _chatService.getResponse(text.trim());
+    // Buat salinan riwayat untuk dikirim ke service
+    final historyToSend = List<ChatMessage>.from(_messages);
+
+    // Panggil metode service yang baru
+    final response = await _chatService.getResponseFlutterGemini(historyToSend);
+
     _messages.add(response);
     _isTyping = false;
     notifyListeners();
+    // Simpan riwayat setelah mendapatkan balasan
     await _saveHistory();
   }
 
