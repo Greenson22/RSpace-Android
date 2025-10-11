@@ -19,6 +19,8 @@ import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_category_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
+// ==> IMPORT HALAMAN BARU <==
+import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_topic_page.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -53,6 +55,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const QuizCategoryPage()),
+    ),
+    // ==> TAMBAHKAN AKSI BARU DI SINI <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PerpuskuQuizTopicPage()),
     ),
     () => Navigator.push(
       context,
@@ -146,9 +153,16 @@ class DashboardGrid extends StatelessWidget {
           },
           {
             'icon': Icons.quiz_outlined,
-            'label': 'Kuis',
+            'label': 'Kuis (v1)',
             'subtitle': 'Uji pemahaman Anda',
             'colors': const [Color(0xFF43A047), Color(0xFF66BB6A)],
+          },
+          // ==> TAMBAHKAN ITEM BARU DI SINI <==
+          {
+            'icon': Icons.school_outlined,
+            'label': 'Kuis Perpusku',
+            'subtitle': 'Kuis berbasis materi di Perpusku',
+            'colors': const [Color(0xFF00838F), Color(0xFF00ACC1)],
           },
           {
             'icon': Icons.archive_outlined,
@@ -171,7 +185,6 @@ class DashboardGrid extends StatelessWidget {
           if (kDebugMode)
             {
               'icon': Icons.library_books_outlined,
-              // ==> PERUBAHAN LABEL DI SINI <==
               'label': 'Pustaka Prompt (Debug)',
               'subtitle': 'Simpan & kelola prompt AI',
               'colors': AppTheme.gradientColors7,

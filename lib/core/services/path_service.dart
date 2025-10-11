@@ -220,6 +220,25 @@ class PathService {
     return perpuskuDir.path;
   }
 
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<String> getPerpuskuQuizPath(String relativeSubjectPath) async {
+    final perpuskuTopicsPath = path.join(
+      await perpuskuDataPath,
+      'file_contents',
+      'topics',
+    );
+    final quizPath = path.join(
+      perpuskuTopicsPath,
+      relativeSubjectPath,
+      'quizzes',
+    );
+    final dir = Directory(quizPath);
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir.path;
+  }
+
   Future<File> getPerpuskuHtmlFile(String relativePath) async {
     final String perpuskuPath = await perpuskuDataPath;
     final fullPath = path.join(
