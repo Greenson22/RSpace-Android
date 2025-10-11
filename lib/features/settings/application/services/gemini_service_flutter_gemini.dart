@@ -10,21 +10,20 @@ class GeminiServiceFlutterGemini {
     final settings = await _settingsService.loadSettings();
     String apiKey = '';
     try {
-      // Ambil kunci yang ditandai aktif dari pengaturan
       apiKey = settings.apiKeys.firstWhere((k) => k.isActive).key;
     } catch (e) {
       // Biarkan API key kosong jika tidak ada yang aktif
     }
-    // Inisialisasi Gemini dengan kunci yang ditemukan
     Gemini.init(apiKey: apiKey);
   }
 
   /// Memberikan saran ikon emoji berdasarkan nama/topik yang diberikan.
   Future<List<String>> suggestIcon({required String name}) async {
-    // Selalu inisialisasi ulang untuk memastikan kunci API terbaru yang digunakan
     await _initializeGeminiWithActiveKey();
-
+    final settings = await _settingsService.loadSettings();
+    // ==> PERUBAHAN 1: Gunakan model yang dipilih untuk tugas umum <==
     final gemini = Gemini.instance;
+    final modelName = settings.generalModelId;
 
     final prompt =
         '''
@@ -39,12 +38,11 @@ Contoh Jawaban:
 ''';
 
     try {
-      // Menggunakan metode .text() dari package flutter_gemini
-      final result = await gemini.text(prompt);
+      // ==> PERUBAHAN 2: Tambahkan parameter modelName saat memanggil text() <==
+      final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
       if (textResponse != null) {
-        // Membersihkan respons jika terbungkus dalam format markdown code block
         final cleanedResponse = textResponse
             .replaceAll('```json', '')
             .replaceAll('```', '')
@@ -55,25 +53,26 @@ Contoh Jawaban:
         throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
       }
     } catch (e) {
-      // Memberikan pesan error yang lebih spesifik jika masalahnya adalah API Key
       if (e.toString().contains('API key is not valid')) {
         throw Exception(
           'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
         );
       }
-      // Lemparkan kembali error lain untuk ditangani oleh UI
       rethrow;
     }
   }
 
   /// Mendapatkan balasan chat dari model Gemini menggunakan package flutter_gemini.
   Future<String?> getChatCompletion(List<Content> contents) async {
-    // Inisialisasi ulang untuk memastikan kunci API terbaru digunakan
     await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    // ==> PERUBAHAN 3: Gunakan model yang dipilih untuk chat <==
     final gemini = Gemini.instance;
+    final modelName = settings.chatModelId;
 
     try {
-      final result = await gemini.chat(contents);
+      // ==> PERUBAHAN 4: Tambahkan parameter modelName saat memanggil chat() <==
+      final result = await gemini.chat(contents, modelName: modelName);
       final textResponse = result?.output;
 
       if (textResponse != null) {
