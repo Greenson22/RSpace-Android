@@ -1,11 +1,14 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_action_menu.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 
 class DiscussionActionMenu extends StatelessWidget {
   final bool isFinished;
   final bool hasFile;
   final bool canCreateFile;
   final bool hasPoints;
+  // ==> TAMBAHKAN PROPERTI BARU <==
+  final DiscussionLinkType linkType;
 
   final VoidCallback onAddPoint;
   final VoidCallback onMove;
@@ -22,8 +25,9 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
   final VoidCallback onCopy;
-  // ==> CALLBACK BARU <==
   final VoidCallback onReorderPoints;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onAddPerpuskuQuizQuestion;
 
   const DiscussionActionMenu({
     super.key,
@@ -31,6 +35,7 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.hasFile,
     required this.canCreateFile,
     required this.hasPoints,
+    required this.linkType, // ==> TAMBAHKAN DI KONSTRUKTOR
     required this.onAddPoint,
     required this.onMove,
     required this.onRename,
@@ -46,7 +51,8 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onReactivate,
     required this.onDelete,
     required this.onCopy,
-    required this.onReorderPoints, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onReorderPoints,
+    required this.onAddPerpuskuQuizQuestion, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -69,7 +75,9 @@ class DiscussionActionMenu extends StatelessWidget {
           'delete': onDelete,
           'smart_link': onSmartLink,
           'copy': onCopy,
-          'reorder_points': onReorderPoints, // ==> TAMBAHKAN AKSI
+          'reorder_points': onReorderPoints,
+          'add_perpusku_quiz_question':
+              onAddPerpuskuQuizQuestion, // ==> TAMBAHKAN AKSI
         };
         actions[value]?.call();
       },
@@ -78,11 +86,31 @@ class DiscussionActionMenu extends StatelessWidget {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems() {
+    // ==> JIKA TIPE ADALAH KUIS V2, TAMPILKAN MENU KHUSUS <==
+    if (linkType == DiscussionLinkType.perpuskuQuiz) {
+      return <PopupMenuEntry<String>>[
+        _buildMenuItem(
+          'add_perpusku_quiz_question',
+          Icons.edit_note,
+          'Tambah/Edit Pertanyaan Kuis',
+        ),
+        _buildMenuItem('rename', Icons.drive_file_rename_outline, 'Ubah Nama'),
+        _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
+        const PopupMenuDivider(),
+        _buildMenuItem(
+          'delete',
+          Icons.delete_outline,
+          'Hapus',
+          color: Colors.red,
+        ),
+      ];
+    }
+
+    // Tampilan menu default
     return <PopupMenuEntry<String>>[
       if (!isFinished)
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
 
-      // ==> TAMBAHKAN ITEM MENU BARU JIKA ADA POIN <==
       if (!isFinished && hasPoints)
         _buildMenuItem('reorder_points', Icons.sort, 'Urutkan Poin'),
 

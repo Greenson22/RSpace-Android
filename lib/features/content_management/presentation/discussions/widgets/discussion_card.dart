@@ -9,6 +9,9 @@ import '../dialogs/smart_link_dialog.dart';
 import 'discussion_point_list.dart';
 import 'discussion_tile.dart';
 import '../../subjects/subjects_page.dart';
+// ==> IMPORT YANG DIPERLUKAN UNTUK NAVIGASI KUIS V2 <==
+import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
+import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;
@@ -34,6 +37,27 @@ class DiscussionCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  // ==> FUNGSI BARU UNTUK NAVIGASI KE EDITOR KUIS V2 (MIRIP DENGAN DISCUSSIONLISTITEM) <==
+  void _navigateAndEditPerpuskuQuiz(BuildContext context) {
+    if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
+      _showSnackBar(context, "Informasi kuis tidak lengkap.");
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => PerpuskuQuizDetailProvider(subjectLinkedPath!),
+          child: PerpuskuQuizQuestionListPage(
+            quizName: discussion.perpuskuQuizName!,
+          ),
+        ),
+      ),
+    ).then((_) {
+      Provider.of<DiscussionProvider>(context, listen: false).loadDiscussions();
+    });
   }
 
   @override
@@ -77,6 +101,9 @@ class DiscussionCard extends StatelessWidget {
             onFinish: () => _markAsFinished(context, provider),
             onReactivate: () => _reactivateDiscussion(context, provider),
             onDelete: () => _deleteDiscussion(context, provider),
+            // ==> PERBAIKAN: PASS CALLBACK BARU KE DISCUSSION TILE <==
+            onAddPerpuskuQuizQuestion: () =>
+                _navigateAndEditPerpuskuQuiz(context),
           ),
           if (discussion.points.isNotEmpty)
             Visibility(
@@ -88,12 +115,11 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  // --- PRIVATE HELPER METHODS FOR ACTIONS ---
-
+  // --- Sisa fungsi helper tidak berubah ---
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
       context: context,
-      discussion: discussion, // Kirim objek discussion
+      discussion: discussion,
       title: 'Tambah Poin Baru',
       label: 'Teks Poin',
       onSave: (text, repetitionCode) {

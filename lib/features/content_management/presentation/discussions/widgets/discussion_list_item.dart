@@ -18,7 +18,9 @@ import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
-// Import PerpuskuQuizService dihapus
+// ==> IMPORT HALAMAN DAN PROVIDER YANG DIPERLUKAN <==
+import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
+import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -76,6 +78,28 @@ class DiscussionListItem extends StatelessWidget {
     _showSnackBar(context, 'Judul diskusi disalin ke clipboard.');
   }
 
+  // ==> FUNGSI BARU UNTUK NAVIGASI KE EDITOR KUIS V2 <==
+  void _navigateAndEditPerpuskuQuiz(BuildContext context) {
+    if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
+      _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => PerpuskuQuizDetailProvider(subjectLinkedPath!),
+          child: PerpuskuQuizQuestionListPage(
+            quizName: discussion.perpuskuQuizName!,
+          ),
+        ),
+      ),
+    ).then((_) {
+      // Refresh provider diskusi jika diperlukan setelah kembali
+      Provider.of<DiscussionProvider>(context, listen: false).loadDiscussions();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -86,16 +110,18 @@ class DiscussionListItem extends StatelessWidget {
         discussion.filePath != null && discussion.filePath!.isNotEmpty;
     final isQuizLink = discussion.linkType == DiscussionLinkType.quiz;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
-    // Pengecekan isPerpuskuQuiz dihapus
+    final isPerpuskuQuiz =
+        discussion.linkType == DiscussionLinkType.perpuskuQuiz;
 
     final iconColor = isFinished
         ? Colors.green
         : (isSelected ? theme.primaryColor : null);
 
-    // Logika ikon dikembalikan ke versi sebelumnya
     IconData iconData;
     if (isFinished) {
       iconData = Icons.check_circle;
+    } else if (isPerpuskuQuiz) {
+      iconData = Icons.assignment_turned_in_outlined;
     } else if (isQuizLink) {
       iconData = Icons.quiz_outlined;
     } else if (isWebLink) {
@@ -125,31 +151,17 @@ class DiscussionListItem extends StatelessWidget {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
               } else {
-                onToggleVisibility(index);
+                if (isPerpuskuQuiz) {
+                  _navigateAndEditPerpuskuQuiz(context);
+                } else {
+                  onToggleVisibility(index);
+                }
               }
             },
             onLongPress: () {
               provider.toggleSelection(discussion);
             },
-            leading: IconButton(
-              icon: Icon(iconData, color: iconColor),
-              // Logika onPressed dikembalikan
-              onPressed: () {
-                if (isQuizLink) {
-                  _startQuiz(context);
-                } else if (isWebLink) {
-                  _openUrlWithOptions(context);
-                } else if (hasFile) {
-                  provider.openDiscussionFile(discussion, context);
-                }
-              },
-              // Tooltip dikembalikan
-              tooltip: isQuizLink
-                  ? 'Mulai Kuis (v1)'
-                  : (isWebLink
-                        ? 'Buka Tautan'
-                        : (hasFile ? 'Buka File' : null)),
-            ),
+            leading: Icon(iconData, color: iconColor),
             title: Text(
               discussion.discussion,
               style: TextStyle(
@@ -182,6 +194,7 @@ class DiscussionListItem extends StatelessWidget {
                     hasFile: hasFile,
                     canCreateFile: subjectLinkedPath != null,
                     hasPoints: discussion.points.isNotEmpty,
+                    linkType: discussion.linkType,
                     onAddPoint: () => _addPoint(context, provider),
                     onMove: () => _moveDiscussion(context, provider),
                     onRename: () => _renameDiscussion(context, provider),
@@ -208,6 +221,9 @@ class DiscussionListItem extends StatelessWidget {
                     onDelete: onDelete,
                     onCopy: () => _copyDiscussionContent(context, discussion),
                     onReorderPoints: onToggleReorder,
+                    // ==> SAMBUNGKAN CALLBACK KE FUNGSI NAVIGASI <==
+                    onAddPerpuskuQuizQuestion: () =>
+                        _navigateAndEditPerpuskuQuiz(context),
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
@@ -243,9 +259,8 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // Fungsi _startPerpuskuQuiz dihapus karena tidak lagi relevan
-
-  // ... sisa fungsi helper (tidak berubah)
+  // Sisa fungsi helper tidak berubah...
+  // ... (_openUrlWithOptions, _startQuiz, _addPoint, dll.)
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);

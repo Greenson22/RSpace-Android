@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_provider.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/perpusku_models.dart';
-// Import halaman player (akan dibuat selanjutnya)
-// import 'perpusku_quiz_player_page.dart';
+import 'perpusku_quiz_question_list_page.dart';
+import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 
 class PerpuskuQuizListPage extends StatelessWidget {
   final PerpuskuSubject subject;
@@ -13,20 +13,29 @@ class PerpuskuQuizListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Path relatif dari Topic/Subject
-    final relativeSubjectPath =
-        '${subject.path.split('/').sublist(subject.path.split('/').length - 2).join('/')}';
+    // Dapatkan path relatif dari path absolut, misal: "Topik A/Subjek B"
+    final pathParts = subject.path.split('/');
+    final relativeSubjectPath = pathParts
+        .sublist(pathParts.length - 2)
+        .join('/');
 
     return ChangeNotifierProvider(
       create: (_) => PerpuskuQuizProvider(relativeSubjectPath),
-      child: _PerpuskuQuizListView(subject: subject),
+      child: _PerpuskuQuizListView(
+        subject: subject,
+        relativeSubjectPath: relativeSubjectPath,
+      ),
     );
   }
 }
 
 class _PerpuskuQuizListView extends StatelessWidget {
   final PerpuskuSubject subject;
-  const _PerpuskuQuizListView({required this.subject});
+  final String relativeSubjectPath;
+  const _PerpuskuQuizListView({
+    required this.subject,
+    required this.relativeSubjectPath,
+  });
 
   void _showAddQuizDialog(BuildContext context) {
     final provider = Provider.of<PerpuskuQuizProvider>(context, listen: false);
@@ -91,14 +100,24 @@ class _PerpuskuQuizListView extends StatelessWidget {
                     leading: const Icon(Icons.assignment_outlined),
                     title: Text(quiz.name),
                     subtitle: Text('${quiz.questions.length} pertanyaan'),
-                    trailing: const Icon(Icons.play_circle_outline),
+                    trailing: const Icon(Icons.edit_note),
                     onTap: () {
-                      // TODO: Navigasi ke halaman player kuis v2
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Player belum diimplementasikan.'),
+                      // ==> NAVIGASI KE HALAMAN DETAIL PERTANYAAN <==
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChangeNotifierProvider(
+                            create: (_) =>
+                                PerpuskuQuizDetailProvider(relativeSubjectPath),
+                            child: PerpuskuQuizQuestionListPage(
+                              quizName: quiz.name,
+                            ),
+                          ),
                         ),
-                      );
+                      ).then((_) {
+                        // Muat ulang daftar kuis saat kembali, untuk update jumlah pertanyaan
+                        provider.loadQuizzes();
+                      });
                     },
                   ),
                 );

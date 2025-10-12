@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/widgets/discussion_tile.dart
+// lib/features/content_management/presentation/discussions/widgets/discussion_tile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
@@ -28,6 +28,8 @@ class DiscussionTile extends StatelessWidget {
   final VoidCallback onFinish;
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onAddPerpuskuQuizQuestion;
 
   const DiscussionTile({
     super.key,
@@ -50,6 +52,8 @@ class DiscussionTile extends StatelessWidget {
     required this.onFinish,
     required this.onReactivate,
     required this.onDelete,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    required this.onAddPerpuskuQuizQuestion,
   });
 
   @override
@@ -84,7 +88,6 @@ class DiscussionTile extends StatelessWidget {
       },
       leading: IconButton(
         icon: Icon(iconData, color: iconColor, size: 24),
-        // --- PERBAIKAN DI SINI ---
         onPressed: hasFile
             ? () => provider.openDiscussionFile(discussion, context)
             : null,
@@ -109,6 +112,8 @@ class DiscussionTile extends StatelessWidget {
               hasFile: hasFile,
               canCreateFile: subjectLinkedPath != null,
               hasPoints: discussion.points.isNotEmpty,
+              // ==> PERBAIKAN: PASS PARAMETER YANG HILANG <==
+              linkType: discussion.linkType,
               onAddPoint: onAddPoint,
               onMove: onMove,
               onRename: onRename,
@@ -125,6 +130,7 @@ class DiscussionTile extends StatelessWidget {
               onDelete: onDelete,
               onCopy: () {},
               onReorderPoints: () {},
+              onAddPerpuskuQuizQuestion: onAddPerpuskuQuizQuestion,
             ),
           if (discussion.points.isNotEmpty && !provider.isSelectionMode)
             IconButton(
