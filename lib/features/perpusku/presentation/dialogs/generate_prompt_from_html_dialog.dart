@@ -3,15 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 
 void showGeneratePromptFromHtmlDialog(
-  BuildContext context,
-  Discussion discussion,
-) {
+  BuildContext context, {
+  required String relativeHtmlPath,
+  required String discussionTitle,
+}) {
   final discussionProvider = Provider.of<DiscussionProvider>(
     context,
     listen: false,
@@ -29,7 +29,10 @@ void showGeneratePromptFromHtmlDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider(
       create: (_) => PerpuskuQuizDetailProvider(relativeSubjectPath),
-      child: GeneratePromptFromHtmlDialog(discussion: discussion),
+      child: GeneratePromptFromHtmlDialog(
+        relativeHtmlPath: relativeHtmlPath,
+        discussionTitle: discussionTitle,
+      ),
     ),
   );
 }
@@ -37,8 +40,14 @@ void showGeneratePromptFromHtmlDialog(
 enum _PromptDialogState { selection, prompt, loading }
 
 class GeneratePromptFromHtmlDialog extends StatefulWidget {
-  final Discussion discussion;
-  const GeneratePromptFromHtmlDialog({super.key, required this.discussion});
+  // ==> PERBAIKAN: Terima path dan judul, bukan objek Discussion <==
+  final String relativeHtmlPath;
+  final String discussionTitle;
+  const GeneratePromptFromHtmlDialog({
+    super.key,
+    required this.relativeHtmlPath,
+    required this.discussionTitle,
+  });
 
   @override
   State<GeneratePromptFromHtmlDialog> createState() =>
@@ -76,8 +85,10 @@ class _GeneratePromptFromHtmlDialogState
     final questionCount = int.tryParse(_questionCountController.text) ?? 10;
 
     try {
+      // ==> PERBAIKAN: Panggil metode yang sudah diperbarui <==
       final prompt = await provider.generatePromptFromHtmlDiscussion(
-        discussion: widget.discussion,
+        relativeHtmlPath: widget.relativeHtmlPath,
+        discussionTitle: widget.discussionTitle,
         questionCount: questionCount,
         difficulty: _selectedDifficulty,
       );
@@ -168,7 +179,7 @@ class _GeneratePromptFromHtmlDialogState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sumber: "${widget.discussion.discussion}"'),
+            Text('Sumber: "${widget.discussionTitle}"'),
             const SizedBox(height: 24),
             DropdownButtonFormField<QuizDifficulty>(
               value: _selectedDifficulty,

@@ -20,7 +20,6 @@ import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import '../discussion_provider.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
-  // ... (properti dan fungsi lain tidak berubah) ...
   DiscussionService get discussionService;
   PathService get pathService;
   String? get sourceSubjectLinkedPath;
@@ -33,7 +32,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   Future<void> saveDiscussions();
   void internalNotifyListeners();
 
-  String _getCorrectRelativePath(Discussion discussion) {
+  // ==> FUNGSI INI DIUBAH MENJADI PUBLIC (HAPUS GARIS BAWAH) <==
+  String getCorrectRelativePath(Discussion discussion) {
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       throw Exception('Path file untuk diskusi ini kosong atau tidak ada.');
     }
@@ -174,7 +174,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   }
 
   Future<String> readHtmlFromFile(Discussion discussion) async {
-    final String finalRelativePath = _getCorrectRelativePath(discussion);
+    // ==> GUNAKAN FUNGSI PUBLIK <==
+    final String finalRelativePath = getCorrectRelativePath(discussion);
     final basePath = await getPerpuskuHtmlBasePath();
     final fullPath = path.join(basePath, finalRelativePath);
     final file = File(fullPath);
@@ -215,7 +216,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
         if (targetSubjectLinkedPath != null) {
           try {
-            final sourceRelativePath = _getCorrectRelativePath(discussion);
+            // ==> GUNAKAN FUNGSI PUBLIK <==
+            final sourceRelativePath = getCorrectRelativePath(discussion);
 
             final newFileName = await discussionService.moveDiscussionFile(
               perpuskuBasePath: perpuskuBasePath,
@@ -297,7 +299,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    final finalRelativePath = _getCorrectRelativePath(discussion);
+    // ==> GUNAKAN FUNGSI PUBLIK <==
+    final finalRelativePath = getCorrectRelativePath(discussion);
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
     final contentPath = path.join(basePath, finalRelativePath);
@@ -384,7 +387,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL
   Future<void> editDiscussionFileWithSelection(
     Discussion discussion,
     BuildContext context,
@@ -410,18 +412,16 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     );
 
     if (choice == 'internal' && context.mounted) {
-      // Baca konten file terlebih dahulu
       final content = await readHtmlFromFile(discussion);
-      final correctPath = _getCorrectRelativePath(discussion);
+      // ==> GUNAKAN FUNGSI PUBLIK <==
+      final correctPath = getCorrectRelativePath(discussion);
 
-      // Navigasi ke editor yang sudah direfaktor
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => HtmlEditorPage(
             pageTitle: discussion.discussion,
             initialContent: content,
-            // Sediakan fungsi onSave
             onSave: (newContent) async {
               await writeHtmlToFile(correctPath, newContent);
             },
@@ -434,7 +434,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   }
 
   Future<void> _openFileWithExternalEditor(Discussion discussion) async {
-    final finalRelativePath = _getCorrectRelativePath(discussion);
+    // ==> GUNAKAN FUNGSI PUBLIK <==
+    final finalRelativePath = getCorrectRelativePath(discussion);
 
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');

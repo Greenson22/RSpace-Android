@@ -20,7 +20,6 @@ import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
-// ==> IMPORT DIALOG BARU DITAMBAHKAN DI SINI <==
 import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
 
 class DiscussionListItem extends StatelessWidget {
@@ -222,9 +221,22 @@ class DiscussionListItem extends StatelessWidget {
                     onReorderPoints: onToggleReorder,
                     onAddPerpuskuQuizQuestion: () =>
                         _navigateAndEditPerpuskuQuiz(context),
-                    // ==> SAMBUNGKAN CALLBACK BARU KE FUNGSI DIALOG <==
-                    onGenerateQuizPrompt: () =>
-                        showGeneratePromptFromHtmlDialog(context, discussion),
+                    // ==> PERBAIKAN AKHIR DI SINI <==
+                    onGenerateQuizPrompt: () {
+                      try {
+                        // Panggil metode publik yang sudah diperbaiki
+                        final correctPath = provider.getCorrectRelativePath(
+                          discussion,
+                        );
+                        showGeneratePromptFromHtmlDialog(
+                          context,
+                          relativeHtmlPath: correctPath,
+                          discussionTitle: discussion.discussion,
+                        );
+                      } catch (e) {
+                        _showSnackBar(context, e.toString(), isError: true);
+                      }
+                    },
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
@@ -260,6 +272,7 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
+  // Sisa kode helper tidak berubah...
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);

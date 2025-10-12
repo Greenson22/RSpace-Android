@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
@@ -124,22 +123,17 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     return prompt;
   }
 
-  /// Membuat prompt kuis dari konten file HTML yang tertaut ke sebuah diskusi.
+  // ==> PERBAIKAN DI SINI: Menerima path dan judul secara langsung <==
   Future<String> generatePromptFromHtmlDiscussion({
-    required Discussion discussion,
+    required String relativeHtmlPath,
+    required String discussionTitle,
     required int questionCount,
     required QuizDifficulty difficulty,
   }) async {
-    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
-      throw Exception('Diskusi ini tidak memiliki file HTML tertaut.');
-    }
-
-    // Baca konten file HTML
-    final file = await _pathService.getPerpuskuHtmlFile(discussion.filePath!);
+    // Baca konten file HTML menggunakan path yang sudah benar
+    final file = await _pathService.getPerpuskuHtmlFile(relativeHtmlPath);
     if (!await file.exists()) {
-      throw Exception(
-        'File HTML tidak ditemukan di path: ${discussion.filePath}',
-      );
+      throw Exception('File HTML tidak ditemukan di path: $relativeHtmlPath');
     }
     final htmlContent = await file.readAsString();
 
@@ -157,7 +151,7 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
         '''
     Anda adalah AI pembuat kuis. Berdasarkan materi dari file HTML berikut:
     ---
-    Judul Materi: ${discussion.discussion}
+    Judul Materi: $discussionTitle
     Isi Teks:
     $textContent
     ---
