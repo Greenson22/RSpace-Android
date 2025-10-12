@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 import '../dialogs/import_perpusku_quiz_from_json_dialog.dart';
+// ==> IMPORT DIALOG BARU <==
+import '../dialogs/generate_perpusku_quiz_prompt_dialog.dart';
 
 class PerpuskuQuizQuestionListPage extends StatelessWidget {
   final String quizName;
@@ -42,6 +44,19 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
               leading: Icon(Icons.edit_note),
               title: Text('Tambah Manual'),
               subtitle: Text('Isi pertanyaan dan jawaban satu per satu.'),
+            ),
+          ),
+          // ==> TAMBAHKAN OPSI BARU DI SINI <==
+          const Divider(),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showGeneratePerpuskuQuizPromptDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.copy_all_outlined),
+              title: Text('Buat Prompt dari Subject R-Space'),
+              subtitle: Text('Generate prompt untuk digunakan di Gemini.'),
             ),
           ),
         ],
