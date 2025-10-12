@@ -28,8 +28,10 @@ class DiscussionTile extends StatelessWidget {
   final VoidCallback onFinish;
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onAddPerpuskuQuizQuestion;
+  // ==> TAMBAHKAN DUA CALLBACK BERIKUT <==
+  final VoidCallback onGenerateQuizPrompt;
+  final VoidCallback onReorderPoints;
 
   const DiscussionTile({
     super.key,
@@ -52,8 +54,10 @@ class DiscussionTile extends StatelessWidget {
     required this.onFinish,
     required this.onReactivate,
     required this.onDelete,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     required this.onAddPerpuskuQuizQuestion,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    required this.onGenerateQuizPrompt,
+    required this.onReorderPoints,
   });
 
   @override
@@ -112,7 +116,6 @@ class DiscussionTile extends StatelessWidget {
               hasFile: hasFile,
               canCreateFile: subjectLinkedPath != null,
               hasPoints: discussion.points.isNotEmpty,
-              // ==> PERBAIKAN: PASS PARAMETER YANG HILANG <==
               linkType: discussion.linkType,
               onAddPoint: onAddPoint,
               onMove: onMove,
@@ -129,8 +132,10 @@ class DiscussionTile extends StatelessWidget {
               onReactivate: onReactivate,
               onDelete: onDelete,
               onCopy: () {},
-              onReorderPoints: () {},
+              // ==> PERBAIKAN DI SINI <==
+              onReorderPoints: onReorderPoints,
               onAddPerpuskuQuizQuestion: onAddPerpuskuQuizQuestion,
+              onGenerateQuizPrompt: onGenerateQuizPrompt,
             ),
           if (discussion.points.isNotEmpty && !provider.isSelectionMode)
             IconButton(

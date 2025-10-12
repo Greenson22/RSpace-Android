@@ -9,9 +9,9 @@ import '../dialogs/smart_link_dialog.dart';
 import 'discussion_point_list.dart';
 import 'discussion_tile.dart';
 import '../../subjects/subjects_page.dart';
-// ==> IMPORT YANG DIPERLUKAN UNTUK NAVIGASI KUIS V2 <==
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
+import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
 
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;
@@ -39,7 +39,6 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK NAVIGASI KE EDITOR KUIS V2 (MIRIP DENGAN DISCUSSIONLISTITEM) <==
   void _navigateAndEditPerpuskuQuiz(BuildContext context) {
     if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
       _showSnackBar(context, "Informasi kuis tidak lengkap.");
@@ -101,9 +100,14 @@ class DiscussionCard extends StatelessWidget {
             onFinish: () => _markAsFinished(context, provider),
             onReactivate: () => _reactivateDiscussion(context, provider),
             onDelete: () => _deleteDiscussion(context, provider),
-            // ==> PERBAIKAN: PASS CALLBACK BARU KE DISCUSSION TILE <==
             onAddPerpuskuQuizQuestion: () =>
                 _navigateAndEditPerpuskuQuiz(context),
+            // ==> PASS DUA CALLBACK BARU KE DISCUSSIONTILE <==
+            onGenerateQuizPrompt: () =>
+                showGeneratePromptFromHtmlDialog(context, discussion),
+            onReorderPoints: () {
+              // TODO: Implement reorder logic if needed in this parent widget
+            },
           ),
           if (discussion.points.isNotEmpty)
             Visibility(
@@ -115,7 +119,8 @@ class DiscussionCard extends StatelessWidget {
     );
   }
 
-  // --- Sisa fungsi helper tidak berubah ---
+  // --- PRIVATE HELPER METHODS FOR ACTIONS (TIDAK BERUBAH) ---
+
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
       context: context,

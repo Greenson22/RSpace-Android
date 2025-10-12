@@ -7,7 +7,6 @@ class DiscussionActionMenu extends StatelessWidget {
   final bool hasFile;
   final bool canCreateFile;
   final bool hasPoints;
-  // ==> TAMBAHKAN PROPERTI BARU <==
   final DiscussionLinkType linkType;
 
   final VoidCallback onAddPoint;
@@ -26,8 +25,9 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onCopy;
   final VoidCallback onReorderPoints;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onAddPerpuskuQuizQuestion;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onGenerateQuizPrompt;
 
   const DiscussionActionMenu({
     super.key,
@@ -35,7 +35,7 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.hasFile,
     required this.canCreateFile,
     required this.hasPoints,
-    required this.linkType, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.linkType,
     required this.onAddPoint,
     required this.onMove,
     required this.onRename,
@@ -52,7 +52,8 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onDelete,
     required this.onCopy,
     required this.onReorderPoints,
-    required this.onAddPerpuskuQuizQuestion, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onAddPerpuskuQuizQuestion,
+    required this.onGenerateQuizPrompt, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -76,8 +77,8 @@ class DiscussionActionMenu extends StatelessWidget {
           'smart_link': onSmartLink,
           'copy': onCopy,
           'reorder_points': onReorderPoints,
-          'add_perpusku_quiz_question':
-              onAddPerpuskuQuizQuestion, // ==> TAMBAHKAN AKSI
+          'add_perpusku_quiz_question': onAddPerpuskuQuizQuestion,
+          'generate_quiz_prompt': onGenerateQuizPrompt, // ==> TAMBAHKAN AKSI
         };
         actions[value]?.call();
       },
@@ -86,7 +87,6 @@ class DiscussionActionMenu extends StatelessWidget {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems() {
-    // ==> JIKA TIPE ADALAH KUIS V2, TAMPILKAN MENU KHUSUS <==
     if (linkType == DiscussionLinkType.perpuskuQuiz) {
       return <PopupMenuEntry<String>>[
         _buildMenuItem(
@@ -106,16 +106,13 @@ class DiscussionActionMenu extends StatelessWidget {
       ];
     }
 
-    // Tampilan menu default
     return <PopupMenuEntry<String>>[
       if (!isFinished)
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
-
       if (!isFinished && hasPoints)
         _buildMenuItem('reorder_points', Icons.sort, 'Urutkan Poin'),
 
       _buildMenuItem('copy', Icons.copy_outlined, 'Salin Judul'),
-
       _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
 
       _buildSubMenu(
@@ -141,7 +138,7 @@ class DiscussionActionMenu extends StatelessWidget {
       if (!isFinished)
         _buildSubMenu(
           icon: Icons.description_outlined,
-          label: 'File',
+          label: 'File & Kuis',
           children: [
             if (canCreateFile && !hasFile)
               _buildMenuItem(
@@ -149,7 +146,6 @@ class DiscussionActionMenu extends StatelessWidget {
                 Icons.note_add_outlined,
                 'Buat File HTML Baru',
               ),
-
             _buildMenuItem(
               'set_file_path',
               hasFile
@@ -157,7 +153,6 @@ class DiscussionActionMenu extends StatelessWidget {
                   : Icons.create_new_folder_outlined,
               hasFile ? 'Ubah Path File' : 'Set Path File',
             ),
-
             if (hasFile) ...[
               _buildMenuItem(
                 'generate_html',
@@ -168,6 +163,13 @@ class DiscussionActionMenu extends StatelessWidget {
                 'edit_file_path',
                 Icons.edit_document,
                 'Edit File Konten',
+              ),
+              const PopupMenuDivider(),
+              // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+              _buildMenuItem(
+                'generate_quiz_prompt',
+                Icons.copy_all_outlined,
+                'Buat Prompt Kuis (dari File)',
               ),
               const PopupMenuDivider(),
               _buildMenuItem(

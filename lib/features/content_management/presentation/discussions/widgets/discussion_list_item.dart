@@ -18,9 +18,10 @@ import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
-// ==> IMPORT HALAMAN DAN PROVIDER YANG DIPERLUKAN <==
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
+// ==> IMPORT DIALOG BARU DITAMBAHKAN DI SINI <==
+import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -78,7 +79,6 @@ class DiscussionListItem extends StatelessWidget {
     _showSnackBar(context, 'Judul diskusi disalin ke clipboard.');
   }
 
-  // ==> FUNGSI BARU UNTUK NAVIGASI KE EDITOR KUIS V2 <==
   void _navigateAndEditPerpuskuQuiz(BuildContext context) {
     if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
       _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
@@ -95,7 +95,6 @@ class DiscussionListItem extends StatelessWidget {
         ),
       ),
     ).then((_) {
-      // Refresh provider diskusi jika diperlukan setelah kembali
       Provider.of<DiscussionProvider>(context, listen: false).loadDiscussions();
     });
   }
@@ -221,9 +220,11 @@ class DiscussionListItem extends StatelessWidget {
                     onDelete: onDelete,
                     onCopy: () => _copyDiscussionContent(context, discussion),
                     onReorderPoints: onToggleReorder,
-                    // ==> SAMBUNGKAN CALLBACK KE FUNGSI NAVIGASI <==
                     onAddPerpuskuQuizQuestion: () =>
                         _navigateAndEditPerpuskuQuiz(context),
+                    // ==> SAMBUNGKAN CALLBACK BARU KE FUNGSI DIALOG <==
+                    onGenerateQuizPrompt: () =>
+                        showGeneratePromptFromHtmlDialog(context, discussion),
                   ),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
@@ -259,8 +260,6 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // Sisa fungsi helper tidak berubah...
-  // ... (_openUrlWithOptions, _startQuiz, _addPoint, dll.)
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
@@ -462,7 +461,7 @@ class DiscussionListItem extends StatelessWidget {
         _showSnackBar(context, 'Path file berhasil disimpan.');
       }
     } catch (e) {
-      _showSnackBar(context, 'Gagal: ${e.toString()}', isError: true);
+      _showSnackBar(context, 'Gagal: ${e.toString()}');
     }
   }
 

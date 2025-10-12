@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
-// ==> IMPORT SERVICE DAN MODEL YANG DIPERLUKAN <==
+import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/core/services/path_service.dart';
+import 'package:html/parser.dart' show parse;
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 
 class PerpuskuQuizDetailProvider with ChangeNotifier {
   final PerpuskuQuizService _quizService = PerpuskuQuizService();
-  // ==> TAMBAHKAN DISCUSSION SERVICE <==
   final DiscussionService _discussionService = DiscussionService();
+  final PathService _pathService = PathService();
   final String relativeSubjectPath;
 
   bool _isLoading = true;
@@ -31,7 +33,6 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Menambahkan pertanyaan dari string JSON ke dalam QuizSet tertentu.
   Future<void> addQuestionsFromJson({
     required String quizSetName,
     required String jsonContent,
@@ -63,15 +64,12 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
       _allQuizzesInSubject[quizSetIndex].questions.addAll(newQuestions);
       await _quizService.saveQuizzes(relativeSubjectPath, _allQuizzesInSubject);
     } catch (e) {
-      // Lemparkan kembali error untuk ditangani oleh UI
       rethrow;
     } finally {
-      // Muat ulang data untuk memastikan UI terupdate
       await _loadAllQuizzes();
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT PROMPT <==
   Future<String> generatePromptFromRspaceSubject({
     required String subjectJsonPath,
     required int questionCount,
@@ -101,6 +99,67 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
     ---
     ${contentBuffer.toString()}
+    ---
+    
+    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
+    Untuk tingkat kesulitan "HOTS", buatlah pertanyaan yang membutuhkan analisis atau penerapan konsep, bukan hanya ingatan.
+    
+    Aturan Jawaban:
+    1.  HANYA kembalikan dalam format array JSON yang valid.
+    2.  Setiap objek dalam array mewakili satu pertanyaan dan HARUS memiliki kunci: "questionText", "options", dan "correctAnswerIndex".
+    3.  "questionText" harus berupa string.
+    4.  "options" harus berupa array berisi 4 string pilihan jawaban.
+    5.  "correctAnswerIndex" harus berupa integer (0-3) yang menunjuk ke jawaban yang benar.
+    6.  Jangan sertakan penjelasan atau teks lain di luar array JSON.
+
+    Contoh Jawaban:
+    [
+      {
+        "questionText": "Apa itu widget dalam Flutter?",
+        "options": ["Blok bangunan UI", "Tipe variabel", "Fungsi database", "Permintaan jaringan"],
+        "correctAnswerIndex": 0
+      }
+    ]
+    ''';
+    return prompt;
+  }
+
+  /// Membuat prompt kuis dari konten file HTML yang tertaut ke sebuah diskusi.
+  Future<String> generatePromptFromHtmlDiscussion({
+    required Discussion discussion,
+    required int questionCount,
+    required QuizDifficulty difficulty,
+  }) async {
+    if (discussion.filePath == null || discussion.filePath!.isEmpty) {
+      throw Exception('Diskusi ini tidak memiliki file HTML tertaut.');
+    }
+
+    // Baca konten file HTML
+    final file = await _pathService.getPerpuskuHtmlFile(discussion.filePath!);
+    if (!await file.exists()) {
+      throw Exception(
+        'File HTML tidak ditemukan di path: ${discussion.filePath}',
+      );
+    }
+    final htmlContent = await file.readAsString();
+
+    // Ekstrak teks dari HTML untuk konteks yang lebih bersih
+    final document = parse(htmlContent);
+    final String textContent = document.body?.text.trim() ?? '';
+
+    if (textContent.isEmpty) {
+      throw Exception(
+        'File HTML tidak memiliki konten teks untuk dibuatkan kuis.',
+      );
+    }
+
+    final prompt =
+        '''
+    Anda adalah AI pembuat kuis. Berdasarkan materi dari file HTML berikut:
+    ---
+    Judul Materi: ${discussion.discussion}
+    Isi Teks:
+    $textContent
     ---
     
     Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
