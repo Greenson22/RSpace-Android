@@ -81,7 +81,6 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   void _navigateAndEditPerpuskuQuiz(BuildContext context) {
-    // ==> PERBAIKAN: Gunakan `discussion.filePath` sebagai path subjek kuis <==
     final quizSubjectPath = discussion.filePath;
     if (quizSubjectPath == null || discussion.perpuskuQuizName == null) {
       _showSnackBar(
@@ -107,7 +106,6 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   Future<void> _startPerpuskuQuiz(BuildContext context) async {
-    // ==> PERBAIKAN: Gunakan `discussion.filePath` sebagai path subjek kuis <==
     final quizSubjectPath = discussion.filePath;
     if (quizSubjectPath == null || discussion.perpuskuQuizName == null) {
       _showSnackBar(
@@ -164,13 +162,56 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH TAUTAN KUIS <==
   Future<void> _changePerpuskuQuizLink(BuildContext context) async {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     final result = await showPerpuskuQuizPickerDialog(context);
     if (result != null) {
       await provider.updatePerpuskuQuizLink(discussion, result);
       _showSnackBar(context, 'Tautan kuis berhasil diubah.');
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK KONVERSI KE KUIS <==
+  Future<void> _convertToPerpuskuQuiz(BuildContext context) async {
+    final provider = Provider.of<DiscussionProvider>(context, listen: false);
+
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Jadikan Kuis Perpusku'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'link'),
+            child: const ListTile(
+              leading: Icon(Icons.link),
+              title: Text('Tautkan ke Kuis yang Ada'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'create'),
+            child: const ListTile(
+              leading: Icon(Icons.add_circle_outline),
+              title: Text('Buat Kuis Baru'),
+              subtitle: Text('Dengan nama yang sama seperti diskusi ini.'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (choice == 'link' && context.mounted) {
+      final result = await showPerpuskuQuizPickerDialog(context);
+      if (result != null) {
+        await provider.convertToPerpuskuQuiz(discussion, linkTo: result);
+        _showSnackBar(context, 'Diskusi berhasil diubah menjadi tautan kuis.');
+      }
+    } else if (choice == 'create' && context.mounted) {
+      try {
+        await provider.convertToPerpuskuQuiz(discussion, createNew: true);
+        _showSnackBar(context, 'Kuis baru berhasil dibuat dan ditautkan.');
+      } catch (e) {
+        _showSnackBar(context, e.toString(), isError: true);
+      }
     }
   }
 
@@ -183,7 +224,6 @@ class DiscussionListItem extends StatelessWidget {
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
     final isPerpuskuQuiz =
         discussion.linkType == DiscussionLinkType.perpuskuQuiz;
-    // Perbarui cara cek `hasFile` agar spesifik untuk HTML
     final hasFile =
         discussion.linkType == DiscussionLinkType.html &&
         discussion.filePath != null &&
@@ -325,6 +365,8 @@ class DiscussionListItem extends StatelessWidget {
                         _navigateAndEditPerpuskuQuiz(context),
                     onChangePerpuskuQuizLink: () =>
                         _changePerpuskuQuizLink(context),
+                    onConvertToPerpuskuQuiz: () =>
+                        _convertToPerpuskuQuiz(context),
                     onGenerateQuizPrompt: () {
                       try {
                         final correctPath = provider.getCorrectRelativePath(

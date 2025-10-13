@@ -27,8 +27,9 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onReorderPoints;
   final VoidCallback onAddPerpuskuQuizQuestion;
   final VoidCallback onGenerateQuizPrompt;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onChangePerpuskuQuizLink;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onConvertToPerpuskuQuiz;
 
   const DiscussionActionMenu({
     super.key,
@@ -55,7 +56,8 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onReorderPoints,
     required this.onAddPerpuskuQuizQuestion,
     required this.onGenerateQuizPrompt,
-    required this.onChangePerpuskuQuizLink, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onChangePerpuskuQuizLink,
+    required this.onConvertToPerpuskuQuiz, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -81,8 +83,8 @@ class DiscussionActionMenu extends StatelessWidget {
           'reorder_points': onReorderPoints,
           'add_perpusku_quiz_question': onAddPerpuskuQuizQuestion,
           'generate_quiz_prompt': onGenerateQuizPrompt,
-          'change_perpusku_quiz_link':
-              onChangePerpuskuQuizLink, // ==> TAMBAHKAN AKSI
+          'change_perpusku_quiz_link': onChangePerpuskuQuizLink,
+          'convert_to_quiz': onConvertToPerpuskuQuiz, // ==> TAMBAHKAN AKSI
         };
         actions[value]?.call();
       },
@@ -98,7 +100,6 @@ class DiscussionActionMenu extends StatelessWidget {
           Icons.edit_note,
           'Kelola Pertanyaan Kuis',
         ),
-        // ==> TAMBAHKAN ITEM MENU BARU <==
         _buildMenuItem(
           'change_perpusku_quiz_link',
           Icons.find_replace_outlined,
@@ -116,7 +117,6 @@ class DiscussionActionMenu extends StatelessWidget {
       ];
     }
 
-    // ... (sisa kode tidak berubah)
     return <PopupMenuEntry<String>>[
       if (!isFinished)
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
@@ -146,8 +146,15 @@ class DiscussionActionMenu extends StatelessWidget {
       if (!isFinished)
         _buildSubMenu(
           icon: Icons.description_outlined,
-          label: 'File & Kuis',
+          label: 'File & Tautan',
           children: [
+            // ==> TAMBAHKAN MENU KONVERSI DI SINI <==
+            if (linkType != DiscussionLinkType.perpuskuQuiz)
+              _buildMenuItem(
+                'convert_to_quiz',
+                Icons.quiz_outlined,
+                'Jadikan Kuis Perpusku',
+              ),
             if (canCreateFile && !hasFile)
               _buildMenuItem(
                 'create_file',
@@ -185,7 +192,7 @@ class DiscussionActionMenu extends StatelessWidget {
                 'Hapus Path File',
                 color: Colors.orange,
               ),
-            ] else ...[
+            ] else if (linkType != DiscussionLinkType.perpuskuQuiz) ...[
               _buildMenuItem(
                 'smart_link',
                 Icons.auto_awesome_outlined,

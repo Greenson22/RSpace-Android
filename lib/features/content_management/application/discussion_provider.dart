@@ -286,6 +286,37 @@ class DiscussionProvider
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK KONVERSI KE KUIS <==
+  Future<void> convertToPerpuskuQuiz(
+    Discussion discussion, {
+    PerpuskuQuizPickerResult? linkTo,
+    bool createNew = false,
+  }) async {
+    if (createNew) {
+      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
+        throw Exception(
+          "Tidak dapat membuat kuis karena Subject ini belum ditautkan ke folder PerpusKu.",
+        );
+      }
+      await _perpuskuQuizService.addQuizSet(
+        sourceSubjectLinkedPath!,
+        discussion.discussion,
+      );
+      discussion.linkType = DiscussionLinkType.perpuskuQuiz;
+      discussion.filePath = sourceSubjectLinkedPath;
+      discussion.perpuskuQuizName = discussion.discussion;
+    } else if (linkTo != null) {
+      discussion.linkType = DiscussionLinkType.perpuskuQuiz;
+      discussion.filePath = linkTo.subjectPath;
+      discussion.perpuskuQuizName = linkTo.quizName;
+    } else {
+      throw Exception("Data kuis untuk ditautkan tidak valid.");
+    }
+
+    await saveDiscussions();
+    notifyListeners();
+  }
+
   Future<List<String>> getTitlesFromContent(String htmlContent) async {
     final geminiService = GeminiService();
     return await geminiService.generateDiscussionTitles(htmlContent);

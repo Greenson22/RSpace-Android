@@ -50,9 +50,9 @@ class Discussion {
   String? filePath;
   String? archivedHtmlContent;
 
-  final DiscussionLinkType linkType;
-  final String? url;
   // ==> PERBAIKAN DI SINI: Hapus 'final' <==
+  DiscussionLinkType linkType;
+  final String? url;
   String? perpuskuQuizName;
 
   Discussion({
