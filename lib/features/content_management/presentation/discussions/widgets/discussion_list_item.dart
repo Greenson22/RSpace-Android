@@ -134,6 +134,33 @@ class DiscussionListItem extends StatelessWidget {
       iconData = Icons.check_circle_outline;
     }
 
+    // ==> PERBAIKAN: Logika aksi untuk ikon dipindahkan ke sini <==
+    VoidCallback? onPressedAction;
+    String? tooltip;
+
+    if (!provider.isSelectionMode) {
+      if (isPerpuskuQuiz) {
+        onPressedAction = () => _navigateAndEditPerpuskuQuiz(context);
+        tooltip = 'Kelola Kuis';
+      } else if (isWebLink) {
+        onPressedAction = () => _openUrlWithOptions(context);
+        tooltip = 'Buka Tautan';
+      } else if (isQuizLink) {
+        onPressedAction = () => _startQuiz(context);
+        tooltip = 'Mulai Kuis';
+      } else if (hasFile) {
+        onPressedAction = () async {
+          try {
+            await provider.openDiscussionFile(discussion, context);
+          } catch (e) {
+            _showSnackBar(context, e.toString(), isError: true);
+          }
+        };
+        tooltip = 'Buka File';
+      }
+    }
+    // Jika tidak ada aksi, onPressedAction akan null dan IconButton dinonaktifkan
+
     return Card(
       color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
       shape: RoundedRectangleBorder(
@@ -145,31 +172,23 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            onTap: () async {
+            // ==> PERBAIKAN: onTap sekarang hanya untuk seleksi atau toggle poin <==
+            onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
               } else {
-                if (isPerpuskuQuiz) {
-                  _navigateAndEditPerpuskuQuiz(context);
-                } else if (isWebLink) {
-                  _openUrlWithOptions(context);
-                } else if (isQuizLink) {
-                  _startQuiz(context);
-                } else if (hasFile) {
-                  try {
-                    await provider.openDiscussionFile(discussion, context);
-                  } catch (e) {
-                    _showSnackBar(context, e.toString(), isError: true);
-                  }
-                } else {
-                  onToggleVisibility(index);
-                }
+                onToggleVisibility(index);
               }
             },
             onLongPress: () {
               provider.toggleSelection(discussion);
             },
-            leading: Icon(iconData, color: iconColor),
+            // ==> PERBAIKAN: Menggunakan IconButton untuk aksi <==
+            leading: IconButton(
+              icon: Icon(iconData, color: iconColor),
+              onPressed: onPressedAction,
+              tooltip: tooltip,
+            ),
             title: Text(
               discussion.discussion,
               style: TextStyle(
@@ -543,5 +562,29 @@ class DiscussionListItem extends StatelessWidget {
   ) {
     provider.reactivateDiscussion(discussion);
     _showSnackBar(context, 'Diskusi diaktifkan kembali.');
+  }
+
+  void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
+    showDeleteDiscussionConfirmationDialog(
+      context: context,
+      discussionName: discussion.discussion,
+      hasLinkedFile:
+          discussion.filePath != null && discussion.filePath!.isNotEmpty,
+      onDelete: () async {
+        try {
+          await provider.deleteDiscussion(discussion);
+          if (context.mounted) {
+            _showSnackBar(
+              context,
+              'Diskusi "${discussion.discussion}" berhasil dihapus.',
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            _showSnackBar(context, "Gagal menghapus: ${e.toString()}");
+          }
+        }
+      },
+    );
   }
 }
