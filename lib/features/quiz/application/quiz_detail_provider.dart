@@ -108,7 +108,6 @@ class QuizDetailProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBANGUN KONTEKS DARI RSPACE
   Future<String> _buildQuizContextFromRspace(String subjectJsonPath) async {
     final discussions = await _discussionService.loadDiscussions(
       subjectJsonPath,
@@ -130,7 +129,6 @@ class QuizDetailProvider with ChangeNotifier {
     return contentBuffer.toString();
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBANGUN KONTEKS DARI HTML
   Future<String> _buildQuizContextFromHtml(
     String relativeHtmlPath,
     String discussionTitle,
@@ -150,18 +148,44 @@ class QuizDetailProvider with ChangeNotifier {
     return 'Judul Materi: $discussionTitle\nIsi Teks:\n$textContent';
   }
 
-  // ==> FUNGSI GENERATE PROMPT DIPERBARUI
+  // ==> FUNGSI INI TELAH DIPERBAIKI
   Future<String> generatePromptFromRspaceSubject({
     required String subjectJsonPath,
     required int questionCount,
     required QuizDifficulty difficulty,
   }) async {
     final context = await _buildQuizContextFromRspace(subjectJsonPath);
-    // (Prompt tetap sama seperti sebelumnya)
-    final prompt = '''...'''; // (prompt lengkap seperti di file asli)
+    final prompt =
+        '''
+    Anda adalah AI pembuat kuis. Berdasarkan konteks materi berikut:
+    ---
+    $context
+    ---
+
+    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
+    Untuk tingkat kesulitan "HOTS", buatlah pertanyaan yang membutuhkan analisis atau penerapan konsep, bukan hanya ingatan.
+
+    Aturan Jawaban SANGAT PENTING:
+    1.  Jawaban Anda HARUS HANYA berupa array JSON yang valid, tidak ada teks lain.
+    2.  Setiap objek dalam array mewakili satu pertanyaan dan HARUS memiliki kunci: "questionText", "options", dan "correctAnswerIndex".
+    3.  "questionText" harus berupa string.
+    4.  "options" harus berupa array berisi 4 string pilihan jawaban.
+    5.  "correctAnswerIndex" harus berupa integer (0-3) yang menunjuk ke jawaban yang benar.
+    6.  Jangan sertakan markdown seperti ```json di awal atau akhir.
+
+    Contoh Jawaban:
+    [
+      {
+        "questionText": "Apa itu widget dalam Flutter?",
+        "options": ["Blok bangunan UI", "Tipe variabel", "Fungsi database", "Permintaan jaringan"],
+        "correctAnswerIndex": 0
+      }
+    ]
+    ''';
     return prompt;
   }
 
+  // ==> FUNGSI INI TELAH DIPERBAIKI
   Future<String> generatePromptFromHtmlDiscussion({
     required String relativeHtmlPath,
     required String discussionTitle,
@@ -172,12 +196,36 @@ class QuizDetailProvider with ChangeNotifier {
       relativeHtmlPath,
       discussionTitle,
     );
-    // (Prompt tetap sama seperti sebelumnya)
-    final prompt = '''...'''; // (prompt lengkap seperti di file asli)
+    final prompt =
+        '''
+    Anda adalah AI pembuat kuis. Berdasarkan konteks materi berikut:
+    ---
+    $context
+    ---
+
+    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
+    Untuk tingkat kesulitan "HOTS", buatlah pertanyaan yang membutuhkan analisis atau penerapan konsep, bukan hanya ingatan.
+
+    Aturan Jawaban SANGAT PENTING:
+    1.  Jawaban Anda HARUS HANYA berupa array JSON yang valid, tidak ada teks lain.
+    2.  Setiap objek dalam array mewakili satu pertanyaan dan HARUS memiliki kunci: "questionText", "options", dan "correctAnswerIndex".
+    3.  "questionText" harus berupa string.
+    4.  "options" harus berupa array berisi 4 string pilihan jawaban.
+    5.  "correctAnswerIndex" harus berupa integer (0-3) yang menunjuk ke jawaban yang benar.
+    6.  Jangan sertakan markdown seperti ```json di awal atau akhir.
+
+    Contoh Jawaban:
+    [
+      {
+        "questionText": "Apa itu widget dalam Flutter?",
+        "options": ["Blok bangunan UI", "Tipe variabel", "Fungsi database", "Permintaan jaringan"],
+        "correctAnswerIndex": 0
+      }
+    ]
+    ''';
     return prompt;
   }
 
-  // ==> FUNGSI BARU UNTUK GENERATE & IMPORT DARI RSPACE
   Future<void> generateAndAddQuestionsFromRspaceSubject({
     required String quizSetName,
     required String subjectJsonPath,
@@ -202,7 +250,6 @@ class QuizDetailProvider with ChangeNotifier {
     await _loadAllQuizzes();
   }
 
-  // ==> FUNGSI BARU UNTUK GENERATE & IMPORT DARI HTML
   Future<void> generateAndAddQuestionsFromHtmlDiscussion({
     required String quizSetName,
     required String relativeHtmlPath,
