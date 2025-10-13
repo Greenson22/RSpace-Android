@@ -1,4 +1,4 @@
-// lib/presentation/widgets/snow_widget.dart
+// lib/core/widgets/snow_widget.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -69,13 +69,17 @@ class _SnowWidgetState extends State<SnowWidget>
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: SnowPainter(
-        snowflakes: _snowflakes,
-        snowColor: widget.snowColor,
-        controller: _controller, // Oper controller sebagai Listenable
-        speed: widget.speed,
+    // ==> PERBAIKAN DI SINI <==
+    // Bungkus CustomPaint dengan IgnorePointer agar tidak memblokir sentuhan
+    return IgnorePointer(
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: SnowPainter(
+          snowflakes: _snowflakes,
+          snowColor: widget.snowColor,
+          controller: _controller,
+          speed: widget.speed,
+        ),
       ),
     );
   }
@@ -92,7 +96,7 @@ class SnowPainter extends CustomPainter {
     required this.snowColor,
     required this.controller,
     required this.speed,
-  }) : super(repaint: controller); // Repaint hanya ketika controller berubah
+  }) : super(repaint: controller);
 
   void _updateSnowflakes(Size size) {
     for (var snowflake in snowflakes) {
@@ -102,7 +106,6 @@ class SnowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Pindahkan logika update ke sini, akan terpanggil setiap frame animasi
     _updateSnowflakes(size);
 
     final paint = Paint()
@@ -120,7 +123,6 @@ class SnowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant SnowPainter oldDelegate) {
-    // Tidak perlu lagi karena kita sudah menggunakan Listenable di konstruktor
     return false;
   }
 }

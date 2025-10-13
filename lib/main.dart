@@ -20,6 +20,9 @@ import 'features/snake_game/application/snake_game_provider.dart';
 import 'features/auth/application/auth_provider.dart';
 import 'core/widgets/draggable_fab_view.dart';
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
+// ==> IMPORT WIDGET EFEK VISUAL <==
+import 'core/widgets/snow_widget.dart';
+import 'core/widgets/underwater_widget.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -68,6 +71,11 @@ class MyApp extends StatelessWidget {
               children: [
                 // Ini adalah halaman utama Anda (seperti Dashboard, Topics, dll.)
                 child!,
+
+                // ==> TAMBAHKAN KONDISI UNTUK MENAMPILKAN EFEK VISUAL DI SINI <==
+                if (themeProvider.isChristmasTheme) const SnowWidget(),
+                if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
+
                 // Tampilkan Flo dan FAB secara kondisional di atas halaman
                 if (themeProvider.showFloatingCharacter)
                   const FloatingCharacter(),

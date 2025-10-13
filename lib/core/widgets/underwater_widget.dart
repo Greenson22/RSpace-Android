@@ -67,12 +67,16 @@ class _UnderwaterWidgetState extends State<UnderwaterWidget>
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: UnderwaterPainter(
-        fishes: _fishes,
-        controller: _controller,
-        speed: widget.speed,
+    // ==> PERBAIKAN DI SINI <==
+    // Bungkus CustomPaint dengan IgnorePointer agar tidak memblokir sentuhan
+    return IgnorePointer(
+      child: CustomPaint(
+        size: Size.infinite,
+        painter: UnderwaterPainter(
+          fishes: _fishes,
+          controller: _controller,
+          speed: widget.speed,
+        ),
       ),
     );
   }
@@ -135,7 +139,6 @@ class Fish {
   factory Fish.random(Size size, double speed) {
     final random = Random();
     final isFacingRight = random.nextBool();
-    // ==> PERBAIKAN: Definisikan bentuk ikan untuk setiap arah
     final fishBodies = [
       {'right': '><(((º>', 'left': '<º)))><'},
       {'right': '><(((º>', 'left': '<º)))><'},
@@ -166,12 +169,10 @@ class Fish {
     x += velocityX;
     y += velocityY;
 
-    // Bounce off vertical walls
     if (x < -size.width * 0.2 || x > size.width * 1.2) {
       isFacingRight = !isFacingRight;
       velocityX *= -1;
     }
-    // Bounce off horizontal walls
     if (y < 0 || y > size.height) {
       velocityY *= -1;
     }
@@ -180,7 +181,6 @@ class Fish {
   void draw(Canvas canvas) {
     final textPainter = TextPainter(
       text: TextSpan(
-        // ==> PERBAIKAN: Pilih bentuk ikan berdasarkan arah
         text: isFacingRight ? bodyRight : bodyLeft,
         style: TextStyle(
           color: color,
