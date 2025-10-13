@@ -11,6 +11,7 @@ void showGenerateQuizFromHtmlDialog(
   BuildContext context, {
   required String relativeHtmlPath,
   required String discussionTitle,
+  String? targetQuizName, // ==> PARAMETER BARU
 }) {
   final discussionProvider = Provider.of<DiscussionProvider>(
     context,
@@ -32,6 +33,7 @@ void showGenerateQuizFromHtmlDialog(
       child: GenerateQuizFromHtmlDialog(
         relativeHtmlPath: relativeHtmlPath,
         discussionTitle: discussionTitle,
+        targetQuizName: targetQuizName, // ==> KIRIM PARAMETER
       ),
     ),
   );
@@ -42,10 +44,13 @@ enum _DialogState { selection, loading }
 class GenerateQuizFromHtmlDialog extends StatefulWidget {
   final String relativeHtmlPath;
   final String discussionTitle;
+  final String? targetQuizName; // ==> PROPERTI BARU
+
   const GenerateQuizFromHtmlDialog({
     super.key,
     required this.relativeHtmlPath,
     required this.discussionTitle,
+    this.targetQuizName,
   });
 
   @override
@@ -99,7 +104,12 @@ class _GenerateQuizFromHtmlDialogState
 
     try {
       if (directImport) {
-        final targetQuizName = await _showQuizPicker(context, provider.quizzes);
+        // ==> LOGIKA DIPERBARUI <==
+        // Jika sudah ada target, gunakan. Jika tidak, tampilkan picker.
+        final targetQuizName =
+            widget.targetQuizName ??
+            await _showQuizPicker(context, provider.quizzes);
+
         if (targetQuizName != null && mounted) {
           await provider.generateAndAddQuestionsFromHtmlDiscussion(
             quizSetName: targetQuizName,

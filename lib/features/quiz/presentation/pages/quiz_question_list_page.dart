@@ -1,12 +1,16 @@
 // lib/features/quiz/presentation/pages/quiz_question_list_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/html_file_picker_dialog.dart';
+import 'package:my_aplication/core/services/path_service.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/quiz_model.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 import '../dialogs/import_quiz_from_json_dialog.dart';
 import '../dialogs/generate_quiz_from_subject_dialog.dart';
+import '../dialogs/generate_quiz_from_html_dialog.dart';
 import '../dialogs/quiz_settings_dialog.dart';
+import 'package:path/path.dart' as path;
 
 class QuizQuestionListPage extends StatelessWidget {
   final String quizName;
@@ -49,12 +53,42 @@ class QuizQuestionListPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              showGenerateQuizFromSubjectDialog(context);
+              // ==> PERUBAHAN 1: Kirim nama kuis saat memanggil dialog
+              showGenerateQuizFromSubjectDialog(context, quizName: quizName);
             },
             child: const ListTile(
-              leading: Icon(Icons.copy_all_outlined),
+              leading: Icon(Icons.article_outlined),
               title: Text('Buat dari Subject R-Space'),
               subtitle: Text('Generate pertanyaan langsung atau via prompt.'),
+            ),
+          ),
+          // ==> FITUR BARU <==
+          SimpleDialogOption(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final pathService = PathService();
+              final basePath = await pathService.perpuskuDataPath;
+              final topicsPath = path.join(basePath, 'file_contents', 'topics');
+
+              final selectedFile = await showHtmlFilePicker(
+                context,
+                topicsPath,
+              );
+
+              if (selectedFile != null && context.mounted) {
+                final fileName = path.basenameWithoutExtension(selectedFile);
+                showGenerateQuizFromHtmlDialog(
+                  context,
+                  relativeHtmlPath: selectedFile,
+                  discussionTitle: fileName,
+                  targetQuizName: quizName,
+                );
+              }
+            },
+            child: const ListTile(
+              leading: Icon(Icons.description_outlined),
+              title: Text('Buat dari File HTML'),
+              subtitle: Text('Generate pertanyaan dari file HTML.'),
             ),
           ),
         ],

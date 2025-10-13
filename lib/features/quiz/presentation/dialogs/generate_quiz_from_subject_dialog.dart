@@ -11,14 +11,18 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/quiz_detail_provider.dart';
 
-void showGenerateQuizFromSubjectDialog(BuildContext context) {
+// ==> PERUBAHAN: Tambahkan parameter quizName
+void showGenerateQuizFromSubjectDialog(
+  BuildContext context, {
+  required String quizName,
+}) {
   final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
-      child: const GenerateQuizFromSubjectDialog(),
+      child: GenerateQuizFromSubjectDialog(targetQuizName: quizName),
     ),
   );
 }
@@ -26,7 +30,12 @@ void showGenerateQuizFromSubjectDialog(BuildContext context) {
 enum _DialogState { selection, loading }
 
 class GenerateQuizFromSubjectDialog extends StatefulWidget {
-  const GenerateQuizFromSubjectDialog({super.key});
+  // ==> PERUBAHAN: Tambahkan properti
+  final String targetQuizName;
+  const GenerateQuizFromSubjectDialog({
+    super.key,
+    required this.targetQuizName,
+  });
 
   @override
   State<GenerateQuizFromSubjectDialog> createState() =>
@@ -97,24 +106,7 @@ class _GenerateQuizFromSubjectDialogState
     }
   }
 
-  Future<String?> _showQuizPicker(BuildContext context, List<QuizSet> quizzes) {
-    return showDialog<String>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('Pilih Kuis Tujuan'),
-        children: quizzes.isEmpty
-            ? [const Center(child: Text("Tidak ada kuis di subjek ini."))]
-            : quizzes
-                  .map(
-                    (quiz) => SimpleDialogOption(
-                      onPressed: () => Navigator.pop(dialogContext, quiz.name),
-                      child: Text(quiz.name),
-                    ),
-                  )
-                  .toList(),
-      ),
-    );
-  }
+  // Fungsi _showQuizPicker tidak lagi diperlukan di sini
 
   Future<void> _handleAction(bool directImport) async {
     if (!_formKey.currentState!.validate()) {
@@ -134,26 +126,22 @@ class _GenerateQuizFromSubjectDialogState
 
     try {
       if (directImport) {
-        final targetQuizName = await _showQuizPicker(context, provider.quizzes);
-        if (targetQuizName != null && mounted) {
-          await provider.generateAndAddQuestionsFromRspaceSubject(
-            quizSetName: targetQuizName,
-            subjectJsonPath: subjectJsonPath,
-            questionCount: questionCount,
-            difficulty: _selectedDifficulty,
-          );
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '$questionCount pertanyaan ditambahkan ke "$targetQuizName".',
-              ),
-              backgroundColor: Colors.green,
+        // ==> PERUBAHAN: Langsung gunakan targetQuizName dari widget
+        await provider.generateAndAddQuestionsFromRspaceSubject(
+          quizSetName: widget.targetQuizName,
+          subjectJsonPath: subjectJsonPath,
+          questionCount: questionCount,
+          difficulty: _selectedDifficulty,
+        );
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '$questionCount pertanyaan ditambahkan ke "${widget.targetQuizName}".',
             ),
-          );
-        } else {
-          setState(() => _currentState = _DialogState.selection);
-        }
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
         final prompt = await provider.generatePromptFromRspaceSubject(
           subjectJsonPath: subjectJsonPath,
