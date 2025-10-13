@@ -79,6 +79,53 @@ class _QuizListView extends StatelessWidget {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK DIALOG KONFIRMASI HAPUS <==
+  Future<void> _showDeleteConfirmationDialog(
+    BuildContext context,
+    QuizSet quiz,
+  ) async {
+    final provider = Provider.of<QuizProvider>(context, listen: false);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus Kuis'),
+        content: Text(
+          'Anda yakin ingin menghapus kuis "${quiz.name}" beserta semua pertanyaannya secara permanen?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await provider.deleteQuiz(quiz.name);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Kuis "${quiz.name}" berhasil dihapus.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus kuis: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<QuizProvider>(context);
@@ -99,7 +146,6 @@ class _QuizListView extends StatelessWidget {
                     vertical: 4.0,
                   ),
                   child: ListTile(
-                    // ==> PERUBAHAN 1: Ganti ikon utama
                     leading: Icon(
                       Icons.play_circle_outline,
                       color: Theme.of(context).primaryColor,
@@ -107,7 +153,6 @@ class _QuizListView extends StatelessWidget {
                     ),
                     title: Text(quiz.name),
                     subtitle: Text('${quiz.questions.length} pertanyaan'),
-                    // ==> PERUBAHAN 2: Pindahkan logika navigasi edit ke tombol trailing
                     trailing: IconButton(
                       icon: const Icon(Icons.edit_note),
                       tooltip: 'Edit Soal',
@@ -122,12 +167,13 @@ class _QuizListView extends StatelessWidget {
                             ),
                           ),
                         ).then((_) {
-                          // Muat ulang daftar kuis saat kembali, untuk update jumlah pertanyaan
                           provider.loadQuizzes();
                         });
                       },
                     ),
-                    // ==> PERUBAHAN 3: Aksi onTap utama sekarang adalah memulai kuis
+                    // ==> AKSI onLongPress UNTUK MENGHAPUS <==
+                    onLongPress: () =>
+                        _showDeleteConfirmationDialog(context, quiz),
                     onTap: () {
                       if (quiz.questions.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(

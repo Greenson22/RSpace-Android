@@ -48,4 +48,11 @@ class QuizService {
     currentQuizzes.add(QuizSet(name: quizName, questions: []));
     await saveQuizzes(relativeSubjectPath, currentQuizzes);
   }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS KUIS <==
+  Future<void> deleteQuiz(String relativeSubjectPath, String quizName) async {
+    final quizzes = await loadQuizzes(relativeSubjectPath);
+    quizzes.removeWhere((quiz) => quiz.name == quizName);
+    await saveQuizzes(relativeSubjectPath, quizzes);
+  }
 }

@@ -36,5 +36,10 @@ class QuizProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Tambahkan fungsi edit, hapus, dll. di sini sesuai kebutuhan
+  // ==> FUNGSI BARU UNTUK MENGHAPUS KUIS <==
+  Future<void> deleteQuiz(String name) async {
+    _quizzes.removeWhere((q) => q.name == name);
+    await _quizService.deleteQuiz(relativeSubjectPath, name);
+    notifyListeners();
+  }
 }
