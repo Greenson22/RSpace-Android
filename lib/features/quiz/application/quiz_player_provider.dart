@@ -10,6 +10,8 @@ enum QuizState { loading, playing, finished }
 class QuizPlayerProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
   final QuizTopic topic;
+  // ==> TAMBAHKAN PROPERTI OPSIONAL <==
+  final List<QuizQuestion>? initialQuestions;
 
   QuizState _state = QuizState.loading;
   QuizState get state => _state;
@@ -32,7 +34,6 @@ class QuizPlayerProvider with ChangeNotifier {
   int _remainingTime = 0;
   int get remainingTime => _remainingTime;
 
-  // ==> STATE BARU UNTUK TIMER KESELURUHAN
   Timer? _overallTimer;
   Duration _overallRemainingTime = Duration.zero;
   Duration get overallRemainingTime => _overallRemainingTime;
@@ -47,7 +48,8 @@ class QuizPlayerProvider with ChangeNotifier {
     return correctAnswers;
   }
 
-  QuizPlayerProvider({required this.topic}) {
+  // ==> PERBARUI KONSTRUKTOR <==
+  QuizPlayerProvider({required this.topic, this.initialQuestions}) {
     _loadQuestions();
   }
 
@@ -55,7 +57,7 @@ class QuizPlayerProvider with ChangeNotifier {
   void dispose() {
     _autoAdvanceTimer?.cancel();
     _questionTimer?.cancel();
-    _overallTimer?.cancel(); // ==> BERSIHKAN TIMER
+    _overallTimer?.cancel();
     super.dispose();
   }
 
@@ -76,7 +78,6 @@ class QuizPlayerProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMULAI TIMER KESELURUHAN
   void _startOverallTimer() {
     _overallTimer?.cancel();
     if (topic.isOverallTimerEnabled) {
@@ -88,7 +89,6 @@ class QuizPlayerProvider with ChangeNotifier {
           _overallRemainingTime -= const Duration(seconds: 1);
           notifyListeners();
         } else {
-          // Waktu keseluruhan habis, akhiri kuis
           finishQuiz();
         }
       });
@@ -104,18 +104,34 @@ class QuizPlayerProvider with ChangeNotifier {
     }
   }
 
+  // ==> PERBARUI LOGIKA PEMUATAN SOAL <==
   Future<void> _loadQuestions() async {
     _state = QuizState.loading;
     notifyListeners();
 
     try {
-      _questions = await _quizService.getAllQuestionsInTopic(topic);
+      // Jika ada initialQuestions, gunakan itu
+      if (initialQuestions != null) {
+        _questions = List.from(initialQuestions!);
+        // Terapkan pengaturan dari 'topic' ke daftar pertanyaan yang sudah ada
+        if (topic.shuffleQuestions) {
+          _questions.shuffle();
+        }
+        if (topic.questionLimit > 0 &&
+            _questions.length > topic.questionLimit) {
+          _questions = _questions.sublist(0, topic.questionLimit);
+        }
+      } else {
+        // Jika tidak, muat dari service seperti biasa (untuk kuis v1)
+        _questions = await _quizService.getAllQuestionsInTopic(topic);
+      }
+
       _userAnswers.clear();
       _revealedAnswers.clear();
       _currentIndex = 0;
       _state = QuizState.playing;
       _startQuestionTimer();
-      _startOverallTimer(); // ==> MULAI TIMER KESELURUHAN
+      _startOverallTimer();
     } catch (e) {
       _questions = [];
       _state = QuizState.finished;
@@ -163,7 +179,7 @@ class QuizPlayerProvider with ChangeNotifier {
   void finishQuiz() {
     _autoAdvanceTimer?.cancel();
     _questionTimer?.cancel();
-    _overallTimer?.cancel(); // ==> HENTIKAN TIMER KESELURUHAN
+    _overallTimer?.cancel();
     _state = QuizState.finished;
     notifyListeners();
   }

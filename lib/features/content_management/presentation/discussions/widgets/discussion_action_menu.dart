@@ -26,7 +26,6 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onCopy;
   final VoidCallback onReorderPoints;
   final VoidCallback onAddPerpuskuQuizQuestion;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onGenerateQuizPrompt;
 
   const DiscussionActionMenu({
@@ -53,7 +52,7 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onCopy,
     required this.onReorderPoints,
     required this.onAddPerpuskuQuizQuestion,
-    required this.onGenerateQuizPrompt, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onGenerateQuizPrompt,
   });
 
   @override
@@ -78,7 +77,7 @@ class DiscussionActionMenu extends StatelessWidget {
           'copy': onCopy,
           'reorder_points': onReorderPoints,
           'add_perpusku_quiz_question': onAddPerpuskuQuizQuestion,
-          'generate_quiz_prompt': onGenerateQuizPrompt, // ==> TAMBAHKAN AKSI
+          'generate_quiz_prompt': onGenerateQuizPrompt,
         };
         actions[value]?.call();
       },
@@ -92,7 +91,8 @@ class DiscussionActionMenu extends StatelessWidget {
         _buildMenuItem(
           'add_perpusku_quiz_question',
           Icons.edit_note,
-          'Tambah/Edit Pertanyaan Kuis',
+          // ==> PERUBAHAN LABEL DI SINI <==
+          'Kelola Pertanyaan Kuis',
         ),
         _buildMenuItem('rename', Icons.drive_file_rename_outline, 'Ubah Nama'),
         _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
@@ -111,10 +111,8 @@ class DiscussionActionMenu extends StatelessWidget {
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
       if (!isFinished && hasPoints)
         _buildMenuItem('reorder_points', Icons.sort, 'Urutkan Poin'),
-
       _buildMenuItem('copy', Icons.copy_outlined, 'Salin Judul'),
       _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
-
       _buildSubMenu(
         icon: Icons.edit_outlined,
         label: 'Edit',
@@ -134,7 +132,6 @@ class DiscussionActionMenu extends StatelessWidget {
           ],
         ],
       ),
-
       if (!isFinished)
         _buildSubMenu(
           icon: Icons.description_outlined,
@@ -165,7 +162,6 @@ class DiscussionActionMenu extends StatelessWidget {
                 'Edit File Konten',
               ),
               const PopupMenuDivider(),
-              // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
               _buildMenuItem(
                 'generate_quiz_prompt',
                 Icons.copy_all_outlined,
@@ -188,14 +184,11 @@ class DiscussionActionMenu extends StatelessWidget {
             ],
           ],
         ),
-
       const PopupMenuDivider(),
-
       if (isFinished)
         _buildMenuItem('reactivate', Icons.replay, 'Aktifkan Lagi')
       else
         _buildMenuItem('finish', Icons.check_circle_outline, 'Tandai Selesai'),
-
       _buildMenuItem(
         'delete',
         Icons.delete_outline,

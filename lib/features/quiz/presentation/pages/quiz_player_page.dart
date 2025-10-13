@@ -6,7 +6,11 @@ import '../../domain/models/quiz_model.dart';
 
 class QuizPlayerPage extends StatelessWidget {
   final QuizTopic topic;
-  const QuizPlayerPage({super.key, required this.topic});
+  // ==> TAMBAHKAN PROPERTI OPSIONAL <==
+  final List<QuizQuestion>? questions;
+
+  // ==> PERBARUI KONSTRUKTOR <==
+  const QuizPlayerPage({super.key, required this.topic, this.questions});
 
   Future<bool> _onWillPop(BuildContext context) async {
     final provider = Provider.of<QuizPlayerProvider>(context, listen: false);
@@ -48,7 +52,9 @@ class QuizPlayerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => QuizPlayerProvider(topic: topic),
+      // ==> KIRIM DAFTAR PERTANYAAN KE PROVIDER <==
+      create: (_) =>
+          QuizPlayerProvider(topic: topic, initialQuestions: questions),
       child: Consumer<QuizPlayerProvider>(
         builder: (context, provider, child) {
           return WillPopScope(

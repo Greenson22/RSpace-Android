@@ -21,6 +21,9 @@ import '../../subjects/subjects_page.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
+// ==> IMPORT-IMPORT BARU <==
+import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -98,6 +101,69 @@ class DiscussionListItem extends StatelessWidget {
     });
   }
 
+  // ==> FUNGSI BARU UNTUK MEMULAI KUIS V2 <==
+  Future<void> _startPerpuskuQuiz(BuildContext context) async {
+    if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
+      _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
+      return;
+    }
+
+    try {
+      final perpuskuQuizService = PerpuskuQuizService();
+      final List<QuizSet> allQuizzesInSubject = await perpuskuQuizService
+          .loadQuizzes(subjectLinkedPath!);
+
+      final QuizSet currentQuizSet;
+      try {
+        currentQuizSet = allQuizzesInSubject.firstWhere(
+          (qs) => qs.name == discussion.perpuskuQuizName,
+        );
+      } catch (e) {
+        throw Exception(
+          "Kuis '${discussion.perpuskuQuizName}' tidak ditemukan di subjek ini.",
+        );
+      }
+
+      if (currentQuizSet.questions.isEmpty) {
+        _showSnackBar(
+          context,
+          "Kuis ini belum memiliki pertanyaan. Tambahkan pertanyaan terlebih dahulu melalui menu 'Kelola Pertanyaan Kuis'.",
+          isError: true,
+          isLong: true,
+        );
+        return;
+      }
+
+      final tempTopic = QuizTopic(
+        name: discussion.perpuskuQuizName!,
+        categoryName: subjectName,
+        // Pengaturan default untuk memainkan kuis v2
+        shuffleQuestions: true,
+        showCorrectAnswer: false,
+        autoAdvanceNextQuestion: false,
+        questionLimit: 0,
+        isTimerEnabled: false,
+        isOverallTimerEnabled: false,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QuizPlayerPage(
+            topic: tempTopic,
+            questions: currentQuizSet.questions,
+          ),
+        ),
+      );
+    } catch (e) {
+      _showSnackBar(
+        context,
+        "Gagal memulai kuis: ${e.toString()}",
+        isError: true,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
@@ -134,14 +200,13 @@ class DiscussionListItem extends StatelessWidget {
       iconData = Icons.check_circle_outline;
     }
 
-    // ==> PERBAIKAN: Logika aksi untuk ikon dipindahkan ke sini <==
     VoidCallback? onPressedAction;
     String? tooltip;
 
     if (!provider.isSelectionMode) {
       if (isPerpuskuQuiz) {
-        onPressedAction = () => _navigateAndEditPerpuskuQuiz(context);
-        tooltip = 'Kelola Kuis';
+        onPressedAction = () => _startPerpuskuQuiz(context);
+        tooltip = 'Mulai Kuis';
       } else if (isWebLink) {
         onPressedAction = () => _openUrlWithOptions(context);
         tooltip = 'Buka Tautan';
@@ -159,7 +224,6 @@ class DiscussionListItem extends StatelessWidget {
         tooltip = 'Buka File';
       }
     }
-    // Jika tidak ada aksi, onPressedAction akan null dan IconButton dinonaktifkan
 
     return Card(
       color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
@@ -172,18 +236,21 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            // ==> PERBAIKAN: onTap sekarang hanya untuk seleksi atau toggle poin <==
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
               } else {
-                onToggleVisibility(index);
+                // ==> PERBAIKAN LOGIKA TAP <==
+                if (isPerpuskuQuiz) {
+                  _startPerpuskuQuiz(context);
+                } else {
+                  onToggleVisibility(index);
+                }
               }
             },
             onLongPress: () {
               provider.toggleSelection(discussion);
             },
-            // ==> PERBAIKAN: Menggunakan IconButton untuk aksi <==
             leading: IconButton(
               icon: Icon(iconData, color: iconColor),
               onPressed: onPressedAction,
