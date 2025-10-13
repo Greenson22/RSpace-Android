@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import '../gemini_settings_service.dart';
 
 class GeminiServiceFlutterGemini {
@@ -20,6 +21,83 @@ class GeminiServiceFlutterGemini {
     Gemini.init(apiKey: apiKey);
   }
 
+  /// Membuat pertanyaan kuis langsung dari konteks yang diberikan.
+  Future<List<QuizQuestion>> generateQuizQuestions({
+    required String context,
+    required int questionCount,
+    required QuizDifficulty difficulty,
+  }) async {
+    await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    final gemini = Gemini.instance;
+    final modelName = settings.quizModelId;
+
+    final prompt =
+        '''
+    Anda adalah AI pembuat kuis. Berdasarkan konteks materi berikut:
+    ---
+    $context
+    ---
+
+    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
+    Untuk tingkat kesulitan "HOTS", buatlah pertanyaan yang membutuhkan analisis atau penerapan konsep, bukan hanya ingatan.
+
+    Aturan Jawaban SANGAT PENTING:
+    1.  Jawaban Anda HARUS HANYA berupa array JSON yang valid, tidak ada teks lain.
+    2.  Setiap objek dalam array mewakili satu pertanyaan dan HARUS memiliki kunci: "questionText", "options", dan "correctAnswerIndex".
+    3.  "questionText" harus berupa string.
+    4.  "options" harus berupa array berisi 4 string pilihan jawaban.
+    5.  "correctAnswerIndex" harus berupa integer (0-3) yang menunjuk ke jawaban yang benar.
+    6.  Jangan sertakan markdown seperti ```json di awal atau akhir.
+
+    Contoh Jawaban:
+    [
+      {
+        "questionText": "Apa itu widget dalam Flutter?",
+        "options": ["Blok bangunan UI", "Tipe variabel", "Fungsi database", "Permintaan jaringan"],
+        "correctAnswerIndex": 0
+      }
+    ]
+    ''';
+
+    try {
+      final result = await gemini.text(prompt, modelName: modelName);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
+        final cleanedResponse = textResponse
+            .replaceAll('```json', '')
+            .replaceAll('```', '')
+            .trim();
+        final List<dynamic> jsonResponse = jsonDecode(cleanedResponse);
+
+        return jsonResponse.map((item) {
+          final optionsList = (item['options'] as List<dynamic>).cast<String>();
+          final correctIndex = item['correctAnswerIndex'] as int;
+          final options = List.generate(optionsList.length, (i) {
+            return QuizOption(
+              text: optionsList[i],
+              isCorrect: i == correctIndex,
+            );
+          });
+          return QuizQuestion(
+            questionText: item['questionText'] as String,
+            options: options,
+          );
+        }).toList();
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
+      rethrow;
+    }
+  }
+
   /// Memberikan saran palet warna berdasarkan tema menggunakan flutter_gemini.
   Future<ColorPalette> suggestColorPalette({
     required String theme,
@@ -30,7 +108,6 @@ class GeminiServiceFlutterGemini {
     final gemini = Gemini.instance;
     final modelName = settings.generalModelId;
 
-    // ==> PERBAIKAN PROMPT DI SINI <==
     final prompt =
         '''
       Buatkan palet warna harmonis untuk UI kartu berdasarkan tema "$theme".
@@ -50,7 +127,6 @@ class GeminiServiceFlutterGemini {
       ''';
 
     try {
-      // ==> PERBAIKAN: Hapus parameter `generationConfig` <==
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
@@ -96,7 +172,6 @@ class GeminiServiceFlutterGemini {
     final gemini = Gemini.instance;
     final modelName = settings.generalModelId;
 
-    // ==> PERBAIKAN PROMPT DI SINI <==
     final prompt =
         '''
 Berikan 5 rekomendasi emoji unicode yang paling relevan untuk item bernama "$name".
@@ -110,7 +185,6 @@ Contoh Jawaban:
 ''';
 
     try {
-      // ==> PERBAIKAN: Hapus parameter `generationConfig` <==
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 

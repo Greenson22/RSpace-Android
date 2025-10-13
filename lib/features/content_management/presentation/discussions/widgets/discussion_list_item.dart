@@ -18,7 +18,7 @@ import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_question_list_page.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
-import 'package:my_aplication/features/quiz/presentation/dialogs/generate_prompt_from_html_dialog.dart';
+import 'package:my_aplication/features/quiz/presentation/dialogs/generate_quiz_from_html_dialog.dart';
 import 'package:my_aplication/features/quiz/application/quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
@@ -170,7 +170,6 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK KONVERSI KE KUIS <==
   Future<void> _convertToQuiz(BuildContext context) async {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
@@ -367,7 +366,7 @@ class DiscussionListItem extends StatelessWidget {
                         final correctPath = provider.getCorrectRelativePath(
                           discussion,
                         );
-                        showGeneratePromptFromHtmlDialog(
+                        showGenerateQuizFromHtmlDialog(
                           context,
                           relativeHtmlPath: correctPath,
                           discussionTitle: discussion.discussion,

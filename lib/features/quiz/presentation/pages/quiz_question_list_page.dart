@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../domain/models/quiz_model.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 import '../dialogs/import_quiz_from_json_dialog.dart';
-import '../dialogs/generate_quiz_prompt_dialog..dart';
+import '../dialogs/generate_quiz_from_subject_dialog.dart';
 import '../dialogs/quiz_settings_dialog.dart';
 
 class QuizQuestionListPage extends StatelessWidget {
@@ -49,12 +49,12 @@ class QuizQuestionListPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              showGenerateQuizPromptDialog(context);
+              showGenerateQuizFromSubjectDialog(context);
             },
             child: const ListTile(
               leading: Icon(Icons.copy_all_outlined),
-              title: Text('Buat Prompt dari Subject R-Space'),
-              subtitle: Text('Generate prompt untuk digunakan di Gemini.'),
+              title: Text('Buat dari Subject R-Space'),
+              subtitle: Text('Generate pertanyaan langsung atau via prompt.'),
             ),
           ),
         ],
