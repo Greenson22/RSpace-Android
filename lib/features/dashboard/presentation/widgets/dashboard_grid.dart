@@ -52,7 +52,7 @@ List<VoidCallback> buildDashboardActions(
     ),
     () => Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const PerpuskuQuizTopicPage()),
+      MaterialPageRoute(builder: (_) => const QuizTopicPage()),
     ),
     () => Navigator.push(
       context,
@@ -146,7 +146,7 @@ class DashboardGrid extends StatelessWidget {
           },
           {
             'icon': Icons.school_outlined,
-            'label': 'Kuis Perpusku',
+            'label': 'Kuis',
             'subtitle': 'Kuis berbasis materi di Perpusku',
             'colors': const [Color(0xFF00838F), Color(0xFF00ACC1)],
           },

@@ -1,31 +1,31 @@
-// lib/features/perpusku/presentation/pages/perpusku_quiz_topic_page.dart
+// lib/features/quiz/presentation/pages/quiz_topic_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../perpusku/application/perpusku_provider.dart';
 import 'quiz_subject_page.dart';
 
-class PerpuskuQuizTopicPage extends StatelessWidget {
-  const PerpuskuQuizTopicPage({super.key});
+class QuizTopicPage extends StatelessWidget {
+  const QuizTopicPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => PerpuskuProvider()..fetchTopics(),
-      child: const _PerpuskuQuizTopicView(),
+      child: const _QuizTopicView(),
     );
   }
 }
 
-class _PerpuskuQuizTopicView extends StatelessWidget {
-  const _PerpuskuQuizTopicView();
+class _QuizTopicView extends StatelessWidget {
+  const _QuizTopicView();
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kuis Perpusku - Pilih Topik')),
+      appBar: AppBar(title: const Text('Kuis - Pilih Topik')),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : provider.topics.isEmpty
@@ -46,7 +46,7 @@ class _PerpuskuQuizTopicView extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => PerpuskuQuizSubjectPage(topic: topic),
+                        builder: (_) => QuizSubjectPage(topic: topic),
                       ),
                     );
                   },

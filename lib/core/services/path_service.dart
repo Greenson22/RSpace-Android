@@ -218,7 +218,7 @@ class PathService {
     return perpuskuDir.path;
   }
 
-  Future<String> getPerpuskuQuizPath(String relativeSubjectPath) async {
+  Future<String> getQuizPath(String relativeSubjectPath) async {
     final perpuskuTopicsPath = path.join(
       await perpuskuDataPath,
       'file_contents',
@@ -236,12 +236,12 @@ class PathService {
     return dir.path;
   }
 
-  Future<File> getPerpuskuSubjectQuizFile(String relativeSubjectPath) async {
-    final quizDir = await getPerpuskuQuizPath(relativeSubjectPath);
+  Future<File> getSubjectQuizFile(String relativeSubjectPath) async {
+    final quizDir = await getQuizPath(relativeSubjectPath);
     return File(path.join(quizDir, 'quizzes.json'));
   }
 
-  Future<File> getPerpuskuHtmlFile(String relativePath) async {
+  Future<File> getHtmlFile(String relativePath) async {
     final String perpuskuPath = await perpuskuDataPath;
     final fullPath = path.join(
       perpuskuPath,

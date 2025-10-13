@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/pages/perpusku_quiz_list_page.dart
+// lib/features/quiz/presentation/pages/quiz_list_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/quiz/application/quiz_provider.dart';
@@ -7,9 +7,9 @@ import '../../../perpusku/domain/models/perpusku_models.dart';
 import 'quiz_question_list_page.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 
-class PerpuskuQuizListPage extends StatelessWidget {
+class QuizListPage extends StatelessWidget {
   final PerpuskuSubject subject;
-  const PerpuskuQuizListPage({super.key, required this.subject});
+  const QuizListPage({super.key, required this.subject});
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +20,8 @@ class PerpuskuQuizListPage extends StatelessWidget {
         .join('/');
 
     return ChangeNotifierProvider(
-      create: (_) => PerpuskuQuizProvider(relativeSubjectPath),
-      child: _PerpuskuQuizListView(
+      create: (_) => QuizProvider(relativeSubjectPath),
+      child: _QuizListView(
         subject: subject,
         relativeSubjectPath: relativeSubjectPath,
       ),
@@ -29,16 +29,16 @@ class PerpuskuQuizListPage extends StatelessWidget {
   }
 }
 
-class _PerpuskuQuizListView extends StatelessWidget {
+class _QuizListView extends StatelessWidget {
   final PerpuskuSubject subject;
   final String relativeSubjectPath;
-  const _PerpuskuQuizListView({
+  const _QuizListView({
     required this.subject,
     required this.relativeSubjectPath,
   });
 
   void _showAddQuizDialog(BuildContext context) {
-    final provider = Provider.of<PerpuskuQuizProvider>(context, listen: false);
+    final provider = Provider.of<QuizProvider>(context, listen: false);
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -79,7 +79,7 @@ class _PerpuskuQuizListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<PerpuskuQuizProvider>(context);
+    final provider = Provider.of<QuizProvider>(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('Kuis: ${subject.name}')),
@@ -108,10 +108,8 @@ class _PerpuskuQuizListView extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => ChangeNotifierProvider(
                             create: (_) =>
-                                PerpuskuQuizDetailProvider(relativeSubjectPath),
-                            child: PerpuskuQuizQuestionListPage(
-                              quizName: quiz.name,
-                            ),
+                                QuizDetailProvider(relativeSubjectPath),
+                            child: QuizQuestionListPage(quizName: quiz.name),
                           ),
                         ),
                       ).then((_) {

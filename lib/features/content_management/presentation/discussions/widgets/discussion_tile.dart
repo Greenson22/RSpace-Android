@@ -28,8 +28,8 @@ class DiscussionTile extends StatelessWidget {
   final VoidCallback onFinish;
   final VoidCallback onReactivate;
   final VoidCallback onDelete;
-  final VoidCallback onAddPerpuskuQuizQuestion;
-  // ==> TAMBAHKAN DUA CALLBACK BERIKUT <==
+  // ==> NAMA CALLBACK DIPERBARUI
+  final VoidCallback onAddQuizQuestion;
   final VoidCallback onGenerateQuizPrompt;
   final VoidCallback onReorderPoints;
 
@@ -54,8 +54,8 @@ class DiscussionTile extends StatelessWidget {
     required this.onFinish,
     required this.onReactivate,
     required this.onDelete,
-    required this.onAddPerpuskuQuizQuestion,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    // ==> NAMA PARAMETER DIPERBARUI
+    required this.onAddQuizQuestion,
     required this.onGenerateQuizPrompt,
     required this.onReorderPoints,
   });
@@ -132,12 +132,12 @@ class DiscussionTile extends StatelessWidget {
               onReactivate: onReactivate,
               onDelete: onDelete,
               onCopy: () {},
-              // ==> PERBAIKAN DI SINI <==
               onReorderPoints: onReorderPoints,
-              onAddPerpuskuQuizQuestion: onAddPerpuskuQuizQuestion,
+              // ==> NAMA PARAMETER DIPERBARUI
+              onAddQuizQuestion: onAddQuizQuestion,
               onGenerateQuizPrompt: onGenerateQuizPrompt,
-              onChangePerpuskuQuizLink: () {},
-              onConvertToPerpuskuQuiz: () {},
+              onChangeQuizLink: () {},
+              onConvertToQuiz: () {},
             ),
           if (discussion.points.isNotEmpty && !provider.isSelectionMode)
             IconButton(

@@ -1,4 +1,4 @@
-// lib/features/perpusku/application/perpusku_quiz_service.dart
+// lib/features/quiz/application/quiz_service.dart
 
 import 'dart:io';
 import 'dart:convert';
@@ -6,13 +6,11 @@ import 'package:path/path.dart' as path;
 import 'package:my_aplication/core/services/path_service.dart';
 import '../domain/models/quiz_model.dart';
 
-class PerpuskuQuizService {
+class QuizService {
   final PathService _pathService = PathService();
 
   Future<List<QuizSet>> loadQuizzes(String relativeSubjectPath) async {
-    final file = await _pathService.getPerpuskuSubjectQuizFile(
-      relativeSubjectPath,
-    );
+    final file = await _pathService.getSubjectQuizFile(relativeSubjectPath);
     if (!await file.exists()) {
       return [];
     }
@@ -34,9 +32,7 @@ class PerpuskuQuizService {
     String relativeSubjectPath,
     List<QuizSet> quizzes,
   ) async {
-    final file = await _pathService.getPerpuskuSubjectQuizFile(
-      relativeSubjectPath,
-    );
+    final file = await _pathService.getSubjectQuizFile(relativeSubjectPath);
     const encoder = JsonEncoder.withIndent('  ');
     final listJson = quizzes.map((quiz) {
       return {'name': quiz.name, ...quiz.toJson()};

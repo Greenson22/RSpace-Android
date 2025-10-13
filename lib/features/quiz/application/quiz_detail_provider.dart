@@ -1,4 +1,4 @@
-// lib/features/perpusku/application/perpusku_quiz_detail_provider.dart
+// lib/features/quiz/application/quiz_detail_provider.dart
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -8,8 +8,8 @@ import 'package:my_aplication/core/services/path_service.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 
-class PerpuskuQuizDetailProvider with ChangeNotifier {
-  final PerpuskuQuizService _quizService = PerpuskuQuizService();
+class QuizDetailProvider with ChangeNotifier {
+  final QuizService _quizService = QuizService();
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
   final String relativeSubjectPath;
@@ -20,7 +20,7 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
   List<QuizSet> _allQuizzesInSubject = [];
   List<QuizSet> get quizzes => _allQuizzesInSubject;
 
-  PerpuskuQuizDetailProvider(this.relativeSubjectPath) {
+  QuizDetailProvider(this.relativeSubjectPath) {
     _loadAllQuizzes();
   }
 
@@ -165,7 +165,7 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     required int questionCount,
     required QuizDifficulty difficulty,
   }) async {
-    final file = await _pathService.getPerpuskuHtmlFile(relativeHtmlPath);
+    final file = await _pathService.getHtmlFile(relativeHtmlPath);
     if (!await file.exists()) {
       throw Exception('File HTML tidak ditemukan di path: $relativeHtmlPath');
     }

@@ -23,7 +23,7 @@ class DiscussionProvider
   @override
   final DiscussionService discussionService = DiscussionService();
   final PointPresetService _pointPresetService = PointPresetService();
-  final PerpuskuQuizService _perpuskuQuizService = PerpuskuQuizService();
+  final QuizService _quizService = QuizService();
   @override
   final SharedPreferencesService prefsService = SharedPreferencesService();
   @override
@@ -223,7 +223,7 @@ class DiscussionProvider
 
   Future<void> addDiscussion(AddDiscussionResult result) async {
     String? filePathValue;
-    String? perpuskuQuizNameValue;
+    String? quizNameValue;
 
     if (result.linkType == DiscussionLinkType.html) {
       if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
@@ -238,10 +238,10 @@ class DiscussionProvider
       );
       filePathValue = path.join(sourceSubjectLinkedPath!, createdFileName);
     } else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
-      if (result.linkData is PerpuskuQuizPickerResult) {
-        final quizResult = result.linkData as PerpuskuQuizPickerResult;
+      if (result.linkData is QuizPickerResult) {
+        final quizResult = result.linkData as QuizPickerResult;
         filePathValue = quizResult.subjectPath;
-        perpuskuQuizNameValue = quizResult.quizName;
+        quizNameValue = quizResult.quizName;
       } else if (result.linkData == 'create_new_quiz') {
         if (sourceSubjectLinkedPath == null ||
             sourceSubjectLinkedPath!.isEmpty) {
@@ -249,12 +249,9 @@ class DiscussionProvider
             "Tidak dapat membuat kuis karena Subject ini belum ditautkan ke folder PerpusKu.",
           );
         }
-        await _perpuskuQuizService.addQuizSet(
-          sourceSubjectLinkedPath!,
-          result.name,
-        );
+        await _quizService.addQuizSet(sourceSubjectLinkedPath!, result.name);
         filePathValue = sourceSubjectLinkedPath;
-        perpuskuQuizNameValue = result.name;
+        quizNameValue = result.name;
       }
     }
 
@@ -268,7 +265,7 @@ class DiscussionProvider
       url: result.linkType == DiscussionLinkType.link
           ? result.linkData as String?
           : null,
-      perpuskuQuizName: perpuskuQuizNameValue,
+      quizName: quizNameValue,
     );
     _allDiscussions.add(newDiscussion);
 
@@ -276,20 +273,20 @@ class DiscussionProvider
     await saveDiscussions();
   }
 
-  Future<void> updatePerpuskuQuizLink(
+  Future<void> updateQuizLink(
     Discussion discussion,
-    PerpuskuQuizPickerResult result,
+    QuizPickerResult result,
   ) async {
     discussion.filePath = result.subjectPath;
-    discussion.perpuskuQuizName = result.quizName;
+    discussion.quizName = result.quizName;
     await saveDiscussions();
     notifyListeners();
   }
 
   // ==> FUNGSI BARU UNTUK KONVERSI KE KUIS <==
-  Future<void> convertToPerpuskuQuiz(
+  Future<void> convertToQuiz(
     Discussion discussion, {
-    PerpuskuQuizPickerResult? linkTo,
+    QuizPickerResult? linkTo,
     bool createNew = false,
   }) async {
     if (createNew) {
@@ -298,17 +295,17 @@ class DiscussionProvider
           "Tidak dapat membuat kuis karena Subject ini belum ditautkan ke folder PerpusKu.",
         );
       }
-      await _perpuskuQuizService.addQuizSet(
+      await _quizService.addQuizSet(
         sourceSubjectLinkedPath!,
         discussion.discussion,
       );
       discussion.linkType = DiscussionLinkType.perpuskuQuiz;
       discussion.filePath = sourceSubjectLinkedPath;
-      discussion.perpuskuQuizName = discussion.discussion;
+      discussion.quizName = discussion.discussion;
     } else if (linkTo != null) {
       discussion.linkType = DiscussionLinkType.perpuskuQuiz;
       discussion.filePath = linkTo.subjectPath;
-      discussion.perpuskuQuizName = linkTo.quizName;
+      discussion.quizName = linkTo.quizName;
     } else {
       throw Exception("Data kuis untuk ditautkan tidak valid.");
     }

@@ -25,11 +25,11 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onCopy;
   final VoidCallback onReorderPoints;
-  final VoidCallback onAddPerpuskuQuizQuestion;
+  final VoidCallback onAddQuizQuestion;
   final VoidCallback onGenerateQuizPrompt;
-  final VoidCallback onChangePerpuskuQuizLink;
+  final VoidCallback onChangeQuizLink;
   // ==> TAMBAHKAN CALLBACK BARU <==
-  final VoidCallback onConvertToPerpuskuQuiz;
+  final VoidCallback onConvertToQuiz;
 
   const DiscussionActionMenu({
     super.key,
@@ -54,10 +54,10 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onDelete,
     required this.onCopy,
     required this.onReorderPoints,
-    required this.onAddPerpuskuQuizQuestion,
+    required this.onAddQuizQuestion,
     required this.onGenerateQuizPrompt,
-    required this.onChangePerpuskuQuizLink,
-    required this.onConvertToPerpuskuQuiz, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onChangeQuizLink,
+    required this.onConvertToQuiz, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -81,10 +81,10 @@ class DiscussionActionMenu extends StatelessWidget {
           'smart_link': onSmartLink,
           'copy': onCopy,
           'reorder_points': onReorderPoints,
-          'add_perpusku_quiz_question': onAddPerpuskuQuizQuestion,
+          'add_perpusku_quiz_question': onAddQuizQuestion,
           'generate_quiz_prompt': onGenerateQuizPrompt,
-          'change_perpusku_quiz_link': onChangePerpuskuQuizLink,
-          'convert_to_quiz': onConvertToPerpuskuQuiz, // ==> TAMBAHKAN AKSI
+          'change_perpusku_quiz_link': onChangeQuizLink,
+          'convert_to_quiz': onConvertToQuiz, // ==> TAMBAHKAN AKSI
         };
         actions[value]?.call();
       },
@@ -153,7 +153,7 @@ class DiscussionActionMenu extends StatelessWidget {
               _buildMenuItem(
                 'convert_to_quiz',
                 Icons.quiz_outlined,
-                'Jadikan Kuis Perpusku',
+                'Jadikan Kuis',
               ),
             if (canCreateFile && !hasFile)
               _buildMenuItem(

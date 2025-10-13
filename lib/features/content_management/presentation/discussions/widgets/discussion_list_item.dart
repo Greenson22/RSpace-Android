@@ -80,9 +80,9 @@ class DiscussionListItem extends StatelessWidget {
     _showSnackBar(context, 'Judul diskusi disalin ke clipboard.');
   }
 
-  void _navigateAndEditPerpuskuQuiz(BuildContext context) {
+  void _navigateAndEditQuiz(BuildContext context) {
     final quizSubjectPath = discussion.filePath;
-    if (quizSubjectPath == null || discussion.perpuskuQuizName == null) {
+    if (quizSubjectPath == null || discussion.quizName == null) {
       _showSnackBar(
         context,
         "Informasi tautan kuis tidak lengkap.",
@@ -94,10 +94,8 @@ class DiscussionListItem extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider(
-          create: (_) => PerpuskuQuizDetailProvider(quizSubjectPath),
-          child: PerpuskuQuizQuestionListPage(
-            quizName: discussion.perpuskuQuizName!,
-          ),
+          create: (_) => QuizDetailProvider(quizSubjectPath),
+          child: QuizQuestionListPage(quizName: discussion.quizName!),
         ),
       ),
     ).then((_) {
@@ -105,9 +103,9 @@ class DiscussionListItem extends StatelessWidget {
     });
   }
 
-  Future<void> _startPerpuskuQuiz(BuildContext context) async {
+  Future<void> _startQuiz(BuildContext context) async {
     final quizSubjectPath = discussion.filePath;
-    if (quizSubjectPath == null || discussion.perpuskuQuizName == null) {
+    if (quizSubjectPath == null || discussion.quizName == null) {
       _showSnackBar(
         context,
         "Informasi tautan kuis tidak lengkap.",
@@ -117,18 +115,19 @@ class DiscussionListItem extends StatelessWidget {
     }
 
     try {
-      final perpuskuQuizService = PerpuskuQuizService();
-      final List<QuizSet> allQuizzesInSubject = await perpuskuQuizService
-          .loadQuizzes(quizSubjectPath);
+      final quizService = QuizService();
+      final List<QuizSet> allQuizzesInSubject = await quizService.loadQuizzes(
+        quizSubjectPath,
+      );
 
       final QuizSet currentQuizSet;
       try {
         currentQuizSet = allQuizzesInSubject.firstWhere(
-          (qs) => qs.name == discussion.perpuskuQuizName,
+          (qs) => qs.name == discussion.quizName,
         );
       } catch (e) {
         throw Exception(
-          "Kuis '${discussion.perpuskuQuizName}' tidak ditemukan di subjek ini.",
+          "Kuis '${discussion.quizName}' tidak ditemukan di subjek ini.",
         );
       }
 
@@ -162,23 +161,23 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
-  Future<void> _changePerpuskuQuizLink(BuildContext context) async {
+  Future<void> _changeQuizLink(BuildContext context) async {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
-    final result = await showPerpuskuQuizPickerDialog(context);
+    final result = await showQuizPickerDialog(context);
     if (result != null) {
-      await provider.updatePerpuskuQuizLink(discussion, result);
+      await provider.updateQuizLink(discussion, result);
       _showSnackBar(context, 'Tautan kuis berhasil diubah.');
     }
   }
 
   // ==> FUNGSI BARU UNTUK KONVERSI KE KUIS <==
-  Future<void> _convertToPerpuskuQuiz(BuildContext context) async {
+  Future<void> _convertToQuiz(BuildContext context) async {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
 
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Jadikan Kuis Perpusku'),
+        title: const Text('Jadikan Kuis'),
         children: [
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, 'link'),
@@ -200,14 +199,14 @@ class DiscussionListItem extends StatelessWidget {
     );
 
     if (choice == 'link' && context.mounted) {
-      final result = await showPerpuskuQuizPickerDialog(context);
+      final result = await showQuizPickerDialog(context);
       if (result != null) {
-        await provider.convertToPerpuskuQuiz(discussion, linkTo: result);
+        await provider.convertToQuiz(discussion, linkTo: result);
         _showSnackBar(context, 'Diskusi berhasil diubah menjadi tautan kuis.');
       }
     } else if (choice == 'create' && context.mounted) {
       try {
-        await provider.convertToPerpuskuQuiz(discussion, createNew: true);
+        await provider.convertToQuiz(discussion, createNew: true);
         _showSnackBar(context, 'Kuis baru berhasil dibuat dan ditautkan.');
       } catch (e) {
         _showSnackBar(context, e.toString(), isError: true);
@@ -222,8 +221,7 @@ class DiscussionListItem extends StatelessWidget {
     final isSelected = provider.selectedDiscussions.contains(discussion);
     final isFinished = discussion.finished;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
-    final isPerpuskuQuiz =
-        discussion.linkType == DiscussionLinkType.perpuskuQuiz;
+    final isQuiz = discussion.linkType == DiscussionLinkType.perpuskuQuiz;
     final hasFile =
         discussion.linkType == DiscussionLinkType.html &&
         discussion.filePath != null &&
@@ -236,7 +234,7 @@ class DiscussionListItem extends StatelessWidget {
     IconData iconData;
     if (isFinished) {
       iconData = Icons.check_circle;
-    } else if (isPerpuskuQuiz) {
+    } else if (isQuiz) {
       iconData = Icons.assignment_turned_in_outlined;
     } else if (isWebLink) {
       iconData = Icons.link;
@@ -254,8 +252,8 @@ class DiscussionListItem extends StatelessWidget {
     String? tooltip;
 
     if (!provider.isSelectionMode) {
-      if (isPerpuskuQuiz) {
-        onPressedAction = () => _startPerpuskuQuiz(context);
+      if (isQuiz) {
+        onPressedAction = () => _startQuiz(context);
         tooltip = 'Mulai Kuis';
       } else if (isWebLink) {
         onPressedAction = () => _openUrlWithOptions(context);
@@ -287,8 +285,8 @@ class DiscussionListItem extends StatelessWidget {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
               } else {
-                if (isPerpuskuQuiz) {
-                  _startPerpuskuQuiz(context);
+                if (isQuiz) {
+                  _startQuiz(context);
                 } else {
                   onToggleVisibility(index);
                 }
@@ -361,12 +359,9 @@ class DiscussionListItem extends StatelessWidget {
                     onDelete: onDelete,
                     onCopy: () => _copyDiscussionContent(context, discussion),
                     onReorderPoints: onToggleReorder,
-                    onAddPerpuskuQuizQuestion: () =>
-                        _navigateAndEditPerpuskuQuiz(context),
-                    onChangePerpuskuQuizLink: () =>
-                        _changePerpuskuQuizLink(context),
-                    onConvertToPerpuskuQuiz: () =>
-                        _convertToPerpuskuQuiz(context),
+                    onAddQuizQuestion: () => _navigateAndEditQuiz(context),
+                    onChangeQuizLink: () => _changeQuizLink(context),
+                    onConvertToQuiz: () => _convertToQuiz(context),
                     onGenerateQuizPrompt: () {
                       try {
                         final correctPath = provider.getCorrectRelativePath(

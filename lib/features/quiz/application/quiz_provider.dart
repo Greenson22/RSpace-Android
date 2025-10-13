@@ -1,11 +1,11 @@
-// lib/features/perpusku/application/perpusku_quiz_provider.dart
+// lib/features/quiz/application/quiz_provider.dart
 
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/quiz/application/quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 
-class PerpuskuQuizProvider with ChangeNotifier {
-  final PerpuskuQuizService _quizService = PerpuskuQuizService();
+class QuizProvider with ChangeNotifier {
+  final QuizService _quizService = QuizService();
   final String relativeSubjectPath;
 
   bool _isLoading = true;
@@ -14,7 +14,7 @@ class PerpuskuQuizProvider with ChangeNotifier {
   List<QuizSet> _quizzes = [];
   List<QuizSet> get quizzes => _quizzes;
 
-  PerpuskuQuizProvider(this.relativeSubjectPath) {
+  QuizProvider(this.relativeSubjectPath) {
     loadQuizzes();
   }
 

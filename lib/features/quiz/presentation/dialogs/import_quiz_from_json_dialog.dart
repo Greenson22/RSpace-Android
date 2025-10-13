@@ -1,39 +1,32 @@
-// lib/features/perpusku/presentation/dialogs/import_perpusku_quiz_from_json_dialog.dart
+// lib/features/quiz/presentation/dialogs/import_quiz_from_json_dialog.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 
-void showImportPerpuskuQuizFromJsonDialog(
-  BuildContext context,
-  String quizName,
-) {
-  final provider = Provider.of<PerpuskuQuizDetailProvider>(
-    context,
-    listen: false,
-  );
+void showImportQuizFromJsonDialog(BuildContext context, String quizName) {
+  final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
-      child: ImportPerpuskuQuizFromJsonDialog(quizName: quizName),
+      child: ImportQuizFromJsonDialog(quizName: quizName),
     ),
   );
 }
 
-class ImportPerpuskuQuizFromJsonDialog extends StatefulWidget {
+class ImportQuizFromJsonDialog extends StatefulWidget {
   final String quizName;
-  const ImportPerpuskuQuizFromJsonDialog({super.key, required this.quizName});
+  const ImportQuizFromJsonDialog({super.key, required this.quizName});
 
   @override
-  State<ImportPerpuskuQuizFromJsonDialog> createState() =>
-      _ImportPerpuskuQuizFromJsonDialogState();
+  State<ImportQuizFromJsonDialog> createState() =>
+      _ImportQuizFromJsonDialogState();
 }
 
-class _ImportPerpuskuQuizFromJsonDialogState
-    extends State<ImportPerpuskuQuizFromJsonDialog> {
+class _ImportQuizFromJsonDialogState extends State<ImportQuizFromJsonDialog> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _jsonContentController = TextEditingController();
   bool _isImporting = false;
@@ -45,10 +38,7 @@ class _ImportPerpuskuQuizFromJsonDialogState
 
     setState(() => _isImporting = true);
 
-    final provider = Provider.of<PerpuskuQuizDetailProvider>(
-      context,
-      listen: false,
-    );
+    final provider = Provider.of<QuizDetailProvider>(context, listen: false);
     final jsonContent = _jsonContentController.text.trim();
 
     try {

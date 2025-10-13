@@ -53,7 +53,7 @@ class Discussion {
   // ==> PERBAIKAN DI SINI: Hapus 'final' <==
   DiscussionLinkType linkType;
   final String? url;
-  String? perpuskuQuizName;
+  String? quizName;
 
   Discussion({
     required this.discussion,
@@ -66,7 +66,7 @@ class Discussion {
     this.archivedHtmlContent,
     this.linkType = DiscussionLinkType.html,
     this.url,
-    this.perpuskuQuizName,
+    this.quizName,
   });
 
   Point? get _pointWithMinRepetitionCode {
@@ -126,7 +126,7 @@ class Discussion {
       filePath: json['filePath'],
       linkType: DiscussionLinkType.values[linkTypeIndex],
       url: json['url'] as String?,
-      perpuskuQuizName: json['perpuskuQuizName'] as String?,
+      quizName: json['quizName'] as String?,
     );
   }
 
@@ -141,7 +141,7 @@ class Discussion {
       'filePath': filePath,
       'linkType': linkType.index,
       'url': url,
-      'perpuskuQuizName': perpuskuQuizName,
+      'quizName': quizName,
     };
   }
 }

@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/dialogs/perpusku_quiz_settings_dialog.dart
+// lib/features/quiz/presentation/dialogs/quiz_settings_dialog.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,32 +6,27 @@ import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dar
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 
-void showPerpuskuQuizSettingsDialog(BuildContext context, QuizSet quizSet) {
-  final provider = Provider.of<PerpuskuQuizDetailProvider>(
-    context,
-    listen: false,
-  );
+void showQuizSettingsDialog(BuildContext context, QuizSet quizSet) {
+  final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
-      child: PerpuskuQuizSettingsDialog(quizSet: quizSet),
+      child: QuizSettingsDialog(quizSet: quizSet),
     ),
   );
 }
 
-class PerpuskuQuizSettingsDialog extends StatefulWidget {
+class QuizSettingsDialog extends StatefulWidget {
   final QuizSet quizSet;
-  const PerpuskuQuizSettingsDialog({super.key, required this.quizSet});
+  const QuizSettingsDialog({super.key, required this.quizSet});
 
   @override
-  State<PerpuskuQuizSettingsDialog> createState() =>
-      _PerpuskuQuizSettingsDialogState();
+  State<QuizSettingsDialog> createState() => _QuizSettingsDialogState();
 }
 
-class _PerpuskuQuizSettingsDialogState
-    extends State<PerpuskuQuizSettingsDialog> {
+class _QuizSettingsDialogState extends State<QuizSettingsDialog> {
   late final TextEditingController _limitController;
   late final TextEditingController _delayController;
   late final TextEditingController _timerDurationController;
@@ -68,7 +63,7 @@ class _PerpuskuQuizSettingsDialogState
   @override
   Widget build(BuildContext context) {
     // Gunakan Consumer agar UI terupdate saat provider berubah
-    return Consumer<PerpuskuQuizDetailProvider>(
+    return Consumer<QuizDetailProvider>(
       builder: (context, provider, child) {
         // Ambil instance terbaru dari quizSet
         final currentQuizSet = provider.quizzes.firstWhere(

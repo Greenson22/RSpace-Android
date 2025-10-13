@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart
+// lib/features/quiz/presentation/dialogs/quiz_picker_dialog.dart
 
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/quiz/application/quiz_service.dart';
@@ -8,36 +8,33 @@ import 'package:my_aplication/features/perpusku/infrastructure/perpusku_service.
 import 'package:path/path.dart' as path;
 
 // Class untuk menampung hasil pemilihan
-class PerpuskuQuizPickerResult {
+class QuizPickerResult {
   final String subjectPath; // e.g., "Topik A/Subjek B"
   final String quizName;
 
-  PerpuskuQuizPickerResult({required this.subjectPath, required this.quizName});
+  QuizPickerResult({required this.subjectPath, required this.quizName});
 }
 
 // Fungsi untuk menampilkan dialog
-Future<PerpuskuQuizPickerResult?> showPerpuskuQuizPickerDialog(
-  BuildContext context,
-) async {
-  return await showDialog<PerpuskuQuizPickerResult>(
+Future<QuizPickerResult?> showQuizPickerDialog(BuildContext context) async {
+  return await showDialog<QuizPickerResult>(
     context: context,
-    builder: (context) => const PerpuskuQuizPickerDialog(),
+    builder: (context) => const QuizPickerDialog(),
   );
 }
 
 enum _PickerViewState { topics, subjects, quizzes }
 
-class PerpuskuQuizPickerDialog extends StatefulWidget {
-  const PerpuskuQuizPickerDialog({super.key});
+class QuizPickerDialog extends StatefulWidget {
+  const QuizPickerDialog({super.key});
 
   @override
-  State<PerpuskuQuizPickerDialog> createState() =>
-      _PerpuskuQuizPickerDialogState();
+  State<QuizPickerDialog> createState() => _QuizPickerDialogState();
 }
 
-class _PerpuskuQuizPickerDialogState extends State<PerpuskuQuizPickerDialog> {
+class _QuizPickerDialogState extends State<QuizPickerDialog> {
   final PerpuskuService _perpuskuService = PerpuskuService();
-  final PerpuskuQuizService _quizService = PerpuskuQuizService();
+  final QuizService _quizService = QuizService();
 
   _PickerViewState _currentView = _PickerViewState.topics;
   bool _isLoading = true;
@@ -177,7 +174,7 @@ class _PerpuskuQuizPickerDialogState extends State<PerpuskuQuizPickerDialog> {
                     .sublist(pathParts.length - 2)
                     .join('/');
                 Navigator.of(context).pop(
-                  PerpuskuQuizPickerResult(
+                  QuizPickerResult(
                     subjectPath: relativeSubjectPath,
                     quizName: quiz.name,
                   ),

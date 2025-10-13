@@ -162,9 +162,8 @@ class SubjectProvider with ChangeNotifier {
     for (final discussion in subject.discussions) {
       if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
         try {
-          final file = await _pathService.getPerpuskuHtmlFile(
-            discussion.filePath!,
-          );
+          // BENAR
+          final file = await _pathService.getHtmlFile(discussion.filePath!);
           if (encrypt) {
             await _encryptionService.encryptFile(file, password);
           } else {

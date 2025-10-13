@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/dialogs/generate_perpusku_quiz_prompt_dialog.dart
+// lib/features/quiz/presentation/dialogs/generate_quiz_prompt_dialog.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,33 +11,29 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/quiz_detail_provider.dart';
 
-void showGeneratePerpuskuQuizPromptDialog(BuildContext context) {
-  final provider = Provider.of<PerpuskuQuizDetailProvider>(
-    context,
-    listen: false,
-  );
+void showGenerateQuizPromptDialog(BuildContext context) {
+  final provider = Provider.of<QuizDetailProvider>(context, listen: false);
 
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider.value(
       value: provider,
-      child: const GeneratePerpuskuQuizPromptDialog(),
+      child: const GenerateQuizPromptDialog(),
     ),
   );
 }
 
 enum _PromptDialogState { selection, prompt, loading }
 
-class GeneratePerpuskuQuizPromptDialog extends StatefulWidget {
-  const GeneratePerpuskuQuizPromptDialog({super.key});
+class GenerateQuizPromptDialog extends StatefulWidget {
+  const GenerateQuizPromptDialog({super.key});
 
   @override
-  State<GeneratePerpuskuQuizPromptDialog> createState() =>
-      _GeneratePerpuskuQuizPromptDialogState();
+  State<GenerateQuizPromptDialog> createState() =>
+      _GenerateQuizPromptDialogState();
 }
 
-class _GeneratePerpuskuQuizPromptDialogState
-    extends State<GeneratePerpuskuQuizPromptDialog> {
+class _GenerateQuizPromptDialogState extends State<GenerateQuizPromptDialog> {
   final _formKey = GlobalKey<FormState>();
   final TopicService _topicService = TopicService();
   final SubjectService _subjectService = SubjectService();
@@ -108,10 +104,7 @@ class _GeneratePerpuskuQuizPromptDialogState
 
     setState(() => _currentState = _PromptDialogState.loading);
 
-    final provider = Provider.of<PerpuskuQuizDetailProvider>(
-      context,
-      listen: false,
-    );
+    final provider = Provider.of<QuizDetailProvider>(context, listen: false);
     final topicsPath = await _pathService.topicsPath;
     final subjectJsonPath = path.join(
       topicsPath,

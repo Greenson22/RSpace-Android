@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart
+// lib/features/quiz/presentation/pages/quiz_question_list_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,10 +8,10 @@ import '../dialogs/import_quiz_from_json_dialog.dart';
 import '../dialogs/generate_quiz_prompt_dialog..dart';
 import '../dialogs/quiz_settings_dialog.dart';
 
-class PerpuskuQuizQuestionListPage extends StatelessWidget {
+class QuizQuestionListPage extends StatelessWidget {
   final String quizName;
 
-  const PerpuskuQuizQuestionListPage({super.key, required this.quizName});
+  const QuizQuestionListPage({super.key, required this.quizName});
 
   void _showAddOptions(BuildContext context, String quizName) {
     showDialog(
@@ -22,7 +22,7 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              showImportPerpuskuQuizFromJsonDialog(context, quizName);
+              showImportQuizFromJsonDialog(context, quizName);
             },
             child: const ListTile(
               leading: Icon(Icons.file_upload_outlined),
@@ -49,7 +49,7 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              showGeneratePerpuskuQuizPromptDialog(context);
+              showGenerateQuizPromptDialog(context);
             },
             child: const ListTile(
               leading: Icon(Icons.copy_all_outlined),
@@ -64,7 +64,7 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PerpuskuQuizDetailProvider>(
+    return Consumer<QuizDetailProvider>(
       builder: (context, provider, child) {
         QuizSet? currentQuizSet;
         if (!provider.isLoading) {
@@ -85,7 +85,7 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   onPressed: () =>
-                      showPerpuskuQuizSettingsDialog(context, currentQuizSet!),
+                      showQuizSettingsDialog(context, currentQuizSet!),
                   tooltip: 'Pengaturan Sesi Kuis',
                 ),
             ],

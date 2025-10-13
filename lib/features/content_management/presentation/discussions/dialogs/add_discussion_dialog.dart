@@ -55,7 +55,8 @@ class _AddDiscussionDialogContentState
   final _controller = TextEditingController();
   final _urlController = TextEditingController();
   DiscussionLinkType _linkType = DiscussionLinkType.none;
-  PerpuskuQuizPickerResult? _selectedQuiz;
+  // ==> PERBAIKAN 1: Ganti nama class
+  QuizPickerResult? _selectedQuiz;
 
   @override
   void dispose() {
@@ -160,7 +161,7 @@ class _AddDiscussionDialogContentState
               ),
               RadioListTile<DiscussionLinkType>(
                 secondary: const Icon(Icons.quiz_outlined),
-                title: const Text("Kuis Perpusku"),
+                title: const Text("Kuis"),
                 subtitle: const Text(
                   "Buat kuis baru atau tautkan yang sudah ada.",
                   style: TextStyle(fontSize: 12),
@@ -206,7 +207,8 @@ class _AddDiscussionDialogContentState
                       onPressed: () {
                         setState(() {
                           // Gunakan nama diskusi sebagai nama kuis, dan tandai untuk dibuat baru
-                          _selectedQuiz = PerpuskuQuizPickerResult(
+                          // ==> PERBAIKAN 2: Ganti nama class
+                          _selectedQuiz = QuizPickerResult(
                             subjectPath: 'create_new_quiz',
                             quizName: _controller.text.trim(),
                           );
@@ -217,9 +219,8 @@ class _AddDiscussionDialogContentState
                       icon: const Icon(Icons.link),
                       label: const Text('Tautkan'),
                       onPressed: () async {
-                        final result = await showPerpuskuQuizPickerDialog(
-                          context,
-                        );
+                        // ==> PERBAIKAN 3: Ganti nama fungsi
+                        final result = await showQuizPickerDialog(context);
                         if (result != null) {
                           setState(() {
                             _selectedQuiz = result;

@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/pages/perpusku_quiz_subject_page.dart
+// lib/features/quiz/presentation/pages/quiz_subject_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,22 +6,22 @@ import '../../../perpusku/application/perpusku_provider.dart';
 import '../../../perpusku/domain/models/perpusku_models.dart';
 import 'quiz_list_page.dart';
 
-class PerpuskuQuizSubjectPage extends StatelessWidget {
+class QuizSubjectPage extends StatelessWidget {
   final PerpuskuTopic topic;
-  const PerpuskuQuizSubjectPage({super.key, required this.topic});
+  const QuizSubjectPage({super.key, required this.topic});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => PerpuskuProvider()..fetchSubjects(topic.path),
-      child: _PerpuskuQuizSubjectView(topic: topic),
+      child: _QuizSubjectView(topic: topic),
     );
   }
 }
 
-class _PerpuskuQuizSubjectView extends StatelessWidget {
+class _QuizSubjectView extends StatelessWidget {
   final PerpuskuTopic topic;
-  const _PerpuskuQuizSubjectView({required this.topic});
+  const _QuizSubjectView({required this.topic});
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +49,7 @@ class _PerpuskuQuizSubjectView extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => PerpuskuQuizListPage(subject: subject),
+                        builder: (_) => QuizListPage(subject: subject),
                       ),
                     );
                   },

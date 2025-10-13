@@ -1,4 +1,4 @@
-// lib/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart
+// lib/features/quiz/presentation/dialogs/generate_prompt_from_html_dialog.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,7 +28,7 @@ void showGeneratePromptFromHtmlDialog(
   showDialog(
     context: context,
     builder: (_) => ChangeNotifierProvider(
-      create: (_) => PerpuskuQuizDetailProvider(relativeSubjectPath),
+      create: (_) => QuizDetailProvider(relativeSubjectPath),
       child: GeneratePromptFromHtmlDialog(
         relativeHtmlPath: relativeHtmlPath,
         discussionTitle: discussionTitle,
@@ -78,10 +78,7 @@ class _GeneratePromptFromHtmlDialogState
 
     setState(() => _currentState = _PromptDialogState.loading);
 
-    final provider = Provider.of<PerpuskuQuizDetailProvider>(
-      context,
-      listen: false,
-    );
+    final provider = Provider.of<QuizDetailProvider>(context, listen: false);
     final questionCount = int.tryParse(_questionCountController.text) ?? 10;
 
     try {

@@ -9,8 +9,8 @@ import '../domain/models/perpusku_models.dart';
 
 class PerpuskuService {
   final PathService _pathService = PathService();
-  final PerpuskuQuizService _quizService =
-      PerpuskuQuizService(); // Tambahkan instance quiz service
+  final QuizService _quizService =
+      QuizService(); // Tambahkan instance quiz service
   static const String _defaultIcon = '📁';
   static const String _defaultSubjectIcon = '📄';
 
