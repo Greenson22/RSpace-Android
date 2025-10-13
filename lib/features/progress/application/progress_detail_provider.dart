@@ -1,8 +1,9 @@
 // lib/features/progress/application/progress_detail_provider.dart
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // ==> PASTIKAN IMPORT INI ADA
-import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
+import 'package:intl/intl.dart';
+// ==> IMPORT DIUBAH DARI gemini_service KE gemini_service_flutter_gemini <==
+import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import '../domain/models/color_palette_model.dart';
 import '../domain/models/progress_subject_model.dart';
 import '../domain/models/progress_topic_model.dart';
@@ -14,7 +15,9 @@ enum SubMateriInsertPosition { top, beforeFinished, bottom }
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
   final PaletteService _paletteService = PaletteService();
-  final GeminiService _geminiService = GeminiService();
+  // ==> INSTANCE DIUBAH MENJADI GeminiServiceFlutterGemini <==
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   ProgressTopic topic;
 
   List<ColorPalette> _customPalettes = [];
@@ -35,6 +38,7 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Method ini sekarang memanggil service yang benar
   Future<ColorPalette> generateAndSavePalette({required String theme}) async {
     try {
       final paletteName = '$theme (AI)';
@@ -184,7 +188,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENANGANI finishedDate <==
   Future<void> updateSubMateriProgress(
     ProgressSubject subject,
     SubMateri subMateri,
@@ -192,8 +195,6 @@ class ProgressDetailProvider with ChangeNotifier {
   ) async {
     subMateri.progress = newProgress;
 
-    // Jika status baru adalah 'selesai', catat waktu saat ini.
-    // Jika tidak, hapus waktu selesai (misal: saat diubah kembali ke 'sementara').
     if (newProgress == 'selesai') {
       subMateri.finishedDate = DateFormat(
         'yyyy-MM-dd HH:mm',
