@@ -7,6 +7,7 @@ import 'package:my_aplication/features/content_management/domain/models/subject_
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/topic_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/quiz_detail_provider.dart';
@@ -187,9 +188,7 @@ class _GenerateQuizFromSubjectDialogState
           difficulty: _selectedDifficulty,
         );
         if (mounted) {
-          // Tutup dialog input saat ini
           Navigator.of(context).pop();
-          // Tampilkan dialog baru untuk menampilkan prompt
           showDialog(
             context: context,
             builder: (context) => _PromptDisplayDialog(prompt: prompt),
@@ -212,16 +211,33 @@ class _GenerateQuizFromSubjectDialogState
   @override
   Widget build(BuildContext context) {
     if (_currentState == _DialogState.loading) {
-      return const Dialog(
+      final provider = Provider.of<QuizDetailProvider>(context, listen: false);
+      return Dialog(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
-              Text("Membuat pertanyaan..."),
-            ],
+          padding: const EdgeInsets.all(20.0),
+          child: FutureBuilder<GeminiSettings>(
+            future: provider.geminiSettings,
+            builder: (context, snapshot) {
+              String modelName = '...';
+              if (snapshot.hasData) {
+                final settings = snapshot.data!;
+                final model = settings.models.firstWhere(
+                  (m) => m.modelId == settings.quizModelId,
+                  orElse: () => settings.models.first,
+                );
+                modelName = model.name;
+              }
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Text("Membuat pertanyaan dengan model:\n$modelName"),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       );

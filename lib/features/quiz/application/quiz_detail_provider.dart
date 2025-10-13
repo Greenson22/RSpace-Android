@@ -8,6 +8,9 @@ import '../domain/models/quiz_model.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
+// ==> IMPORT BARU
+import 'package:my_aplication/features/settings/application/gemini_settings_service.dart';
+import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 
 class QuizDetailProvider with ChangeNotifier {
   final QuizService _quizService = QuizService();
@@ -17,11 +20,21 @@ class QuizDetailProvider with ChangeNotifier {
       GeminiServiceFlutterGemini();
   final String relativeSubjectPath;
 
+  // ==> SERVICE BARU & STATE UNTUK PENGATURAN
+  final GeminiSettingsService _settingsService = GeminiSettingsService();
+  GeminiSettings? _geminiSettings;
+
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
   List<QuizSet> _allQuizzesInSubject = [];
   List<QuizSet> get quizzes => _allQuizzesInSubject;
+
+  // ==> GETTER BARU UNTUK MENGAKSES PENGATURAN
+  Future<GeminiSettings> get geminiSettings async {
+    _geminiSettings ??= await _settingsService.loadSettings();
+    return _geminiSettings!;
+  }
 
   QuizDetailProvider(this.relativeSubjectPath) {
     _loadAllQuizzes();
@@ -148,7 +161,6 @@ class QuizDetailProvider with ChangeNotifier {
     return 'Judul Materi: $discussionTitle\nIsi Teks:\n$textContent';
   }
 
-  // ==> FUNGSI INI TELAH DIPERBAIKI
   Future<String> generatePromptFromRspaceSubject({
     required String subjectJsonPath,
     required int questionCount,
@@ -185,7 +197,6 @@ class QuizDetailProvider with ChangeNotifier {
     return prompt;
   }
 
-  // ==> FUNGSI INI TELAH DIPERBAIKI
   Future<String> generatePromptFromHtmlDiscussion({
     required String relativeHtmlPath,
     required String discussionTitle,
