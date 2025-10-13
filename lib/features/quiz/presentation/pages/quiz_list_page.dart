@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../../perpusku/domain/models/perpusku_models.dart';
 import 'quiz_question_list_page.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
 
 class QuizListPage extends StatelessWidget {
   final PerpuskuSubject subject;
@@ -97,25 +99,59 @@ class _QuizListView extends StatelessWidget {
                     vertical: 4.0,
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.assignment_outlined),
+                    // ==> PERUBAHAN 1: Ganti ikon utama
+                    leading: Icon(
+                      Icons.play_circle_outline,
+                      color: Theme.of(context).primaryColor,
+                      size: 32,
+                    ),
                     title: Text(quiz.name),
                     subtitle: Text('${quiz.questions.length} pertanyaan'),
-                    trailing: const Icon(Icons.edit_note),
+                    // ==> PERUBAHAN 2: Pindahkan logika navigasi edit ke tombol trailing
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit_note),
+                      tooltip: 'Edit Soal',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChangeNotifierProvider(
+                              create: (_) =>
+                                  QuizDetailProvider(relativeSubjectPath),
+                              child: QuizQuestionListPage(quizName: quiz.name),
+                            ),
+                          ),
+                        ).then((_) {
+                          // Muat ulang daftar kuis saat kembali, untuk update jumlah pertanyaan
+                          provider.loadQuizzes();
+                        });
+                      },
+                    ),
+                    // ==> PERUBAHAN 3: Aksi onTap utama sekarang adalah memulai kuis
                     onTap: () {
-                      // ==> NAVIGASI KE HALAMAN DETAIL PERTANYAAN <==
+                      if (quiz.questions.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Kuis ini belum memiliki pertanyaan. Tambahkan soal terlebih dahulu.',
+                            ),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final quizTopic = quiz.toQuizTopic(subject.name);
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChangeNotifierProvider(
-                            create: (_) =>
-                                QuizDetailProvider(relativeSubjectPath),
-                            child: QuizQuestionListPage(quizName: quiz.name),
+                          builder: (_) => QuizPlayerPage(
+                            topic: quizTopic,
+                            questions: quiz.questions,
                           ),
                         ),
-                      ).then((_) {
-                        // Muat ulang daftar kuis saat kembali, untuk update jumlah pertanyaan
-                        provider.loadQuizzes();
-                      });
+                      );
                     },
                   ),
                 );
