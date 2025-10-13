@@ -136,7 +136,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI addSubMateri DIPERBARUI <==
   Future<void> addSubMateri(
     ProgressSubject subject,
     String name, {
@@ -163,6 +162,27 @@ class ProgressDetailProvider with ChangeNotifier {
         break;
     }
 
+    _updateParentSubjectProgress(subject);
+    await save();
+    notifyListeners();
+  }
+
+  // ==> FUNGSI UNTUK MENAMBAHKAN RENTANG DIPERBARUI <==
+  Future<void> addSubMateriInRange(
+    ProgressSubject subject,
+    String prefix,
+    int start,
+    int end,
+  ) async {
+    final List<SubMateri> newSubMateriList = [];
+    for (int i = start; i <= end; i++) {
+      // Perubahan di sini: prefix tidak lagi di-trim
+      newSubMateriList.add(
+        SubMateri(namaMateri: '$prefix$i', progress: 'belum'),
+      );
+    }
+
+    subject.subMateri.addAll(newSubMateriList);
     _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();
@@ -195,7 +215,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK HAPUS SEMUA <==
   Future<void> deleteAllSubMateri(ProgressSubject subject) async {
     subject.subMateri.clear();
     _updateParentSubjectProgress(subject);

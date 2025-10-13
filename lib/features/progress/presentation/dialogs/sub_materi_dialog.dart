@@ -1,6 +1,7 @@
 // lib/features/progress/presentation/dialogs/sub_materi_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
@@ -102,7 +103,31 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               title: Text('Paling Bawah'),
             ),
           ),
+          // ==> OPSI BARU DITAMBAHKAN DI SINI <==
+          const Divider(),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _showAddRangedSubMateriDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.format_list_numbered),
+              title: Text('Tambah Rentang'),
+              subtitle: Text('Contoh: Episode 1-10'),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG RENTANG <==
+  void _showAddRangedSubMateriDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => ChangeNotifierProvider.value(
+        value: Provider.of<ProgressDetailProvider>(context, listen: false),
+        child: _AddRangedSubMateriDialog(subject: widget.subject),
       ),
     );
   }
@@ -171,7 +196,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK KONFIRMASI HAPUS SEMUA <==
   void _showDeleteAllConfirmDialog(
     BuildContext context,
     ProgressSubject subject,
@@ -416,7 +440,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     },
                   ),
           ),
-          // ==> PERBAIKAN DAN PENAMBAHAN DI SINI <==
           actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
             if (currentSubject.subMateri.isNotEmpty && !_isReorderMode)
@@ -442,6 +465,125 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           ],
         );
       },
+    );
+  }
+}
+
+// ==> WIDGET BARU UNTUK DIALOG TAMBAH RENTANG <==
+class _AddRangedSubMateriDialog extends StatefulWidget {
+  final ProgressSubject subject;
+
+  const _AddRangedSubMateriDialog({required this.subject});
+
+  @override
+  State<_AddRangedSubMateriDialog> createState() =>
+      _AddRangedSubMateriDialogState();
+}
+
+class _AddRangedSubMateriDialogState extends State<_AddRangedSubMateriDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _prefixController = TextEditingController();
+  final _startController = TextEditingController();
+  final _endController = TextEditingController();
+
+  @override
+  void dispose() {
+    _prefixController.dispose();
+    _startController.dispose();
+    _endController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    return AlertDialog(
+      title: const Text('Tambah Sub-Materi Berdasarkan Rentang'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _prefixController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Teks Awalan (Prefix)',
+                  hintText: 'Contoh: Naruto Episode ',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Teks awalan tidak boleh kosong.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _startController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(labelText: 'Dari'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Harus diisi.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _endController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(labelText: 'Sampai'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Harus diisi.';
+                        }
+                        final start = int.tryParse(_startController.text);
+                        final end = int.tryParse(value);
+                        if (start != null && end != null && end < start) {
+                          return 'Tidak boleh < dari';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              final prefix = _prefixController.text.trim();
+              final start = int.parse(_startController.text);
+              final end = int.parse(_endController.text);
+              provider.addSubMateriInRange(widget.subject, prefix, start, end);
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Buat'),
+        ),
+      ],
     );
   }
 }
