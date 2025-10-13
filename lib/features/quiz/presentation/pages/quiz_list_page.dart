@@ -1,11 +1,11 @@
 // lib/features/perpusku/presentation/pages/perpusku_quiz_list_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_provider.dart';
+import 'package:my_aplication/features/quiz/application/quiz_provider.dart';
 import 'package:provider/provider.dart';
-import '../../domain/models/perpusku_models.dart';
-import 'perpusku_quiz_question_list_page.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
+import '../../../perpusku/domain/models/perpusku_models.dart';
+import 'quiz_question_list_page.dart';
+import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 
 class PerpuskuQuizListPage extends StatelessWidget {
   final PerpuskuSubject subject;

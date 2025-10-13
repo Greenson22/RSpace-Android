@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
-import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 
 void showPerpuskuQuizSettingsDialog(BuildContext context, QuizSet quizSet) {

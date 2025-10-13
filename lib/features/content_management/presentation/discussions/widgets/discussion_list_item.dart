@@ -16,13 +16,13 @@ import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
-import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
-import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
-import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
-import 'package:my_aplication/features/perpusku/presentation/pages/quiz_player_page.dart';
-import 'package:my_aplication/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_question_list_page.dart';
+import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
+import 'package:my_aplication/features/quiz/presentation/dialogs/generate_prompt_from_html_dialog.dart';
+import 'package:my_aplication/features/quiz/application/quiz_service.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
+import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;

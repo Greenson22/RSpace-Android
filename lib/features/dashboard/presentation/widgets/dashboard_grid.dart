@@ -18,7 +18,7 @@ import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
-import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_topic_page.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_topic_page.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {

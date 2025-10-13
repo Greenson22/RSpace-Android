@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../application/perpusku_provider.dart';
-import '../../domain/models/perpusku_models.dart';
-import 'perpusku_quiz_list_page.dart';
+import '../../../perpusku/application/perpusku_provider.dart';
+import '../../../perpusku/domain/models/perpusku_models.dart';
+import 'quiz_list_page.dart';
 
 class PerpuskuQuizSubjectPage extends StatelessWidget {
   final PerpuskuTopic topic;

@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/models/quiz_model.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
-import '../dialogs/import_perpusku_quiz_from_json_dialog.dart';
-import '../dialogs/generate_perpusku_quiz_prompt_dialog.dart';
-import '../dialogs/perpusku_quiz_settings_dialog.dart';
+import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
+import '../dialogs/import_quiz_from_json_dialog.dart';
+import '../dialogs/generate_quiz_prompt_dialog..dart';
+import '../dialogs/quiz_settings_dialog.dart';
 
 class PerpuskuQuizQuestionListPage extends StatelessWidget {
   final String quizName;

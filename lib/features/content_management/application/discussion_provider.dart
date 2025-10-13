@@ -15,8 +15,8 @@ import '../../../core/services/storage_service.dart';
 import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
-import 'package:my_aplication/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart';
+import 'package:my_aplication/features/quiz/application/quiz_service.dart';
+import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
 
 class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {

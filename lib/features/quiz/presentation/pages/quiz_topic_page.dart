@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../application/perpusku_provider.dart';
-import 'perpusku_quiz_subject_page.dart';
+import '../../../perpusku/application/perpusku_provider.dart';
+import 'quiz_subject_page.dart';
 
 class PerpuskuQuizTopicPage extends StatelessWidget {
   const PerpuskuQuizTopicPage({super.key});

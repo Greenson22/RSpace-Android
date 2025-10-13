@@ -9,9 +9,9 @@ import '../dialogs/smart_link_dialog.dart';
 import 'discussion_point_list.dart';
 import 'discussion_tile.dart';
 import '../../subjects/subjects_page.dart';
-import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
-import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
+import 'package:my_aplication/features/quiz/presentation/pages/quiz_question_list_page.dart';
+import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
+import 'package:my_aplication/features/quiz/presentation/dialogs/generate_prompt_from_html_dialog.dart';
 
 class DiscussionCard extends StatelessWidget {
   final Discussion discussion;

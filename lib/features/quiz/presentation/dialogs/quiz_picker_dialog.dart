@@ -1,9 +1,9 @@
 // lib/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
+import 'package:my_aplication/features/quiz/application/quiz_service.dart';
 import 'package:my_aplication/features/perpusku/domain/models/perpusku_models.dart';
-import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/perpusku/infrastructure/perpusku_service.dart';
 import 'package:path/path.dart' as path;
 

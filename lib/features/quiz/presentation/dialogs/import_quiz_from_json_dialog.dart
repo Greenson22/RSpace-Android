@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
+import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 
 void showImportPerpuskuQuizFromJsonDialog(
