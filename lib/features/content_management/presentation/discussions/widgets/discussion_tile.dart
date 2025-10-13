@@ -136,6 +136,7 @@ class DiscussionTile extends StatelessWidget {
               onReorderPoints: onReorderPoints,
               onAddPerpuskuQuizQuestion: onAddPerpuskuQuizQuestion,
               onGenerateQuizPrompt: onGenerateQuizPrompt,
+              onChangePerpuskuQuizLink: () {},
             ),
           if (discussion.points.isNotEmpty && !provider.isSelectionMode)
             IconButton(
