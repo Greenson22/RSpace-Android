@@ -1,6 +1,7 @@
 // lib/features/progress/application/progress_detail_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // ==> PASTIKAN IMPORT INI ADA
 import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 import '../domain/models/color_palette_model.dart';
 import '../domain/models/progress_subject_model.dart';
@@ -8,14 +9,12 @@ import '../domain/models/progress_topic_model.dart';
 import 'palette_service.dart';
 import 'progress_service.dart';
 
-// ==> ENUM BARU UNTUK POSISI PENAMBAHAN <==
 enum SubMateriInsertPosition { top, beforeFinished, bottom }
 
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
   final PaletteService _paletteService = PaletteService();
-  final GeminiService _geminiService =
-      GeminiService(); // Instance Gemini Service
+  final GeminiService _geminiService = GeminiService();
   ProgressTopic topic;
 
   List<ColorPalette> _customPalettes = [];
@@ -36,7 +35,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Method baru untuk generate palet dengan AI
   Future<ColorPalette> generateAndSavePalette({required String theme}) async {
     try {
       final paletteName = '$theme (AI)';
@@ -154,7 +152,7 @@ class ProgressDetailProvider with ChangeNotifier {
         if (firstFinishedIndex != -1) {
           subject.subMateri.insert(firstFinishedIndex, newSubMateri);
         } else {
-          subject.subMateri.add(newSubMateri); // Fallback ke paling bawah
+          subject.subMateri.add(newSubMateri);
         }
         break;
       case SubMateriInsertPosition.bottom:
@@ -167,7 +165,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI UNTUK MENAMBAHKAN RENTANG DIPERBARUI <==
   Future<void> addSubMateriInRange(
     ProgressSubject subject,
     String prefix,
@@ -176,7 +173,6 @@ class ProgressDetailProvider with ChangeNotifier {
   ) async {
     final List<SubMateri> newSubMateriList = [];
     for (int i = start; i <= end; i++) {
-      // Perubahan di sini: prefix tidak lagi di-trim
       newSubMateriList.add(
         SubMateri(namaMateri: '$prefix$i', progress: 'belum'),
       );
@@ -188,12 +184,24 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENANGANI finishedDate <==
   Future<void> updateSubMateriProgress(
     ProgressSubject subject,
     SubMateri subMateri,
     String newProgress,
   ) async {
     subMateri.progress = newProgress;
+
+    // Jika status baru adalah 'selesai', catat waktu saat ini.
+    // Jika tidak, hapus waktu selesai (misal: saat diubah kembali ke 'sementara').
+    if (newProgress == 'selesai') {
+      subMateri.finishedDate = DateFormat(
+        'yyyy-MM-dd HH:mm',
+      ).format(DateTime.now());
+    } else {
+      subMateri.finishedDate = null;
+    }
+
     _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();

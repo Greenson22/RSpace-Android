@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart'; // ==> IMPORT DITAMBAHKAN
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
@@ -196,6 +197,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK KONFIRMASI HAPUS SEMUA <==
   void _showDeleteAllConfirmDialog(
     BuildContext context,
     ProgressSubject subject,
@@ -329,6 +331,52 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     itemBuilder: (context, index) {
                       final sub = currentSubject.subMateri[index];
                       final progressColor = _getProgressColor(sub.progress);
+
+                      // ==> LOGIKA PEMBUATAN SUBTITLE DIPINDAHKAN KE SINI <==
+                      final List<InlineSpan> subtitleSpans = [
+                        TextSpan(
+                          text: sub.progress,
+                          style: TextStyle(
+                            color: progressColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ];
+
+                      if (sub.progress == 'selesai' &&
+                          sub.finishedDate != null) {
+                        try {
+                          final finishedDateTime = DateFormat(
+                            'yyyy-MM-dd HH:mm',
+                          ).parse(sub.finishedDate!);
+                          final formattedFinishedDate = DateFormat(
+                            'EEEE, d MMM yyyy HH:mm',
+                            'id_ID',
+                          ).format(finishedDateTime);
+                          subtitleSpans.add(
+                            TextSpan(
+                              text: ' • $formattedFinishedDate',
+                              style: TextStyle(
+                                color: Colors.blueGrey[400],
+                                fontWeight: FontWeight.normal,
+                                fontSize: 11,
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          subtitleSpans.add(
+                            TextSpan(
+                              text: ' • ${sub.finishedDate}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.normal,
+                                fontSize: 11,
+                              ),
+                            ),
+                          );
+                        }
+                      }
+
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 6.0),
                         elevation: 2.0,
@@ -342,12 +390,11 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                             size: 12.0,
                           ),
                           title: Text(sub.namaMateri),
-                          subtitle: Text(
-                            sub.progress,
-                            style: TextStyle(
-                              color: progressColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                          // ==> GUNAKAN SUBTITLE YANG SUDAH DIBUAT <==
+                          subtitle: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 12),
+                              children: subtitleSpans,
                             ),
                           ),
                           trailing: PopupMenuButton<String>(
@@ -469,7 +516,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   }
 }
 
-// ==> WIDGET BARU UNTUK DIALOG TAMBAH RENTANG <==
+// Widget untuk dialog tambah rentang
 class _AddRangedSubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
 
@@ -517,7 +564,7 @@ class _AddRangedSubMateriDialogState extends State<_AddRangedSubMateriDialog> {
                   hintText: 'Contoh: Naruto Episode ',
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                  if (value == null || value.isEmpty) {
                     return 'Teks awalan tidak boleh kosong.';
                   }
                   return null;
@@ -574,7 +621,7 @@ class _AddRangedSubMateriDialogState extends State<_AddRangedSubMateriDialog> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              final prefix = _prefixController.text.trim();
+              final prefix = _prefixController.text;
               final start = int.parse(_startController.text);
               final end = int.parse(_endController.text);
               provider.addSubMateriInRange(widget.subject, prefix, start, end);

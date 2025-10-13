@@ -3,18 +3,31 @@
 class SubMateri {
   String namaMateri;
   String progress;
+  // ==> PROPERTI BARU DITAMBAHKAN <==
+  String? finishedDate;
 
-  SubMateri({required this.namaMateri, required this.progress});
+  SubMateri({
+    required this.namaMateri,
+    required this.progress,
+    this.finishedDate,
+  });
 
   factory SubMateri.fromJson(Map<String, dynamic> json) {
     return SubMateri(
       namaMateri: json['nama_materi'] as String,
       progress: json['progress'] as String,
+      // ==> BACA DARI JSON <==
+      finishedDate: json['finishedDate'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'nama_materi': namaMateri, 'progress': progress};
+    return {
+      'nama_materi': namaMateri,
+      'progress': progress,
+      // ==> SIMPAN KE JSON <==
+      'finishedDate': finishedDate,
+    };
   }
 }
 
