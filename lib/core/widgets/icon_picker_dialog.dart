@@ -1,9 +1,11 @@
-// lib/presentation/widgets/icon_picker_dialog.dart
+// lib/core/widgets/icon_picker_dialog.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// Impor service baru dan hapus yang lama
+// Impor service dan model yang diperlukan
 import '../../features/settings/application/services/gemini_service_flutter_gemini.dart';
+import '../../features/settings/application/gemini_settings_service.dart';
+import '../../features/settings/domain/models/gemini_settings_model.dart';
 
 // Fungsi utama sekarang memanggil widget dialog
 Future<void> showIconPickerDialog({
@@ -35,9 +37,10 @@ class IconPickerDialog extends StatefulWidget {
 
 class _IconPickerDialogState extends State<IconPickerDialog> {
   final TextEditingController _iconController = TextEditingController();
-  // Gunakan instance dari service baru
   final GeminiServiceFlutterGemini _geminiService =
       GeminiServiceFlutterGemini();
+  // Tambahkan service untuk pengaturan Gemini
+  final GeminiSettingsService _settingsService = GeminiSettingsService();
   Future<List<String>>? _geminiSuggestions;
 
   @override
@@ -48,7 +51,6 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
 
   void _fetchGeminiSuggestions() {
     setState(() {
-      // Panggil metode dari service baru
       _geminiSuggestions = _geminiService.suggestIcon(name: widget.name);
     });
   }
@@ -142,9 +144,38 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
             future: _geminiSuggestions,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                // ==> PERUBAHAN DIMULAI DI SINI <==
+                return FutureBuilder<GeminiSettings>(
+                  future: _settingsService.loadSettings(),
+                  builder: (context, settingsSnapshot) {
+                    String modelName = '...';
+                    if (settingsSnapshot.hasData) {
+                      final settings = settingsSnapshot.data!;
+                      final model = settings.models.firstWhere(
+                        (m) => m.modelId == settings.generalModelId,
+                        orElse: () => settings.models.first,
+                      );
+                      modelName = model.name;
+                    }
+                    return Row(
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Meminta saran dari $modelName...',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
+                // ==> PERUBAHAN SELESAI <==
               }
               if (snapshot.hasError) {
                 return Text(
