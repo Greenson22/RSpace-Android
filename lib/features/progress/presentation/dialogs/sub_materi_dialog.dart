@@ -27,14 +27,12 @@ class SubMateriDialog extends StatefulWidget {
 class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isReorderMode = false;
 
-  // ==> FUNGSI INI SEKARANG MENAMPILKAN DIALOG PILIHAN POSISI <==
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
     );
 
-    // Fungsi helper untuk menampilkan dialog input teks setelah posisi dipilih
     void showNameInputDialog(SubMateriInsertPosition position) {
       final controller = TextEditingController();
       showDialog(
@@ -57,9 +55,9 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                   provider.addSubMateri(
                     widget.subject,
                     controller.text,
-                    position: position, // Kirim posisi yang dipilih
+                    position: position,
                   );
-                  Navigator.pop(dialogContext); // Tutup dialog input
+                  Navigator.pop(dialogContext);
                 }
               },
               child: const Text('Simpan'),
@@ -69,7 +67,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
       );
     }
 
-    // Tampilkan dialog pilihan posisi terlebih dahulu
     showDialog(
       context: context,
       builder: (dialogContext) => SimpleDialog(
@@ -77,7 +74,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
         children: [
           SimpleDialogOption(
             onPressed: () {
-              Navigator.pop(dialogContext); // Tutup dialog pilihan
+              Navigator.pop(dialogContext);
               showNameInputDialog(SubMateriInsertPosition.top);
             },
             child: const ListTile(
@@ -168,6 +165,40 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               Navigator.pop(dialogContext);
             },
             child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> FUNGSI BARU UNTUK KONFIRMASI HAPUS SEMUA <==
+  void _showDeleteAllConfirmDialog(
+    BuildContext context,
+    ProgressSubject subject,
+  ) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus Semua Sub-Materi?'),
+        content: Text(
+          'Anda yakin ingin menghapus semua ${subject.subMateri.length} sub-materi dari "${subject.namaMateri}"? Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              provider.deleteAllSubMateri(subject);
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Ya, Hapus Semua'),
           ),
         ],
       ),
@@ -385,14 +416,28 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     },
                   ),
           ),
+          // ==> PERBAIKAN DAN PENAMBAHAN DI SINI <==
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            TextButton(
-              onPressed: () => _showAddSubMateriDialog(context),
-              child: const Text('Tambah Sub-Materi'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Tutup'),
+            if (currentSubject.subMateri.isNotEmpty && !_isReorderMode)
+              TextButton(
+                onPressed: () =>
+                    _showDeleteAllConfirmDialog(context, currentSubject),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Hapus Semua'),
+              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () => _showAddSubMateriDialog(context),
+                  child: const Text('Tambah Sub-Materi'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup'),
+                ),
+              ],
             ),
           ],
         );

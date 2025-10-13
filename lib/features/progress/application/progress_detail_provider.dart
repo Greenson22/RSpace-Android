@@ -195,6 +195,14 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK HAPUS SEMUA <==
+  Future<void> deleteAllSubMateri(ProgressSubject subject) async {
+    subject.subMateri.clear();
+    _updateParentSubjectProgress(subject);
+    await save();
+    notifyListeners();
+  }
+
   void _updateParentSubjectProgress(ProgressSubject subject) {
     if (subject.subMateri.isEmpty) {
       subject.progress = "belum";
