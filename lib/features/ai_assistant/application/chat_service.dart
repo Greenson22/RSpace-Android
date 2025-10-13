@@ -1,22 +1,20 @@
-// lib/data/services/chat_service.dart
+// lib/features/ai_assistant/application/chat_service.dart
 import 'package:intl/intl.dart';
 import '../domain/models/chat_message_model.dart';
 import '../../my_tasks/domain/models/my_task_model.dart';
 import '../../time_management/domain/models/time_log_model.dart';
 import '../../content_management/domain/services/discussion_service.dart';
-import '../../settings/application/services/gemini_service.dart';
 import '../../my_tasks/application/my_task_service.dart';
 import '../../../core/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
 import 'package:path/path.dart' as path;
-import 'package:flutter/material.dart'; // Import material for DateUtils
+import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import '../../settings/application/services/gemini_service_flutter_gemini.dart';
 
 class ChatService {
-  final GeminiService _geminiService = GeminiService();
   final GeminiServiceFlutterGemini _geminiServiceFlutterGemini =
       GeminiServiceFlutterGemini();
   final PathService _pathService = PathService();
@@ -25,23 +23,6 @@ class ChatService {
   final DiscussionService _discussionService = DiscussionService();
   final MyTaskService _myTaskService = MyTaskService();
   final TimeLogService _timeLogService = TimeLogService();
-
-  /// Metode lama yang menggunakan http
-  Future<ChatMessage> getResponse(String userQuery) async {
-    try {
-      final context = await _gatherApplicationContext();
-      final responseText = await _geminiService.getChatCompletion(
-        userQuery,
-        context: context,
-      );
-      return ChatMessage(text: responseText, role: ChatRole.model);
-    } catch (e) {
-      return ChatMessage(
-        text: 'Maaf, terjadi kesalahan: ${e.toString()}',
-        role: ChatRole.error,
-      );
-    }
-  }
 
   /// Metode baru yang menggunakan flutter_gemini
   Future<ChatMessage> getResponseFlutterGemini(
@@ -53,7 +34,6 @@ class ChatService {
 
       // 2. Konversi riwayat ChatMessage ke daftar Content untuk flutter_gemini
       final List<Content> contents = history.map((msg) {
-        // Abaikan pesan error dari riwayat
         if (msg.role == ChatRole.user) {
           return Content(parts: [Part.text(msg.text)], role: 'user');
         } else {
@@ -66,17 +46,13 @@ class ChatService {
         final lastUserContent = contents.removeLast();
         String userQuery = '';
 
-        // ==> PERBAIKAN UTAMA DI SINI <==
-        // Cek jika 'parts' tidak null dan tidak kosong
         if (lastUserContent.parts != null &&
             lastUserContent.parts!.isNotEmpty) {
           final part = lastUserContent.parts!.first;
-          // Cek apakah 'part' adalah TextPart, lalu ambil teksnya
           if (part is TextPart) {
             userQuery = part.text;
           }
         }
-        // --- AKHIR PERBAIKAN ---
 
         final fullPrompt =
             '''
@@ -114,6 +90,7 @@ Jawaban Anda:
   }
 
   Future<String> _gatherApplicationContext() async {
+    // ... (implementasi tidak berubah)
     final buffer = StringBuffer();
     final today = DateFormat(
       'EEEE, d MMMM yyyy',

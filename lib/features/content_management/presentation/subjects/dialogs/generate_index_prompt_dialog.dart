@@ -3,28 +3,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
-import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
 
 // Fungsi untuk menampilkan dialog utama
 Future<void> showGenerateIndexPromptDialog(
   BuildContext context,
   Subject subject,
 ) async {
-  final geminiService = GeminiService();
-
   // Tampilkan dialog input tema terlebih dahulu
   final themeDescription = await showDialog<String>(
     context: context,
     builder: (context) => _ThemeInputDialog(subjectName: subject.name),
   );
 
-  // Jika pengguna memasukkan tema, buat prompt dan tampilkan dialog kedua
   if (themeDescription != null &&
       themeDescription.isNotEmpty &&
       context.mounted) {
-    final prompt = await geminiService.generateHtmlTemplatePrompt(
-      themeDescription,
-    );
+    // ==> LANGSUNG BUAT PROMPT DI SINI, TIDAK PERLU SERVICE
+    final prompt =
+        '''
+    Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
+
+    ATURAN SANGAT PENTING:
+    1.  Gunakan HANYA inline CSS untuk semua styling. JANGAN gunakan tag `<style>` atau file CSS eksternal.
+    2.  Di dalam `<body>`, WAJIB ada sebuah `<div>` kosong dengan id `main-container`. Contoh: `<div id="main-container"></div>`. Ini adalah tempat konten akan dimasukkan nanti.
+    3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
+    ''';
 
     showDialog(
       context: context,
@@ -33,7 +36,7 @@ Future<void> showGenerateIndexPromptDialog(
   }
 }
 
-// Dialog internal untuk input deskripsi tema
+// ... (sisa kode _ThemeInputDialog dan _PromptDisplayDialog tidak berubah)
 class _ThemeInputDialog extends StatelessWidget {
   final String subjectName;
   const _ThemeInputDialog({required this.subjectName});
@@ -82,7 +85,6 @@ class _ThemeInputDialog extends StatelessWidget {
   }
 }
 
-// Dialog internal untuk menampilkan dan menyalin prompt
 class _PromptDisplayDialog extends StatelessWidget {
   final String prompt;
   const _PromptDisplayDialog({required this.prompt});

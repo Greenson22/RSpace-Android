@@ -4,7 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
-import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
+// ==> IMPORT DIPERBARUI
+import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import 'package:path/path.dart' as path;
 import '../domain/models/discussion_model.dart';
 import '../domain/models/point_preset_model.dart';
@@ -24,6 +25,9 @@ class DiscussionProvider
   final DiscussionService discussionService = DiscussionService();
   final PointPresetService _pointPresetService = PointPresetService();
   final QuizService _quizService = QuizService();
+  // ==> INSTANCE & IMPORT DIPERBARUI
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   @override
   final SharedPreferencesService prefsService = SharedPreferencesService();
   @override
@@ -283,7 +287,6 @@ class DiscussionProvider
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK KONVERSI KE KUIS <==
   Future<void> convertToQuiz(
     Discussion discussion, {
     QuizPickerResult? linkTo,
@@ -314,9 +317,9 @@ class DiscussionProvider
     notifyListeners();
   }
 
+  // ==> FUNGSI DIPERBARUI
   Future<List<String>> getTitlesFromContent(String htmlContent) async {
-    final geminiService = GeminiService();
-    return await geminiService.generateDiscussionTitles(htmlContent);
+    return await _geminiService.generateDiscussionTitles(htmlContent);
   }
 
   Future<void> addDiscussionWithPredefinedTitle({

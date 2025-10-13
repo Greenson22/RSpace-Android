@@ -1,15 +1,15 @@
-// lib/presentation/pages/3_discussions_page/dialogs/smart_link_dialog.dart
+// lib/features/content_management/presentation/discussions/dialogs/smart_link_dialog.dart
 
-import 'dart:math'; // Import for max function
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../../link_maintenance/domain/models/link_suggestion_model.dart';
-import '../../../../settings/application/services/gemini_service.dart'; // ==> IMPORT GEMINI SERVICE
+// ==> IMPORT DIPERBARUI
+import '../../../../settings/application/services/gemini_service_flutter_gemini.dart';
 import '../../../../link_maintenance/application/services/smart_link_service.dart';
 import '../../../application/discussion_provider.dart';
 
-// ==> TAMBAHKAN ENUM UNTUK MODE PENCARIAN
 enum SearchMode { cerdas, gemini }
 
 class SmartLinkDialog extends StatefulWidget {
@@ -29,21 +29,19 @@ class SmartLinkDialog extends StatefulWidget {
 }
 
 class _SmartLinkDialogState extends State<SmartLinkDialog> {
-  // ==> TAMBAHKAN STATE UNTUK MENGELOLA UI
   SearchMode _searchMode = SearchMode.cerdas;
   Future<List<LinkSuggestion>>? _suggestionsFuture;
   final SmartLinkService _smartLinkService = SmartLinkService();
-  // ==> BUAT INSTANCE GEMINI SERVICE
-  final GeminiService _geminiService = GeminiService();
+  // ==> INSTANCE DIPERBARUI
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
 
   @override
   void initState() {
     super.initState();
-    // ==> PANGGIL FUNGSI UNTUK MEMUAT DATA AWAL
     _fetchSuggestions();
   }
 
-  // ==> BUAT FUNGSI UNTUK MEMUAT SUGGESTIONS BERDASARKAN MODE
   void _fetchSuggestions() {
     if (_searchMode == SearchMode.cerdas) {
       setState(() {
@@ -55,18 +53,15 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
       });
     } else {
       setState(() {
-        // Panggil metode baru untuk mendapatkan suggestions dari Gemini
         _suggestionsFuture = _fetchGeminiSuggestions();
       });
     }
   }
 
-  // ==> BUAT FUNGSI HELPER UNTUK MEMANGGIL GEMINI SERVICE
   Future<List<LinkSuggestion>> _fetchGeminiSuggestions() async {
-    // Dapatkan daftar semua file sebagai konteks
     final allFiles = await _smartLinkService.getAllPerpuskuFiles();
     if (!mounted) return [];
-    // Panggil Gemini untuk mendapatkan hasil
+    // ==> PEMANGGILAN DIPERBARUI
     return await _geminiService.findSmartLinks(
       discussion: widget.discussion,
       allFiles: allFiles,
@@ -76,7 +71,7 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
   void _onSuggestionSelected(String relativePath) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     provider.updateDiscussionFilePath(widget.discussion, relativePath);
-    Navigator.of(context).pop(true); // Kirim sinyal sukses
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -91,10 +86,9 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
       ),
       content: SizedBox(
         width: double.maxFinite,
-        height: 350, // Perbesar sedikit untuk tombol
+        height: 350,
         child: Column(
           children: [
-            // ==> TAMBAHKAN TOMBOL UNTUK MEMILIH MODE
             SegmentedButton<SearchMode>(
               segments: const [
                 ButtonSegment(
@@ -112,7 +106,7 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
               onSelectionChanged: (newSelection) {
                 setState(() {
                   _searchMode = newSelection.first;
-                  _fetchSuggestions(); // Muat ulang data saat mode berubah
+                  _fetchSuggestions();
                 });
               },
             ),
@@ -154,7 +148,6 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
                       return ListTile(
                         leading: CircleAvatar(
                           child: Text(
-                            // Tampilkan 'AI' jika mode gemini
                             _searchMode == SearchMode.gemini
                                 ? 'AI'
                                 : '${percentage.toStringAsFixed(0)}%',

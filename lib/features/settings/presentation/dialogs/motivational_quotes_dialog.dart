@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
-import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
+// ==> IMPORT DIPERBARUI
+import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 
 // Fungsi untuk menampilkan dialog
 void showMotivationalQuotesDialog(BuildContext context) {
@@ -22,8 +23,9 @@ class MotivationalQuotesDialog extends StatefulWidget {
 }
 
 class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
-  final GeminiService _geminiService = GeminiService();
-  // Controller untuk input jumlah kutipan
+  // ==> INSTANCE DIPERBARUI
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   final TextEditingController _countController = TextEditingController(
     text: '10',
   );
@@ -57,6 +59,7 @@ class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
 
     setState(() => _isGenerating = true);
     try {
+      // ==> PEMANGGILAN DIPERBARUI
       await _geminiService.generateAndSaveMotivationalQuotes(count: count);
       _refreshQuotes();
       if (mounted) {
@@ -77,6 +80,7 @@ class _MotivationalQuotesDialogState extends State<MotivationalQuotesDialog> {
   }
 
   Future<void> _deleteQuote(String quote) async {
+    // ==> PEMANGGILAN DIPERBARUI
     await _geminiService.deleteMotivationalQuote(quote);
     _refreshQuotes();
     if (mounted) {

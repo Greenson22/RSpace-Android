@@ -13,13 +13,16 @@ import 'package:my_aplication/features/time_management/presentation/pages/time_l
 import '../../../../core/services/path_service.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
-import '../../../settings/application/services/gemini_service.dart';
+// ==> IMPORT DIPERBARUI
+import '../../../settings/application/services/gemini_service_flutter_gemini.dart';
 import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../../settings/application/services/dashboard_settings_service.dart';
+
+// ... (kode _HeaderStats tidak berubah)
 
 class _HeaderStats {
   final int pendingTasks;
@@ -54,7 +57,9 @@ class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
   final DashboardSettingsService _settingsService = DashboardSettingsService();
-  final GeminiService _geminiService = GeminiService();
+  // ==> INSTANCE DIPERBARUI
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   late Future<_HeaderStats> _statsFuture;
   String? _motivationalQuote;
 
@@ -89,6 +94,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
   Future<void> _displayQuoteFromCache() async {
     const fallbackQuote = 'Teruslah belajar setiap hari.';
     final random = Random();
+    // ==> PEMANGGILAN DIPERBARUI
     final quotes = await _geminiService.getSavedMotivationalQuotes();
     if (mounted) {
       setState(() {
@@ -100,6 +106,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
       });
     }
   }
+
+  // ... (sisa kode tidak ada perubahan signifikan, hanya pemanggilan service yang berubah)
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -134,7 +142,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<Map<String, int>> _getTaskStats(Set<String> excludedCategories) async {
     try {
       final myTaskService = MyTaskService();
@@ -149,7 +156,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
         }
 
         for (final task in category.tasks) {
-          // Hanya hitung tugas yang punya target harian
           if (task.targetCountToday > 0) {
             totalWithTarget++;
             if (task.countToday >= task.targetCountToday) {
@@ -355,7 +361,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 runSpacing: 16,
                 alignment: WrapAlignment.center,
                 children: [
-                  // ==> LABEL-LABEL DI BAWAH INI TELAH DIPERBARUI <==
                   _StatPill(
                     icon: Icons.list_alt_outlined,
                     label: 'Tugas Harian',

@@ -7,23 +7,27 @@ import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_actions.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
-import 'package:my_aplication/features/settings/application/services/gemini_service.dart';
+// ==> IMPORT DIPERBARUI
+import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
 import '../domain/services/encryption_service.dart';
-import 'dart:convert'; // ==> IMPORT DIPERLUKAN
-import 'dart:io'; // ==> IMPORT DIPERLUKAN
-import 'package:path/path.dart' as path; // ==> IMPORT DIPERLUKAN
+import 'dart:convert';
+import 'dart:io';
+import 'package:path/path.dart' as path;
 
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
   final SubjectActions _subjectActions = SubjectActions();
-  final GeminiService _geminiService = GeminiService();
+  // ==> INSTANCE DIPERBARUI
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final EncryptionService _encryptionService = EncryptionService();
   final PathService _pathService = PathService();
   final String topicPath;
 
+  // ... (sisa properti tidak berubah)
   SubjectProvider(this.topicPath) {
     // fetchSubjects dipanggil dari initState di halaman UI
   }
@@ -61,7 +65,8 @@ class SubjectProvider with ChangeNotifier {
   Set<Subject> get selectedSubjects => _selectedSubjects;
   bool get isSelectionMode => _selectedSubjects.isNotEmpty;
 
-  // ==> FUNGSI BARU DITAMBAHKAN <==
+  // ... (fungsi lain sampai generateIndexFileWithAI tidak berubah)
+
   Future<String> getRawJsonContent(Subject subject) async {
     final subjectPath = await _pathService.getSubjectPath(
       topicPath,
@@ -162,7 +167,6 @@ class SubjectProvider with ChangeNotifier {
     for (final discussion in subject.discussions) {
       if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {
         try {
-          // BENAR
           final file = await _pathService.getHtmlFile(discussion.filePath!);
           if (encrypt) {
             await _encryptionService.encryptFile(file, password);
@@ -476,6 +480,7 @@ class SubjectProvider with ChangeNotifier {
     await _subjectActions.openSubjectIndexFile(subject.linkedPath!);
   }
 
+  // ==> FUNGSI DIPERBARUI
   Future<void> generateIndexFileWithAI(
     Subject subject,
     String themePrompt,
@@ -483,6 +488,7 @@ class SubjectProvider with ChangeNotifier {
     if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
       throw Exception('Subject ini tidak memiliki tautan ke folder PerpusKu.');
     }
+    // Panggil service flutter_gemini
     final newHtmlContent = await _geminiService.generateHtmlTemplate(
       themePrompt,
     );

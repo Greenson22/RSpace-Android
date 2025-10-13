@@ -1,13 +1,17 @@
 // lib/features/settings/application/services/gemini_service_flutter_gemini.dart
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/core/services/path_service.dart';
+import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/link_maintenance/domain/models/link_suggestion_model.dart';
 import '../gemini_settings_service.dart';
 
 class GeminiServiceFlutterGemini {
   final GeminiSettingsService _settingsService = GeminiSettingsService();
+  final PathService _pathService = PathService();
 
   /// Menginisialisasi Gemini dengan API Key yang sedang aktif.
   Future<void> _initializeGeminiWithActiveKey() async {
@@ -21,30 +25,215 @@ class GeminiServiceFlutterGemini {
     Gemini.init(apiKey: apiKey);
   }
 
-  /// ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
-  /// Membuat template HTML lengkap berdasarkan deskripsi tema.
-  Future<String> generateHtmlTemplate(String themeDescription) async {
+  // --- File Operations for Motivational Quotes ---
+
+  Future<List<String>> getSavedMotivationalQuotes() async {
+    try {
+      final quotesPath = await _pathService.motivationalQuotesPath;
+      final quotesFile = File(quotesPath);
+      if (await quotesFile.exists()) {
+        final jsonString = await quotesFile.readAsString();
+        if (jsonString.isNotEmpty) {
+          return List<String>.from(jsonDecode(jsonString));
+        }
+      }
+    } catch (e) {
+      // Abaikan error dan kembalikan list kosong
+    }
+    return [];
+  }
+
+  Future<void> deleteMotivationalQuote(String quoteToDelete) async {
+    final quotesPath = await _pathService.motivationalQuotesPath;
+    final quotesFile = File(quotesPath);
+    final currentQuotes = await getSavedMotivationalQuotes();
+    currentQuotes.remove(quoteToDelete);
+    await quotesFile.writeAsString(jsonEncode(currentQuotes));
+  }
+
+  // --- Gemini API Calls ---
+
+  Future<void> generateAndSaveMotivationalQuotes({int count = 10}) async {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();
     final gemini = Gemini.instance;
-    final modelName = settings.contentModelId; // Menggunakan model untuk konten
+    final modelName = settings.generalModelId;
 
-    final prompt =
-        '''
-    Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
-
-    ATURAN SANGAT PENTING:
-    1.  Gunakan HANYA inline CSS untuk semua styling. JANGAN gunakan tag `<style>` atau file CSS eksternal.
-    2.  Di dalam `<body>`, WAJIB ada sebuah `<div>` kosong dengan id `main-container`. Contoh: `<div id="main-container"></div>`. Ini adalah tempat konten akan dimasukkan nanti.
-    3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
-    ''';
+    final prompt = settings.motivationalQuotePrompt
+        .replaceAll('satu kalimat', '$count kalimat')
+        .replaceAll('json.', 'format JSON.');
 
     try {
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
       if (textResponse != null) {
-        // Membersihkan jika ada markdown yang tidak diinginkan
+        final cleanedResponse = textResponse
+            .replaceAll('```json', '')
+            .replaceAll('```', '')
+            .trim();
+        final List<dynamic> jsonResponse = jsonDecode(cleanedResponse);
+        final newQuotes = List<String>.from(jsonResponse);
+
+        final quotesPath = await _pathService.motivationalQuotesPath;
+        final quotesFile = File(quotesPath);
+        await quotesFile.writeAsString(jsonEncode(newQuotes));
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<LinkSuggestion>> findSmartLinks({
+    required Discussion discussion,
+    required List<Map<String, String>> allFiles,
+  }) async {
+    await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    final gemini = Gemini.instance;
+    final modelName = settings.generalModelId;
+
+    final fileListString = allFiles
+        .map(
+          (f) => "- Judul: \"${f['title']}\", Path: \"${f['relativePath']}\"",
+        )
+        .join("\n");
+
+    final pointsString = discussion.points
+        .map((p) => "- ${p.pointText}")
+        .join("\n");
+
+    final prompt =
+        '''
+      Anda adalah asisten AI yang bertugas menemukan file yang paling relevan.
+      Berdasarkan detail diskusi berikut:
+      - Judul Diskusi: "${discussion.discussion}"
+      - Poin-Poin Catatan:
+      $pointsString
+
+      Pilihlah maksimal 3 file yang paling relevan dari daftar di bawah ini:
+      $fileListString
+
+      Aturan Jawaban SANGAT PENTING:
+      1.  Jawaban Anda HARUS HANYA berupa array JSON yang valid.
+      2.  Setiap objek dalam array HARUS memiliki kunci "title" dan "relativePath".
+      3.  Pastikan nilai "relativePath" persis sama dengan yang ada di daftar.
+      4.  Jangan sertakan penjelasan atau teks lain di luar array JSON.
+
+      Contoh Jawaban:
+      [
+        {"title": "Judul File Pilihan 1", "relativePath": "TopikA/SubjekB/file1.html"},
+        {"title": "Judul File Pilihan 2", "relativePath": "TopikC/SubjekD/file2.html"}
+      ]
+      ''';
+
+    try {
+      final result = await gemini.text(prompt, modelName: modelName);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
+        final cleanedResponse = textResponse
+            .replaceAll('```json', '')
+            .replaceAll('```', '')
+            .trim();
+        final List<dynamic> jsonResponse = jsonDecode(cleanedResponse);
+        return jsonResponse
+            .map(
+              (item) => LinkSuggestion(
+                title: item['title'] ?? 'Tanpa Judul',
+                relativePath: item['relativePath'] ?? '',
+                score: 1.0,
+              ),
+            )
+            .toList();
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<String>> generateDiscussionTitles(String htmlContent) async {
+    await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    final gemini = Gemini.instance;
+    final modelName = settings.titleGenerationModelId;
+
+    final prompt =
+        '''
+    Analisis konten HTML berikut dan buatkan 3 sampai 5 rekomendasi judul yang singkat, padat, dan deskriptif dalam Bahasa Indonesia.
+    Aturan Jawaban SANGAT PENTING:
+    1. HANYA kembalikan dalam format array JSON yang valid.
+    2. Setiap elemen dalam array HARUS berupa string judul.
+    3. Jangan gunakan tanda kutip di dalam string judul itu sendiri.
+    4. Jangan sertakan penjelasan atau teks lain di luar array JSON.
+
+    Konten HTML:
+    """
+    $htmlContent
+    """
+
+    Contoh Jawaban:
+    [
+      "Judul Rekomendasi Pertama",
+      "Judul Alternatif Kedua",
+      "Pilihan Judul Ketiga"
+    ]
+    ''';
+    try {
+      final result = await gemini.text(prompt, modelName: modelName);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
+        final cleanedResponse = textResponse
+            .replaceAll('```json', '')
+            .replaceAll('```', '')
+            .trim();
+        final List<dynamic> jsonResponse = jsonDecode(cleanedResponse);
+        return List<String>.from(jsonResponse);
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<String> generateHtmlContent(String topic) async {
+    await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    final gemini = Gemini.instance;
+    final modelName = settings.contentModelId;
+
+    final activePrompt = settings.prompts.firstWhere(
+      (p) => p.isActive,
+      orElse: () => settings.prompts.first,
+    );
+    final promptText = activePrompt.content.replaceAll('{topic}', topic);
+
+    try {
+      final result = await gemini.text(promptText, modelName: modelName);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
         return textResponse
             .replaceAll('```html', '')
             .replaceAll('```', '')
@@ -62,7 +251,45 @@ class GeminiServiceFlutterGemini {
     }
   }
 
-  /// Membuat pertanyaan kuis langsung dari konteks yang diberikan.
+  // Sisa fungsi tidak berubah (generateQuizQuestions, suggestColorPalette, etc.)
+  Future<String> generateHtmlTemplate(String themeDescription) async {
+    await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    final gemini = Gemini.instance;
+    final modelName = settings.contentModelId;
+
+    final prompt =
+        '''
+    Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
+
+    ATURAN SANGAT PENTING:
+    1.  Gunakan HANYA inline CSS untuk semua styling. JANGAN gunakan tag `<style>` atau file CSS eksternal.
+    2.  Di dalam `<body>`, WAJIB ada sebuah `<div>` kosong dengan id `main-container`. Contoh: `<div id="main-container"></div>`. Ini adalah tempat konten akan dimasukkan nanti.
+    3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
+    ''';
+
+    try {
+      final result = await gemini.text(prompt, modelName: modelName);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
+        return textResponse
+            .replaceAll('```html', '')
+            .replaceAll('```', '')
+            .trim();
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
+      rethrow;
+    }
+  }
+
   Future<List<QuizQuestion>> generateQuizQuestions({
     required String context,
     required int questionCount,
@@ -71,8 +298,7 @@ class GeminiServiceFlutterGemini {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();
     final gemini = Gemini.instance;
-    final modelName =
-        settings.quizModelId; // Menggunakan model khusus untuk kuis
+    final modelName = settings.quizModelId;
 
     final prompt =
         '''
@@ -140,7 +366,6 @@ class GeminiServiceFlutterGemini {
     }
   }
 
-  /// Memberikan saran palet warna berdasarkan tema menggunakan flutter_gemini.
   Future<ColorPalette> suggestColorPalette({
     required String theme,
     required String paletteName,
@@ -207,7 +432,6 @@ class GeminiServiceFlutterGemini {
     }
   }
 
-  /// Memberikan saran ikon emoji berdasarkan nama/topik yang diberikan.
   Future<List<String>> suggestIcon({required String name}) async {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();
@@ -250,7 +474,6 @@ Contoh Jawaban:
     }
   }
 
-  /// Mendapatkan balasan chat dari model Gemini menggunakan package flutter_gemini.
   Future<String?> getChatCompletion(List<Content> contents) async {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();

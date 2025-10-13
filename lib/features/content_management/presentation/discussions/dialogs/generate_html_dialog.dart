@@ -1,12 +1,12 @@
-// lib/presentation/pages/3_discussions_page/dialogs/generate_html_dialog.dart
+// lib/features/content_management/presentation/discussions/dialogs/generate_html_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../settings/application/services/gemini_service.dart';
+// ==> IMPORT DIPERBARUI
+import '../../../../settings/application/services/gemini_service_flutter_gemini.dart';
 import '../../../application/discussion_provider.dart';
 
 class GenerateHtmlDialog extends StatefulWidget {
   final String discussionName;
-  // >> PERUBAHAN DI SINI: Sekarang menerima path relatif yang lengkap <<
   final String? filePath;
 
   const GenerateHtmlDialog({
@@ -20,7 +20,9 @@ class GenerateHtmlDialog extends StatefulWidget {
 }
 
 class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
-  final GeminiService _geminiService = GeminiService();
+  // ==> INSTANCE DIPERBARUI
+  final GeminiServiceFlutterGemini _geminiService =
+      GeminiServiceFlutterGemini();
   late TextEditingController _textController;
   bool _isLoading = false;
   String? _error;
@@ -51,6 +53,7 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
     });
 
     try {
+      // ==> PEMANGGILAN DIPERBARUI
       final generatedHtml = await _geminiService.generateHtmlContent(
         _textController.text,
       );
@@ -61,8 +64,6 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
           listen: false,
         );
 
-        // >> PERBAIKAN UTAMA DI SINI <<
-        // Langsung gunakan widget.filePath yang sudah berisi path relatif lengkap.
         await provider.writeHtmlToFile(widget.filePath!, generatedHtml);
 
         if (mounted) {
