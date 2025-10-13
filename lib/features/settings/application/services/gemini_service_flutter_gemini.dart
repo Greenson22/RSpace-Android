@@ -30,7 +30,8 @@ class GeminiServiceFlutterGemini {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();
     final gemini = Gemini.instance;
-    final modelName = settings.quizModelId;
+    final modelName =
+        settings.quizModelId; // Menggunakan model khusus untuk kuis
 
     final prompt =
         '''
@@ -61,6 +62,7 @@ class GeminiServiceFlutterGemini {
     ''';
 
     try {
+      // ==> PERBAIKAN: Menghapus `generationConfig`
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
@@ -127,6 +129,7 @@ class GeminiServiceFlutterGemini {
       ''';
 
     try {
+      // ==> PERBAIKAN: Menghapus `generationConfig`
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
@@ -185,6 +188,7 @@ Contoh Jawaban:
 ''';
 
     try {
+      // ==> PERBAIKAN: Menghapus `generationConfig`
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
