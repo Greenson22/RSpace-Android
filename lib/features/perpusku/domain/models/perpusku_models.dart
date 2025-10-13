@@ -4,19 +4,27 @@ class PerpuskuTopic {
   final String name;
   final String path;
   final String icon;
+  final int subjectCount; // ==> PROPERTI BARU DITAMBAHKAN
 
-  PerpuskuTopic({required this.name, required this.path, required this.icon});
+  PerpuskuTopic({
+    required this.name,
+    required this.path,
+    required this.icon,
+    this.subjectCount = 0, // ==> TAMBAHKAN DI KONSTRUKTOR
+  });
 }
 
 class PerpuskuSubject {
   final String name;
   final String path;
-  final String icon; // ==> PROPERTI BARU DITAMBAHKAN
+  final String icon;
+  final int totalQuestions; // ==> PROPERTI BARU DITAMBAHKAN
 
   PerpuskuSubject({
     required this.name,
     required this.path,
-    required this.icon, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.icon,
+    this.totalQuestions = 0, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 }
 

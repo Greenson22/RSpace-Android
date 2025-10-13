@@ -4,10 +4,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:path/path.dart' as path;
+import '../application/perpusku_quiz_service.dart';
 import '../domain/models/perpusku_models.dart';
 
 class PerpuskuService {
   final PathService _pathService = PathService();
+  final PerpuskuQuizService _quizService =
+      PerpuskuQuizService(); // Tambahkan instance quiz service
   static const String _defaultIcon = '📁';
   static const String _defaultSubjectIcon = '📄';
 
@@ -119,6 +122,14 @@ class PerpuskuService {
       final topicName = path.basename(dir.path);
       String topicIcon = _defaultIcon;
       bool isHidden = false;
+      int subjectCount = 0; // ==> Variabel untuk menghitung
+
+      // Hitung jumlah sub-folder (subjects)
+      try {
+        subjectCount = dir.listSync().whereType<Directory>().length;
+      } catch (e) {
+        // Abaikan jika ada error
+      }
 
       try {
         final configPath = await _pathService.getTopicConfigPath(topicName);
@@ -135,7 +146,12 @@ class PerpuskuService {
 
       if (showHidden || !isHidden) {
         topics.add(
-          PerpuskuTopic(name: topicName, path: dir.path, icon: topicIcon),
+          PerpuskuTopic(
+            name: topicName,
+            path: dir.path,
+            icon: topicIcon,
+            subjectCount: subjectCount, // ==> Kirim jumlahnya
+          ),
         );
       }
     }
@@ -156,6 +172,22 @@ class PerpuskuService {
     for (final dir in entities) {
       final subjectName = path.basename(dir.path);
       String subjectIcon = _defaultSubjectIcon;
+      int totalQuestions = 0; // ==> Variabel untuk menghitung
+
+      // Hitung total pertanyaan dari semua kuis di dalam subjek ini
+      try {
+        final pathParts = dir.path.split('/');
+        final relativeSubjectPath = pathParts
+            .sublist(pathParts.length - 2)
+            .join('/');
+        final quizzes = await _quizService.loadQuizzes(relativeSubjectPath);
+        totalQuestions = quizzes.fold(
+          0,
+          (sum, quiz) => sum + quiz.questions.length,
+        );
+      } catch (e) {
+        // Abaikan jika ada error
+      }
 
       try {
         final topicName = path.basename(topicPath);
@@ -177,7 +209,12 @@ class PerpuskuService {
       }
 
       subjects.add(
-        PerpuskuSubject(name: subjectName, path: dir.path, icon: subjectIcon),
+        PerpuskuSubject(
+          name: subjectName,
+          path: dir.path,
+          icon: subjectIcon,
+          totalQuestions: totalQuestions, // ==> Kirim jumlahnya
+        ),
       );
     }
 

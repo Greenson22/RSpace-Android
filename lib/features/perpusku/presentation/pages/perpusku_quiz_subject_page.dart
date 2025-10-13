@@ -43,6 +43,8 @@ class _PerpuskuQuizSubjectView extends StatelessWidget {
                     style: const TextStyle(fontSize: 24),
                   ),
                   title: Text(subject.name),
+                  // ==> PERUBAHAN DI SINI <==
+                  subtitle: Text('${subject.totalQuestions} pertanyaan'),
                   onTap: () {
                     Navigator.push(
                       context,
