@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// ==> IMPORT DIUBAH DARI gemini_service KE gemini_service_flutter_gemini <==
 import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import '../domain/models/color_palette_model.dart';
 import '../domain/models/progress_subject_model.dart';
@@ -15,7 +14,6 @@ enum SubMateriInsertPosition { top, beforeFinished, bottom }
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
   final PaletteService _paletteService = PaletteService();
-  // ==> INSTANCE DIUBAH MENJADI GeminiServiceFlutterGemini <==
   final GeminiServiceFlutterGemini _geminiService =
       GeminiServiceFlutterGemini();
   ProgressTopic topic;
@@ -38,7 +36,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Method ini sekarang memanggil service yang benar
   Future<ColorPalette> generateAndSavePalette({required String theme}) async {
     try {
       final paletteName = '$theme (AI)';
@@ -169,12 +166,14 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> addSubMateriInRange(
     ProgressSubject subject,
     String prefix,
     int start,
-    int end,
-  ) async {
+    int end, {
+    SubMateriInsertPosition position = SubMateriInsertPosition.bottom,
+  }) async {
     final List<SubMateri> newSubMateriList = [];
     for (int i = start; i <= end; i++) {
       newSubMateriList.add(
@@ -182,7 +181,27 @@ class ProgressDetailProvider with ChangeNotifier {
       );
     }
 
-    subject.subMateri.addAll(newSubMateriList);
+    switch (position) {
+      case SubMateriInsertPosition.top:
+        subject.subMateri.insertAll(0, newSubMateriList);
+        break;
+      case SubMateriInsertPosition.beforeFinished:
+        final firstFinishedIndex = subject.subMateri.indexWhere(
+          (s) => s.progress == 'selesai',
+        );
+        if (firstFinishedIndex != -1) {
+          subject.subMateri.insertAll(firstFinishedIndex, newSubMateriList);
+        } else {
+          subject.subMateri.addAll(
+            newSubMateriList,
+          ); // Fallback ke paling bawah
+        }
+        break;
+      case SubMateriInsertPosition.bottom:
+        subject.subMateri.addAll(newSubMateriList);
+        break;
+    }
+
     _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();

@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart'; // ==> IMPORT DITAMBAHKAN
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
@@ -104,7 +104,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               title: Text('Paling Bawah'),
             ),
           ),
-          // ==> OPSI BARU DITAMBAHKAN DI SINI <==
           const Divider(),
           SimpleDialogOption(
             onPressed: () {
@@ -122,15 +121,55 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG RENTANG <==
+  // ==> FUNGSI INI DIPERBARUI UNTUK MENANYAKAN POSISI TERLEBIH DAHULU <==
   void _showAddRangedSubMateriDialog(BuildContext context) {
-    showDialog(
+    showDialog<SubMateriInsertPosition>(
       context: context,
-      builder: (_) => ChangeNotifierProvider.value(
-        value: Provider.of<ProgressDetailProvider>(context, listen: false),
-        child: _AddRangedSubMateriDialog(subject: widget.subject),
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Tambah Rentang di Posisi...'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(dialogContext, SubMateriInsertPosition.top),
+            child: const ListTile(
+              leading: Icon(Icons.vertical_align_top),
+              title: Text('Paling Atas'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              SubMateriInsertPosition.beforeFinished,
+            ),
+            child: const ListTile(
+              leading: Icon(Icons.format_indent_decrease),
+              title: Text('Sebelum Tugas Selesai'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(dialogContext, SubMateriInsertPosition.bottom),
+            child: const ListTile(
+              leading: Icon(Icons.vertical_align_bottom),
+              title: Text('Paling Bawah'),
+            ),
+          ),
+        ],
       ),
-    );
+    ).then((selectedPosition) {
+      if (selectedPosition != null) {
+        showDialog(
+          context: context,
+          builder: (_) => ChangeNotifierProvider.value(
+            value: Provider.of<ProgressDetailProvider>(context, listen: false),
+            child: _AddRangedSubMateriDialog(
+              subject: widget.subject,
+              position: selectedPosition,
+            ),
+          ),
+        );
+      }
+    });
   }
 
   void _showEditSubMateriDialog(BuildContext context, SubMateri subMateri) {
@@ -197,7 +236,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK KONFIRMASI HAPUS SEMUA <==
   void _showDeleteAllConfirmDialog(
     BuildContext context,
     ProgressSubject subject,
@@ -332,7 +370,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                       final sub = currentSubject.subMateri[index];
                       final progressColor = _getProgressColor(sub.progress);
 
-                      // ==> LOGIKA PEMBUATAN SUBTITLE DIPINDAHKAN KE SINI <==
                       final List<InlineSpan> subtitleSpans = [
                         TextSpan(
                           text: sub.progress,
@@ -390,7 +427,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                             size: 12.0,
                           ),
                           title: Text(sub.namaMateri),
-                          // ==> GUNAKAN SUBTITLE YANG SUDAH DIBUAT <==
                           subtitle: RichText(
                             text: TextSpan(
                               style: const TextStyle(fontSize: 12),
@@ -516,11 +552,15 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   }
 }
 
-// Widget untuk dialog tambah rentang
 class _AddRangedSubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
+  // ==> TAMBAHKAN PARAMETER POSISI <==
+  final SubMateriInsertPosition position;
 
-  const _AddRangedSubMateriDialog({required this.subject});
+  const _AddRangedSubMateriDialog({
+    required this.subject,
+    required this.position,
+  });
 
   @override
   State<_AddRangedSubMateriDialog> createState() =>
@@ -624,7 +664,14 @@ class _AddRangedSubMateriDialogState extends State<_AddRangedSubMateriDialog> {
               final prefix = _prefixController.text;
               final start = int.parse(_startController.text);
               final end = int.parse(_endController.text);
-              provider.addSubMateriInRange(widget.subject, prefix, start, end);
+              provider.addSubMateriInRange(
+                widget.subject,
+                prefix,
+                start,
+                end,
+                // ==> KIRIM POSISI KE PROVIDER <==
+                position: widget.position,
+              );
               Navigator.of(context).pop();
             }
           },
