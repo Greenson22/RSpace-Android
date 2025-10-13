@@ -145,12 +145,22 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            onTap: () {
+            onTap: () async {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
               } else {
                 if (isPerpuskuQuiz) {
                   _navigateAndEditPerpuskuQuiz(context);
+                } else if (isWebLink) {
+                  _openUrlWithOptions(context);
+                } else if (isQuizLink) {
+                  _startQuiz(context);
+                } else if (hasFile) {
+                  try {
+                    await provider.openDiscussionFile(discussion, context);
+                  } catch (e) {
+                    _showSnackBar(context, e.toString(), isError: true);
+                  }
                 } else {
                   onToggleVisibility(index);
                 }
@@ -221,10 +231,8 @@ class DiscussionListItem extends StatelessWidget {
                     onReorderPoints: onToggleReorder,
                     onAddPerpuskuQuizQuestion: () =>
                         _navigateAndEditPerpuskuQuiz(context),
-                    // ==> PERBAIKAN AKHIR DI SINI <==
                     onGenerateQuizPrompt: () {
                       try {
-                        // Panggil metode publik yang sudah diperbaiki
                         final correctPath = provider.getCorrectRelativePath(
                           discussion,
                         );
