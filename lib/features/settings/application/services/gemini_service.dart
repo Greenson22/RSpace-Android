@@ -11,11 +11,16 @@ import 'package:my_aplication/features/settings/application/gemini_settings_serv
 import '../../domain/models/api_key_model.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../link_maintenance/domain/models/link_suggestion_model.dart';
+// ==> IMPORT BARU
+import 'gemini_service_flutter_gemini.dart';
 
 class GeminiService {
   final GeminiSettingsService _settingsService = GeminiSettingsService();
   final DiscussionService _discussionService = DiscussionService();
   final PathService _pathService = PathService();
+  // ==> TAMBAHKAN INSTANCE BARU
+  final GeminiServiceFlutterGemini _geminiServiceFlutter =
+      GeminiServiceFlutterGemini();
 
   final String _googleApiAuthority = 'generativelanguage.googleapis.com';
 
@@ -37,6 +42,7 @@ class GeminiService {
     );
   }
 
+  // ... (kode lain tidak berubah)
   Future<List<String>> getSavedMotivationalQuotes() async {
     try {
       final quotesPath = await _pathService.motivationalQuotesPath;
@@ -418,57 +424,10 @@ Contoh Jawaban:
     return prompt;
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<String> generateHtmlTemplate(String themeDescription) async {
-    final settings = await _settingsService.loadSettings();
-    final apiKey = await _getActiveApiKey();
-    final model = settings.contentModelId;
-
-    if (apiKey.isEmpty) {
-      throw Exception('API Key Gemini tidak aktif.');
-    }
-
-    final prompt = await generateHtmlTemplatePrompt(themeDescription);
-
-    final apiUrl = _buildApiUri(model, apiKey);
-
-    try {
-      final response = await http.post(
-        apiUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt},
-              ],
-            },
-          ],
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        final candidates = body['candidates'] as List<dynamic>?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'] as Map<String, dynamic>?;
-          if (content != null) {
-            final parts = content['parts'] as List<dynamic>?;
-            if (parts != null && parts.isNotEmpty) {
-              return parts[0]['text'] as String? ?? '';
-            }
-          }
-        }
-        throw Exception('Gagal mem-parsing respons dari API Gemini.');
-      } else {
-        final errorBody = jsonDecode(response.body);
-        final errorMessage = errorBody['error']?['message'] ?? response.body;
-        throw Exception(
-          'Gagal menghasilkan template: ${response.statusCode}\nError: $errorMessage',
-        );
-      }
-    } catch (e) {
-      rethrow;
-    }
+    // Delegasikan tugas ke service flutter_gemini
+    return await _geminiServiceFlutter.generateHtmlTemplate(themeDescription);
   }
 
   Future<String> getChatCompletion(String query, {String? context}) async {

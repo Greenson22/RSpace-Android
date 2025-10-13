@@ -21,6 +21,47 @@ class GeminiServiceFlutterGemini {
     Gemini.init(apiKey: apiKey);
   }
 
+  /// ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  /// Membuat template HTML lengkap berdasarkan deskripsi tema.
+  Future<String> generateHtmlTemplate(String themeDescription) async {
+    await _initializeGeminiWithActiveKey();
+    final settings = await _settingsService.loadSettings();
+    final gemini = Gemini.instance;
+    final modelName = settings.contentModelId; // Menggunakan model untuk konten
+
+    final prompt =
+        '''
+    Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
+
+    ATURAN SANGAT PENTING:
+    1.  Gunakan HANYA inline CSS untuk semua styling. JANGAN gunakan tag `<style>` atau file CSS eksternal.
+    2.  Di dalam `<body>`, WAJIB ada sebuah `<div>` kosong dengan id `main-container`. Contoh: `<div id="main-container"></div>`. Ini adalah tempat konten akan dimasukkan nanti.
+    3.  Pastikan outputnya adalah HANYA kode HTML mentah, tanpa penjelasan tambahan, tanpa ```html, dan tanpa markdown formatting.
+    ''';
+
+    try {
+      final result = await gemini.text(prompt, modelName: modelName);
+      final textResponse = result?.output;
+
+      if (textResponse != null) {
+        // Membersihkan jika ada markdown yang tidak diinginkan
+        return textResponse
+            .replaceAll('```html', '')
+            .replaceAll('```', '')
+            .trim();
+      } else {
+        throw Exception('Gagal mendapatkan respons dari AI (respons kosong).');
+      }
+    } catch (e) {
+      if (e.toString().contains('API key is not valid')) {
+        throw Exception(
+          'API Key Gemini tidak aktif atau tidak valid. Silakan atur di Pengaturan.',
+        );
+      }
+      rethrow;
+    }
+  }
+
   /// Membuat pertanyaan kuis langsung dari konteks yang diberikan.
   Future<List<QuizQuestion>> generateQuizQuestions({
     required String context,
@@ -62,7 +103,6 @@ class GeminiServiceFlutterGemini {
     ''';
 
     try {
-      // ==> PERBAIKAN: Menghapus `generationConfig`
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
@@ -129,7 +169,6 @@ class GeminiServiceFlutterGemini {
       ''';
 
     try {
-      // ==> PERBAIKAN: Menghapus `generationConfig`
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
@@ -188,7 +227,6 @@ Contoh Jawaban:
 ''';
 
     try {
-      // ==> PERBAIKAN: Menghapus `generationConfig`
       final result = await gemini.text(prompt, modelName: modelName);
       final textResponse = result?.output;
 
