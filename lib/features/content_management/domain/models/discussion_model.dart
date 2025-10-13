@@ -52,7 +52,8 @@ class Discussion {
 
   final DiscussionLinkType linkType;
   final String? url;
-  final String? perpuskuQuizName;
+  // ==> PERBAIKAN DI SINI: Hapus 'final' <==
+  String? perpuskuQuizName;
 
   Discussion({
     required this.discussion,
@@ -110,14 +111,10 @@ class Discussion {
         ? pointsListFromJson.map((p) => Point.fromJson(p)).toList()
         : [];
 
-    // ==> PERBAIKAN UTAMA DI SINI <==
     int linkTypeIndex = json['linkType'] as int? ?? 0;
-    // Cek apakah indeks valid untuk enum yang sekarang
     if (linkTypeIndex >= DiscussionLinkType.values.length) {
-      // Jika tidak valid (kemungkinan data lama), set ke 'none'
       linkTypeIndex = DiscussionLinkType.none.index;
     }
-    // --- AKHIR PERBAIKAN ---
 
     return Discussion(
       discussion: json['discussion'] ?? 'Tidak ada diskusi',
@@ -127,8 +124,7 @@ class Discussion {
       finished: json['finished'] ?? false,
       finish_date: json['finish_date'],
       filePath: json['filePath'],
-      linkType: DiscussionLinkType
-          .values[linkTypeIndex], // Gunakan indeks yang sudah divalidasi
+      linkType: DiscussionLinkType.values[linkTypeIndex],
       url: json['url'] as String?,
       perpuskuQuizName: json['perpuskuQuizName'] as String?,
     );

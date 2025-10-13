@@ -1,11 +1,12 @@
 // lib/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart';
 
 class AddDiscussionResult {
   final String name;
   final DiscussionLinkType linkType;
-  final String? linkData;
+  final dynamic linkData;
 
   AddDiscussionResult({
     required this.name,
@@ -54,6 +55,7 @@ class _AddDiscussionDialogContentState
   final _controller = TextEditingController();
   final _urlController = TextEditingController();
   DiscussionLinkType _linkType = DiscussionLinkType.none;
+  PerpuskuQuizPickerResult? _selectedQuiz;
 
   @override
   void dispose() {
@@ -68,10 +70,13 @@ class _AddDiscussionDialogContentState
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
 
-    if (!canCreateHtmlOrQuizV2 &&
-        (_linkType == DiscussionLinkType.html ||
-            _linkType == DiscussionLinkType.perpuskuQuiz)) {
+    if (!canCreateHtmlOrQuizV2 && _linkType == DiscussionLinkType.html) {
       _linkType = DiscussionLinkType.none;
+    }
+
+    // Reset pilihan kuis jika tipe link diubah
+    if (_linkType != DiscussionLinkType.perpuskuQuiz && _selectedQuiz != null) {
+      _selectedQuiz = null;
     }
 
     return AlertDialog(
@@ -153,21 +158,14 @@ class _AddDiscussionDialogContentState
                     : null,
               ),
               RadioListTile<DiscussionLinkType>(
-                title: const Text("Kuis Perpusku (v2)"),
-                subtitle: Text(
-                  canCreateHtmlOrQuizV2
-                      ? "Membuat file kuis .json baru di folder subjek."
-                      : "Subjek ini tidak tertaut ke Perpusku.",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: canCreateHtmlOrQuizV2 ? null : Colors.orange,
-                  ),
+                title: const Text("Kuis Perpusku"),
+                subtitle: const Text(
+                  "Tautkan ke kuis yang sudah ada di Perpusku.",
+                  style: TextStyle(fontSize: 12),
                 ),
                 value: DiscussionLinkType.perpuskuQuiz,
                 groupValue: _linkType,
-                onChanged: canCreateHtmlOrQuizV2
-                    ? (value) => setState(() => _linkType = value!)
-                    : null,
+                onChanged: (value) => setState(() => _linkType = value!),
               ),
               RadioListTile<DiscussionLinkType>(
                 title: const Text("Simpan Tautan (Bookmark)"),
@@ -179,6 +177,30 @@ class _AddDiscussionDialogContentState
                 groupValue: _linkType,
                 onChanged: (value) => setState(() => _linkType = value!),
               ),
+              if (_linkType == DiscussionLinkType.perpuskuQuiz) ...[
+                const Divider(),
+                ListTile(
+                  title: const Text('Kuis yang Dipilih:'),
+                  subtitle: Text(
+                    _selectedQuiz == null
+                        ? 'Belum ada kuis yang dipilih'
+                        : '${_selectedQuiz!.quizName}\n(dari: ${_selectedQuiz!.subjectPath})',
+                  ),
+                  trailing: ElevatedButton(
+                    child: const Text('Pilih...'),
+                    onPressed: () async {
+                      final result = await showPerpuskuQuizPickerDialog(
+                        context,
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _selectedQuiz = result;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -191,13 +213,26 @@ class _AddDiscussionDialogContentState
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              String? linkData;
+              if (_linkType == DiscussionLinkType.perpuskuQuiz &&
+                  _selectedQuiz == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Silakan pilih kuis Perpusku terlebih dahulu.',
+                    ),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              dynamic linkData;
               if (_linkType == DiscussionLinkType.html) {
                 linkData = canCreateHtmlOrQuizV2 ? 'create_new' : null;
               } else if (_linkType == DiscussionLinkType.link) {
                 linkData = _urlController.text.trim();
               } else if (_linkType == DiscussionLinkType.perpuskuQuiz) {
-                linkData = 'create_new_quiz';
+                linkData = _selectedQuiz;
               }
 
               Navigator.pop(

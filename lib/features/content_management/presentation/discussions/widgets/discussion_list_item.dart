@@ -22,6 +22,7 @@ import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_pr
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
 import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/quiz_player_page.dart';
+import 'package:my_aplication/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -80,15 +81,21 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   void _navigateAndEditPerpuskuQuiz(BuildContext context) {
-    if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
-      _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
+    // ==> PERBAIKAN: Gunakan `discussion.filePath` sebagai path subjek kuis <==
+    final quizSubjectPath = discussion.filePath;
+    if (quizSubjectPath == null || discussion.perpuskuQuizName == null) {
+      _showSnackBar(
+        context,
+        "Informasi tautan kuis tidak lengkap.",
+        isError: true,
+      );
       return;
     }
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider(
-          create: (_) => PerpuskuQuizDetailProvider(subjectLinkedPath!),
+          create: (_) => PerpuskuQuizDetailProvider(quizSubjectPath),
           child: PerpuskuQuizQuestionListPage(
             quizName: discussion.perpuskuQuizName!,
           ),
@@ -100,15 +107,21 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   Future<void> _startPerpuskuQuiz(BuildContext context) async {
-    if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
-      _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
+    // ==> PERBAIKAN: Gunakan `discussion.filePath` sebagai path subjek kuis <==
+    final quizSubjectPath = discussion.filePath;
+    if (quizSubjectPath == null || discussion.perpuskuQuizName == null) {
+      _showSnackBar(
+        context,
+        "Informasi tautan kuis tidak lengkap.",
+        isError: true,
+      );
       return;
     }
 
     try {
       final perpuskuQuizService = PerpuskuQuizService();
       final List<QuizSet> allQuizzesInSubject = await perpuskuQuizService
-          .loadQuizzes(subjectLinkedPath!);
+          .loadQuizzes(quizSubjectPath);
 
       final QuizSet currentQuizSet;
       try {
@@ -151,17 +164,30 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK MENGUBAH TAUTAN KUIS <==
+  Future<void> _changePerpuskuQuizLink(BuildContext context) async {
+    final provider = Provider.of<DiscussionProvider>(context, listen: false);
+    final result = await showPerpuskuQuizPickerDialog(context);
+    if (result != null) {
+      await provider.updatePerpuskuQuizLink(discussion, result);
+      _showSnackBar(context, 'Tautan kuis berhasil diubah.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     final theme = Theme.of(context);
     final isSelected = provider.selectedDiscussions.contains(discussion);
     final isFinished = discussion.finished;
-    final hasFile =
-        discussion.filePath != null && discussion.filePath!.isNotEmpty;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
     final isPerpuskuQuiz =
         discussion.linkType == DiscussionLinkType.perpuskuQuiz;
+    // Perbarui cara cek `hasFile` agar spesifik untuk HTML
+    final hasFile =
+        discussion.linkType == DiscussionLinkType.html &&
+        discussion.filePath != null &&
+        discussion.filePath!.isNotEmpty;
 
     final iconColor = isFinished
         ? Colors.green
@@ -297,6 +323,8 @@ class DiscussionListItem extends StatelessWidget {
                     onReorderPoints: onToggleReorder,
                     onAddPerpuskuQuizQuestion: () =>
                         _navigateAndEditPerpuskuQuiz(context),
+                    onChangePerpuskuQuizLink: () =>
+                        _changePerpuskuQuizLink(context),
                     onGenerateQuizPrompt: () {
                       try {
                         final correctPath = provider.getCorrectRelativePath(

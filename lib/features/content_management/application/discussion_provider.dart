@@ -16,6 +16,7 @@ import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
+import 'package:my_aplication/features/perpusku/presentation/dialogs/perpusku_quiz_picker_dialog.dart';
 
 class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {
@@ -221,31 +222,39 @@ class DiscussionProvider
   }
 
   Future<void> addDiscussion(AddDiscussionResult result) async {
-    String? newFilePath;
-    String? newPerpuskuQuizName;
+    String? filePathValue;
+    String? perpuskuQuizNameValue;
 
-    if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
-      if (result.linkType == DiscussionLinkType.html ||
-          result.linkType == DiscussionLinkType.perpuskuQuiz) {
+    if (result.linkType == DiscussionLinkType.html) {
+      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
         throw Exception(
           "Tidak dapat membuat file karena Subject ini belum ditautkan ke folder PerpusKu.",
         );
       }
-    } else {
-      if (result.linkType == DiscussionLinkType.html &&
-          result.linkData == 'create_new') {
-        final createdFileName = await discussionService.createDiscussionFile(
-          perpuskuBasePath: await getPerpuskuHtmlBasePath(),
-          subjectLinkedPath: sourceSubjectLinkedPath!,
-          discussionName: result.name,
-        );
-        newFilePath = path.join(sourceSubjectLinkedPath!, createdFileName);
-      } else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
+      final createdFileName = await discussionService.createDiscussionFile(
+        perpuskuBasePath: await getPerpuskuHtmlBasePath(),
+        subjectLinkedPath: sourceSubjectLinkedPath!,
+        discussionName: result.name,
+      );
+      filePathValue = path.join(sourceSubjectLinkedPath!, createdFileName);
+    } else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
+      if (result.linkData is PerpuskuQuizPickerResult) {
+        final quizResult = result.linkData as PerpuskuQuizPickerResult;
+        filePathValue = quizResult.subjectPath;
+        perpuskuQuizNameValue = quizResult.quizName;
+      } else if (result.linkData == 'create_new_quiz') {
+        if (sourceSubjectLinkedPath == null ||
+            sourceSubjectLinkedPath!.isEmpty) {
+          throw Exception(
+            "Tidak dapat membuat kuis karena Subject ini belum ditautkan ke folder PerpusKu.",
+          );
+        }
         await _perpuskuQuizService.addQuizSet(
           sourceSubjectLinkedPath!,
           result.name,
         );
-        newPerpuskuQuizName = result.name;
+        filePathValue = sourceSubjectLinkedPath;
+        perpuskuQuizNameValue = result.name;
       }
     }
 
@@ -255,14 +264,26 @@ class DiscussionProvider
       repetitionCode: 'R0D',
       points: [],
       linkType: result.linkType,
-      filePath: newFilePath,
-      url: result.linkType == DiscussionLinkType.link ? result.linkData : null,
-      perpuskuQuizName: newPerpuskuQuizName,
+      filePath: filePathValue,
+      url: result.linkType == DiscussionLinkType.link
+          ? result.linkData as String?
+          : null,
+      perpuskuQuizName: perpuskuQuizNameValue,
     );
     _allDiscussions.add(newDiscussion);
 
     filterAndSortDiscussions();
     await saveDiscussions();
+  }
+
+  Future<void> updatePerpuskuQuizLink(
+    Discussion discussion,
+    PerpuskuQuizPickerResult result,
+  ) async {
+    discussion.filePath = result.subjectPath;
+    discussion.perpuskuQuizName = result.quizName;
+    await saveDiscussions();
+    notifyListeners();
   }
 
   Future<List<String>> getTitlesFromContent(String htmlContent) async {

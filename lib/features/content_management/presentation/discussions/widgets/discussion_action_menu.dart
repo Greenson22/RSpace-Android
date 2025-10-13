@@ -27,6 +27,8 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onReorderPoints;
   final VoidCallback onAddPerpuskuQuizQuestion;
   final VoidCallback onGenerateQuizPrompt;
+  // ==> TAMBAHKAN CALLBACK BARU <==
+  final VoidCallback onChangePerpuskuQuizLink;
 
   const DiscussionActionMenu({
     super.key,
@@ -53,6 +55,7 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onReorderPoints,
     required this.onAddPerpuskuQuizQuestion,
     required this.onGenerateQuizPrompt,
+    required this.onChangePerpuskuQuizLink, // ==> TAMBAHKAN DI KONSTRUKTOR
   });
 
   @override
@@ -78,6 +81,8 @@ class DiscussionActionMenu extends StatelessWidget {
           'reorder_points': onReorderPoints,
           'add_perpusku_quiz_question': onAddPerpuskuQuizQuestion,
           'generate_quiz_prompt': onGenerateQuizPrompt,
+          'change_perpusku_quiz_link':
+              onChangePerpuskuQuizLink, // ==> TAMBAHKAN AKSI
         };
         actions[value]?.call();
       },
@@ -91,8 +96,13 @@ class DiscussionActionMenu extends StatelessWidget {
         _buildMenuItem(
           'add_perpusku_quiz_question',
           Icons.edit_note,
-          // ==> PERUBAHAN LABEL DI SINI <==
           'Kelola Pertanyaan Kuis',
+        ),
+        // ==> TAMBAHKAN ITEM MENU BARU <==
+        _buildMenuItem(
+          'change_perpusku_quiz_link',
+          Icons.find_replace_outlined,
+          'Ubah Tautan Kuis',
         ),
         _buildMenuItem('rename', Icons.drive_file_rename_outline, 'Ubah Nama'),
         _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
@@ -106,6 +116,7 @@ class DiscussionActionMenu extends StatelessWidget {
       ];
     }
 
+    // ... (sisa kode tidak berubah)
     return <PopupMenuEntry<String>>[
       if (!isFinished)
         _buildMenuItem('add_point', Icons.add_comment_outlined, 'Tambah Poin'),
