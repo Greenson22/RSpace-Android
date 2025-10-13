@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/quiz_detail_provider.dart';
 
-// ==> PERUBAHAN: Tambahkan parameter quizName
+// Fungsi untuk menampilkan dialog utama
 void showGenerateQuizFromSubjectDialog(
   BuildContext context, {
   required String quizName,
@@ -27,10 +27,49 @@ void showGenerateQuizFromSubjectDialog(
   );
 }
 
+// Dialog untuk menampilkan dan menyalin prompt
+class _PromptDisplayDialog extends StatelessWidget {
+  final String prompt;
+  const _PromptDisplayDialog({required this.prompt});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Salin Prompt Ini'),
+      content: SingleChildScrollView(
+        child: Container(
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(8.0),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: SelectableText(prompt),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Tutup'),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.copy),
+          label: const Text('Salin'),
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: prompt));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Prompt disalin ke clipboard!')),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 enum _DialogState { selection, loading }
 
 class GenerateQuizFromSubjectDialog extends StatefulWidget {
-  // ==> PERUBAHAN: Tambahkan properti
   final String targetQuizName;
   const GenerateQuizFromSubjectDialog({
     super.key,
@@ -106,8 +145,6 @@ class _GenerateQuizFromSubjectDialogState
     }
   }
 
-  // Fungsi _showQuizPicker tidak lagi diperlukan di sini
-
   Future<void> _handleAction(bool directImport) async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -126,22 +163,23 @@ class _GenerateQuizFromSubjectDialogState
 
     try {
       if (directImport) {
-        // ==> PERUBAHAN: Langsung gunakan targetQuizName dari widget
         await provider.generateAndAddQuestionsFromRspaceSubject(
           quizSetName: widget.targetQuizName,
           subjectJsonPath: subjectJsonPath,
           questionCount: questionCount,
           difficulty: _selectedDifficulty,
         );
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '$questionCount pertanyaan ditambahkan ke "${widget.targetQuizName}".',
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '$questionCount pertanyaan ditambahkan ke "${widget.targetQuizName}".',
+              ),
+              backgroundColor: Colors.green,
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
       } else {
         final prompt = await provider.generatePromptFromRspaceSubject(
           subjectJsonPath: subjectJsonPath,
@@ -149,10 +187,12 @@ class _GenerateQuizFromSubjectDialogState
           difficulty: _selectedDifficulty,
         );
         if (mounted) {
-          await Clipboard.setData(ClipboardData(text: prompt));
+          // Tutup dialog input saat ini
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Prompt disalin ke clipboard!')),
+          // Tampilkan dialog baru untuk menampilkan prompt
+          showDialog(
+            context: context,
+            builder: (context) => _PromptDisplayDialog(prompt: prompt),
           );
         }
       }

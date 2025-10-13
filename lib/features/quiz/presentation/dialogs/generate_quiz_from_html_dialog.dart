@@ -11,7 +11,7 @@ void showGenerateQuizFromHtmlDialog(
   BuildContext context, {
   required String relativeHtmlPath,
   required String discussionTitle,
-  String? targetQuizName, // ==> PARAMETER BARU
+  String? targetQuizName,
 }) {
   final discussionProvider = Provider.of<DiscussionProvider>(
     context,
@@ -33,10 +33,50 @@ void showGenerateQuizFromHtmlDialog(
       child: GenerateQuizFromHtmlDialog(
         relativeHtmlPath: relativeHtmlPath,
         discussionTitle: discussionTitle,
-        targetQuizName: targetQuizName, // ==> KIRIM PARAMETER
+        targetQuizName: targetQuizName,
       ),
     ),
   );
+}
+
+// Dialog untuk menampilkan dan menyalin prompt
+class _PromptDisplayDialog extends StatelessWidget {
+  final String prompt;
+  const _PromptDisplayDialog({required this.prompt});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Salin Prompt Ini'),
+      content: SingleChildScrollView(
+        child: Container(
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(8.0),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: SelectableText(prompt),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Tutup'),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.copy),
+          label: const Text('Salin'),
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: prompt));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Prompt disalin ke clipboard!')),
+            );
+          },
+        ),
+      ],
+    );
+  }
 }
 
 enum _DialogState { selection, loading }
@@ -44,7 +84,7 @@ enum _DialogState { selection, loading }
 class GenerateQuizFromHtmlDialog extends StatefulWidget {
   final String relativeHtmlPath;
   final String discussionTitle;
-  final String? targetQuizName; // ==> PROPERTI BARU
+  final String? targetQuizName;
 
   const GenerateQuizFromHtmlDialog({
     super.key,
@@ -104,8 +144,6 @@ class _GenerateQuizFromHtmlDialogState
 
     try {
       if (directImport) {
-        // ==> LOGIKA DIPERBARUI <==
-        // Jika sudah ada target, gunakan. Jika tidak, tampilkan picker.
         final targetQuizName =
             widget.targetQuizName ??
             await _showQuizPicker(context, provider.quizzes);
@@ -138,10 +176,12 @@ class _GenerateQuizFromHtmlDialogState
           difficulty: _selectedDifficulty,
         );
         if (mounted) {
-          await Clipboard.setData(ClipboardData(text: prompt));
+          // Tutup dialog input saat ini
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Prompt disalin ke clipboard!')),
+          // Tampilkan dialog baru untuk menampilkan prompt
+          showDialog(
+            context: context,
+            builder: (context) => _PromptDisplayDialog(prompt: prompt),
           );
         }
       }
