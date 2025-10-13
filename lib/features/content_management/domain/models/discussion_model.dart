@@ -110,6 +110,15 @@ class Discussion {
         ? pointsListFromJson.map((p) => Point.fromJson(p)).toList()
         : [];
 
+    // ==> PERBAIKAN UTAMA DI SINI <==
+    int linkTypeIndex = json['linkType'] as int? ?? 0;
+    // Cek apakah indeks valid untuk enum yang sekarang
+    if (linkTypeIndex >= DiscussionLinkType.values.length) {
+      // Jika tidak valid (kemungkinan data lama), set ke 'none'
+      linkTypeIndex = DiscussionLinkType.none.index;
+    }
+    // --- AKHIR PERBAIKAN ---
+
     return Discussion(
       discussion: json['discussion'] ?? 'Tidak ada diskusi',
       date: json['date'],
@@ -118,7 +127,8 @@ class Discussion {
       finished: json['finished'] ?? false,
       finish_date: json['finish_date'],
       filePath: json['filePath'],
-      linkType: DiscussionLinkType.values[json['linkType'] as int? ?? 0],
+      linkType: DiscussionLinkType
+          .values[linkTypeIndex], // Gunakan indeks yang sudah divalidasi
       url: json['url'] as String?,
       perpuskuQuizName: json['perpuskuQuizName'] as String?,
     );
