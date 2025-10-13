@@ -74,7 +74,6 @@ class _AddDiscussionDialogContentState
       _linkType = DiscussionLinkType.none;
     }
 
-    // Reset pilihan kuis jika tipe link diubah
     if (_linkType != DiscussionLinkType.perpuskuQuiz && _selectedQuiz != null) {
       _selectedQuiz = null;
     }
@@ -131,6 +130,8 @@ class _AddDiscussionDialogContentState
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               RadioListTile<DiscussionLinkType>(
+                // ==> IKON DITAMBAHKAN <==
+                secondary: const Icon(Icons.notes_outlined),
                 title: const Text("Tanpa Tautan File"),
                 subtitle: const Text(
                   "Hanya untuk catatan internal.",
@@ -141,6 +142,8 @@ class _AddDiscussionDialogContentState
                 onChanged: (value) => setState(() => _linkType = value!),
               ),
               RadioListTile<DiscussionLinkType>(
+                // ==> IKON DITAMBAHKAN <==
+                secondary: const Icon(Icons.description_outlined),
                 title: const Text("File HTML Baru"),
                 subtitle: Text(
                   canCreateHtmlOrQuizV2
@@ -158,6 +161,8 @@ class _AddDiscussionDialogContentState
                     : null,
               ),
               RadioListTile<DiscussionLinkType>(
+                // ==> IKON DITAMBAHKAN <==
+                secondary: const Icon(Icons.quiz_outlined),
                 title: const Text("Kuis Perpusku"),
                 subtitle: const Text(
                   "Tautkan ke kuis yang sudah ada di Perpusku.",
@@ -168,6 +173,8 @@ class _AddDiscussionDialogContentState
                 onChanged: (value) => setState(() => _linkType = value!),
               ),
               RadioListTile<DiscussionLinkType>(
+                // ==> IKON DITAMBAHKAN <==
+                secondary: const Icon(Icons.link),
                 title: const Text("Simpan Tautan (Bookmark)"),
                 subtitle: const Text(
                   "Membuka alamat URL di browser.",
