@@ -18,6 +18,9 @@ class QuizQuestionListPage extends StatelessWidget {
   const QuizQuestionListPage({super.key, required this.quizName});
 
   void _showAddOptions(BuildContext context, String quizName) {
+    // ==> Ambil provider di sini untuk mendapatkan path
+    final provider = Provider.of<QuizDetailProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (dialogContext) => SimpleDialog(
@@ -53,8 +56,15 @@ class QuizQuestionListPage extends StatelessWidget {
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
-              // ==> PERUBAHAN 1: Kirim nama kuis saat memanggil dialog
-              showGenerateQuizFromSubjectDialog(context, quizName: quizName);
+              // ==> PERUBAHAN DI SINI: Kirim path dan nama subject saat ini
+              final pathParts = provider.relativeSubjectPath.split('/');
+              final subjectName = pathParts.last;
+              showGenerateQuizFromSubjectDialog(
+                context,
+                quizName: quizName,
+                subjectPath: provider.relativeSubjectPath,
+                subjectName: subjectName,
+              );
             },
             child: const ListTile(
               leading: Icon(Icons.article_outlined),
@@ -62,7 +72,6 @@ class QuizQuestionListPage extends StatelessWidget {
               subtitle: Text('Generate pertanyaan langsung atau via prompt.'),
             ),
           ),
-          // ==> FITUR BARU <==
           SimpleDialogOption(
             onPressed: () async {
               Navigator.pop(dialogContext);

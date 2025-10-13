@@ -3,32 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_aplication/core/services/path_service.dart';
-import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
-import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
-import 'package:my_aplication/features/content_management/domain/services/topic_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/settings/domain/models/gemini_settings_model.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/quiz_detail_provider.dart';
 
-// Fungsi untuk menampilkan dialog utama
-void showGenerateQuizFromSubjectDialog(
-  BuildContext context, {
-  required String quizName,
-}) {
-  final provider = Provider.of<QuizDetailProvider>(context, listen: false);
-
-  showDialog(
-    context: context,
-    builder: (_) => ChangeNotifierProvider.value(
-      value: provider,
-      child: GenerateQuizFromSubjectDialog(targetQuizName: quizName),
-    ),
-  );
-}
-
-// Dialog untuk menampilkan dan menyalin prompt
+// Dialog untuk menampilkan dan menyalin prompt (tidak berubah)
 class _PromptDisplayDialog extends StatelessWidget {
   final String prompt;
   const _PromptDisplayDialog({required this.prompt});
@@ -68,13 +49,40 @@ class _PromptDisplayDialog extends StatelessWidget {
   }
 }
 
+// ==> FUNGSI UTAMA DIPERBARUI: Menerima subjectPath dan subjectName
+void showGenerateQuizFromSubjectDialog(
+  BuildContext context, {
+  required String quizName,
+  required String subjectPath,
+  required String subjectName,
+}) {
+  final provider = Provider.of<QuizDetailProvider>(context, listen: false);
+
+  showDialog(
+    context: context,
+    builder: (_) => ChangeNotifierProvider.value(
+      value: provider,
+      child: GenerateQuizFromSubjectDialog(
+        targetQuizName: quizName,
+        relativeSubjectPath: subjectPath,
+        subjectName: subjectName,
+      ),
+    ),
+  );
+}
+
 enum _DialogState { selection, loading }
 
 class GenerateQuizFromSubjectDialog extends StatefulWidget {
   final String targetQuizName;
+  final String relativeSubjectPath;
+  final String subjectName;
+
   const GenerateQuizFromSubjectDialog({
     super.key,
     required this.targetQuizName,
+    required this.relativeSubjectPath,
+    required this.subjectName,
   });
 
   @override
@@ -85,65 +93,18 @@ class GenerateQuizFromSubjectDialog extends StatefulWidget {
 class _GenerateQuizFromSubjectDialogState
     extends State<GenerateQuizFromSubjectDialog> {
   final _formKey = GlobalKey<FormState>();
-  final TopicService _topicService = TopicService();
-  final SubjectService _subjectService = SubjectService();
   final PathService _pathService = PathService();
 
   final TextEditingController _questionCountController = TextEditingController(
     text: '10',
   );
-  String? _selectedTopicName;
-  String? _selectedSubjectName;
   QuizDifficulty _selectedDifficulty = QuizDifficulty.medium;
-
   _DialogState _currentState = _DialogState.selection;
-
-  List<String> _topicNames = [];
-  List<Subject> _subjects = [];
-  bool _isLoadingSubjects = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTopics();
-  }
 
   @override
   void dispose() {
     _questionCountController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadTopics() async {
-    final topics = await _topicService.getTopics();
-    if (!mounted) return;
-    setState(() {
-      _topicNames = topics
-          .where((t) => !t.isHidden)
-          .map((t) => t.name)
-          .toList();
-    });
-  }
-
-  Future<void> _loadSubjects(String topicName) async {
-    setState(() {
-      _isLoadingSubjects = true;
-      _subjects = [];
-      _selectedSubjectName = null;
-    });
-    try {
-      final topicsPath = await _pathService.topicsPath;
-      final topicPath = path.join(topicsPath, topicName);
-      final subjects = await _subjectService.getSubjects(topicPath);
-      if (!mounted) return;
-      setState(() {
-        _subjects = subjects.where((s) => !s.isHidden).toList();
-        _isLoadingSubjects = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingSubjects = false);
-    }
   }
 
   Future<void> _handleAction(bool directImport) async {
@@ -154,11 +115,12 @@ class _GenerateQuizFromSubjectDialogState
     setState(() => _currentState = _DialogState.loading);
 
     final provider = Provider.of<QuizDetailProvider>(context, listen: false);
+
+    // ==> LOGIKA PATH DIPERBARUI: Langsung gunakan path yang diberikan
     final topicsPath = await _pathService.topicsPath;
     final subjectJsonPath = path.join(
       topicsPath,
-      _selectedTopicName!,
-      '$_selectedSubjectName.json',
+      widget.relativeSubjectPath.replaceAll('/', path.separator) + '.json',
     );
     final questionCount = int.tryParse(_questionCountController.text) ?? 10;
 
@@ -252,6 +214,16 @@ class _GenerateQuizFromSubjectDialogState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ==> TAMPILKAN SUMBER MATERI, HAPUS DROPDOWN <==
+              Text(
+                'Sumber Materi:',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                widget.subjectName,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 24),
               DropdownButtonFormField<QuizDifficulty>(
                 value: _selectedDifficulty,
                 decoration: const InputDecoration(
@@ -288,53 +260,6 @@ class _GenerateQuizFromSubjectDialogState
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedTopicName,
-                hint: const Text('Pilih Topik Sumber Materi'),
-                isExpanded: true,
-                items: _topicNames
-                    .map(
-                      (name) =>
-                          DropdownMenuItem(value: name, child: Text(name)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedTopicName = value);
-                    _loadSubjects(value);
-                  }
-                },
-                validator: (value) =>
-                    value == null ? 'Topik harus dipilih.' : null,
-              ),
-              const SizedBox(height: 16),
-              if (_selectedTopicName != null)
-                _isLoadingSubjects
-                    ? const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    : DropdownButtonFormField<String>(
-                        value: _selectedSubjectName,
-                        hint: const Text('Pilih Subject Sumber Materi'),
-                        isExpanded: true,
-                        items: _subjects
-                            .map(
-                              (s) => DropdownMenuItem(
-                                value: s.name,
-                                child: Text(s.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedSubjectName = value);
-                          }
-                        },
-                        validator: (value) =>
-                            value == null ? 'Subject harus dipilih.' : null,
-                      ),
             ],
           ),
         ),
