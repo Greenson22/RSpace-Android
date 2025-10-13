@@ -33,15 +33,23 @@ class DiscussionCard extends StatelessWidget {
     this.subjectLinkedPath,
   });
 
-  void _showSnackBar(BuildContext context, String message) {
+  void _showSnackBar(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        backgroundColor: isError ? Colors.red : null,
+      ),
     );
   }
 
   void _navigateAndEditPerpuskuQuiz(BuildContext context) {
     if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
-      _showSnackBar(context, "Informasi kuis tidak lengkap.");
+      _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
       return;
     }
     Navigator.push(
@@ -102,9 +110,19 @@ class DiscussionCard extends StatelessWidget {
             onDelete: () => _deleteDiscussion(context, provider),
             onAddPerpuskuQuizQuestion: () =>
                 _navigateAndEditPerpuskuQuiz(context),
-            // ==> PASS DUA CALLBACK BARU KE DISCUSSIONTILE <==
-            onGenerateQuizPrompt: () =>
-                showGeneratePromptFromHtmlDialog(context, discussion),
+            // ==> PERBAIKAN DI SINI <==
+            onGenerateQuizPrompt: () {
+              try {
+                final correctPath = provider.getCorrectRelativePath(discussion);
+                showGeneratePromptFromHtmlDialog(
+                  context,
+                  relativeHtmlPath: correctPath,
+                  discussionTitle: discussion.discussion,
+                );
+              } catch (e) {
+                _showSnackBar(context, e.toString(), isError: true);
+              }
+            },
             onReorderPoints: () {
               // TODO: Implement reorder logic if needed in this parent widget
             },
