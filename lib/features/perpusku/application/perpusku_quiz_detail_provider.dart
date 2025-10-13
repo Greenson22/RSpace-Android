@@ -32,6 +32,43 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK MENYIMPAN PENGATURAN <==
+  Future<void> updateQuizSetSettings(
+    QuizSet quizSet, {
+    bool? shuffleQuestions,
+    int? questionLimit,
+    bool? showCorrectAnswer,
+    bool? autoAdvanceNextQuestion,
+    int? autoAdvanceDelay,
+    bool? isTimerEnabled,
+    int? timerDuration,
+    bool? isOverallTimerEnabled,
+    int? overallTimerDuration,
+  }) async {
+    final quizToUpdate = _allQuizzesInSubject.firstWhere(
+      (q) => q.name == quizSet.name,
+    );
+
+    quizToUpdate.shuffleQuestions =
+        shuffleQuestions ?? quizToUpdate.shuffleQuestions;
+    quizToUpdate.questionLimit = questionLimit ?? quizToUpdate.questionLimit;
+    quizToUpdate.showCorrectAnswer =
+        showCorrectAnswer ?? quizToUpdate.showCorrectAnswer;
+    quizToUpdate.autoAdvanceNextQuestion =
+        autoAdvanceNextQuestion ?? quizToUpdate.autoAdvanceNextQuestion;
+    quizToUpdate.autoAdvanceDelay =
+        autoAdvanceDelay ?? quizToUpdate.autoAdvanceDelay;
+    quizToUpdate.isTimerEnabled = isTimerEnabled ?? quizToUpdate.isTimerEnabled;
+    quizToUpdate.timerDuration = timerDuration ?? quizToUpdate.timerDuration;
+    quizToUpdate.isOverallTimerEnabled =
+        isOverallTimerEnabled ?? quizToUpdate.isOverallTimerEnabled;
+    quizToUpdate.overallTimerDuration =
+        overallTimerDuration ?? quizToUpdate.overallTimerDuration;
+
+    await _quizService.saveQuizzes(relativeSubjectPath, _allQuizzesInSubject);
+    notifyListeners();
+  }
+
   Future<void> addQuestionsFromJson({
     required String quizSetName,
     required String jsonContent,
@@ -123,21 +160,17 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     return prompt;
   }
 
-  // ==> PERBAIKAN DI SINI: Menerima path dan judul secara langsung <==
   Future<String> generatePromptFromHtmlDiscussion({
     required String relativeHtmlPath,
     required String discussionTitle,
     required int questionCount,
     required QuizDifficulty difficulty,
   }) async {
-    // Baca konten file HTML menggunakan path yang sudah benar
     final file = await _pathService.getPerpuskuHtmlFile(relativeHtmlPath);
     if (!await file.exists()) {
       throw Exception('File HTML tidak ditemukan di path: $relativeHtmlPath');
     }
     final htmlContent = await file.readAsString();
-
-    // Ekstrak teks dari HTML untuk konteks yang lebih bersih
     final document = parse(htmlContent);
     final String textContent = document.body?.text.trim() ?? '';
 

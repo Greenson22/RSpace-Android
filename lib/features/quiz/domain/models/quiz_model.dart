@@ -65,18 +65,86 @@ class QuizSet {
   String name;
   List<QuizQuestion> questions;
 
-  QuizSet({required this.name, this.questions = const []});
+  // Pengaturan Kuis - Ditambahkan dari QuizTopic
+  bool shuffleQuestions;
+  int questionLimit;
+  bool showCorrectAnswer;
+  bool autoAdvanceNextQuestion;
+  int autoAdvanceDelay;
+  bool isTimerEnabled;
+  int timerDuration;
+  bool isOverallTimerEnabled;
+  int overallTimerDuration;
+
+  QuizSet({
+    required this.name,
+    this.questions = const [],
+    // Nilai default untuk pengaturan
+    this.shuffleQuestions = true,
+    this.questionLimit = 0,
+    this.showCorrectAnswer = false,
+    this.autoAdvanceNextQuestion = false,
+    this.autoAdvanceDelay = 2,
+    this.isTimerEnabled = false,
+    this.timerDuration = 30,
+    this.isOverallTimerEnabled = false,
+    this.overallTimerDuration = 10,
+  });
 
   factory QuizSet.fromJson(String name, Map<String, dynamic> json) {
     final questionsList = json['questions'] as List? ?? [];
     final questions = questionsList
         .map((q) => QuizQuestion.fromJson(q))
         .toList();
-    return QuizSet(name: name, questions: questions);
+    return QuizSet(
+      name: name,
+      questions: questions,
+      // Baca pengaturan dari JSON, dengan fallback ke nilai default
+      shuffleQuestions: json['shuffleQuestions'] as bool? ?? true,
+      questionLimit: json['questionLimit'] as int? ?? 0,
+      showCorrectAnswer: json['showCorrectAnswer'] as bool? ?? false,
+      autoAdvanceNextQuestion:
+          json['autoAdvanceNextQuestion'] as bool? ?? false,
+      autoAdvanceDelay: json['autoAdvanceDelay'] as int? ?? 2,
+      isTimerEnabled: json['isTimerEnabled'] as bool? ?? false,
+      timerDuration: json['timerDuration'] as int? ?? 30,
+      isOverallTimerEnabled: json['isOverallTimerEnabled'] as bool? ?? false,
+      overallTimerDuration: json['overallTimerDuration'] as int? ?? 10,
+    );
   }
 
   Map<String, dynamic> toJson() {
-    return {'questions': questions.map((q) => q.toJson()).toList()};
+    return {
+      'questions': questions.map((q) => q.toJson()).toList(),
+      // Simpan pengaturan ke JSON
+      'shuffleQuestions': shuffleQuestions,
+      'questionLimit': questionLimit,
+      'showCorrectAnswer': showCorrectAnswer,
+      'autoAdvanceNextQuestion': autoAdvanceNextQuestion,
+      'autoAdvanceDelay': autoAdvanceDelay,
+      'isTimerEnabled': isTimerEnabled,
+      'timerDuration': timerDuration,
+      'isOverallTimerEnabled': isOverallTimerEnabled,
+      'overallTimerDuration': overallTimerDuration,
+    };
+  }
+
+  // Helper untuk membuat objek QuizTopic dari QuizSet ini
+  QuizTopic toQuizTopic(String categoryName) {
+    return QuizTopic(
+      name: name,
+      categoryName: categoryName,
+      shuffleQuestions: shuffleQuestions,
+      questionLimit: questionLimit,
+      showCorrectAnswer: showCorrectAnswer,
+      autoAdvanceNextQuestion: autoAdvanceNextQuestion,
+      autoAdvanceDelay: autoAdvanceDelay,
+      isTimerEnabled: isTimerEnabled,
+      timerDuration: timerDuration,
+      isOverallTimerEnabled: isOverallTimerEnabled,
+      overallTimerDuration: overallTimerDuration,
+      includedQuizSets: [name], // Set kuis hanya menyertakan dirinya sendiri
+    );
   }
 }
 
@@ -162,14 +230,13 @@ class QuizCategory {
   String name;
   String icon;
   int position;
-  // ==> TAMBAHKAN PROPERTI BARU (TIDAK DISIMPAN DI JSON)
   List<QuizTopic> topics;
 
   QuizCategory({
     required this.name,
     this.icon = '🗂️',
     this.position = -1,
-    this.topics = const [], // ==> TAMBAHKAN DI KONSTRUKTOR
+    this.topics = const [],
   });
 
   factory QuizCategory.fromJson(String name, Map<String, dynamic> json) {

@@ -1,12 +1,16 @@
 // lib/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/perpusku/application/perpusku_quiz_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import '../../domain/models/perpusku_models.dart';
+import 'perpusku_quiz_list_page.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
+// ==> IMPORT DIALOG-DIALOG BARU
 import '../dialogs/import_perpusku_quiz_from_json_dialog.dart';
-// ==> IMPORT DIALOG BARU <==
 import '../dialogs/generate_perpusku_quiz_prompt_dialog.dart';
+import '../dialogs/perpusku_quiz_settings_dialog.dart';
+import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 
 class PerpuskuQuizQuestionListPage extends StatelessWidget {
   final String quizName;
@@ -32,7 +36,6 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
           ),
           SimpleDialogOption(
             onPressed: () {
-              // TODO: Implement Add Manual Question Dialog
               Navigator.pop(dialogContext);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -46,7 +49,6 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
               subtitle: Text('Isi pertanyaan dan jawaban satu per satu.'),
             ),
           ),
-          // ==> TAMBAHKAN OPSI BARU DI SINI <==
           const Divider(),
           SimpleDialogOption(
             onPressed: () {
@@ -66,7 +68,6 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Provider diharapkan sudah tersedia dari navigator (halaman sebelumnya)
     return Consumer<PerpuskuQuizDetailProvider>(
       builder: (context, provider, child) {
         QuizSet? currentQuizSet;
@@ -76,19 +77,29 @@ class PerpuskuQuizQuestionListPage extends StatelessWidget {
               (q) => q.name == quizName,
             );
           } catch (e) {
-            // Kuis mungkin telah dihapus, jadi currentQuizSet akan tetap null
+            // Kuis mungkin telah dihapus
           }
         }
 
         return Scaffold(
-          appBar: AppBar(title: Text('Edit Soal: $quizName')),
+          appBar: AppBar(
+            title: Text('Edit Soal: $quizName'),
+            // ==> TAMBAHKAN TOMBOL PENGATURAN DI SINI <==
+            actions: [
+              if (currentQuizSet != null)
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () =>
+                      showPerpuskuQuizSettingsDialog(context, currentQuizSet!),
+                  tooltip: 'Pengaturan Sesi Kuis',
+                ),
+            ],
+          ),
           body: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
               : currentQuizSet == null
               ? const Center(
-                  child: Text(
-                    'Kuis tidak ditemukan. Mungkin telah dihapus atau diganti nama.',
-                  ),
+                  child: Text('Kuis tidak ditemukan. Mungkin telah dihapus.'),
                 )
               : currentQuizSet.questions.isEmpty
               ? const Center(

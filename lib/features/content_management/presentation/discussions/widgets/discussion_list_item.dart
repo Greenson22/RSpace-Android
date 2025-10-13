@@ -21,7 +21,6 @@ import '../../subjects/subjects_page.dart';
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_question_list_page.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
-// ==> IMPORT-IMPORT BARU <==
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 
@@ -101,7 +100,7 @@ class DiscussionListItem extends StatelessWidget {
     });
   }
 
-  // ==> FUNGSI BARU UNTUK MEMULAI KUIS V2 <==
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> _startPerpuskuQuiz(BuildContext context) async {
     if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
       _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
@@ -134,23 +133,14 @@ class DiscussionListItem extends StatelessWidget {
         return;
       }
 
-      final tempTopic = QuizTopic(
-        name: discussion.perpuskuQuizName!,
-        categoryName: subjectName,
-        // Pengaturan default untuk memainkan kuis v2
-        shuffleQuestions: true,
-        showCorrectAnswer: false,
-        autoAdvanceNextQuestion: false,
-        questionLimit: 0,
-        isTimerEnabled: false,
-        isOverallTimerEnabled: false,
-      );
+      // Gunakan helper toQuizTopic dari model QuizSet
+      final quizTopic = currentQuizSet.toQuizTopic(subjectName);
 
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => QuizPlayerPage(
-            topic: tempTopic,
+            topic: quizTopic,
             questions: currentQuizSet.questions,
           ),
         ),
@@ -240,7 +230,6 @@ class DiscussionListItem extends StatelessWidget {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
               } else {
-                // ==> PERBAIKAN LOGIKA TAP <==
                 if (isPerpuskuQuiz) {
                   _startPerpuskuQuiz(context);
                 } else {
@@ -366,7 +355,6 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // Sisa kode helper tidak berubah...
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
