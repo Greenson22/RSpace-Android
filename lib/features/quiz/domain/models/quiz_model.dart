@@ -82,8 +82,10 @@ class QuizSet {
     // Nilai default untuk pengaturan
     this.shuffleQuestions = true,
     this.questionLimit = 0,
-    this.showCorrectAnswer = false,
-    this.autoAdvanceNextQuestion = false,
+    // ==> PERUBAHAN DI SINI <==
+    this.showCorrectAnswer = true,
+    this.autoAdvanceNextQuestion = true,
+    // --- AKHIR PERUBAHAN ---
     this.autoAdvanceDelay = 2,
     this.isTimerEnabled = false,
     this.timerDuration = 30,
@@ -100,11 +102,12 @@ class QuizSet {
       name: name,
       questions: questions,
       // Baca pengaturan dari JSON, dengan fallback ke nilai default
+      // ==> PERUBAHAN DI SINI <==
       shuffleQuestions: json['shuffleQuestions'] as bool? ?? true,
       questionLimit: json['questionLimit'] as int? ?? 0,
-      showCorrectAnswer: json['showCorrectAnswer'] as bool? ?? false,
-      autoAdvanceNextQuestion:
-          json['autoAdvanceNextQuestion'] as bool? ?? false,
+      showCorrectAnswer: json['showCorrectAnswer'] as bool? ?? true,
+      autoAdvanceNextQuestion: json['autoAdvanceNextQuestion'] as bool? ?? true,
+      // --- AKHIR PERUBAHAN ---
       autoAdvanceDelay: json['autoAdvanceDelay'] as int? ?? 2,
       isTimerEnabled: json['isTimerEnabled'] as bool? ?? false,
       timerDuration: json['timerDuration'] as int? ?? 30,
