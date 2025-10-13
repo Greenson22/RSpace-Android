@@ -33,8 +33,6 @@ class DiscussionProvider
   final String? sourceSubjectLinkedPath;
   final Subject subject;
 
-  // ... (Sisa provider tidak berubah, hanya fungsi addDiscussion)
-
   DiscussionProvider(
     this._jsonFilePath, {
     String? linkedPath,
@@ -222,7 +220,6 @@ class DiscussionProvider
     await _savePointPresets();
   }
 
-  // ==> FUNGSI INI DIPERBARUI SECARA SIGNIFIKAN <==
   Future<void> addDiscussion(AddDiscussionResult result) async {
     String? newFilePath;
     String? newPerpuskuQuizName;
@@ -243,14 +240,12 @@ class DiscussionProvider
           discussionName: result.name,
         );
         newFilePath = path.join(sourceSubjectLinkedPath!, createdFileName);
-      }
-      // Logika baru untuk membuat entri kuis kosong di quizzes.json
-      else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
+      } else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
         await _perpuskuQuizService.addQuizSet(
           sourceSubjectLinkedPath!,
           result.name,
         );
-        newPerpuskuQuizName = result.name; // Simpan nama kuis sebagai referensi
+        newPerpuskuQuizName = result.name;
       }
     }
 
@@ -261,9 +256,6 @@ class DiscussionProvider
       points: [],
       linkType: result.linkType,
       filePath: newFilePath,
-      quizTopicPath: result.linkType == DiscussionLinkType.quiz
-          ? result.linkData
-          : null,
       url: result.linkType == DiscussionLinkType.link ? result.linkData : null,
       perpuskuQuizName: newPerpuskuQuizName,
     );

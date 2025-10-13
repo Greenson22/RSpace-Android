@@ -11,8 +11,6 @@ import '../../../core/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
-// ==> IMPORT QUIZ SERVICE <==
-import '../../quiz/application/quiz_service.dart';
 
 class StatisticsProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();
@@ -21,8 +19,6 @@ class StatisticsProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();
   final PathService _pathService = PathService();
   final TimeLogService _timeLogService = TimeLogService();
-  // ==> BUAT INSTANCE QUIZ SERVICE <==
-  final QuizService _quizService = QuizService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -100,7 +96,6 @@ class StatisticsProvider with ChangeNotifier {
         totalPointCount += currentTopicPointCount;
       }
 
-      // ==> LOGIKA PERHITUNGAN TUGAS DIPERBARUI <==
       int taskCategoryCount = 0;
       int totalTaskCount = 0;
       int dailyTargetTaskCount = 0;
@@ -119,7 +114,6 @@ class StatisticsProvider with ChangeNotifier {
         }
       }
 
-      // Perhitungan Jurnal Aktivitas
       Duration totalTimeLogged = Duration.zero;
       Duration averageTimePerDay = Duration.zero;
       String? mostActiveDay;
@@ -155,37 +149,6 @@ class StatisticsProvider with ChangeNotifier {
         }
       }
 
-      // ==> PERHITUNGAN STATISTIK KUIS BARU <==
-      int quizCategoryCount = 0;
-      int quizTopicCount = 0;
-      int quizSetCount = 0;
-      int quizQuestionCount = 0;
-
-      try {
-        final quizCategories = await _quizService.getAllCategories();
-        quizCategoryCount = quizCategories.length;
-
-        for (final category in quizCategories) {
-          final topics = await _quizService.getAllTopics(category.name);
-          quizTopicCount += topics.length;
-
-          for (final topic in topics) {
-            final quizSets = await _quizService.getQuizSetsInTopic(
-              category.name,
-              topic.name,
-            );
-            quizSetCount += quizSets.length;
-
-            for (final quizSet in quizSets) {
-              quizQuestionCount += quizSet.questions.length;
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint("Error calculating quiz statistics: $e");
-      }
-
-      // Update state dengan semua data yang sudah dikalkulasi
       _stats = AppStatistics(
         topicCount: topics.length,
         subjectCount: totalSubjectCount,
@@ -202,10 +165,6 @@ class StatisticsProvider with ChangeNotifier {
         averageTimePerDay: averageTimePerDay,
         mostActiveDay: mostActiveDay,
         mostActiveDayMinutes: mostActiveDayMinutes,
-        quizCategoryCount: quizCategoryCount,
-        quizTopicCount: quizTopicCount,
-        quizSetCount: quizSetCount,
-        quizQuestionCount: quizQuestionCount,
       );
     } catch (e) {
       debugPrint("Error generating statistics: $e");

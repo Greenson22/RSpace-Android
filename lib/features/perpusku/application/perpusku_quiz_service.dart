@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/core/services/path_service.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import '../domain/models/quiz_model.dart';
 
 class PerpuskuQuizService {
   final PathService _pathService = PathService();

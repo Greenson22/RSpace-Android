@@ -191,8 +191,6 @@ class PathService {
   Future<String> get progressPath async =>
       path.join(await contentsPath, 'progress');
 
-  Future<String> get quizPath async => path.join(await contentsPath, 'quizzes');
-
   Future<String> get userProfilePath async =>
       path.join(await contentsPath, 'user_profile.dat');
 
@@ -238,7 +236,6 @@ class PathService {
     return dir.path;
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN <==
   Future<File> getPerpuskuSubjectQuizFile(String relativeSubjectPath) async {
     final quizDir = await getPerpuskuQuizPath(relativeSubjectPath);
     return File(path.join(quizDir, 'quizzes.json'));

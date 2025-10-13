@@ -1,4 +1,4 @@
-// lib/features/quiz/presentation/pages/quiz_player_page.dart
+// lib/features/perpusku/presentation/pages/quiz_player_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/quiz_player_provider.dart';
@@ -6,10 +6,8 @@ import '../../domain/models/quiz_model.dart';
 
 class QuizPlayerPage extends StatelessWidget {
   final QuizTopic topic;
-  // ==> TAMBAHKAN PROPERTI OPSIONAL <==
   final List<QuizQuestion>? questions;
 
-  // ==> PERBARUI KONSTRUKTOR <==
   const QuizPlayerPage({super.key, required this.topic, this.questions});
 
   Future<bool> _onWillPop(BuildContext context) async {
@@ -52,7 +50,6 @@ class QuizPlayerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // ==> KIRIM DAFTAR PERTANYAAN KE PROVIDER <==
       create: (_) =>
           QuizPlayerProvider(topic: topic, initialQuestions: questions),
       child: Consumer<QuizPlayerProvider>(
@@ -127,7 +124,7 @@ class QuizPlayerPage extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
-                'Tidak ada pertanyaan untuk dimainkan. Coba periksa pengaturan kuis di halaman "Kelola Kuis".',
+                'Tidak ada pertanyaan untuk dimainkan. Coba periksa pengaturan kuis.',
                 textAlign: TextAlign.center,
               ),
             ),
@@ -258,7 +255,7 @@ class QuizPlayerPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Kembali ke Daftar Topik'),
+            child: const Text('Kembali'),
           ),
         ],
       ),

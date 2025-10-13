@@ -2,7 +2,7 @@
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-enum DiscussionLinkType { html, quiz, none, link, perpuskuQuiz }
+enum DiscussionLinkType { html, none, link, perpuskuQuiz }
 
 class Point {
   String pointText;
@@ -51,9 +51,7 @@ class Discussion {
   String? archivedHtmlContent;
 
   final DiscussionLinkType linkType;
-  final String? quizTopicPath;
   final String? url;
-  // ==> NAMA FIELD DIPERBARUI UNTUK KEJELASAN <==
   final String? perpuskuQuizName;
 
   Discussion({
@@ -66,9 +64,8 @@ class Discussion {
     this.filePath,
     this.archivedHtmlContent,
     this.linkType = DiscussionLinkType.html,
-    this.quizTopicPath,
     this.url,
-    this.perpuskuQuizName, // ==> DIPERBARUI DI KONSTRUKTOR
+    this.perpuskuQuizName,
   });
 
   Point? get _pointWithMinRepetitionCode {
@@ -122,10 +119,8 @@ class Discussion {
       finish_date: json['finish_date'],
       filePath: json['filePath'],
       linkType: DiscussionLinkType.values[json['linkType'] as int? ?? 0],
-      quizTopicPath: json['quizTopicPath'] as String?,
       url: json['url'] as String?,
-      perpuskuQuizName:
-          json['perpuskuQuizName'] as String?, // ==> BACA DARI JSON
+      perpuskuQuizName: json['perpuskuQuizName'] as String?,
     );
   }
 
@@ -139,9 +134,8 @@ class Discussion {
       'finish_date': finish_date,
       'filePath': filePath,
       'linkType': linkType.index,
-      'quizTopicPath': quizTopicPath,
       'url': url,
-      'perpuskuQuizName': perpuskuQuizName, // ==> SIMPAN KE JSON
+      'perpuskuQuizName': perpuskuQuizName,
     };
   }
 }

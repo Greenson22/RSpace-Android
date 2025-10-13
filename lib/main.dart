@@ -7,7 +7,6 @@ import 'package:my_aplication/features/dashboard/presentation/pages/dashboard_pa
 import 'package:my_aplication/features/ai_assistant/application/chat_provider.dart';
 import 'package:my_aplication/core/providers/debug_provider.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_provider.dart';
-import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
 import 'package:my_aplication/features/statistics/application/statistics_provider.dart';
 import 'package:my_aplication/features/time_management/application/providers/time_log_provider.dart';
 import 'package:my_aplication/features/content_management/application/topic_provider.dart';
@@ -20,7 +19,6 @@ import 'features/snake_game/application/snake_game_provider.dart';
 import 'features/auth/application/auth_provider.dart';
 import 'core/widgets/draggable_fab_view.dart';
 import 'features/ai_assistant/presentation/widgets/floating_character_widget.dart';
-// ==> IMPORT WIDGET EFEK VISUAL <==
 import 'core/widgets/snow_widget.dart';
 import 'core/widgets/underwater_widget.dart';
 
@@ -46,7 +44,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
         ChangeNotifierProvider(create: (_) => NeuronProvider()),
-        ChangeNotifierProvider(create: (_) => QuizCategoryProvider()),
         ChangeNotifierProvider(create: (_) => PerpuskuProvider()),
         ChangeNotifierProvider(create: (_) => SnakeGameProvider()),
       ],
@@ -69,14 +66,9 @@ class MyApp extends StatelessWidget {
           builder: (context, child) {
             return Stack(
               children: [
-                // Ini adalah halaman utama Anda (seperti Dashboard, Topics, dll.)
                 child!,
-
-                // ==> TAMBAHKAN KONDISI UNTUK MENAMPILKAN EFEK VISUAL DI SINI <==
                 if (themeProvider.isChristmasTheme) const SnowWidget(),
                 if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
-
-                // Tampilkan Flo dan FAB secara kondisional di atas halaman
                 if (themeProvider.showFloatingCharacter)
                   const FloatingCharacter(),
                 if (themeProvider.showQuickFab) const DraggableFabView(),

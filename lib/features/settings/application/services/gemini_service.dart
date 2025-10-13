@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/settings/application/gemini_settings_service.dart';
 import '../../domain/models/api_key_model.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
@@ -38,7 +37,6 @@ class GeminiService {
     );
   }
 
-  // ... (fungsi-fungsi lain tidak berubah) ...
   Future<List<String>> getSavedMotivationalQuotes() async {
     try {
       final quotesPath = await _pathService.motivationalQuotesPath;
@@ -407,10 +405,7 @@ Contoh Jawaban:
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBUAT PROMPT
   Future<String> generateHtmlTemplatePrompt(String themeDescription) async {
-    // Fungsi ini tidak memerlukan API key karena hanya membuat teks prompt.
-    // Prompt ini identik dengan yang ada di `generateHtmlTemplate`.
     final prompt =
         '''
     Buatkan saya sebuah template HTML5 lengkap dengan tema "$themeDescription".
@@ -432,7 +427,6 @@ Contoh Jawaban:
       throw Exception('API Key Gemini tidak aktif.');
     }
 
-    // Panggil fungsi baru untuk mendapatkan prompt
     final prompt = await generateHtmlTemplatePrompt(themeDescription);
 
     final apiUrl = _buildApiUri(model, apiKey);
@@ -602,130 +596,5 @@ Jawaban Anda:
     } catch (e) {
       rethrow;
     }
-  }
-
-  Future<List<QuizQuestion>> generateQuizFromText(
-    String customTopic, {
-    int questionCount = 10,
-    QuizDifficulty difficulty = QuizDifficulty.medium,
-  }) async {
-    final settings = await _settingsService.loadSettings();
-    final apiKey = await _getActiveApiKey();
-    final model = settings.quizModelId;
-
-    if (apiKey.isEmpty) {
-      throw Exception('API Key Gemini tidak aktif.');
-    }
-
-    if (customTopic.trim().isEmpty) {
-      throw Exception('Materi kuis tidak boleh kosong.');
-    }
-
-    final prompt =
-        '''
-    Anda adalah AI pembuat kuis. Berdasarkan materi berikut:
-    ---
-    $customTopic
-    ---
-    
-    Buatkan $questionCount pertanyaan kuis pilihan ganda yang relevan dengan tingkat kesulitan: ${difficulty.displayName}.
-    Untuk tingkat kesulitan "HOTS", buatlah pertanyaan yang membutuhkan analisis atau penerapan konsep, bukan hanya ingatan.
-    
-    Aturan Jawaban:
-    1.  HANYA kembalikan dalam format array JSON yang valid.
-    2.  Setiap objek dalam array mewakili satu pertanyaan dan HARUS memiliki kunci: "questionText", "options", dan "correctAnswerIndex".
-    3.  "questionText" harus berupa string.
-    4.  "options" harus berupa array berisi 4 string pilihan jawaban.
-    5.  "correctAnswerIndex" harus berupa integer (0-3) yang menunjuk ke jawaban yang benar.
-    6.  Jangan sertakan penjelasan atau teks lain di luar array JSON.
-
-    Contoh Jawaban:
-    [
-      {
-        "questionText": "Apa itu widget dalam Flutter?",
-        "options": ["Blok bangunan UI", "Tipe variabel", "Fungsi database", "Permintaan jaringan"],
-        "correctAnswerIndex": 0
-      }
-    ]
-    ''';
-    final apiUrl = _buildApiUri(model, apiKey);
-
-    try {
-      final response = await http.post(
-        apiUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt},
-              ],
-            },
-          ],
-          'generationConfig': {'responseMimeType': 'application/json'},
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        final textResponse =
-            body['candidates'][0]['content']['parts'][0]['text'];
-        final List<dynamic> jsonResponse = jsonDecode(textResponse);
-
-        return jsonResponse.map((item) {
-          final optionsList = (item['options'] as List<dynamic>).cast<String>();
-          final correctIndex = item['correctAnswerIndex'] as int;
-          final options = List.generate(optionsList.length, (i) {
-            return QuizOption(
-              text: optionsList[i],
-              isCorrect: i == correctIndex,
-            );
-          });
-          return QuizQuestion(
-            questionText: item['questionText'] as String,
-            options: options,
-          );
-        }).toList();
-      } else {
-        final errorBody = jsonDecode(response.body);
-        final errorMessage = errorBody['error']?['message'] ?? response.body;
-        throw Exception(
-          'Gagal mendapatkan respons: ${response.statusCode}\nError: $errorMessage',
-        );
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<QuizQuestion>> generateQuizFromSubject(
-    String subjectJsonPath, {
-    int questionCount = 10,
-    QuizDifficulty difficulty = QuizDifficulty.medium,
-  }) async {
-    final discussions = await _discussionService.loadDiscussions(
-      subjectJsonPath,
-    );
-    final contentBuffer = StringBuffer();
-    for (final discussion in discussions) {
-      if (!discussion.finished) {
-        contentBuffer.writeln('- Judul: ${discussion.discussion}');
-        for (final point in discussion.points) {
-          contentBuffer.writeln('  - Poin: ${point.pointText}');
-        }
-      }
-    }
-
-    if (contentBuffer.isEmpty) {
-      throw Exception(
-        'Subject ini tidak memiliki konten aktif untuk dibuatkan kuis.',
-      );
-    }
-
-    return generateQuizFromText(
-      contentBuffer.toString(),
-      questionCount: questionCount,
-      difficulty: difficulty,
-    );
   }
 }

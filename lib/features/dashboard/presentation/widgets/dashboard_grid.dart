@@ -17,9 +17,7 @@ import '../../../time_management/presentation/pages/time_log_page.dart';
 import '../dialogs/data_management_dialog.dart';
 import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
-import 'package:my_aplication/features/quiz/presentation/pages/quiz_category_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
-// ==> IMPORT HALAMAN BARU <==
 import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz_topic_page.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -52,11 +50,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
     ),
-    () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const QuizCategoryPage()),
-    ),
-    // ==> TAMBAHKAN AKSI BARU DI SINI <==
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PerpuskuQuizTopicPage()),
@@ -151,13 +144,6 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Lihat progres & data',
             'colors': AppTheme.gradientColors5,
           },
-          {
-            'icon': Icons.quiz_outlined,
-            'label': 'Kuis (v1)',
-            'subtitle': 'Uji pemahaman Anda',
-            'colors': const [Color(0xFF43A047), Color(0xFF66BB6A)],
-          },
-          // ==> TAMBAHKAN ITEM BARU DI SINI <==
           {
             'icon': Icons.school_outlined,
             'label': 'Kuis Perpusku',

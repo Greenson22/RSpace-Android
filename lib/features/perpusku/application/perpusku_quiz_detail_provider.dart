@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import '../domain/models/quiz_model.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:my_aplication/features/content_management/domain/services/discussion_service.dart';
@@ -32,7 +32,6 @@ class PerpuskuQuizDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENYIMPAN PENGATURAN <==
   Future<void> updateQuizSetSettings(
     QuizSet quizSet, {
     bool? shuffleQuestions,

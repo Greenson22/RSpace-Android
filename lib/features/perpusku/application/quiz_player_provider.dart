@@ -1,16 +1,13 @@
-// lib/features/quiz/application/quiz_player_provider.dart
+// lib/features/perpusku/application/quiz_player_provider.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../domain/models/quiz_model.dart';
-import 'quiz_service.dart';
 
 enum QuizState { loading, playing, finished }
 
 class QuizPlayerProvider with ChangeNotifier {
-  final QuizService _quizService = QuizService();
   final QuizTopic topic;
-  // ==> TAMBAHKAN PROPERTI OPSIONAL <==
   final List<QuizQuestion>? initialQuestions;
 
   QuizState _state = QuizState.loading;
@@ -48,7 +45,6 @@ class QuizPlayerProvider with ChangeNotifier {
     return correctAnswers;
   }
 
-  // ==> PERBARUI KONSTRUKTOR <==
   QuizPlayerProvider({required this.topic, this.initialQuestions}) {
     _loadQuestions();
   }
@@ -104,16 +100,13 @@ class QuizPlayerProvider with ChangeNotifier {
     }
   }
 
-  // ==> PERBARUI LOGIKA PEMUATAN SOAL <==
   Future<void> _loadQuestions() async {
     _state = QuizState.loading;
     notifyListeners();
 
     try {
-      // Jika ada initialQuestions, gunakan itu
       if (initialQuestions != null) {
         _questions = List.from(initialQuestions!);
-        // Terapkan pengaturan dari 'topic' ke daftar pertanyaan yang sudah ada
         if (topic.shuffleQuestions) {
           _questions.shuffle();
         }
@@ -122,8 +115,8 @@ class QuizPlayerProvider with ChangeNotifier {
           _questions = _questions.sublist(0, topic.questionLimit);
         }
       } else {
-        // Jika tidak, muat dari service seperti biasa (untuk kuis v1)
-        _questions = await _quizService.getAllQuestionsInTopic(topic);
+        // Fallback for safety, though it shouldn't be used for Kuis v2
+        _questions = [];
       }
 
       _userAnswers.clear();

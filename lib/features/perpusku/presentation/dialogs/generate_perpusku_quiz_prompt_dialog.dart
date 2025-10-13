@@ -6,7 +6,7 @@ import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_service.dart';
 import 'package:my_aplication/features/content_management/domain/services/topic_service.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import '../../application/perpusku_quiz_detail_provider.dart';

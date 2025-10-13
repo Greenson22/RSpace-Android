@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
 
 class PerpuskuQuizProvider with ChangeNotifier {
   final PerpuskuQuizService _quizService = PerpuskuQuizService();

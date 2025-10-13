@@ -1,15 +1,11 @@
 // lib/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
-import 'package:my_aplication/features/quiz/application/quiz_category_provider.dart';
-import 'package:provider/provider.dart';
-// import 'perpusku:quiz_picker_dialog.dart';
 
 class AddDiscussionResult {
   final String name;
   final DiscussionLinkType linkType;
-  final String?
-  linkData; // Berisi 'create_new' (HTML), 'create_new_quiz' (Kuis v2), quiz topic path (Kuis v1), URL (Link), atau null (None)
+  final String? linkData;
 
   AddDiscussionResult({
     required this.name,
@@ -27,13 +23,10 @@ Future<AddDiscussionResult?> showAddDiscussionDialog({
   return showDialog<AddDiscussionResult>(
     context: context,
     builder: (context) {
-      return ChangeNotifierProvider(
-        create: (_) => QuizCategoryProvider(),
-        child: _AddDiscussionDialogContent(
-          title: title,
-          label: label,
-          subjectLinkedPath: subjectLinkedPath,
-        ),
+      return _AddDiscussionDialogContent(
+        title: title,
+        label: label,
+        subjectLinkedPath: subjectLinkedPath,
       );
     },
   );
@@ -61,7 +54,6 @@ class _AddDiscussionDialogContentState
   final _controller = TextEditingController();
   final _urlController = TextEditingController();
   DiscussionLinkType _linkType = DiscussionLinkType.none;
-  String? _selectedQuizTopicPath;
 
   @override
   void dispose() {
@@ -76,7 +68,6 @@ class _AddDiscussionDialogContentState
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
 
-    // Jika subjek tidak tertaut, reset pilihan ke 'none'
     if (!canCreateHtmlOrQuizV2 &&
         (_linkType == DiscussionLinkType.html ||
             _linkType == DiscussionLinkType.perpuskuQuiz)) {
@@ -179,16 +170,6 @@ class _AddDiscussionDialogContentState
                     : null,
               ),
               RadioListTile<DiscussionLinkType>(
-                title: const Text("Topik Kuis (v1)"),
-                subtitle: const Text(
-                  "Membuka sesi kuis v1 saat diskusi diklik.",
-                  style: TextStyle(fontSize: 12),
-                ),
-                value: DiscussionLinkType.quiz,
-                groupValue: _linkType,
-                onChanged: (value) => setState(() => _linkType = value!),
-              ),
-              RadioListTile<DiscussionLinkType>(
                 title: const Text("Simpan Tautan (Bookmark)"),
                 subtitle: const Text(
                   "Membuka alamat URL di browser.",
@@ -198,10 +179,6 @@ class _AddDiscussionDialogContentState
                 groupValue: _linkType,
                 onChanged: (value) => setState(() => _linkType = value!),
               ),
-              if (_linkType == DiscussionLinkType.quiz) ...[
-                const Divider(),
-                _buildQuizTopicSelector(),
-              ],
             ],
           ),
         ),
@@ -214,28 +191,12 @@ class _AddDiscussionDialogContentState
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              if (_linkType == DiscussionLinkType.quiz &&
-                  _selectedQuizTopicPath == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Silakan pilih topik kuis v1 terlebih dahulu.',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-
               String? linkData;
               if (_linkType == DiscussionLinkType.html) {
                 linkData = canCreateHtmlOrQuizV2 ? 'create_new' : null;
-              } else if (_linkType == DiscussionLinkType.quiz) {
-                linkData = _selectedQuizTopicPath;
               } else if (_linkType == DiscussionLinkType.link) {
                 linkData = _urlController.text.trim();
               } else if (_linkType == DiscussionLinkType.perpuskuQuiz) {
-                // ==> KIRIM SINYAL UNTUK MEMBUAT KUIS BARU <==
                 linkData = 'create_new_quiz';
               }
 
@@ -252,40 +213,6 @@ class _AddDiscussionDialogContentState
           child: const Text('Simpan'),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuizTopicSelector() {
-    return Consumer<QuizCategoryProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final List<DropdownMenuItem<String>> items = provider.categories.expand(
-          (category) {
-            return category.topics.map((topic) {
-              final path = '${category.name}/${topic.name}';
-              return DropdownMenuItem<String>(
-                value: path,
-                child: Text('${category.name} > ${topic.name}'),
-              );
-            });
-          },
-        ).toList();
-
-        return DropdownButtonFormField<String>(
-          value: _selectedQuizTopicPath,
-          hint: const Text('Pilih Topik Kuis v1...'),
-          isExpanded: true,
-          items: items,
-          onChanged: (value) {
-            setState(() {
-              _selectedQuizTopicPath = value;
-            });
-          },
-        );
-      },
     );
   }
 }

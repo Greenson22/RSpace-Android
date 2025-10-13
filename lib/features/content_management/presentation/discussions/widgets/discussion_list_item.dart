@@ -7,8 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
-import '../../../../quiz/application/quiz_service.dart';
-import '../../../../quiz/presentation/pages/quiz_player_page.dart';
 import '../../../../settings/application/theme_provider.dart';
 import '../../../../webview_page/presentation/pages/webview_page.dart';
 import '../dialogs/discussion_dialogs.dart';
@@ -22,7 +20,8 @@ import 'package:my_aplication/features/perpusku/presentation/pages/perpusku_quiz
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_detail_provider.dart';
 import 'package:my_aplication/features/perpusku/presentation/dialogs/generate_prompt_from_html_dialog.dart';
 import 'package:my_aplication/features/perpusku/application/perpusku_quiz_service.dart';
-import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/perpusku/domain/models/quiz_model.dart';
+import 'package:my_aplication/features/perpusku/presentation/pages/quiz_player_page.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -100,7 +99,6 @@ class DiscussionListItem extends StatelessWidget {
     });
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> _startPerpuskuQuiz(BuildContext context) async {
     if (subjectLinkedPath == null || discussion.perpuskuQuizName == null) {
       _showSnackBar(context, "Informasi kuis tidak lengkap.", isError: true);
@@ -133,7 +131,6 @@ class DiscussionListItem extends StatelessWidget {
         return;
       }
 
-      // Gunakan helper toQuizTopic dari model QuizSet
       final quizTopic = currentQuizSet.toQuizTopic(subjectName);
 
       Navigator.push(
@@ -162,7 +159,6 @@ class DiscussionListItem extends StatelessWidget {
     final isFinished = discussion.finished;
     final hasFile =
         discussion.filePath != null && discussion.filePath!.isNotEmpty;
-    final isQuizLink = discussion.linkType == DiscussionLinkType.quiz;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
     final isPerpuskuQuiz =
         discussion.linkType == DiscussionLinkType.perpuskuQuiz;
@@ -176,8 +172,6 @@ class DiscussionListItem extends StatelessWidget {
       iconData = Icons.check_circle;
     } else if (isPerpuskuQuiz) {
       iconData = Icons.assignment_turned_in_outlined;
-    } else if (isQuizLink) {
-      iconData = Icons.quiz_outlined;
     } else if (isWebLink) {
       iconData = Icons.link;
     } else if (hasFile) {
@@ -200,9 +194,6 @@ class DiscussionListItem extends StatelessWidget {
       } else if (isWebLink) {
         onPressedAction = () => _openUrlWithOptions(context);
         tooltip = 'Buka Tautan';
-      } else if (isQuizLink) {
-        onPressedAction = () => _startQuiz(context);
-        tooltip = 'Mulai Kuis';
       } else if (hasFile) {
         onPressedAction = () async {
           try {
@@ -394,29 +385,6 @@ class DiscussionListItem extends StatelessWidget {
           isError: true,
         );
       }
-    }
-  }
-
-  void _startQuiz(BuildContext context) async {
-    if (discussion.quizTopicPath == null) return;
-    final pathParts = discussion.quizTopicPath!.split('/');
-    if (pathParts.length != 2) return;
-
-    final categoryName = pathParts[0];
-    final topicName = pathParts[1];
-
-    try {
-      final quizService = QuizService();
-      final topic = await quizService.getTopic(categoryName, topicName);
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => QuizPlayerPage(topic: topic)),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Gagal memuat kuis: $e")));
     }
   }
 
