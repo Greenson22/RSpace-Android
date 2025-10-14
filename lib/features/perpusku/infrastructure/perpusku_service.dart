@@ -9,8 +9,7 @@ import '../domain/models/perpusku_models.dart';
 
 class PerpuskuService {
   final PathService _pathService = PathService();
-  final QuizService _quizService =
-      QuizService(); // Tambahkan instance quiz service
+  final QuizService _quizService = QuizService();
   static const String _defaultIcon = '📁';
   static const String _defaultSubjectIcon = '📄';
 
@@ -122,9 +121,8 @@ class PerpuskuService {
       final topicName = path.basename(dir.path);
       String topicIcon = _defaultIcon;
       bool isHidden = false;
-      int subjectCount = 0; // ==> Variabel untuk menghitung
+      int subjectCount = 0;
 
-      // Hitung jumlah sub-folder (subjects)
       try {
         subjectCount = dir.listSync().whereType<Directory>().length;
       } catch (e) {
@@ -150,7 +148,7 @@ class PerpuskuService {
             name: topicName,
             path: dir.path,
             icon: topicIcon,
-            subjectCount: subjectCount, // ==> Kirim jumlahnya
+            subjectCount: subjectCount,
           ),
         );
       }
@@ -172,19 +170,17 @@ class PerpuskuService {
     for (final dir in entities) {
       final subjectName = path.basename(dir.path);
       String subjectIcon = _defaultSubjectIcon;
-      int totalQuestions = 0; // ==> Variabel untuk menghitung
+      // ==> LOGIKA PERHITUNGAN DIPERBARUI <==
+      int quizCount = 0;
 
-      // Hitung total pertanyaan dari semua kuis di dalam subjek ini
       try {
         final pathParts = dir.path.split('/');
         final relativeSubjectPath = pathParts
             .sublist(pathParts.length - 2)
             .join('/');
         final quizzes = await _quizService.loadQuizzes(relativeSubjectPath);
-        totalQuestions = quizzes.fold(
-          0,
-          (sum, quiz) => sum + quiz.questions.length,
-        );
+        // Hitung jumlah set kuis, bukan total pertanyaan
+        quizCount = quizzes.length;
       } catch (e) {
         // Abaikan jika ada error
       }
@@ -213,7 +209,8 @@ class PerpuskuService {
           name: subjectName,
           path: dir.path,
           icon: subjectIcon,
-          totalQuestions: totalQuestions, // ==> Kirim jumlahnya
+          // ==> KIRIM JUMLAH KUIS <==
+          quizCount: quizCount,
         ),
       );
     }

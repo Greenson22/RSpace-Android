@@ -44,7 +44,7 @@ class _QuizSubjectView extends StatelessWidget {
                   ),
                   title: Text(subject.name),
                   // ==> PERUBAHAN DI SINI <==
-                  subtitle: Text('${subject.totalQuestions} pertanyaan'),
+                  subtitle: Text('${subject.quizCount} kuis'),
                   onTap: () {
                     Navigator.push(
                       context,

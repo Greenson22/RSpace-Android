@@ -4,13 +4,13 @@ class PerpuskuTopic {
   final String name;
   final String path;
   final String icon;
-  final int subjectCount; // ==> PROPERTI BARU DITAMBAHKAN
+  final int subjectCount;
 
   PerpuskuTopic({
     required this.name,
     required this.path,
     required this.icon,
-    this.subjectCount = 0, // ==> TAMBAHKAN DI KONSTRUKTOR
+    this.subjectCount = 0,
   });
 }
 
@@ -18,13 +18,15 @@ class PerpuskuSubject {
   final String name;
   final String path;
   final String icon;
-  final int totalQuestions; // ==> PROPERTI BARU DITAMBAHKAN
+  // ==> NAMA PROPERTI DIPERBARUI
+  final int quizCount;
 
   PerpuskuSubject({
     required this.name,
     required this.path,
     required this.icon,
-    this.totalQuestions = 0, // ==> TAMBAHKAN DI KONSTRUKTOR
+    // ==> DIPERBARUI DI KONSTRUKTOR
+    this.quizCount = 0,
   });
 }
 
