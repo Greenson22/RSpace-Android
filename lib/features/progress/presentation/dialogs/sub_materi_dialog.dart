@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
 import 'move_sub_materi_dialog.dart';
-// ==> IMPORT DIALOG BARU <==
 import 'move_sub_materi_topic_dialog.dart';
 
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
@@ -300,7 +299,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK PINDAH ANTAR TOPIK <==
   void _moveSelectedItemsToTopic(BuildContext context) async {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -368,7 +366,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                   title: Text('${_selectedSubMateri.length} dipilih'),
                   backgroundColor: Theme.of(context).primaryColorDark,
                   actions: [
-                    // ==> TOMBOL PINDAH KE TOPIK LAIN <==
                     IconButton(
                       icon: const Icon(Icons.topic_outlined),
                       onPressed: _selectedSubMateri.isNotEmpty
@@ -578,8 +575,8 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                       _showEditSubMateriDialog(context, sub);
                                     } else if (value == 'delete') {
                                       _showDeleteConfirmDialog(context, sub);
-                                    } else if (value == 'move_bottom') {
-                                      provider.moveSubMateriToBottom(
+                                    } else if (value == 'finish_and_move') {
+                                      provider.finishAndMoveSubMateriToBottom(
                                         currentSubject,
                                         sub,
                                       );
@@ -601,6 +598,17 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                               color: Colors.green,
                                             ),
                                             title: Text('Selesai'),
+                                          ),
+                                        ),
+                                        // ==> OPSI MENU BARU <==
+                                        const PopupMenuItem<String>(
+                                          value: 'finish_and_move',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.playlist_add_check,
+                                              color: Colors.green,
+                                            ),
+                                            title: Text('Selesai & Pindah'),
                                           ),
                                         ),
                                         const PopupMenuItem<String>(
@@ -629,16 +637,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                           child: ListTile(
                                             leading: Icon(Icons.edit_outlined),
                                             title: Text('Edit Nama'),
-                                          ),
-                                        ),
-                                        const PopupMenuItem<String>(
-                                          value: 'move_bottom',
-                                          child: ListTile(
-                                            leading: Icon(
-                                              Icons
-                                                  .keyboard_double_arrow_down_outlined,
-                                            ),
-                                            title: Text('Pindahkan ke Bawah'),
                                           ),
                                         ),
                                         const PopupMenuDivider(),

@@ -90,6 +90,27 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<void> finishAndMoveSubMateriToBottom(
+    ProgressSubject subject,
+    SubMateri subMateri,
+  ) async {
+    // 1. Update status dan tanggal
+    subMateri.progress = 'selesai';
+    subMateri.finishedDate = DateFormat(
+      'yyyy-MM-dd HH:mm',
+    ).format(DateTime.now());
+
+    // 2. Pindahkan ke bawah
+    subject.subMateri.remove(subMateri);
+    subject.subMateri.add(subMateri);
+
+    // 3. Update progres parent dan simpan
+    _updateParentSubjectProgress(subject);
+    await save();
+    notifyListeners();
+  }
+
   Future<void> addSubject(String name) async {
     final newSubject = ProgressSubject(
       namaMateri: name,
@@ -263,29 +284,23 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK PINDAH ANTAR TOPIK <==
   Future<void> moveSelectedSubMateriToAnotherTopic(
     ProgressSubject fromSubject,
     Set<SubMateri> subMateriToMove,
     ProgressTopic toTopic,
     ProgressSubject toSubject,
   ) async {
-    // 1. Hapus dari sumber dan update progresnya
     fromSubject.subMateri.removeWhere((sub) => subMateriToMove.contains(sub));
     _updateParentSubjectProgress(fromSubject);
-    await save(); // Simpan perubahan pada topik sumber
+    await save();
 
-    // 2. Tambahkan ke tujuan dan update progresnya
     final destinationSubjectInTopic = toTopic.subjects.firstWhere(
       (s) => s.namaMateri == toSubject.namaMateri,
     );
     destinationSubjectInTopic.subMateri.addAll(subMateriToMove);
     _updateParentSubjectProgress(destinationSubjectInTopic);
-    await _progressService.saveTopic(
-      toTopic,
-    ); // Simpan perubahan pada topik tujuan
+    await _progressService.saveTopic(toTopic);
 
-    // 3. Beri tahu UI untuk update
     notifyListeners();
   }
 
