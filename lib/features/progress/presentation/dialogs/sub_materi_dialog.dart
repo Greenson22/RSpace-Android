@@ -6,8 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
-// ==> IMPORT DIALOG BARU <==
 import 'move_sub_materi_dialog.dart';
+// ==> IMPORT DIALOG BARU <==
+import 'move_sub_materi_topic_dialog.dart';
 
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
   showDialog(
@@ -276,7 +277,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN ITEM TERPILIH <==
   void _moveSelectedItems(BuildContext context) async {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -292,6 +292,29 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
         widget.subject,
         _selectedSubMateri,
         destinationSubject,
+      );
+      setState(() {
+        _selectedSubMateri.clear();
+        _isSelectionMode = false;
+      });
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK PINDAH ANTAR TOPIK <==
+  void _moveSelectedItemsToTopic(BuildContext context) async {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+
+    final result = await showMoveSubMateriToTopicDialog(context);
+
+    if (result != null) {
+      await provider.moveSelectedSubMateriToAnotherTopic(
+        widget.subject,
+        _selectedSubMateri,
+        result.topic,
+        result.subject,
       );
       setState(() {
         _selectedSubMateri.clear();
@@ -345,7 +368,14 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                   title: Text('${_selectedSubMateri.length} dipilih'),
                   backgroundColor: Theme.of(context).primaryColorDark,
                   actions: [
-                    // ==> TOMBOL PINDAHKAN DITAMBAHKAN DI SINI <==
+                    // ==> TOMBOL PINDAH KE TOPIK LAIN <==
+                    IconButton(
+                      icon: const Icon(Icons.topic_outlined),
+                      onPressed: _selectedSubMateri.isNotEmpty
+                          ? () => _moveSelectedItemsToTopic(context)
+                          : null,
+                      tooltip: 'Pindahkan ke Topik Lain',
+                    ),
                     IconButton(
                       icon: const Icon(Icons.drive_file_move_outline),
                       onPressed: _selectedSubMateri.isNotEmpty
