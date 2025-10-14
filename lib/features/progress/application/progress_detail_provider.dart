@@ -166,7 +166,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> addSubMateriInRange(
     ProgressSubject subject,
     String prefix,
@@ -192,9 +191,7 @@ class ProgressDetailProvider with ChangeNotifier {
         if (firstFinishedIndex != -1) {
           subject.subMateri.insertAll(firstFinishedIndex, newSubMateriList);
         } else {
-          subject.subMateri.addAll(
-            newSubMateriList,
-          ); // Fallback ke paling bawah
+          subject.subMateri.addAll(newSubMateriList);
         }
         break;
       case SubMateriInsertPosition.bottom:
@@ -238,6 +235,17 @@ class ProgressDetailProvider with ChangeNotifier {
     SubMateri subMateri,
   ) async {
     subject.subMateri.remove(subMateri);
+    _updateParentSubjectProgress(subject);
+    await save();
+    notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MENGHAPUS ITEM TERPILIH <==
+  Future<void> deleteSelectedSubMateri(
+    ProgressSubject subject,
+    Set<SubMateri> subMateriToDelete,
+  ) async {
+    subject.subMateri.removeWhere((sub) => subMateriToDelete.contains(sub));
     _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();

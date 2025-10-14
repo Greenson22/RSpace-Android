@@ -28,6 +28,9 @@ class SubMateriDialog extends StatefulWidget {
 
 class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isReorderMode = false;
+  // ==> STATE BARU UNTUK SELEKSI <==
+  bool _isSelectionMode = false;
+  final Set<SubMateri> _selectedSubMateri = {};
 
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
@@ -121,7 +124,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENANYAKAN POSISI TERLEBIH DAHULU <==
   void _showAddRangedSubMateriDialog(BuildContext context) {
     showDialog<SubMateriInsertPosition>(
       context: context,
@@ -269,6 +271,44 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK HAPUS ITEM TERPILIH <==
+  void _deleteSelectedItems(BuildContext context) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text(
+          'Anda yakin ingin menghapus ${_selectedSubMateri.length} sub-materi yang dipilih?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              await provider.deleteSelectedSubMateri(
+                widget.subject,
+                _selectedSubMateri,
+              );
+              setState(() {
+                _selectedSubMateri.clear();
+                _isSelectionMode = false;
+              });
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getProgressColor(String progress) {
     switch (progress) {
       case 'selesai':
@@ -295,42 +335,83 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
             ? Color(currentSubject.backgroundColor!)
             : Theme.of(context).primaryColor;
 
+        final bool areAllSelected =
+            _selectedSubMateri.length == currentSubject.subMateri.length &&
+            currentSubject.subMateri.isNotEmpty;
+
         return AlertDialog(
-          title: Container(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
-            decoration: BoxDecoration(
-              color: subjectColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(28.0),
-                topRight: Radius.circular(28.0),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    currentSubject.namaMateri,
-                    style: const TextStyle(color: Colors.white),
+          // ==> KONTEN TITLE DIPERBARUI DENGAN APPBAR <==
+          title: _isSelectionMode
+              ? AppBar(
+                  leading: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _isSelectionMode = false;
+                        _selectedSubMateri.clear();
+                      });
+                    },
+                  ),
+                  title: Text('${_selectedSubMateri.length} dipilih'),
+                  backgroundColor: Theme.of(context).primaryColorDark,
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                        areAllSelected ? Icons.deselect : Icons.select_all,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (areAllSelected) {
+                            _selectedSubMateri.clear();
+                          } else {
+                            _selectedSubMateri.addAll(currentSubject.subMateri);
+                          }
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: _selectedSubMateri.isNotEmpty
+                          ? () => _deleteSelectedItems(context)
+                          : null,
+                    ),
+                  ],
+                )
+              : Container(
+                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 8.0, 16.0),
+                  decoration: BoxDecoration(
+                    color: subjectColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(28.0),
+                      topRight: Radius.circular(28.0),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          currentSubject.namaMateri,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _isReorderMode ? Icons.check : Icons.sort,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isReorderMode = !_isReorderMode;
+                          });
+                        },
+                        tooltip: _isReorderMode
+                            ? 'Selesai Mengurutkan'
+                            : 'Urutkan Daftar',
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    _isReorderMode ? Icons.check : Icons.sort,
-                    color: Colors.white,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isReorderMode = !_isReorderMode;
-                    });
-                  },
-                  tooltip: _isReorderMode
-                      ? 'Selesai Mengurutkan'
-                      : 'Urutkan Daftar',
-                ),
-              ],
-            ),
-          ),
           titlePadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 24.0),
           content: SizedBox(
@@ -344,7 +425,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     itemBuilder: (context, index) {
                       final sub = currentSubject.subMateri[index];
                       return Card(
-                        key: ValueKey(sub.namaMateri),
+                        key: ValueKey(sub.hashCode),
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
                         child: ListTile(
                           title: Text(sub.namaMateri),
@@ -368,6 +449,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     itemCount: currentSubject.subMateri.length,
                     itemBuilder: (context, index) {
                       final sub = currentSubject.subMateri[index];
+                      final isSelected = _selectedSubMateri.contains(sub);
                       final progressColor = _getProgressColor(sub.progress);
 
                       final List<InlineSpan> subtitleSpans = [
@@ -417,15 +499,42 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 6.0),
                         elevation: 2.0,
+                        color: isSelected
+                            ? Theme.of(context).primaryColor.withOpacity(0.2)
+                            : null,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                         child: ListTile(
-                          leading: Icon(
-                            Icons.circle,
-                            color: progressColor,
-                            size: 12.0,
-                          ),
+                          onTap: () {
+                            if (_isSelectionMode) {
+                              setState(() {
+                                if (isSelected) {
+                                  _selectedSubMateri.remove(sub);
+                                } else {
+                                  _selectedSubMateri.add(sub);
+                                }
+                              });
+                            }
+                          },
+                          onLongPress: () {
+                            setState(() {
+                              _isSelectionMode = true;
+                              _selectedSubMateri.add(sub);
+                            });
+                          },
+                          leading: _isSelectionMode
+                              ? Icon(
+                                  isSelected
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  color: Theme.of(context).primaryColor,
+                                )
+                              : Icon(
+                                  Icons.circle,
+                                  color: progressColor,
+                                  size: 12.0,
+                                ),
                           title: Text(sub.namaMateri),
                           subtitle: RichText(
                             text: TextSpan(
@@ -433,91 +542,95 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                               children: subtitleSpans,
                             ),
                           ),
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                _showEditSubMateriDialog(context, sub);
-                              } else if (value == 'delete') {
-                                _showDeleteConfirmDialog(context, sub);
-                              } else if (value == 'move_bottom') {
-                                provider.moveSubMateriToBottom(
-                                  currentSubject,
-                                  sub,
-                                );
-                              } else {
-                                provider.updateSubMateriProgress(
-                                  currentSubject,
-                                  sub,
-                                  value,
-                                );
-                              }
-                            },
-                            itemBuilder: (BuildContext context) =>
-                                <PopupMenuEntry<String>>[
-                                  const PopupMenuItem<String>(
-                                    value: 'selesai',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.check_circle_outline,
-                                        color: Colors.green,
-                                      ),
-                                      title: Text('Selesai'),
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'sementara',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.hourglass_bottom_outlined,
-                                        color: Colors.orange,
-                                      ),
-                                      title: Text('Sementara'),
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'belum',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.circle_outlined,
-                                        color: Colors.grey,
-                                      ),
-                                      title: Text('Belum'),
-                                    ),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  const PopupMenuItem<String>(
-                                    value: 'edit',
-                                    child: ListTile(
-                                      leading: Icon(Icons.edit_outlined),
-                                      title: Text('Edit Nama'),
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'move_bottom',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons
-                                            .keyboard_double_arrow_down_outlined,
-                                      ),
-                                      title: Text('Pindahkan ke Bawah'),
-                                    ),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  const PopupMenuItem<String>(
-                                    value: 'delete',
-                                    child: ListTile(
-                                      leading: Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      title: Text(
-                                        'Hapus',
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                          ),
+                          trailing: _isSelectionMode
+                              ? null
+                              : PopupMenuButton<String>(
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      _showEditSubMateriDialog(context, sub);
+                                    } else if (value == 'delete') {
+                                      _showDeleteConfirmDialog(context, sub);
+                                    } else if (value == 'move_bottom') {
+                                      provider.moveSubMateriToBottom(
+                                        currentSubject,
+                                        sub,
+                                      );
+                                    } else {
+                                      provider.updateSubMateriProgress(
+                                        currentSubject,
+                                        sub,
+                                        value,
+                                      );
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) =>
+                                      <PopupMenuEntry<String>>[
+                                        const PopupMenuItem<String>(
+                                          value: 'selesai',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.check_circle_outline,
+                                              color: Colors.green,
+                                            ),
+                                            title: Text('Selesai'),
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'sementara',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.hourglass_bottom_outlined,
+                                              color: Colors.orange,
+                                            ),
+                                            title: Text('Sementara'),
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'belum',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.circle_outlined,
+                                              color: Colors.grey,
+                                            ),
+                                            title: Text('Belum'),
+                                          ),
+                                        ),
+                                        const PopupMenuDivider(),
+                                        const PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: ListTile(
+                                            leading: Icon(Icons.edit_outlined),
+                                            title: Text('Edit Nama'),
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'move_bottom',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons
+                                                  .keyboard_double_arrow_down_outlined,
+                                            ),
+                                            title: Text('Pindahkan ke Bawah'),
+                                          ),
+                                        ),
+                                        const PopupMenuDivider(),
+                                        const PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.red,
+                                            ),
+                                            title: Text(
+                                              'Hapus',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                ),
                         ),
                       );
                     },
@@ -525,7 +638,9 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           ),
           actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            if (currentSubject.subMateri.isNotEmpty && !_isReorderMode)
+            if (currentSubject.subMateri.isNotEmpty &&
+                !_isReorderMode &&
+                !_isSelectionMode)
               TextButton(
                 onPressed: () =>
                     _showDeleteAllConfirmDialog(context, currentSubject),
@@ -554,7 +669,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
 
 class _AddRangedSubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
-  // ==> TAMBAHKAN PARAMETER POSISI <==
   final SubMateriInsertPosition position;
 
   const _AddRangedSubMateriDialog({
@@ -669,7 +783,6 @@ class _AddRangedSubMateriDialogState extends State<_AddRangedSubMateriDialog> {
                 prefix,
                 start,
                 end,
-                // ==> KIRIM POSISI KE PROVIDER <==
                 position: widget.position,
               );
               Navigator.of(context).pop();
