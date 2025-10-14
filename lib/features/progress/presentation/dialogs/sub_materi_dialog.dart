@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
+// ==> IMPORT DIALOG BARU <==
+import 'move_sub_materi_dialog.dart';
 
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
   showDialog(
@@ -28,7 +30,6 @@ class SubMateriDialog extends StatefulWidget {
 
 class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isReorderMode = false;
-  // ==> STATE BARU UNTUK SELEKSI <==
   bool _isSelectionMode = false;
   final Set<SubMateri> _selectedSubMateri = {};
 
@@ -238,40 +239,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
-  void _showDeleteAllConfirmDialog(
-    BuildContext context,
-    ProgressSubject subject,
-  ) {
-    final provider = Provider.of<ProgressDetailProvider>(
-      context,
-      listen: false,
-    );
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Hapus Semua Sub-Materi?'),
-        content: Text(
-          'Anda yakin ingin menghapus semua ${subject.subMateri.length} sub-materi dari "${subject.namaMateri}"? Tindakan ini tidak dapat dibatalkan.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () {
-              provider.deleteAllSubMateri(subject);
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Ya, Hapus Semua'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==> FUNGSI BARU UNTUK HAPUS ITEM TERPILIH <==
   void _deleteSelectedItems(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -309,6 +276,30 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN ITEM TERPILIH <==
+  void _moveSelectedItems(BuildContext context) async {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    final destinationSubject = await showMoveSubMateriDialog(
+      context,
+      widget.subject,
+    );
+
+    if (destinationSubject != null) {
+      await provider.moveSelectedSubMateri(
+        widget.subject,
+        _selectedSubMateri,
+        destinationSubject,
+      );
+      setState(() {
+        _selectedSubMateri.clear();
+        _isSelectionMode = false;
+      });
+    }
+  }
+
   Color _getProgressColor(String progress) {
     switch (progress) {
       case 'selesai':
@@ -340,7 +331,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
             currentSubject.subMateri.isNotEmpty;
 
         return AlertDialog(
-          // ==> KONTEN TITLE DIPERBARUI DENGAN APPBAR <==
           title: _isSelectionMode
               ? AppBar(
                   leading: IconButton(
@@ -355,6 +345,14 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                   title: Text('${_selectedSubMateri.length} dipilih'),
                   backgroundColor: Theme.of(context).primaryColorDark,
                   actions: [
+                    // ==> TOMBOL PINDAHKAN DITAMBAHKAN DI SINI <==
+                    IconButton(
+                      icon: const Icon(Icons.drive_file_move_outline),
+                      onPressed: _selectedSubMateri.isNotEmpty
+                          ? () => _moveSelectedItems(context)
+                          : null,
+                      tooltip: 'Pindahkan ke Materi Lain',
+                    ),
                     IconButton(
                       icon: Icon(
                         areAllSelected ? Icons.deselect : Icons.select_all,
@@ -636,30 +634,24 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     },
                   ),
           ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsAlignment: MainAxisAlignment.end,
           actions: [
-            if (currentSubject.subMateri.isNotEmpty &&
-                !_isReorderMode &&
-                !_isSelectionMode)
-              TextButton(
-                onPressed: () =>
-                    _showDeleteAllConfirmDialog(context, currentSubject),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Hapus Semua'),
+            if (_isSelectionMode || _isReorderMode)
+              const SizedBox.shrink()
+            else
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => _showAddSubMateriDialog(context),
+                    child: const Text('Tambah Sub-Materi'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Tutup'),
+                  ),
+                ],
               ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () => _showAddSubMateriDialog(context),
-                  child: const Text('Tambah Sub-Materi'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Tutup'),
-                ),
-              ],
-            ),
           ],
         );
       },

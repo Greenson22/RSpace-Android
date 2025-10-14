@@ -240,7 +240,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGHAPUS ITEM TERPILIH <==
   Future<void> deleteSelectedSubMateri(
     ProgressSubject subject,
     Set<SubMateri> subMateriToDelete,
@@ -248,6 +247,25 @@ class ProgressDetailProvider with ChangeNotifier {
     subject.subMateri.removeWhere((sub) => subMateriToDelete.contains(sub));
     _updateParentSubjectProgress(subject);
     await save();
+    notifyListeners();
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN SUB-MATERI <==
+  Future<void> moveSelectedSubMateri(
+    ProgressSubject fromSubject,
+    Set<SubMateri> subMateriToMove,
+    ProgressSubject toSubject,
+  ) async {
+    // 1. Hapus dari sumber
+    fromSubject.subMateri.removeWhere((sub) => subMateriToMove.contains(sub));
+    // 2. Tambahkan ke tujuan
+    toSubject.subMateri.addAll(subMateriToMove);
+    // 3. Update progres kedua materi yang terpengaruh
+    _updateParentSubjectProgress(fromSubject);
+    _updateParentSubjectProgress(toSubject);
+    // 4. Simpan perubahan ke file
+    await save();
+    // 5. Beri tahu UI untuk update
     notifyListeners();
   }
 
