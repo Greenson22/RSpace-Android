@@ -174,7 +174,9 @@ class _AboutPageState extends State<AboutPage>
                 icon: const Icon(Icons.link),
                 label: const Text('LinkedIn'),
                 onPressed: () => launchUrl(
-                  Uri.parse('https://www.linkedin.com/in/fr-gerung/'),
+                  Uri.parse(
+                    'https://linkedin.com/in/frendy-rikal-gerung-bb450b38a/',
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
