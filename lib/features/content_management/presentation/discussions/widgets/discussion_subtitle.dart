@@ -59,7 +59,8 @@ class DiscussionSubtitle extends StatelessWidget {
     // ========== PERBAIKAN UTAMA DI SINI ==========
     // Secara manual menghitung ukuran font berdasarkan skala global.
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseFontSize = 11.0; // Ukuran dasar yang lebih kecil
+    // ===== UKURAN FONT DIPERKECIL DI SINI =====
+    const double baseFontSize = 10.0;
     final scaledFontSize = baseFontSize * textScaleFactor;
 
     return RichText(

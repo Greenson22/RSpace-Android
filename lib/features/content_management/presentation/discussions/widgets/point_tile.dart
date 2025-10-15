@@ -105,10 +105,31 @@ class PointTile extends StatelessWidget {
         ? defaultTextColor
         : inactiveColor;
 
-    // ========== PERBAIKAN UTAMA DI SINI ==========
+    // ========== AWAL PERBAIKAN UTAMA ==========
+    // 1. Ambil gaya teks default dari tema untuk judul ListTile.
+    // Gaya ini sudah diskalakan oleh pengaturan global.
+    final defaultTitleStyle =
+        ListTileTheme.of(context).titleTextStyle ??
+        Theme.of(context).textTheme.titleMedium!;
+
+    // 2. Buat gaya baru dengan hanya mengubah warna dan dekorasi,
+    //    mempertahankan ukuran font yang sudah diskalakan.
+    final pointTitleStyle = defaultTitleStyle.copyWith(
+      color: effectiveTextColor,
+      decoration: isFinished ? TextDecoration.lineThrough : null,
+    );
+
+    // 3. Lakukan hal yang sama untuk subtitle (Date & Code).
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseFontSize = 11.0;
+    // ===== UKURAN FONT DIPERKECIL DI SINI =====
+    const double baseFontSize = 10.0;
     final scaledFontSize = baseFontSize * textScaleFactor;
+
+    final subtitleStyle = TextStyle(
+      fontSize: scaledFontSize,
+      color: effectiveTextColor,
+    );
+    // ========== AKHIR PERBAIKAN UTAMA ==========
 
     return ListTile(
       dense: true,
@@ -120,21 +141,13 @@ class PointTile extends StatelessWidget {
         isFinished ? Icons.check_circle_outline : Icons.arrow_right,
         color: isFinished ? Colors.green : Colors.grey,
       ),
-      title: LinkifyText(
-        point.pointText,
-        style: TextStyle(
-          color: effectiveTextColor,
-          decoration: isFinished ? TextDecoration.lineThrough : null,
-        ),
-      ),
+      // 4. Terapkan gaya baru ke title
+      title: LinkifyText(point.pointText, style: pointTitleStyle),
       subtitle: isFinished
           ? Text('Selesai pada: ${point.finish_date ?? ''}')
           : RichText(
               text: TextSpan(
-                style: TextStyle(
-                  fontSize: scaledFontSize,
-                  color: effectiveTextColor,
-                ),
+                style: subtitleStyle, // 5. Terapkan gaya baru ke subtitle
                 children: [
                   const TextSpan(text: 'Date: '),
                   TextSpan(
