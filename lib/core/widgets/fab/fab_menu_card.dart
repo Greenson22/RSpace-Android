@@ -17,7 +17,8 @@ import '../../../features/content_management/application/subject_provider.dart';
 import '../../../features/my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../features/content_management/domain/models/topic_model.dart';
 import '../../../main.dart';
-import 'package:my_aplication/features/progress/presentation/pages/progress_page.dart'; // Import halaman Progress
+import 'package:my_aplication/features/progress/presentation/pages/progress_page.dart';
+import 'package:my_aplication/features/notes/presentation/pages/note_topic_page.dart';
 
 class FabMenuCard extends StatefulWidget {
   final VoidCallback closeMenu;
@@ -210,12 +211,18 @@ class _FabMenuCardState extends State<FabMenuCard> {
                 dense: true,
                 onTap: () => _navigateToPage(context, const StatisticsPage()),
               ),
-              // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
               ListTile(
                 leading: const Icon(Icons.show_chart),
                 title: showText ? const Text('Progress') : null,
                 dense: true,
                 onTap: () => _navigateToPage(context, const ProgressPage()),
+              ),
+              // ==> ITEM "CATATAN" DITAMBAHKAN DI SINI <==
+              ListTile(
+                leading: const Icon(Icons.note_alt_outlined),
+                title: showText ? const Text('Catatan') : null,
+                dense: true,
+                onTap: () => _navigateToPage(context, const NoteTopicPage()),
               ),
               if (Platform.isAndroid || Platform.isIOS)
                 ListTile(
@@ -241,9 +248,10 @@ class _FabMenuCardState extends State<FabMenuCard> {
                 dense: true,
                 onTap: () => _navigateToPage(context, const FileListPage()),
               ),
+              // ==> ITEM "BACKUP" DIPERBARUI DAN DITEMPATKAN DI BAWAH <==
               ListTile(
                 leading: const Icon(Icons.settings_backup_restore_rounded),
-                title: showText ? const Text('Manajemen Backup') : null,
+                title: showText ? const Text('Backup & Sync Otomatis') : null,
                 dense: true,
                 onTap: () =>
                     _navigateToPage(context, const BackupManagementPage()),
