@@ -148,17 +148,20 @@ class _MyTasksViewState extends State<_MyTasksView> {
 
     final isAnyReordering = taskProvider.isCategoryReorderEnabled;
 
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final isChristmas = themeProvider.isChristmasTheme;
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: handleKeyEvent,
       child: Scaffold(
-        backgroundColor: null,
+        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: taskProvider.isTaskSelectionMode
             ? _buildTaskSelectionAppBar(taskProvider)
-            : _buildDefaultAppBar(taskProvider, isChristmas),
+            : _buildDefaultAppBar(taskProvider, isChristmas, isTransparent),
         body: WillPopScope(
           onWillPop: () async {
             if (taskProvider.isTaskSelectionMode) {
@@ -199,10 +202,14 @@ class _MyTasksViewState extends State<_MyTasksView> {
     );
   }
 
-  AppBar _buildDefaultAppBar(MyTaskProvider taskProvider, bool isChristmas) {
+  AppBar _buildDefaultAppBar(
+    MyTaskProvider taskProvider,
+    bool isChristmas,
+    bool isTransparent,
+  ) {
     return AppBar(
-      backgroundColor: null,
-      elevation: isChristmas ? 0 : null,
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      elevation: isChristmas || isTransparent ? 0 : null,
       title: const Text('My Tasks'),
       actions: [
         if (!taskProvider.isCategoryReorderEnabled) ...[
@@ -241,7 +248,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
             taskProvider.toggleCategoryReorder();
           },
         ),
-        // ==> PERUBAHAN DI SINI: Tombol hapus semua centang dihilangkan
       ],
     );
   }

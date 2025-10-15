@@ -9,6 +9,8 @@ import '../../domain/models/progress_topic_model.dart';
 import 'progress_detail_page.dart';
 import '../../application/progress_detail_provider.dart';
 import '../widgets/progress_topic_grid_tile.dart';
+// ==> IMPORT BARU <==
+import '../../../settings/application/theme_provider.dart';
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
@@ -35,6 +37,11 @@ class _ProgressViewState extends State<_ProgressView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context);
+    // ==> TAMBAHKAN KODE BARU DI SINI <==
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     int _getCrossAxisCount(double screenWidth) {
       if (screenWidth > 1200) return 5;
@@ -44,7 +51,10 @@ class _ProgressViewState extends State<_ProgressView> {
     }
 
     return Scaffold(
+      backgroundColor: isTransparent ? Colors.transparent : null,
       appBar: AppBar(
+        backgroundColor: isTransparent ? Colors.transparent : null,
+        elevation: isTransparent ? 0 : null,
         title: const Text('Progress Belajar'),
         actions: [
           IconButton(
@@ -107,7 +117,6 @@ class _ProgressViewState extends State<_ProgressView> {
                       },
                       onEdit: () => _showEditTopicDialog(context, topic),
                       onDelete: () => _showDeleteConfirmDialog(context, topic),
-                      // Hubungkan callback baru
                       onIconChange: () => _showEditIconDialog(context, topic),
                     );
                   },
@@ -123,7 +132,6 @@ class _ProgressViewState extends State<_ProgressView> {
     );
   }
 
-  // ... (Fungsi _showAddTopicDialog, _showEditTopicDialog, _showDeleteConfirmDialog tidak berubah) ...
   void _showAddTopicDialog(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context, listen: false);
     final controller = TextEditingController();
@@ -212,7 +220,6 @@ class _ProgressViewState extends State<_ProgressView> {
     );
   }
 
-  // Fungsi baru untuk memanggil dialog ikon
   void _showEditIconDialog(BuildContext context, ProgressTopic topic) {
     final provider = Provider.of<ProgressProvider>(context, listen: false);
     showIconPickerDialog(

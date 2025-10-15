@@ -1,4 +1,4 @@
-// lib/presentation/pages/topics_page.dart
+// lib/features/content_management/presentation/topics/topics_page.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -14,7 +14,9 @@ import 'dialogs/topic_dialogs.dart';
 import 'widgets/topic_grid_tile.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../core/widgets/ad_banner_widget.dart'; // Impor widget iklan
+import '../../../../core/widgets/ad_banner_widget.dart';
+// ==> IMPORT BARU <==
+import '../../../settings/application/theme_provider.dart';
 
 class TopicsPage extends StatelessWidget {
   const TopicsPage({super.key});
@@ -64,7 +66,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   }
 
   void _handleKeyEvent(RawKeyEvent event) {
-    // ## PERBAIKAN: Abaikan event dari tombol Alt ##
     if (event.logicalKey == LogicalKeyboardKey.altLeft ||
         event.logicalKey == LogicalKeyboardKey.altRight) {
       return;
@@ -232,15 +233,19 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        backgroundColor: null,
+        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: AppBar(
-          backgroundColor: null,
-          elevation: null,
+          backgroundColor: isTransparent ? Colors.transparent : null,
+          elevation: isTransparent ? 0 : null,
           title: topicProvider.isReorderModeEnabled
               ? const Text('Urutkan Topik')
               : (_isSearching
@@ -298,10 +303,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
           ],
         ),
         body: Column(
-          // Bungkus dengan Column
           children: [
             Expanded(
-              // Bungkus konten utama dengan Expanded
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 600) {
@@ -312,7 +315,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                 },
               ),
             ),
-            const AdBannerWidget(), // Tambahkan widget iklan di sini
+            const AdBannerWidget(),
           ],
         ),
         floatingActionButton: topicProvider.isReorderModeEnabled
@@ -408,7 +411,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         return ReorderableGridView.builder(
           padding: const EdgeInsets.all(16.0),
           itemCount: topicsToShow.length,
-          dragEnabled: isReorderActive, // ==> PERUBAHAN DI SINI <==
+          dragEnabled: isReorderActive,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: (MediaQuery.of(context).size.width / 200).floor(),
             crossAxisSpacing: 16,

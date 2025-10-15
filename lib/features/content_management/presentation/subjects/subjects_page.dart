@@ -20,8 +20,9 @@ import 'package:my_aplication/features/content_management/presentation/subjects/
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_password_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
-// ==> IMPORT DIALOG BARU <==
 import 'dialogs/view_json_dialog.dart';
+// ==> IMPORT BARU <==
+import '../../../settings/application/theme_provider.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -131,7 +132,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENAMPILKAN DIALOG JSON <==
   Future<void> _showJsonContent(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final content = await provider.getRawJsonContent(subject);
@@ -599,13 +599,20 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
+    // ==> TAMBAHKAN KODE BARU DI SINI <==
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
+
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
+        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: provider.isSelectionMode
             ? _buildSelectionAppBar(provider)
-            : _buildDefaultAppBar(provider),
+            : _buildDefaultAppBar(provider, isTransparent),
         body: Column(
           children: [
             Expanded(
@@ -661,8 +668,10 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  AppBar _buildDefaultAppBar(SubjectProvider provider) {
+  AppBar _buildDefaultAppBar(SubjectProvider provider, bool isTransparent) {
     return AppBar(
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      elevation: isTransparent ? 0 : null,
       title: _isSearching
           ? _buildSearchField()
           : Text(
@@ -697,7 +706,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
           onPressed: () => showSubjectSortDialog(context: context),
         ),
       ],
-      elevation: 0,
     );
   }
 

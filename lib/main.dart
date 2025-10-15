@@ -63,27 +63,35 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
-          // ==> PERUBAHAN UTAMA ADA DI SINI <==
           builder: (context, child) {
-            // Dapatkan data media query saat ini
-            final mediaQuery = MediaQuery.of(context);
-            // Buat data media query baru dengan textScaleFactor yang sudah diubah
-            final scaledMediaQuery = mediaQuery.copyWith(
-              textScaleFactor: themeProvider.uiScaleFactor,
-            );
-
-            return MediaQuery(
-              data: scaledMediaQuery,
-              child: Stack(
-                children: [
-                  child!,
-                  if (themeProvider.isChristmasTheme) const SnowWidget(),
-                  if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
-                  if (themeProvider.showFloatingCharacter)
-                    const FloatingCharacter(),
-                  if (themeProvider.showQuickFab) const DraggableFabView(),
-                ],
-              ),
+            final backgroundImagePath = themeProvider.backgroundImagePath;
+            return Stack(
+              children: [
+                // === PERUBAHAN UTAMA DI SINI ===
+                // Container ini sekarang membungkus seluruh aplikasi (child!)
+                Container(
+                  decoration: backgroundImagePath != null
+                      ? BoxDecoration(
+                          image: DecorationImage(
+                            image: FileImage(File(backgroundImagePath)),
+                            fit: BoxFit.cover,
+                            colorFilter: ColorFilter.mode(
+                              Colors.black.withOpacity(0.3),
+                              BlendMode.darken,
+                            ),
+                          ),
+                        )
+                      : null,
+                  child:
+                      child!, // child! (halaman) sekarang ada di dalam Container
+                ),
+                // =================================
+                if (themeProvider.isChristmasTheme) const SnowWidget(),
+                if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
+                if (themeProvider.showFloatingCharacter)
+                  const FloatingCharacter(),
+                if (themeProvider.showQuickFab) const DraggableFabView(),
+              ],
             );
           },
           home: const DashboardPage(),
