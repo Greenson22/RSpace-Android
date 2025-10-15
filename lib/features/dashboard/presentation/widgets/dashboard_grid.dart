@@ -19,6 +19,8 @@ import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_topic_page.dart';
+// ==> IMPORT HALAMAN BARU <==
+import 'package:my_aplication/features/notes/presentation/pages/note_topic_page.dart';
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -29,6 +31,11 @@ List<VoidCallback> buildDashboardActions(
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
+    ),
+    // ==> TAMBAHKAN AKSI NAVIGASI BARU <==
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NoteTopicPage()),
     ),
     () => Navigator.push(
       context,
@@ -113,6 +120,13 @@ class DashboardGrid extends StatelessWidget {
             'label': 'Topics',
             'subtitle': 'Kelola semua materi Anda',
             'colors': AppTheme.gradientColors1,
+          },
+          // ==> TAMBAHKAN ITEM BARU DI SINI <==
+          {
+            'icon': Icons.note_alt_outlined,
+            'label': 'Catatan',
+            'subtitle': 'Simpan catatan cepat Anda',
+            'colors': AppTheme.gradientColors6,
           },
           {
             'icon': Icons.menu_book_outlined,

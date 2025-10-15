@@ -147,6 +147,9 @@ class PathService {
   Future<String> get contentsPath async =>
       path.join(await _baseDataPath, 'contents');
 
+  // ==> TAMBAHKAN PATH BARU DI SINI <==
+  Future<String> get notesPath async => path.join(await contentsPath, 'notes');
+
   Future<String> get assetsPath async {
     final dataPath = await _baseDataPath;
     final assetsDir = Directory(path.join(dataPath, 'assets'));
