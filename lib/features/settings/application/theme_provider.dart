@@ -29,8 +29,11 @@ class ThemeProvider with ChangeNotifier {
   bool get isUnderwaterTheme => _settings?.isUnderwaterTheme ?? false;
   String? get backgroundImagePath => _localBackgroundImagePath;
   double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
-  double get uiScaleFactor =>
-      _settings?.uiScaleFactor ?? 1.0; // ==> GETTER BARU
+  double get uiScaleFactor => _settings?.uiScaleFactor ?? 1.0;
+  // ==> GETTER BARU DITAMBAHKAN <==
+  double get headerOpacity => _settings?.headerOpacity ?? 0.8;
+  double get quickAccessOpacity => _settings?.quickAccessOpacity ?? 1.0;
+  double get listItemOpacity => _settings?.listItemOpacity ?? 1.0;
   bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
   bool get showQuickFab => _settings?.showQuickFab ?? true;
   String get quickFabIcon => _settings?.quickFabIcon ?? '➕';
@@ -89,6 +92,9 @@ class ThemeProvider with ChangeNotifier {
     Color? color,
     double? dashboardScale,
     double? uiScale,
+    double? headerOpacity,
+    double? quickAccessOpacity,
+    double? listItemOpacity,
   }) {
     if (_settings == null) return;
     _settings = _settings!.copyWith(
@@ -97,7 +103,10 @@ class ThemeProvider with ChangeNotifier {
       isUnderwaterTheme: isUnderwater,
       primaryColorValue: color?.value,
       dashboardItemScale: dashboardScale,
-      uiScaleFactor: uiScale, // ==> TAMBAHKAN uiScale
+      uiScaleFactor: uiScale,
+      headerOpacity: headerOpacity,
+      quickAccessOpacity: quickAccessOpacity,
+      listItemOpacity: listItemOpacity,
     );
 
     if (color != null) {

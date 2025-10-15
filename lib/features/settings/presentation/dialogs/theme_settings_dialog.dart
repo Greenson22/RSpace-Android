@@ -28,6 +28,10 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
   late Color _selectedColor;
   late double _dashboardScale;
   late double _uiScale;
+  // ==> STATE BARU DITAMBAHKAN <==
+  late double _headerOpacity;
+  late double _quickAccessOpacity;
+  late double _listItemOpacity;
   late bool _openInAppBrowser;
 
   @override
@@ -40,6 +44,10 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     _selectedColor = provider.primaryColor;
     _dashboardScale = provider.dashboardItemScale;
     _uiScale = provider.uiScaleFactor;
+    // ==> INISIALISASI STATE BARU <==
+    _headerOpacity = provider.headerOpacity;
+    _quickAccessOpacity = provider.quickAccessOpacity;
+    _listItemOpacity = provider.listItemOpacity;
     _openInAppBrowser = provider.openInAppBrowser;
   }
 
@@ -53,6 +61,10 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
       color: _selectedColor,
       dashboardScale: _dashboardScale,
       uiScale: _uiScale,
+      // ==> KIRIM NILAI BARU <==
+      headerOpacity: _headerOpacity,
+      quickAccessOpacity: _quickAccessOpacity,
+      listItemOpacity: _listItemOpacity,
     );
     if (provider.openInAppBrowser != _openInAppBrowser) {
       provider.toggleOpenInAppBrowser();
@@ -133,6 +145,32 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               ),
             ),
             const Divider(),
+
+            // ==> BAGIAN BARU UNTUK TRANSPARANSI <==
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+              child: Text(
+                'Transparansi Dasbor',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            _buildOpacitySlider(
+              label: 'Header',
+              value: _headerOpacity,
+              onChanged: (value) => setState(() => _headerOpacity = value),
+            ),
+            _buildOpacitySlider(
+              label: 'Menu Cepat',
+              value: _quickAccessOpacity,
+              onChanged: (value) => setState(() => _quickAccessOpacity = value),
+            ),
+            _buildOpacitySlider(
+              label: 'Item Lainnya',
+              value: _listItemOpacity,
+              onChanged: (value) => setState(() => _listItemOpacity = value),
+            ),
+            const Divider(),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
               child: Row(
@@ -149,12 +187,11 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                 ],
               ),
             ),
-            // =========== PERUBAHAN DI SINI ===========
             Slider(
               value: _uiScale,
-              min: 0.3, // Mengubah nilai minimal menjadi 30%
-              max: 1.5, // 150%
-              divisions: 12, // Menyesuaikan jumlah pembagian (150-30)/10 = 12
+              min: 0.3,
+              max: 1.5,
+              divisions: 12,
               label: '${(_uiScale * 100).toStringAsFixed(0)}%',
               onChanged: (value) {
                 setState(() {
@@ -162,7 +199,6 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                 });
               },
             ),
-            // =========================================
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 0.0),
               child: Row(
@@ -181,8 +217,8 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
             ),
             Slider(
               value: _dashboardScale,
-              min: 0.8, // 80%
-              max: 1.2, // 120%
+              min: 0.8,
+              max: 1.2,
               divisions: 4,
               label: '${(_dashboardScale * 100).toStringAsFixed(0)}%',
               onChanged: (value) {
@@ -239,6 +275,32 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
           child: const Text('Simpan Perubahan'),
         ),
       ],
+    );
+  }
+
+  // ==> WIDGET HELPER BARU UNTUK SLIDER OPACITY <==
+  Widget _buildOpacitySlider({
+    required String label,
+    required double value,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          Expanded(flex: 2, child: Text(label)),
+          Expanded(
+            flex: 3,
+            child: Slider(
+              value: value,
+              min: 0.0,
+              max: 1.0,
+              label: '${(value * 100).round()}%',
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

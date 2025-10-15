@@ -1,6 +1,7 @@
 // lib/features/dashboard/presentation/widgets/dashboard_item.dart
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../settings/application/theme_provider.dart';
 
 enum DashboardItemType { quickAccess, listItem }
 
@@ -26,13 +27,25 @@ class DashboardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (type) {
-      DashboardItemType.quickAccess => _buildQuickAccess(context),
-      DashboardItemType.listItem => _buildListItem(context),
-    };
+    // ==> GUNAKAN CONSUMER UNTUK MENDAPATKAN NILAI OPACITY <==
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return switch (type) {
+          DashboardItemType.quickAccess => _buildQuickAccess(
+            context,
+            themeProvider.quickAccessOpacity,
+          ),
+          DashboardItemType.listItem => _buildListItem(
+            context,
+            themeProvider.listItemOpacity,
+          ),
+        };
+      },
+    );
   }
 
-  Widget _buildQuickAccess(BuildContext context) {
+  // ==> FUNGSI DIPERBARUI UNTUK MENERIMA OPACITY <==
+  Widget _buildQuickAccess(BuildContext context, double opacity) {
     return Material(
       borderRadius: BorderRadius.circular(15),
       color: Colors.transparent,
@@ -45,7 +58,10 @@ class DashboardItem extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
             gradient: LinearGradient(
-              colors: gradientColors,
+              colors: [
+                gradientColors[0].withOpacity(opacity),
+                gradientColors[1].withOpacity(opacity),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -56,9 +72,8 @@ class DashboardItem extends StatelessWidget {
                   )
                 : null,
           ),
-          // =========== AWAL PERUBAHAN ===========
           child: Padding(
-            padding: const EdgeInsets.all(8.0), // Menambahkan padding di sini
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -76,17 +91,19 @@ class DashboardItem extends StatelessWidget {
               ],
             ),
           ),
-          // =========== AKHIR PERUBAHAN ===========
         ),
       ),
     );
   }
 
-  Widget _buildListItem(BuildContext context) {
+  // ==> FUNGSI DIPERBARUI UNTUK MENERIMA OPACITY <==
+  Widget _buildListItem(BuildContext context, double opacity) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return Card(
       elevation: 0,
+      // ==> TERAPKAN OPACITY PADA WARNA KARTU <==
+      color: theme.cardColor.withOpacity(opacity),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: isFocused
@@ -99,7 +116,9 @@ class DashboardItem extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: (isDark ? Colors.grey[800] : Colors.grey[100]),
+            color: (isDark ? Colors.grey[800] : Colors.grey[100])?.withOpacity(
+              opacity,
+            ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: gradientColors[0], size: 24),

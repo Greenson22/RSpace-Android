@@ -10,7 +10,11 @@ class ThemeSettings {
   final int primaryColorValue;
   final List<int> recentColorValues;
   final double dashboardItemScale;
-  final double uiScaleFactor; // ==> PROPERTI BARU DITAMBAHKAN
+  final double uiScaleFactor;
+  // ==> PROPERTI BARU DITAMBAHKAN <==
+  final double headerOpacity;
+  final double quickAccessOpacity;
+  final double listItemOpacity;
   final bool showFloatingCharacter;
   final bool showQuickFab;
   final String quickFabIcon;
@@ -29,7 +33,11 @@ class ThemeSettings {
     required this.primaryColorValue,
     this.recentColorValues = const [],
     this.dashboardItemScale = 1.0,
-    this.uiScaleFactor = 1.0, // ==> TAMBAHKAN DI KONSTRUKTOR
+    this.uiScaleFactor = 1.0,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    this.headerOpacity = 0.8,
+    this.quickAccessOpacity = 1.0,
+    this.listItemOpacity = 1.0,
     this.showFloatingCharacter = true,
     this.showQuickFab = true,
     this.quickFabIcon = '➕',
@@ -57,9 +65,12 @@ class ThemeSettings {
           [],
       dashboardItemScale:
           (json['dashboardItemScale'] as num?)?.toDouble() ?? 1.0,
-      uiScaleFactor:
-          (json['uiScaleFactor'] as num?)?.toDouble() ??
-          1.0, // ==> BACA DARI JSON
+      uiScaleFactor: (json['uiScaleFactor'] as num?)?.toDouble() ?? 1.0,
+      // ==> BACA DARI JSON <==
+      headerOpacity: (json['headerOpacity'] as num?)?.toDouble() ?? 0.8,
+      quickAccessOpacity:
+          (json['quickAccessOpacity'] as num?)?.toDouble() ?? 1.0,
+      listItemOpacity: (json['listItemOpacity'] as num?)?.toDouble() ?? 1.0,
       showFloatingCharacter: json['showFloatingCharacter'] as bool? ?? true,
       showQuickFab: json['showQuickFab'] as bool? ?? true,
       quickFabIcon: json['quickFabIcon'] as String? ?? '➕',
@@ -82,7 +93,11 @@ class ThemeSettings {
       'primaryColorValue': primaryColorValue,
       'recentColorValues': recentColorValues,
       'dashboardItemScale': dashboardItemScale,
-      'uiScaleFactor': uiScaleFactor, // ==> SIMPAN KE JSON
+      'uiScaleFactor': uiScaleFactor,
+      // ==> SIMPAN KE JSON <==
+      'headerOpacity': headerOpacity,
+      'quickAccessOpacity': quickAccessOpacity,
+      'listItemOpacity': listItemOpacity,
       'showFloatingCharacter': showFloatingCharacter,
       'showQuickFab': showQuickFab,
       'quickFabIcon': quickFabIcon,
@@ -103,7 +118,11 @@ class ThemeSettings {
     int? primaryColorValue,
     List<int>? recentColorValues,
     double? dashboardItemScale,
-    double? uiScaleFactor, // ==> TAMBAHKAN DI COPYWITH
+    double? uiScaleFactor,
+    // ==> TAMBAHKAN DI COPYWITH <==
+    double? headerOpacity,
+    double? quickAccessOpacity,
+    double? listItemOpacity,
     bool? showFloatingCharacter,
     bool? showQuickFab,
     String? quickFabIcon,
@@ -122,8 +141,11 @@ class ThemeSettings {
       primaryColorValue: primaryColorValue ?? this.primaryColorValue,
       recentColorValues: recentColorValues ?? this.recentColorValues,
       dashboardItemScale: dashboardItemScale ?? this.dashboardItemScale,
-      uiScaleFactor:
-          uiScaleFactor ?? this.uiScaleFactor, // ==> TAMBAHKAN DI COPYWITH
+      uiScaleFactor: uiScaleFactor ?? this.uiScaleFactor,
+      // ==> TAMBAHKAN DI COPYWITH <==
+      headerOpacity: headerOpacity ?? this.headerOpacity,
+      quickAccessOpacity: quickAccessOpacity ?? this.quickAccessOpacity,
+      listItemOpacity: listItemOpacity ?? this.listItemOpacity,
       showFloatingCharacter:
           showFloatingCharacter ?? this.showFloatingCharacter,
       showQuickFab: showQuickFab ?? this.showQuickFab,

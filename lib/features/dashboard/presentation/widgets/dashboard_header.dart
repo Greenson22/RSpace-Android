@@ -13,7 +13,6 @@ import 'package:my_aplication/features/time_management/presentation/pages/time_l
 import '../../../../core/services/path_service.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
-// ==> IMPORT DIPERBARUI
 import '../../../settings/application/services/gemini_service_flutter_gemini.dart';
 import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
@@ -21,8 +20,7 @@ import '../../../content_management/presentation/topics/topics_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../../settings/application/services/dashboard_settings_service.dart';
-
-// ... (kode _HeaderStats tidak berubah)
+import '../../../settings/application/theme_provider.dart'; // ==> IMPORT THEMEPROVIDER
 
 class _HeaderStats {
   final int pendingTasks;
@@ -57,7 +55,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
     with WidgetsBindingObserver {
   final PathService _pathService = PathService();
   final DashboardSettingsService _settingsService = DashboardSettingsService();
-  // ==> INSTANCE DIPERBARUI
   final GeminiServiceFlutterGemini _geminiService =
       GeminiServiceFlutterGemini();
   late Future<_HeaderStats> _statsFuture;
@@ -94,7 +91,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
   Future<void> _displayQuoteFromCache() async {
     const fallbackQuote = 'Teruslah belajar setiap hari.';
     final random = Random();
-    // ==> PEMANGGILAN DIPERBARUI
     final quotes = await _geminiService.getSavedMotivationalQuotes();
     if (mounted) {
       setState(() {
@@ -106,8 +102,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
       });
     }
   }
-
-  // ... (sisa kode tidak ada perubahan signifikan, hanya pemanggilan service yang berubah)
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -274,162 +268,179 @@ class _DashboardHeaderState extends State<DashboardHeader>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        color:
-            Theme.of(context).cardTheme.color?.withOpacity(0.8) ??
-            Theme.of(context).cardColor.withOpacity(0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getGreeting(),
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat(
-                        'EEEE, d MMMM yyyy',
-                        'id_ID',
-                      ).format(DateTime.now()),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+    // ==> GUNAKAN CONSUMER UNTUK MENDAPATKAN OPACITY <==
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            color:
+                Theme.of(context).cardTheme.color?.withOpacity(
+                  themeProvider.headerOpacity, // Gunakan nilai dari provider
+                ) ??
+                Theme.of(context).cardColor.withOpacity(
+                  themeProvider.headerOpacity, // Gunakan nilai dari provider
                 ),
-              ),
-              Consumer<NeuronProvider>(
-                builder: (context, neuronProvider, child) {
-                  return Chip(
-                    avatar: const Icon(
-                      Icons.psychology_outlined,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      '${neuronProvider.neuronCount} Neurons',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: Colors.deepPurple,
-                  );
-                },
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            _motivationalQuote == null
-                ? 'Memuat motivasi...'
-                : '"$_motivationalQuote"',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontStyle: FontStyle.italic,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const Divider(height: 24),
-          FutureBuilder<_HeaderStats>(
-            future: _statsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final stats = snapshot.data ?? _HeaderStats();
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                alignment: WrapAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _StatPill(
-                    icon: Icons.list_alt_outlined,
-                    label: 'Tugas Harian',
-                    value: stats.totalTasks.toString(),
-                    color: Colors.teal.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyTasksPage()),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getGreeting(),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat(
+                            'EEEE, d MMMM yyyy',
+                            'id_ID',
+                          ).format(DateTime.now()),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
                     ),
                   ),
-                  _StatPill(
-                    icon: Icons.task_alt,
-                    label: 'Target Belum Tercapai',
-                    value: stats.pendingTasks.toString(),
-                    color: Colors.orange.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyTasksPage()),
-                    ),
-                  ),
-                  _StatPill(
-                    icon: Icons.check_circle_outline,
-                    label: 'Target Tercapai',
-                    value: stats.finishedTasks.toString(),
-                    color: Colors.green.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyTasksPage()),
-                    ),
-                  ),
-                  _StatPill(
-                    icon: Icons.school_outlined,
-                    label: 'Perlu Ditinjau',
-                    value: stats.dueDiscussions.toString(),
-                    color: Colors.blue.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TopicsPage()),
-                    ),
-                  ),
-                  _StatPill(
-                    icon: Icons.chat_bubble_outline,
-                    label: 'Total Diskusi',
-                    value: stats.totalDiscussions.toString(),
-                    color: Colors.purple.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TopicsPage()),
-                    ),
-                  ),
-                  _StatPill(
-                    icon: Icons.timer_outlined,
-                    label: 'Aktivitas Hari Ini',
-                    value:
-                        '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
-                    color: Colors.cyan.shade700,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TimeLogPage()),
-                    ),
+                  Consumer<NeuronProvider>(
+                    builder: (context, neuronProvider, child) {
+                      return Chip(
+                        avatar: const Icon(
+                          Icons.psychology_outlined,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          '${neuronProvider.neuronCount} Neurons',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        backgroundColor: Colors.deepPurple,
+                      );
+                    },
                   ),
                 ],
-              );
-            },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _motivationalQuote == null
+                    ? 'Memuat motivasi...'
+                    : '"$_motivationalQuote"',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Divider(height: 24),
+              FutureBuilder<_HeaderStats>(
+                future: _statsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final stats = snapshot.data ?? _HeaderStats();
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _StatPill(
+                        icon: Icons.list_alt_outlined,
+                        label: 'Tugas Harian',
+                        value: stats.totalTasks.toString(),
+                        color: Colors.teal.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyTasksPage(),
+                          ),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.task_alt,
+                        label: 'Target Belum Tercapai',
+                        value: stats.pendingTasks.toString(),
+                        color: Colors.orange.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyTasksPage(),
+                          ),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.check_circle_outline,
+                        label: 'Target Tercapai',
+                        value: stats.finishedTasks.toString(),
+                        color: Colors.green.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyTasksPage(),
+                          ),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.school_outlined,
+                        label: 'Perlu Ditinjau',
+                        value: stats.dueDiscussions.toString(),
+                        color: Colors.blue.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TopicsPage()),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.chat_bubble_outline,
+                        label: 'Total Diskusi',
+                        value: stats.totalDiscussions.toString(),
+                        color: Colors.purple.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TopicsPage()),
+                        ),
+                      ),
+                      _StatPill(
+                        icon: Icons.timer_outlined,
+                        label: 'Aktivitas Hari Ini',
+                        value:
+                            '${stats.timeLoggedToday.inHours}j ${stats.timeLoggedToday.inMinutes.remainder(60)}m',
+                        color: Colors.cyan.shade700,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TimeLogPage(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              const _DashboardPath(),
+            ],
           ),
-          const SizedBox(height: 16),
-          const _DashboardPath(),
-        ],
-      ),
+        );
+      },
     );
   }
 }
