@@ -1,8 +1,12 @@
 // lib/features/notes/presentation/pages/note_topic_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/topics/dialogs/topic_dialogs.dart';
 import 'package:my_aplication/features/notes/application/note_topic_provider.dart';
+import 'package:my_aplication/features/notes/domain/models/note_topic_model.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_list_page.dart';
+import 'package:my_aplication/features/notes/presentation/widgets/note_topic_grid_tile.dart';
 import 'package:provider/provider.dart';
 
 class NoteTopicPage extends StatelessWidget {
@@ -10,41 +14,59 @@ class NoteTopicPage extends StatelessWidget {
 
   void _showAddTopicDialog(BuildContext context) {
     final provider = Provider.of<NoteTopicProvider>(context, listen: false);
-    final controller = TextEditingController();
-    showDialog(
+    showTopicTextInputDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Buat Topik Catatan Baru'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nama Topik'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (controller.text.isNotEmpty) {
-                try {
-                  await provider.addTopic(controller.text);
-                  Navigator.pop(context);
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString()),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Buat'),
-          ),
-        ],
-      ),
+      title: 'Buat Topik Catatan Baru',
+      label: 'Nama Topik',
+      onSave: (name) async {
+        try {
+          await provider.addTopic(name);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  void _showEditTopicDialog(BuildContext context, NoteTopic topic) {
+    final provider = Provider.of<NoteTopicProvider>(context, listen: false);
+    showTopicTextInputDialog(
+      context: context,
+      title: 'Ubah Nama Topik',
+      label: 'Nama Baru',
+      initialValue: topic.name,
+      onSave: (newName) async {
+        try {
+          await provider.renameTopic(topic.name, newName);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString()),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  void _showEditIconDialog(BuildContext context, NoteTopic topic) {
+    final provider = Provider.of<NoteTopicProvider>(context, listen: false);
+    showIconPickerDialog(
+      context: context,
+      name: topic.name,
+      onIconSelected: (newIcon) {
+        provider.updateTopicIcon(topic, newIcon);
+      },
     );
   }
 
@@ -81,6 +103,13 @@ class NoteTopicPage extends StatelessWidget {
       create: (_) => NoteTopicProvider(),
       child: Consumer<NoteTopicProvider>(
         builder: (context, provider, child) {
+          int getCrossAxisCount(double screenWidth) {
+            if (screenWidth > 1200) return 5;
+            if (screenWidth > 900) return 4;
+            if (screenWidth > 600) return 3;
+            return 2;
+          }
+
           return Scaffold(
             appBar: AppBar(title: const Text('Topik Catatan')),
             body: provider.isLoading
@@ -91,24 +120,41 @@ class NoteTopicPage extends StatelessWidget {
                       'Belum ada topik catatan. Tekan + untuk memulai.',
                     ),
                   )
-                : ListView.builder(
-                    itemCount: provider.topics.length,
-                    itemBuilder: (context, index) {
-                      final topic = provider.topics[index];
-                      return ListTile(
-                        leading: const Icon(Icons.folder_outlined),
-                        title: Text(topic),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => NoteListPage(topicName: topic),
-                            ),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(12.0),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: getCrossAxisCount(
+                            constraints.maxWidth,
+                          ),
+                          crossAxisSpacing: 12.0,
+                          mainAxisSpacing: 12.0,
+                          childAspectRatio: 1.1,
+                        ),
+                        itemCount: provider.topics.length,
+                        itemBuilder: (context, index) {
+                          final topic = provider.topics[index];
+                          return NoteTopicGridTile(
+                            key: ValueKey(topic.name),
+                            topic: topic,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      NoteListPage(topicName: topic.name),
+                                ),
+                              );
+                            },
+                            onRename: () =>
+                                _showEditTopicDialog(context, topic),
+                            onIconChange: () =>
+                                _showEditIconDialog(context, topic),
+                            onDelete: () =>
+                                _showDeleteTopicDialog(context, topic.name),
                           );
                         },
-                        onLongPress: () =>
-                            _showDeleteTopicDialog(context, topic),
                       );
                     },
                   ),

@@ -1,6 +1,7 @@
 // lib/features/notes/application/note_topic_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/notes/domain/models/note_topic_model.dart';
 import 'package:my_aplication/features/notes/infrastructure/note_service.dart';
 
 class NoteTopicProvider with ChangeNotifier {
@@ -9,8 +10,8 @@ class NoteTopicProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  List<String> _topics = [];
-  List<String> get topics => _topics;
+  List<NoteTopic> _topics = [];
+  List<NoteTopic> get topics => _topics;
 
   NoteTopicProvider() {
     fetchTopics();
@@ -26,6 +27,17 @@ class NoteTopicProvider with ChangeNotifier {
 
   Future<void> addTopic(String name) async {
     await _noteService.createTopic(name);
+    await fetchTopics();
+  }
+
+  Future<void> renameTopic(String oldName, String newName) async {
+    await _noteService.renameTopic(oldName, newName);
+    await fetchTopics();
+  }
+
+  Future<void> updateTopicIcon(NoteTopic topic, String newIcon) async {
+    topic.icon = newIcon;
+    await _noteService.saveTopic(topic);
     await fetchTopics();
   }
 
