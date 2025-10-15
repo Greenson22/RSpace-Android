@@ -105,9 +105,13 @@ class PointTile extends StatelessWidget {
         ? defaultTextColor
         : inactiveColor;
 
+    // ========== PERBAIKAN UTAMA DI SINI ==========
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseFontSize = 11.0;
+    final scaledFontSize = baseFontSize * textScaleFactor;
+
     return ListTile(
       dense: true,
-      // ==> TAMBAHKAN onLongPress DI SINI <==
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: point.pointText));
         _showSnackBar(context, 'Teks poin disalin ke clipboard.');
@@ -127,8 +131,8 @@ class PointTile extends StatelessWidget {
           ? Text('Selesai pada: ${point.finish_date ?? ''}')
           : RichText(
               text: TextSpan(
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: scaledFontSize,
                   color: effectiveTextColor,
                 ),
                 children: [

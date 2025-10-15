@@ -24,10 +24,9 @@ class DiscussionSubtitle extends StatelessWidget {
     if (discussion.finished) {
       return Text(
         'Selesai pada: ${discussion.finish_date}',
-        style: TextStyle(
+        style: const TextStyle(
           color: Colors.green,
           fontStyle: FontStyle.italic,
-          fontSize: isCompact ? 11 : 12,
         ),
       );
     }
@@ -57,11 +56,19 @@ class DiscussionSubtitle extends StatelessWidget {
       }
     }
 
+    // ========== PERBAIKAN UTAMA DI SINI ==========
+    // Secara manual menghitung ukuran font berdasarkan skala global.
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseFontSize = 11.0; // Ukuran dasar yang lebih kecil
+    final scaledFontSize = baseFontSize * textScaleFactor;
+
     return RichText(
       text: TextSpan(
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontSize: isCompact ? 11 : 12),
+        // Terapkan gaya baru di sini
+        style: TextStyle(
+          fontSize: scaledFontSize,
+          color: Theme.of(context).textTheme.bodySmall?.color,
+        ),
         children: [
           const TextSpan(text: 'Date: '),
           TextSpan(
@@ -81,8 +88,6 @@ class DiscussionSubtitle extends StatelessWidget {
             recognizer: (!discussion.finished && discussion.points.isEmpty)
                 ? (TapGestureRecognizer()
                     ..onTap = () async {
-                      // ==> PERBAIKAN DIMULAI DI SINI <==
-                      // 1. Simpan context sebelum await
                       final currentContext = context;
                       final scaffoldMessenger = ScaffoldMessenger.of(
                         currentContext,
@@ -94,7 +99,6 @@ class DiscussionSubtitle extends StatelessWidget {
                         final nextCode =
                             provider.repetitionCodes[currentIndex + 1];
 
-                        // 2. Lakukan operasi async (await)
                         final confirmed =
                             await showRepetitionCodeUpdateConfirmationDialog(
                               context: currentContext,
@@ -102,7 +106,6 @@ class DiscussionSubtitle extends StatelessWidget {
                               nextCode: nextCode,
                             );
 
-                        // 3. Setelah await, cek apakah widget masih mounted
                         if (!currentContext.mounted) return;
 
                         if (confirmed) {
@@ -127,7 +130,6 @@ class DiscussionSubtitle extends StatelessWidget {
                           );
                         }
                       }
-                      // ==> PERBAIKAN SELESAI <==
                     })
                 : null,
           ),
