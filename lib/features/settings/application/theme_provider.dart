@@ -29,6 +29,8 @@ class ThemeProvider with ChangeNotifier {
   bool get isUnderwaterTheme => _settings?.isUnderwaterTheme ?? false;
   String? get backgroundImagePath => _localBackgroundImagePath;
   double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
+  double get uiScaleFactor =>
+      _settings?.uiScaleFactor ?? 1.0; // ==> GETTER BARU
   bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
   bool get showQuickFab => _settings?.showQuickFab ?? true;
   String get quickFabIcon => _settings?.quickFabIcon ?? '➕';
@@ -38,7 +40,6 @@ class ThemeProvider with ChangeNotifier {
   bool get fabMenuShowText => _settings?.fabMenuShowText ?? true;
   bool get openInAppBrowser => _settings?.openInAppBrowser ?? true;
   String? get htmlEditorTheme => _settings?.htmlEditorTheme;
-  // ==> GETTER BARU <==
   String get defaultNoteIcon => _settings?.defaultNoteIcon ?? '🗒️';
 
   ThemeData get currentTheme {
@@ -75,18 +76,19 @@ class ThemeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> updateDefaultNoteIcon(String newIcon) async {
     if (_settings == null) return;
     _saveAndUpdate(_settings!.copyWith(defaultNoteIcon: newIcon));
   }
 
+  // ==> FUNGSI INI DIPERBARUI
   void updateTheme({
     bool? isDark,
     bool? isChristmas,
     bool? isUnderwater,
     Color? color,
     double? dashboardScale,
+    double? uiScale,
   }) {
     if (_settings == null) return;
     _settings = _settings!.copyWith(
@@ -95,6 +97,7 @@ class ThemeProvider with ChangeNotifier {
       isUnderwaterTheme: isUnderwater,
       primaryColorValue: color?.value,
       dashboardItemScale: dashboardScale,
+      uiScaleFactor: uiScale, // ==> TAMBAHKAN uiScale
     );
 
     if (color != null) {

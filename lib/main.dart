@@ -63,16 +63,27 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'RSpace',
           theme: themeProvider.currentTheme,
+          // ==> PERUBAHAN UTAMA ADA DI SINI <==
           builder: (context, child) {
-            return Stack(
-              children: [
-                child!,
-                if (themeProvider.isChristmasTheme) const SnowWidget(),
-                if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
-                if (themeProvider.showFloatingCharacter)
-                  const FloatingCharacter(),
-                if (themeProvider.showQuickFab) const DraggableFabView(),
-              ],
+            // Dapatkan data media query saat ini
+            final mediaQuery = MediaQuery.of(context);
+            // Buat data media query baru dengan textScaleFactor yang sudah diubah
+            final scaledMediaQuery = mediaQuery.copyWith(
+              textScaleFactor: themeProvider.uiScaleFactor,
+            );
+
+            return MediaQuery(
+              data: scaledMediaQuery,
+              child: Stack(
+                children: [
+                  child!,
+                  if (themeProvider.isChristmasTheme) const SnowWidget(),
+                  if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
+                  if (themeProvider.showFloatingCharacter)
+                    const FloatingCharacter(),
+                  if (themeProvider.showQuickFab) const DraggableFabView(),
+                ],
+              ),
             );
           },
           home: const DashboardPage(),

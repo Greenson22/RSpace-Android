@@ -10,6 +10,7 @@ class ThemeSettings {
   final int primaryColorValue;
   final List<int> recentColorValues;
   final double dashboardItemScale;
+  final double uiScaleFactor; // ==> PROPERTI BARU DITAMBAHKAN
   final bool showFloatingCharacter;
   final bool showQuickFab;
   final String quickFabIcon;
@@ -19,7 +20,6 @@ class ThemeSettings {
   final bool fabMenuShowText;
   final bool openInAppBrowser;
   final String? htmlEditorTheme;
-  // ==> PROPERTI BARU <==
   final String defaultNoteIcon;
 
   ThemeSettings({
@@ -29,6 +29,7 @@ class ThemeSettings {
     required this.primaryColorValue,
     this.recentColorValues = const [],
     this.dashboardItemScale = 1.0,
+    this.uiScaleFactor = 1.0, // ==> TAMBAHKAN DI KONSTRUKTOR
     this.showFloatingCharacter = true,
     this.showQuickFab = true,
     this.quickFabIcon = '➕',
@@ -38,7 +39,6 @@ class ThemeSettings {
     this.fabMenuShowText = true,
     this.openInAppBrowser = true,
     this.htmlEditorTheme,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
     this.defaultNoteIcon = '🗒️',
   });
 
@@ -57,6 +57,9 @@ class ThemeSettings {
           [],
       dashboardItemScale:
           (json['dashboardItemScale'] as num?)?.toDouble() ?? 1.0,
+      uiScaleFactor:
+          (json['uiScaleFactor'] as num?)?.toDouble() ??
+          1.0, // ==> BACA DARI JSON
       showFloatingCharacter: json['showFloatingCharacter'] as bool? ?? true,
       showQuickFab: json['showQuickFab'] as bool? ?? true,
       quickFabIcon: json['quickFabIcon'] as String? ?? '➕',
@@ -67,7 +70,6 @@ class ThemeSettings {
       fabMenuShowText: json['fabMenuShowText'] as bool? ?? true,
       openInAppBrowser: json['openInAppBrowser'] as bool? ?? true,
       htmlEditorTheme: json['htmlEditorTheme'] as String?,
-      // ==> BACA DARI JSON <==
       defaultNoteIcon: json['defaultNoteIcon'] as String? ?? '🗒️',
     );
   }
@@ -80,6 +82,7 @@ class ThemeSettings {
       'primaryColorValue': primaryColorValue,
       'recentColorValues': recentColorValues,
       'dashboardItemScale': dashboardItemScale,
+      'uiScaleFactor': uiScaleFactor, // ==> SIMPAN KE JSON
       'showFloatingCharacter': showFloatingCharacter,
       'showQuickFab': showQuickFab,
       'quickFabIcon': quickFabIcon,
@@ -89,7 +92,6 @@ class ThemeSettings {
       'fabMenuShowText': fabMenuShowText,
       'openInAppBrowser': openInAppBrowser,
       'htmlEditorTheme': htmlEditorTheme,
-      // ==> SIMPAN KE JSON <==
       'defaultNoteIcon': defaultNoteIcon,
     };
   }
@@ -101,6 +103,7 @@ class ThemeSettings {
     int? primaryColorValue,
     List<int>? recentColorValues,
     double? dashboardItemScale,
+    double? uiScaleFactor, // ==> TAMBAHKAN DI COPYWITH
     bool? showFloatingCharacter,
     bool? showQuickFab,
     String? quickFabIcon,
@@ -110,7 +113,6 @@ class ThemeSettings {
     bool? fabMenuShowText,
     bool? openInAppBrowser,
     ValueGetter<String?>? htmlEditorTheme,
-    // ==> TAMBAHKAN DI COPYWITH <==
     String? defaultNoteIcon,
   }) {
     return ThemeSettings(
@@ -120,6 +122,8 @@ class ThemeSettings {
       primaryColorValue: primaryColorValue ?? this.primaryColorValue,
       recentColorValues: recentColorValues ?? this.recentColorValues,
       dashboardItemScale: dashboardItemScale ?? this.dashboardItemScale,
+      uiScaleFactor:
+          uiScaleFactor ?? this.uiScaleFactor, // ==> TAMBAHKAN DI COPYWITH
       showFloatingCharacter:
           showFloatingCharacter ?? this.showFloatingCharacter,
       showQuickFab: showQuickFab ?? this.showQuickFab,
@@ -133,7 +137,6 @@ class ThemeSettings {
       htmlEditorTheme: htmlEditorTheme != null
           ? htmlEditorTheme()
           : this.htmlEditorTheme,
-      // ==> TAMBAHKAN DI COPYWITH <==
       defaultNoteIcon: defaultNoteIcon ?? this.defaultNoteIcon,
     );
   }

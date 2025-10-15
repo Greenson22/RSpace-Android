@@ -1,4 +1,4 @@
-// lib/presentation/pages/dashboard_page/dialogs/theme_settings_dialog.dart
+// lib/features/settings/presentation/dialogs/theme_settings_dialog.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -24,12 +24,10 @@ class ThemeSettingsDialog extends StatefulWidget {
 class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
   late bool _isDark;
   late bool _isChristmas;
-  // ==> STATE BARU UNTUK TEMA BAWAH AIR <==
   late bool _isUnderwater;
   late Color _selectedColor;
-  // ==> STATE LOKAL BARU UNTUK SLIDER <==
   late double _dashboardScale;
-  // --- TAMBAHKAN STATE BARU UNTUK WEBVIEW ---
+  late double _uiScale;
   late bool _openInAppBrowser;
 
   @override
@@ -38,12 +36,10 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     final provider = Provider.of<ThemeProvider>(context, listen: false);
     _isDark = provider.darkTheme;
     _isChristmas = provider.isChristmasTheme;
-    // ==> INISIALISASI STATE BARU <==
     _isUnderwater = provider.isUnderwaterTheme;
     _selectedColor = provider.primaryColor;
-    // ==> INISIALISASI STATE SLIDER <==
     _dashboardScale = provider.dashboardItemScale;
-    // --- INISIALISASI STATE WEBVIEW ---
+    _uiScale = provider.uiScaleFactor;
     _openInAppBrowser = provider.openInAppBrowser;
   }
 
@@ -53,13 +49,11 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
     provider.updateTheme(
       isDark: _isDark,
       isChristmas: _isChristmas,
-      // ==> KIRIM NILAI BARU <==
       isUnderwater: _isUnderwater,
       color: _selectedColor,
-      // ==> SIMPAN NILAI DARI SLIDER <==
       dashboardScale: _dashboardScale,
+      uiScale: _uiScale,
     );
-    // --- SIMPAN PENGATURAN WEBVIEW ---
     if (provider.openInAppBrowser != _openInAppBrowser) {
       provider.toggleOpenInAppBrowser();
     }
@@ -89,14 +83,12 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               value: _isChristmas,
               onChanged: (value) => setState(() => _isChristmas = value),
             ),
-            // ==> SWITCH BARU UNTUK TEMA BAWAH AIR <==
             SwitchListTile(
               title: const Text('Tema Spesial Bawah Air'),
               secondary: const Icon(Icons.pool_outlined),
               value: _isUnderwater,
               onChanged: (value) => setState(() => _isUnderwater = value),
             ),
-            // --- TAMBAHKAN SWITCH BARU DI SINI ---
             SwitchListTile(
               title: const Text('Buka Link di Aplikasi'),
               subtitle: const Text(
@@ -141,9 +133,38 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
               ),
             ),
             const Divider(),
-            // ==> BAGIAN BARU UNTUK UKURAN MENU <==
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Skala Tampilan Global',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text(
+                    '${(_uiScale * 100).toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            ),
+            // =========== PERUBAHAN DI SINI ===========
+            Slider(
+              value: _uiScale,
+              min: 0.3, // Mengubah nilai minimal menjadi 30%
+              max: 1.5, // 150%
+              divisions: 12, // Menyesuaikan jumlah pembagian (150-30)/10 = 12
+              label: '${(_uiScale * 100).toStringAsFixed(0)}%',
+              onChanged: (value) {
+                setState(() {
+                  _uiScale = value;
+                });
+              },
+            ),
+            // =========================================
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 0.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -170,7 +191,7 @@ class _ThemeSettingsDialogState extends State<ThemeSettingsDialog> {
                 });
               },
             ),
-            // --- AKHIR BAGIAN BARU ---
+
             const Divider(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
