@@ -1,4 +1,5 @@
-// lib/presentation/pages/dashboard_page/widgets/dashboard_item.dart
+// lib/features/dashboard/presentation/widgets/dashboard_item.dart
+
 import 'package:flutter/material.dart';
 
 enum DashboardItemType { quickAccess, listItem }
@@ -33,16 +34,16 @@ class DashboardItem extends StatelessWidget {
 
   Widget _buildQuickAccess(BuildContext context) {
     return Material(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(15), // Mengurangi radius border
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(15), // Mengurangi radius border
         splashColor: Colors.white.withOpacity(0.3),
         highlightColor: Colors.white.withOpacity(0.1),
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(15), // Mengurangi radius border
             gradient: LinearGradient(
               colors: gradientColors,
               begin: Alignment.topLeft,
@@ -58,13 +59,17 @@ class DashboardItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(icon, size: 32, color: Colors.white),
+              Icon(
+                icon,
+                size: 28,
+                color: Colors.white,
+              ), // Ukuran ikon lebih kecil
               const SizedBox(height: 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 12, // Ukuran font lebih kecil
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),

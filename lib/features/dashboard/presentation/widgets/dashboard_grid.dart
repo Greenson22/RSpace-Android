@@ -1,4 +1,5 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -214,34 +215,35 @@ class DashboardGrid extends StatelessWidget {
             .where((item) => item['label'] != 'Penyimpanan' || !isPathSet)
             .toList();
 
-        final quickAccessItems = itemData.take(5).toList();
-        final listItems = itemData.skip(5).toList();
-        final quickAccessCrossAxisCount = screenWidth < 450 ? 2 : 5;
+        final horizontalItems = itemData.take(5).toList();
+        final verticalItems = itemData.skip(5).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: quickAccessCrossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.0,
+            SizedBox(
+              height: 100, // Memberikan tinggi tetap untuk list horizontal
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: horizontalItems.length,
+                itemBuilder: (context, index) {
+                  final item = horizontalItems[index];
+                  return SizedBox(
+                    width: 110, // Memberikan lebar tetap untuk setiap item
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: DashboardItem(
+                        icon: item['icon'],
+                        label: item['label'],
+                        gradientColors: item['colors'],
+                        onTap: dashboardActions[index],
+                        isFocused: isKeyboardActive && focusedIndex == index,
+                        type: DashboardItemType.quickAccess,
+                      ),
+                    ),
+                  );
+                },
               ),
-              itemCount: quickAccessItems.length,
-              itemBuilder: (context, index) {
-                final item = quickAccessItems[index];
-                return DashboardItem(
-                  icon: item['icon'],
-                  label: item['label'],
-                  gradientColors: item['colors'],
-                  onTap: dashboardActions[index],
-                  isFocused: isKeyboardActive && focusedIndex == index,
-                  type: DashboardItemType.quickAccess,
-                );
-              },
             ),
             const SizedBox(height: 24),
             Text(
@@ -250,12 +252,12 @@ class DashboardGrid extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListView.separated(
-              itemCount: listItems.length,
+              itemCount: verticalItems.length,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final item = listItems[index];
+                final item = verticalItems[index];
                 final overallIndex = index + 5;
                 return DashboardItem(
                   icon: item['icon'],
