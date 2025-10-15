@@ -15,6 +15,11 @@ class NoteListProvider with ChangeNotifier {
   List<Note> _filteredNotes = [];
   List<Note> get notes => _filteredNotes;
 
+  // ==> STATE BARU UNTUK SELEKSI <==
+  final Set<Note> _selectedNotes = {};
+  Set<Note> get selectedNotes => _selectedNotes;
+  bool get isSelectionMode => _selectedNotes.isNotEmpty;
+
   String _sortType = 'modifiedAt';
   String get sortType => _sortType;
   bool _sortAscending = false;
@@ -23,6 +28,46 @@ class NoteListProvider with ChangeNotifier {
 
   NoteListProvider(this.topicName) {
     fetchNotes();
+  }
+
+  // ==> FUNGSI-FUNGSI BARU UNTUK MANAJEMEN SELEKSI <==
+  void toggleSelection(Note note) {
+    if (_selectedNotes.contains(note)) {
+      _selectedNotes.remove(note);
+    } else {
+      _selectedNotes.add(note);
+    }
+    notifyListeners();
+  }
+
+  void selectAll() {
+    if (_selectedNotes.length == _filteredNotes.length) {
+      _selectedNotes.clear();
+    } else {
+      _selectedNotes.addAll(_filteredNotes);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedNotes.clear();
+    notifyListeners();
+  }
+
+  Future<void> deleteSelected() async {
+    for (final note in _selectedNotes) {
+      await _noteService.deleteNote(topicName, note.id);
+    }
+    _selectedNotes.clear();
+    await fetchNotes();
+  }
+
+  Future<void> moveSelected(String toTopic) async {
+    for (final note in _selectedNotes) {
+      await _noteService.moveNote(note, topicName, toTopic);
+    }
+    _selectedNotes.clear();
+    await fetchNotes();
   }
 
   Future<void> fetchNotes() async {
@@ -79,12 +124,11 @@ class NoteListProvider with ChangeNotifier {
     await fetchNotes();
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
   Future<void> updateNoteIcon(Note note, String newIcon) async {
     note.icon = newIcon;
     note.modifiedAt = DateTime.now();
     await _noteService.saveNote(topicName, note);
-    notifyListeners(); // Langsung update UI tanpa perlu fetch ulang
+    notifyListeners();
   }
 
   Future<void> deleteNote(String noteId) async {

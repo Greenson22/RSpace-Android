@@ -31,6 +31,7 @@ class NoteService {
         final jsonString = await configFile.readAsString();
         topics.add(NoteTopic.fromJson(jsonDecode(jsonString)));
       } else {
+        // Fallback for older folders without config
         topics.add(NoteTopic(name: path.basename(dir.path)));
       }
     }
@@ -69,7 +70,7 @@ class NoteService {
     }
 
     await oldDir.rename(newDir.path);
-    await saveTopic(NoteTopic(name: newName, icon: '🗒️'));
+    await saveTopic(NoteTopic(name: newName, icon: '🗒️')); // Create new config
     final oldConfigFile = File(
       path.join(newDir.path, oldName, _configFileName),
     );
@@ -100,7 +101,6 @@ class NoteService {
       final jsonString = await file.readAsString();
       notes.add(Note.fromJson(jsonDecode(jsonString)));
     }
-    // ==> PENGURUTAN DEFAULT DIHAPUS DARI SINI <==
     return notes;
   }
 
@@ -117,6 +117,24 @@ class NoteService {
     final file = File(path.join(topicDir.path, '$noteId.json'));
     if (await file.exists()) {
       await file.delete();
+    }
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMINDAHKAN FILE CATATAN <==
+  Future<void> moveNote(Note note, String fromTopic, String toTopic) async {
+    final baseDir = await _getNotesBaseDir();
+    final fromDir = Directory(path.join(baseDir.path, fromTopic));
+    final toDir = Directory(path.join(baseDir.path, toTopic));
+
+    if (!await toDir.exists()) {
+      await toDir.create();
+    }
+
+    final sourceFile = File(path.join(fromDir.path, '${note.id}.json'));
+    final destinationFile = File(path.join(toDir.path, '${note.id}.json'));
+
+    if (await sourceFile.exists()) {
+      await sourceFile.rename(destinationFile.path);
     }
   }
 }

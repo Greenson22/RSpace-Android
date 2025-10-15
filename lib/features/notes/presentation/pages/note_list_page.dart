@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:my_aplication/features/notes/application/note_list_provider.dart';
+import 'package:my_aplication/features/notes/application/note_topic_provider.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_editor_page.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_view_page.dart';
 import 'package:provider/provider.dart';
@@ -67,7 +68,6 @@ class _NoteListPageState extends State<NoteListPage> {
     );
   }
 
-  // ==> FUNGSI BARU UNTUK MENGUBAH IKON <==
   void _showChangeIconDialog(BuildContext context, note) {
     final provider = Provider.of<NoteListProvider>(context, listen: false);
     showIconPickerDialog(
@@ -106,6 +106,44 @@ class _NoteListPageState extends State<NoteListPage> {
         ],
       ),
     );
+  }
+
+  // ==> DIALOG UNTUK MEMINDAHKAN CATATAN <==
+  Future<void> _showMoveDialog(BuildContext context) async {
+    final noteListProvider = Provider.of<NoteListProvider>(
+      context,
+      listen: false,
+    );
+
+    // Gunakan NoteTopicProvider untuk mendapatkan daftar topik
+    final destinationTopic = await showDialog<String>(
+      context: context,
+      builder: (context) => ChangeNotifierProvider(
+        create: (_) => NoteTopicProvider(),
+        child: Consumer<NoteTopicProvider>(
+          builder: (context, topicProvider, child) {
+            final topics = topicProvider.topics
+                .where((t) => t.name != widget.topicName)
+                .toList();
+            return SimpleDialog(
+              title: const Text('Pindahkan ke Topik...'),
+              children: topics
+                  .map(
+                    (topic) => SimpleDialogOption(
+                      onPressed: () => Navigator.pop(context, topic.name),
+                      child: Text(topic.name),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+      ),
+    );
+
+    if (destinationTopic != null) {
+      await noteListProvider.moveSelected(destinationTopic);
+    }
   }
 
   Future<void> _showSortDialog(BuildContext context) async {
@@ -193,16 +231,72 @@ class _NoteListPageState extends State<NoteListPage> {
       child: Consumer<NoteListProvider>(
         builder: (context, provider, child) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text(widget.topicName),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.sort),
-                  onPressed: () => _showSortDialog(context),
-                  tooltip: 'Urutkan Catatan',
-                ),
-              ],
-            ),
+            appBar: provider.isSelectionMode
+                ? AppBar(
+                    leading: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => provider.clearSelection(),
+                    ),
+                    title: Text('${provider.selectedNotes.length} dipilih'),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.drive_file_move_outline),
+                        onPressed: () => _showMoveDialog(context),
+                        tooltip: 'Pindahkan',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () async {
+                          final confirmed =
+                              await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Hapus Catatan?'),
+                                  content: Text(
+                                    'Anda yakin ingin menghapus ${provider.selectedNotes.length} catatan yang dipilih?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Batal'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Hapus'),
+                                    ),
+                                  ],
+                                ),
+                              ) ??
+                              false;
+
+                          if (confirmed) {
+                            await provider.deleteSelected();
+                          }
+                        },
+                        tooltip: 'Hapus',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.select_all),
+                        onPressed: () => provider.selectAll(),
+                        tooltip: 'Pilih Semua',
+                      ),
+                    ],
+                  )
+                : AppBar(
+                    title: Text(widget.topicName),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.sort),
+                        onPressed: () => _showSortDialog(context),
+                        tooltip: 'Urutkan Catatan',
+                      ),
+                    ],
+                  ),
             body: Column(
               children: [
                 Padding(
@@ -235,8 +329,15 @@ class _NoteListPageState extends State<NoteListPage> {
                           itemCount: provider.notes.length,
                           itemBuilder: (context, index) {
                             final note = provider.notes[index];
+                            final isSelected = provider.selectedNotes.contains(
+                              note,
+                            );
                             return ListTile(
-                              // ==> TAMPILKAN IKON CATATAN <==
+                              tileColor: isSelected
+                                  ? Theme.of(
+                                      context,
+                                    ).primaryColor.withOpacity(0.2)
+                                  : null,
                               leading: Text(
                                 note.icon,
                                 style: const TextStyle(fontSize: 24),
@@ -245,64 +346,72 @@ class _NoteListPageState extends State<NoteListPage> {
                               subtitle: Text(
                                 'Diperbarui: ${DateFormat.yMd().add_jm().format(note.modifiedAt)}',
                               ),
-                              trailing: PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  if (value == 'view') {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => NoteViewPage(
-                                          topicName: widget.topicName,
-                                          note: note,
+                              trailing: provider.isSelectionMode
+                                  ? null
+                                  : PopupMenuButton<String>(
+                                      onSelected: (value) {
+                                        if (value == 'view') {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => NoteViewPage(
+                                                topicName: widget.topicName,
+                                                note: note,
+                                              ),
+                                            ),
+                                          ).then((_) => provider.fetchNotes());
+                                        } else if (value == 'rename') {
+                                          _showRenameDialog(context, note);
+                                        } else if (value == 'icon') {
+                                          _showChangeIconDialog(context, note);
+                                        } else if (value == 'delete') {
+                                          _showDeleteDialog(
+                                            context,
+                                            note.id,
+                                            note.title,
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'view',
+                                          child: Text('Lihat Catatan'),
                                         ),
-                                      ),
-                                    ).then((_) => provider.fetchNotes());
-                                  } else if (value == 'rename') {
-                                    _showRenameDialog(context, note);
-                                  } else if (value == 'icon') {
-                                    _showChangeIconDialog(context, note);
-                                  } else if (value == 'delete') {
-                                    _showDeleteDialog(
-                                      context,
-                                      note.id,
-                                      note.title,
-                                    );
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'view',
-                                    child: Text('Lihat Catatan'),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'rename',
-                                    child: Text('Ubah Nama'),
-                                  ),
-                                  // ==> MENU BARU <==
-                                  const PopupMenuItem(
-                                    value: 'icon',
-                                    child: Text('Ubah Ikon'),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text(
-                                      'Hapus',
-                                      style: TextStyle(color: Colors.red),
+                                        const PopupMenuItem(
+                                          value: 'rename',
+                                          child: Text('Ubah Nama'),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'icon',
+                                          child: Text('Ubah Ikon'),
+                                        ),
+                                        const PopupMenuDivider(),
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text(
+                                            'Hapus',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ),
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => NoteViewPage(
-                                      topicName: widget.topicName,
-                                      note: note,
+                                if (provider.isSelectionMode) {
+                                  provider.toggleSelection(note);
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => NoteViewPage(
+                                        topicName: widget.topicName,
+                                        note: note,
+                                      ),
                                     ),
-                                  ),
-                                ).then((_) => provider.fetchNotes());
+                                  ).then((_) => provider.fetchNotes());
+                                }
+                              },
+                              onLongPress: () {
+                                provider.toggleSelection(note);
                               },
                             );
                           },
@@ -310,18 +419,21 @@ class _NoteListPageState extends State<NoteListPage> {
                 ),
               ],
             ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => NoteEditorPage(topicName: widget.topicName),
+            floatingActionButton: provider.isSelectionMode
+                ? null
+                : FloatingActionButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              NoteEditorPage(topicName: widget.topicName),
+                        ),
+                      ).then((_) => provider.fetchNotes());
+                    },
+                    child: const Icon(Icons.add),
+                    tooltip: 'Tambah Catatan',
                   ),
-                ).then((_) => provider.fetchNotes());
-              },
-              child: const Icon(Icons.add),
-              tooltip: 'Tambah Catatan',
-            ),
           );
         },
       ),
