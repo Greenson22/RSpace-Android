@@ -65,33 +65,39 @@ class MyApp extends StatelessWidget {
           theme: themeProvider.currentTheme,
           builder: (context, child) {
             final backgroundImagePath = themeProvider.backgroundImagePath;
-            return Stack(
-              children: [
-                // === PERUBAHAN UTAMA DI SINI ===
-                // Container ini sekarang membungkus seluruh aplikasi (child!)
-                Container(
-                  decoration: backgroundImagePath != null
-                      ? BoxDecoration(
-                          image: DecorationImage(
-                            image: FileImage(File(backgroundImagePath)),
-                            fit: BoxFit.cover,
-                            colorFilter: ColorFilter.mode(
-                              Colors.black.withOpacity(0.3),
-                              BlendMode.darken,
-                            ),
-                          ),
-                        )
-                      : null,
-                  child:
-                      child!, // child! (halaman) sekarang ada di dalam Container
-                ),
-                // =================================
-                if (themeProvider.isChristmasTheme) const SnowWidget(),
-                if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
-                if (themeProvider.showFloatingCharacter)
-                  const FloatingCharacter(),
-                if (themeProvider.showQuickFab) const DraggableFabView(),
-              ],
+            // ==> LOGIKA SKALA YANG DIKEMBALIKAN <==
+            final mediaQuery = MediaQuery.of(context);
+            final scaledMediaQuery = mediaQuery.copyWith(
+              textScaleFactor: themeProvider.uiScaleFactor,
+            );
+
+            return MediaQuery(
+              data: scaledMediaQuery,
+              // ==> PERBAIKAN STRUKTUR STACK <==
+              child: Stack(
+                children: [
+                  // 1. Latar Belakang (paling bawah)
+                  if (backgroundImagePath != null)
+                    Positioned.fill(
+                      child: Image.file(
+                        File(backgroundImagePath),
+                        fit: BoxFit.cover,
+                        color: Colors.black.withOpacity(0.3),
+                        colorBlendMode: BlendMode.darken,
+                      ),
+                    ),
+
+                  // 2. Konten Aplikasi (di atas latar belakang)
+                  child!,
+
+                  // 3. Widget Overlay (paling atas)
+                  if (themeProvider.isChristmasTheme) const SnowWidget(),
+                  if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
+                  if (themeProvider.showFloatingCharacter)
+                    const FloatingCharacter(),
+                  if (themeProvider.showQuickFab) const DraggableFabView(),
+                ],
+              ),
             );
           },
           home: const DashboardPage(),
