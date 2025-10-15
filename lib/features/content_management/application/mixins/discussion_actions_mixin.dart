@@ -391,46 +391,65 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    final choice = await showDialog<String?>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pilih Editor'),
-        content: const Text(
-          'Buka dengan editor internal atau aplikasi eksternal?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'internal'),
-            child: const Text('Internal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'external'),
-            child: const Text('Eksternal'),
-          ),
-        ],
-      ),
-    );
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final String? editorChoice = themeProvider.defaultHtmlEditor;
 
-    if (choice == 'internal' && context.mounted) {
-      final content = await readHtmlFromFile(discussion);
-      // ==> GUNAKAN FUNGSI PUBLIK <==
-      final correctPath = getCorrectRelativePath(discussion);
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HtmlEditorPage(
-            pageTitle: discussion.discussion,
-            initialContent: content,
-            onSave: (newContent) async {
-              await writeHtmlToFile(correctPath, newContent);
-            },
+    // If a default is set, use it. Otherwise, show the dialog.
+    if (editorChoice != null) {
+      if (editorChoice == 'internal') {
+        await _openWithInternalEditor(discussion, context);
+      } else {
+        await _openFileWithExternalEditor(discussion);
+      }
+    } else {
+      final choice = await showDialog<String?>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Pilih Editor'),
+          content: const Text(
+            'Buka dengan editor internal atau aplikasi eksternal?',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'internal'),
+              child: const Text('Internal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'external'),
+              child: const Text('Eksternal'),
+            ),
+          ],
         ),
       );
-    } else if (choice == 'external') {
-      await _openFileWithExternalEditor(discussion);
+
+      if (choice == 'internal' && context.mounted) {
+        await _openWithInternalEditor(discussion, context);
+      } else if (choice == 'external') {
+        await _openFileWithExternalEditor(discussion);
+      }
     }
+  }
+
+  Future<void> _openWithInternalEditor(
+    Discussion discussion,
+    BuildContext context,
+  ) async {
+    final content = await readHtmlFromFile(discussion);
+    // ==> GUNAKAN FUNGSI PUBLIK <==
+    final correctPath = getCorrectRelativePath(discussion);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HtmlEditorPage(
+          pageTitle: discussion.discussion,
+          initialContent: content,
+          onSave: (newContent) async {
+            await writeHtmlToFile(correctPath, newContent);
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _openFileWithExternalEditor(Discussion discussion) async {

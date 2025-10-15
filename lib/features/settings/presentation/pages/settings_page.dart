@@ -60,6 +60,13 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Kelola dan buat daftar kata-kata motivasi harian.',
             onTap: () => showMotivationalQuotesDialog(context),
           ),
+          _buildSettingsTile(
+            context,
+            icon: Icons.edit_document,
+            title: 'Editor HTML Default',
+            subtitle: 'Pilih editor default saat mengedit file HTML.',
+            onTap: () => _showHtmlEditorChoiceDialog(context),
+          ),
           // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
           _buildSettingsTile(
             context,
@@ -146,6 +153,64 @@ class SettingsPage extends StatelessWidget {
       title: Text(title),
       subtitle: Text(subtitle),
       onTap: onTap,
+    );
+  }
+
+  void _showHtmlEditorChoiceDialog(BuildContext context) {
+    final provider = Provider.of<ThemeProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            String? currentChoice = provider.defaultHtmlEditor;
+
+            return AlertDialog(
+              title: const Text('Pilih Editor HTML Default'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<String?>(
+                    title: const Text('Selalu Tanya'),
+                    value: null,
+                    groupValue: currentChoice,
+                    onChanged: (value) =>
+                        setDialogState(() => currentChoice = value),
+                  ),
+                  RadioListTile<String?>(
+                    title: const Text('Editor Internal'),
+                    value: 'internal',
+                    groupValue: currentChoice,
+                    onChanged: (value) =>
+                        setDialogState(() => currentChoice = value),
+                  ),
+                  RadioListTile<String?>(
+                    title: const Text('Editor Eksternal'),
+                    value: 'external',
+                    groupValue: currentChoice,
+                    onChanged: (value) =>
+                        setDialogState(() => currentChoice = value),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    provider.updateDefaultHtmlEditor(currentChoice);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

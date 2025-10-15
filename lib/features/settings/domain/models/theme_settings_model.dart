@@ -23,6 +23,7 @@ class ThemeSettings {
   final bool openInAppBrowser;
   final String? htmlEditorTheme;
   final String defaultNoteIcon;
+  final String? defaultHtmlEditor;
 
   ThemeSettings({
     this.isDarkMode = false,
@@ -44,6 +45,7 @@ class ThemeSettings {
     this.openInAppBrowser = true,
     this.htmlEditorTheme,
     this.defaultNoteIcon = '🗒️',
+    this.defaultHtmlEditor,
   });
 
   factory ThemeSettings.fromJson(Map<String, dynamic> json) {
@@ -78,6 +80,7 @@ class ThemeSettings {
       openInAppBrowser: json['openInAppBrowser'] as bool? ?? true,
       htmlEditorTheme: json['htmlEditorTheme'] as String?,
       defaultNoteIcon: json['defaultNoteIcon'] as String? ?? '🗒️',
+      defaultHtmlEditor: json['defaultHtmlEditor'] as String?,
     );
   }
 
@@ -102,6 +105,7 @@ class ThemeSettings {
       'openInAppBrowser': openInAppBrowser,
       'htmlEditorTheme': htmlEditorTheme,
       'defaultNoteIcon': defaultNoteIcon,
+      'defaultHtmlEditor': defaultHtmlEditor,
     };
   }
 
@@ -125,6 +129,7 @@ class ThemeSettings {
     bool? openInAppBrowser,
     ValueGetter<String?>? htmlEditorTheme,
     String? defaultNoteIcon,
+    ValueGetter<String?>? defaultHtmlEditor,
   }) {
     return ThemeSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -151,6 +156,9 @@ class ThemeSettings {
           ? htmlEditorTheme()
           : this.htmlEditorTheme,
       defaultNoteIcon: defaultNoteIcon ?? this.defaultNoteIcon,
+      defaultHtmlEditor: defaultHtmlEditor != null
+          ? defaultHtmlEditor()
+          : this.defaultHtmlEditor,
     );
   }
 }

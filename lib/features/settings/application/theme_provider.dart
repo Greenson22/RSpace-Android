@@ -43,6 +43,7 @@ class ThemeProvider with ChangeNotifier {
   bool get openInAppBrowser => _settings?.openInAppBrowser ?? true;
   String? get htmlEditorTheme => _settings?.htmlEditorTheme;
   String get defaultNoteIcon => _settings?.defaultNoteIcon ?? '🗒️';
+  String? get defaultHtmlEditor => _settings?.defaultHtmlEditor;
 
   ThemeData get currentTheme {
     if (_settings == null) {
@@ -203,5 +204,10 @@ class ThemeProvider with ChangeNotifier {
   Future<void> saveHtmlEditorTheme(String themeName) async {
     if (_settings == null) return;
     _saveAndUpdate(_settings!.copyWith(htmlEditorTheme: () => themeName));
+  }
+
+  Future<void> updateDefaultHtmlEditor(String? editorChoice) async {
+    if (_settings == null) return;
+    _saveAndUpdate(_settings!.copyWith(defaultHtmlEditor: () => editorChoice));
   }
 }
