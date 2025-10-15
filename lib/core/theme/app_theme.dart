@@ -94,6 +94,12 @@ class AppTheme {
           backgroundColor: Colors.grey[900],
           foregroundColor: Colors.white,
         ),
+        // ==> TAMBAHKAN THEME UNTUK TAB BAR DI SINI (DARK) <==
+        tabBarTheme: TabBarThemeData(
+          labelColor: offWhite,
+          unselectedLabelColor: offWhite.withOpacity(0.7),
+          indicatorColor: christmasRed,
+        ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: christmasRed,
           foregroundColor: Colors.white,
@@ -121,6 +127,12 @@ class AppTheme {
         appBarTheme: const AppBarTheme(
           backgroundColor: christmasRed,
           foregroundColor: Colors.white,
+        ),
+        // ==> TAMBAHKAN THEME UNTUK TAB BAR DI SINI (LIGHT) <==
+        tabBarTheme: TabBarThemeData(
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withOpacity(0.8),
+          indicatorColor: Colors.white,
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: christmasRed,
@@ -168,8 +180,6 @@ class AppTheme {
         ),
       );
     } else {
-      // Tema terang untuk bawah air mungkin tidak terlalu masuk akal,
-      // jadi kita buat variasi yang lebih cerah saja.
       return _lightTheme(lightBlue);
     }
   }
@@ -184,13 +194,10 @@ class AppTheme {
       foregroundColor: Colors.white,
       elevation: 2,
     ),
-    // ==> PERBAIKAN DI SINI <==
     tabBarTheme: TabBarThemeData(
-      labelColor: Colors.white, // Warna teks & ikon tab yang aktif
-      unselectedLabelColor: Colors.white.withOpacity(
-        0.7,
-      ), // Warna teks & ikon tab yang tidak aktif
-      indicatorColor: Colors.white, // Warna garis indikator
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white.withOpacity(0.7),
+      indicatorColor: Colors.white,
     ),
     cardTheme: CardThemeData(
       elevation: 2,
@@ -244,7 +251,6 @@ class AppTheme {
     ).copyWith(secondary: primaryColor),
   );
 
-  // Helper untuk membuat MaterialColor dari satu Color
   static MaterialColor _createMaterialColor(Color color) {
     List strengths = <double>[.05];
     Map<int, Color> swatch = {};
