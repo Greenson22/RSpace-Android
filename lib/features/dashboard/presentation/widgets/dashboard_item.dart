@@ -33,11 +33,11 @@ class DashboardItem extends StatelessWidget {
         return switch (type) {
           DashboardItemType.quickAccess => _buildQuickAccess(
             context,
-            themeProvider.quickAccessOpacity,
+            themeProvider.dashboardComponentOpacity,
           ),
           DashboardItemType.listItem => _buildListItem(
             context,
-            themeProvider.listItemOpacity,
+            themeProvider.dashboardComponentOpacity,
           ),
         };
       },

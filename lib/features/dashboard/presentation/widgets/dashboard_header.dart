@@ -20,7 +20,7 @@ import '../../../content_management/presentation/topics/topics_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../../settings/application/services/dashboard_settings_service.dart';
-import '../../../settings/application/theme_provider.dart'; // ==> IMPORT THEMEPROVIDER
+import '../../../settings/application/theme_provider.dart';
 
 class _HeaderStats {
   final int pendingTasks;
@@ -268,7 +268,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
 
   @override
   Widget build(BuildContext context) {
-    // ==> GUNAKAN CONSUMER UNTUK MENDAPATKAN OPACITY <==
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return Container(
@@ -277,10 +276,12 @@ class _DashboardHeaderState extends State<DashboardHeader>
             borderRadius: BorderRadius.circular(15),
             color:
                 Theme.of(context).cardTheme.color?.withOpacity(
-                  themeProvider.headerOpacity, // Gunakan nilai dari provider
+                  themeProvider
+                      .dashboardComponentOpacity, // Gunakan nilai tunggal
                 ) ??
                 Theme.of(context).cardColor.withOpacity(
-                  themeProvider.headerOpacity, // Gunakan nilai dari provider
+                  themeProvider
+                      .dashboardComponentOpacity, // Gunakan nilai tunggal
                 ),
             boxShadow: [
               BoxShadow(
