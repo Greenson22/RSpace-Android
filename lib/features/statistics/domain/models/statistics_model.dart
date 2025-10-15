@@ -23,7 +23,6 @@ class AppStatistics {
   final int finishedDiscussionCount;
   final int pointCount;
   final int taskCategoryCount;
-  // ==> NAMA FIELD DIPERJELAS <==
   final int totalTaskCount;
   final int dailyTargetTaskCount;
   final int dailyTargetsCompleted;
@@ -35,11 +34,15 @@ class AppStatistics {
   final String? mostActiveDay;
   final int mostActiveDayMinutes;
 
-  // ==> FIELD-FIELD BARU UNTUK KUIS <==
   final int quizCategoryCount;
   final int quizTopicCount;
   final int quizSetCount;
   final int quizQuestionCount;
+
+  // ==> PROPERTI BARU DITAMBAHKAN <==
+  final int noteTopicCount;
+  final int totalNotesCount;
+  final int neuronCount;
 
   AppStatistics({
     this.topicCount = 0,
@@ -57,10 +60,13 @@ class AppStatistics {
     this.averageTimePerDay = Duration.zero,
     this.mostActiveDay,
     this.mostActiveDayMinutes = 0,
-    // ==> INISIALISASI FIELD BARU <==
     this.quizCategoryCount = 0,
     this.quizTopicCount = 0,
     this.quizSetCount = 0,
     this.quizQuestionCount = 0,
+    // ==> INISIALISASI PROPERTI BARU <==
+    this.noteTopicCount = 0,
+    this.totalNotesCount = 0,
+    this.neuronCount = 0,
   });
 }

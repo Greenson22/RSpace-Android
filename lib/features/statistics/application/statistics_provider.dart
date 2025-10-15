@@ -11,6 +11,9 @@ import '../../../core/services/path_service.dart';
 import '../../content_management/domain/services/subject_service.dart';
 import '../../time_management/application/services/time_log_service.dart';
 import '../../content_management/domain/services/topic_service.dart';
+// ==> IMPORT BARU <==
+import '../../notes/infrastructure/note_service.dart';
+import '../../../core/services/neuron_service.dart';
 
 class StatisticsProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();
@@ -19,6 +22,9 @@ class StatisticsProvider with ChangeNotifier {
   final MyTaskService _myTaskService = MyTaskService();
   final PathService _pathService = PathService();
   final TimeLogService _timeLogService = TimeLogService();
+  // ==> INSTANCE SERVICE BARU <==
+  final NoteService _noteService = NoteService();
+  final NeuronService _neuronService = NeuronService();
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -149,6 +155,15 @@ class StatisticsProvider with ChangeNotifier {
         }
       }
 
+      // ==> LOGIKA BARU UNTUK MENGHITUNG STATISTIK CATATAN & NEURON <==
+      final noteTopics = await _noteService.getTopics();
+      int totalNotes = 0;
+      for (final topic in noteTopics) {
+        final notesInTopic = await _noteService.getNotes(topic.name);
+        totalNotes += notesInTopic.length;
+      }
+      final neuronCount = await _neuronService.getNeurons();
+
       _stats = AppStatistics(
         topicCount: topics.length,
         subjectCount: totalSubjectCount,
@@ -165,6 +180,10 @@ class StatisticsProvider with ChangeNotifier {
         averageTimePerDay: averageTimePerDay,
         mostActiveDay: mostActiveDay,
         mostActiveDayMinutes: mostActiveDayMinutes,
+        // ==> KIRIM DATA BARU KE MODEL <==
+        noteTopicCount: noteTopics.length,
+        totalNotesCount: totalNotes,
+        neuronCount: neuronCount,
       );
     } catch (e) {
       debugPrint("Error generating statistics: $e");
