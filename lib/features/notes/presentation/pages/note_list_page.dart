@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/notes/application/note_list_provider.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_editor_page.dart';
+import 'package:my_aplication/features/notes/presentation/pages/note_view_page.dart';
 import 'package:provider/provider.dart';
 
 class NoteListPage extends StatefulWidget {
@@ -34,7 +35,42 @@ class _NoteListPageState extends State<NoteListPage> {
     super.dispose();
   }
 
-  void _deleteNote(BuildContext context, String noteId, String noteTitle) {
+  void _showRenameDialog(BuildContext context, note) {
+    final provider = Provider.of<NoteListProvider>(context, listen: false);
+    final controller = TextEditingController(text: note.title);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ubah Judul Catatan'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Judul Baru'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.isNotEmpty) {
+                await provider.renameNote(note, controller.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(
+    BuildContext context,
+    String noteId,
+    String noteTitle,
+  ) {
     final provider = Provider.of<NoteListProvider>(context, listen: false);
     showDialog(
       context: context,
@@ -105,19 +141,58 @@ class _NoteListPageState extends State<NoteListPage> {
                               subtitle: Text(
                                 'Diperbarui: ${DateFormat.yMd().add_jm().format(note.modifiedAt)}',
                               ),
+                              trailing: PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  if (value == 'view') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => NoteViewPage(
+                                          topicName: widget.topicName,
+                                          note: note,
+                                        ),
+                                      ),
+                                    ).then((_) => provider.fetchNotes());
+                                  } else if (value == 'rename') {
+                                    _showRenameDialog(context, note);
+                                  } else if (value == 'delete') {
+                                    _showDeleteDialog(
+                                      context,
+                                      note.id,
+                                      note.title,
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'view',
+                                    child: Text('Lihat Catatan'),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'rename',
+                                    child: Text('Ubah Nama'),
+                                  ),
+                                  const PopupMenuDivider(),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(
+                                      'Hapus',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => NoteEditorPage(
+                                    builder: (_) => NoteViewPage(
                                       topicName: widget.topicName,
                                       note: note,
                                     ),
                                   ),
                                 ).then((_) => provider.fetchNotes());
                               },
-                              onLongPress: () =>
-                                  _deleteNote(context, note.id, note.title),
                             );
                           },
                         ),

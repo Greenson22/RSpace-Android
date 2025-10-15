@@ -41,6 +41,13 @@ class NoteListProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> renameNote(Note note, String newTitle) async {
+    note.title = newTitle;
+    note.modifiedAt = DateTime.now();
+    await _noteService.saveNote(topicName, note);
+    await fetchNotes();
+  }
+
   Future<void> deleteNote(String noteId) async {
     await _noteService.deleteNote(topicName, noteId);
     await fetchNotes();
