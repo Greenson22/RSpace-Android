@@ -15,10 +15,9 @@ class NoteListProvider with ChangeNotifier {
   List<Note> _filteredNotes = [];
   List<Note> get notes => _filteredNotes;
 
-  // ==> STATE BARU UNTUK PENGURUTAN <==
-  String _sortType = 'modifiedAt'; // Default: urutkan berdasarkan tanggal
+  String _sortType = 'modifiedAt';
   String get sortType => _sortType;
-  bool _sortAscending = false; // Default: terlama (false for descending/newest)
+  bool _sortAscending = false;
   bool get sortAscending => _sortAscending;
   String _searchQuery = '';
 
@@ -30,12 +29,11 @@ class NoteListProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     _allNotes = await _noteService.getNotes(topicName);
-    _applyFiltersAndSort(); // Terapkan pengurutan awal
+    _applyFiltersAndSort();
     _isLoading = false;
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENERAPKAN PENGURUTAN <==
   void applySort(String sortType, bool sortAscending) {
     _sortType = sortType;
     _sortAscending = sortAscending;
@@ -47,7 +45,6 @@ class NoteListProvider with ChangeNotifier {
     _applyFiltersAndSort();
   }
 
-  // ==> FUNGSI TERPUSAT UNTUK FILTER & SORT <==
   void _applyFiltersAndSort() {
     if (_searchQuery.isEmpty) {
       _filteredNotes = List.from(_allNotes);
@@ -58,7 +55,6 @@ class NoteListProvider with ChangeNotifier {
       }).toList();
     }
 
-    // Terapkan logika pengurutan
     _filteredNotes.sort((a, b) {
       int result;
       switch (_sortType) {
@@ -70,8 +66,6 @@ class NoteListProvider with ChangeNotifier {
           result = a.modifiedAt.compareTo(b.modifiedAt);
           break;
       }
-      // Untuk tanggal, ascending = true berarti terlama ke terbaru
-      // Untuk judul, ascending = true berarti A ke Z
       return _sortAscending ? result : -result;
     });
 
@@ -83,6 +77,14 @@ class NoteListProvider with ChangeNotifier {
     note.modifiedAt = DateTime.now();
     await _noteService.saveNote(topicName, note);
     await fetchNotes();
+  }
+
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  Future<void> updateNoteIcon(Note note, String newIcon) async {
+    note.icon = newIcon;
+    note.modifiedAt = DateTime.now();
+    await _noteService.saveNote(topicName, note);
+    notifyListeners(); // Langsung update UI tanpa perlu fetch ulang
   }
 
   Future<void> deleteNote(String noteId) async {

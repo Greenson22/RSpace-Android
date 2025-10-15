@@ -19,6 +19,8 @@ class ThemeSettings {
   final bool fabMenuShowText;
   final bool openInAppBrowser;
   final String? htmlEditorTheme;
+  // ==> PROPERTI BARU <==
+  final String defaultNoteIcon;
 
   ThemeSettings({
     this.isDarkMode = false,
@@ -36,6 +38,8 @@ class ThemeSettings {
     this.fabMenuShowText = true,
     this.openInAppBrowser = true,
     this.htmlEditorTheme,
+    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    this.defaultNoteIcon = '🗒️',
   });
 
   factory ThemeSettings.fromJson(Map<String, dynamic> json) {
@@ -63,6 +67,8 @@ class ThemeSettings {
       fabMenuShowText: json['fabMenuShowText'] as bool? ?? true,
       openInAppBrowser: json['openInAppBrowser'] as bool? ?? true,
       htmlEditorTheme: json['htmlEditorTheme'] as String?,
+      // ==> BACA DARI JSON <==
+      defaultNoteIcon: json['defaultNoteIcon'] as String? ?? '🗒️',
     );
   }
 
@@ -83,6 +89,8 @@ class ThemeSettings {
       'fabMenuShowText': fabMenuShowText,
       'openInAppBrowser': openInAppBrowser,
       'htmlEditorTheme': htmlEditorTheme,
+      // ==> SIMPAN KE JSON <==
+      'defaultNoteIcon': defaultNoteIcon,
     };
   }
 
@@ -102,6 +110,8 @@ class ThemeSettings {
     bool? fabMenuShowText,
     bool? openInAppBrowser,
     ValueGetter<String?>? htmlEditorTheme,
+    // ==> TAMBAHKAN DI COPYWITH <==
+    String? defaultNoteIcon,
   }) {
     return ThemeSettings(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -123,6 +133,8 @@ class ThemeSettings {
       htmlEditorTheme: htmlEditorTheme != null
           ? htmlEditorTheme()
           : this.htmlEditorTheme,
+      // ==> TAMBAHKAN DI COPYWITH <==
+      defaultNoteIcon: defaultNoteIcon ?? this.defaultNoteIcon,
     );
   }
 }

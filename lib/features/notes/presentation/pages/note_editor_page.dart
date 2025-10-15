@@ -1,8 +1,11 @@
 // lib/features/notes/presentation/pages/note_editor_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:my_aplication/features/notes/domain/models/note_model.dart';
 import 'package:my_aplication/features/notes/infrastructure/note_service.dart';
+import 'package:my_aplication/features/settings/application/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class NoteEditorPage extends StatefulWidget {
   final String topicName;
@@ -25,7 +28,15 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   @override
   void initState() {
     super.initState();
-    _currentNote = widget.note ?? Note(title: '', content: '');
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    _currentNote =
+        widget.note ??
+        Note(
+          title: '',
+          content: '',
+          // ==> GUNAKAN IKON DEFAULT DARI PROVIDER <==
+          icon: themeProvider.defaultNoteIcon,
+        );
     _titleController = TextEditingController(text: _currentNote.title);
     _contentController = TextEditingController(text: _currentNote.content);
   }
@@ -73,6 +84,20 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     }
   }
 
+  void _changeIcon() {
+    showIconPickerDialog(
+      context: context,
+      name: _titleController.text.isNotEmpty
+          ? _titleController.text
+          : "Catatan",
+      onIconSelected: (newIcon) {
+        setState(() {
+          _currentNote.icon = newIcon;
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,14 +123,41 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           key: _formKey,
           child: Column(
             children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Judul',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.trim().isEmpty ? 'Judul tidak boleh kosong' : null,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ==> TOMBOL UNTUK MENGUBAH IKON <==
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12.0, top: 4.0),
+                    child: InkWell(
+                      onTap: _changeIcon,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _currentNote.icon,
+                          style: const TextStyle(fontSize: 28),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Judul',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) => value!.trim().isEmpty
+                          ? 'Judul tidak boleh kosong'
+                          : null,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Expanded(

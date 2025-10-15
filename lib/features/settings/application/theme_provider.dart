@@ -17,7 +17,6 @@ class ThemeProvider with ChangeNotifier {
   String? _localBackgroundImagePath;
   bool _isLoading = true;
 
-  // Getters that expose settings to the UI
   bool get isLoading => _isLoading;
 
   bool get darkTheme => _settings?.isDarkMode ?? false;
@@ -39,10 +38,11 @@ class ThemeProvider with ChangeNotifier {
   bool get fabMenuShowText => _settings?.fabMenuShowText ?? true;
   bool get openInAppBrowser => _settings?.openInAppBrowser ?? true;
   String? get htmlEditorTheme => _settings?.htmlEditorTheme;
+  // ==> GETTER BARU <==
+  String get defaultNoteIcon => _settings?.defaultNoteIcon ?? '🗒️';
 
   ThemeData get currentTheme {
     if (_settings == null) {
-      // Sediakan tema default yang aman selagi memuat
       return AppTheme.getTheme(AppTheme.selectableColors.first, false);
     }
     if (_settings!.isChristmasTheme) {
@@ -73,6 +73,12 @@ class ThemeProvider with ChangeNotifier {
     _settings = newSettings;
     await _settingsService.saveSettings(_settings!);
     notifyListeners();
+  }
+
+  // ==> FUNGSI BARU <==
+  Future<void> updateDefaultNoteIcon(String newIcon) async {
+    if (_settings == null) return;
+    _saveAndUpdate(_settings!.copyWith(defaultNoteIcon: newIcon));
   }
 
   void updateTheme({
@@ -143,19 +149,15 @@ class ThemeProvider with ChangeNotifier {
       final sourceFile = File(result.files.single.path!);
       final assetsPath = await _pathService.assetsPath;
       final fileExtension = path.extension(sourceFile.path);
-      // Buat nama file unik untuk menghindari konflik
       final uniqueFileName =
           'local_background_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
       final destinationPath = path.join(assetsPath, uniqueFileName);
       final destinationFile = File(destinationPath);
 
-      // Hapus gambar latar lama jika ada
       await clearBackgroundImagePath();
 
-      // Salin file yang dipilih ke folder assets aplikasi
       await sourceFile.copy(destinationFile.path);
 
-      // Simpan path baru secara lokal
       await _prefsService.saveLocalBackgroundImagePath(destinationFile.path);
       _localBackgroundImagePath = destinationFile.path;
       notifyListeners();
@@ -163,14 +165,12 @@ class ThemeProvider with ChangeNotifier {
   }
 
   Future<void> clearBackgroundImagePath() async {
-    // Hapus file fisik dari folder assets
     if (_localBackgroundImagePath != null) {
       final file = File(_localBackgroundImagePath!);
       if (await file.exists()) {
         await file.delete();
       }
     }
-    // Hapus path dari penyimpanan lokal
     await _prefsService.clearLocalBackgroundImagePath();
     _localBackgroundImagePath = null;
     notifyListeners();

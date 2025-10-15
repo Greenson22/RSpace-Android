@@ -6,6 +6,8 @@ class Note {
   final String id;
   String title;
   String content;
+  // ==> PROPERTI BARU DITAMBAHKAN <==
+  String icon;
   final DateTime createdAt;
   DateTime modifiedAt;
 
@@ -13,6 +15,8 @@ class Note {
     String? id,
     required this.title,
     required this.content,
+    // ==> TAMBAHAN DI KONSTRUKTOR <==
+    this.icon = '🗒️',
     DateTime? createdAt,
     DateTime? modifiedAt,
   }) : id = id ?? const Uuid().v4(),
@@ -24,6 +28,8 @@ class Note {
       id: json['id'] as String,
       title: json['title'] as String,
       content: json['content'] as String,
+      // ==> BACA DARI JSON <==
+      icon: json['icon'] as String? ?? '🗒️',
       createdAt: DateTime.parse(json['createdAt'] as String),
       modifiedAt: DateTime.parse(json['modifiedAt'] as String),
     );
@@ -34,6 +40,8 @@ class Note {
       'id': id,
       'title': title,
       'content': content,
+      // ==> SIMPAN KE JSON <==
+      'icon': icon,
       'createdAt': createdAt.toIso8601String(),
       'modifiedAt': modifiedAt.toIso8601String(),
     };

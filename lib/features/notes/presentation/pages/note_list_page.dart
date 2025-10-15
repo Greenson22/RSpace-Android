@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:my_aplication/features/notes/application/note_list_provider.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_editor_page.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_view_page.dart';
@@ -66,6 +67,18 @@ class _NoteListPageState extends State<NoteListPage> {
     );
   }
 
+  // ==> FUNGSI BARU UNTUK MENGUBAH IKON <==
+  void _showChangeIconDialog(BuildContext context, note) {
+    final provider = Provider.of<NoteListProvider>(context, listen: false);
+    showIconPickerDialog(
+      context: context,
+      name: note.title,
+      onIconSelected: (newIcon) {
+        provider.updateNoteIcon(note, newIcon);
+      },
+    );
+  }
+
   void _showDeleteDialog(
     BuildContext context,
     String noteId,
@@ -95,7 +108,6 @@ class _NoteListPageState extends State<NoteListPage> {
     );
   }
 
-  // ==> DIALOG PENGURUTAN BARU <==
   Future<void> _showSortDialog(BuildContext context) async {
     final provider = Provider.of<NoteListProvider>(context, listen: false);
     String sortType = provider.sortType;
@@ -136,15 +148,15 @@ class _NoteListPageState extends State<NoteListPage> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   RadioListTile<bool>(
-                    title: const Text('Terbaru / A-Z'),
-                    value: false, // false for descending date, true for A-Z
+                    title: Text(sortType == 'title' ? 'A-Z' : 'Terbaru'),
+                    value: false,
                     groupValue: sortAscending,
                     onChanged: (value) =>
                         setDialogState(() => sortAscending = false),
                   ),
                   RadioListTile<bool>(
-                    title: const Text('Terlama / Z-A'),
-                    value: true, // true for ascending date, false for Z-A
+                    title: Text(sortType == 'title' ? 'Z-A' : 'Terlama'),
+                    value: true,
                     groupValue: sortAscending,
                     onChanged: (value) =>
                         setDialogState(() => sortAscending = true),
@@ -158,7 +170,6 @@ class _NoteListPageState extends State<NoteListPage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Logic to handle ascending/descending based on type
                     bool isAsc = sortType == 'title'
                         ? sortAscending
                         : !sortAscending;
@@ -184,7 +195,6 @@ class _NoteListPageState extends State<NoteListPage> {
           return Scaffold(
             appBar: AppBar(
               title: Text(widget.topicName),
-              // ==> TOMBOL SORT DITAMBAHKAN DI SINI <==
               actions: [
                 IconButton(
                   icon: const Icon(Icons.sort),
@@ -226,7 +236,11 @@ class _NoteListPageState extends State<NoteListPage> {
                           itemBuilder: (context, index) {
                             final note = provider.notes[index];
                             return ListTile(
-                              leading: const Icon(Icons.note_outlined),
+                              // ==> TAMPILKAN IKON CATATAN <==
+                              leading: Text(
+                                note.icon,
+                                style: const TextStyle(fontSize: 24),
+                              ),
                               title: Text(note.title),
                               subtitle: Text(
                                 'Diperbarui: ${DateFormat.yMd().add_jm().format(note.modifiedAt)}',
@@ -245,6 +259,8 @@ class _NoteListPageState extends State<NoteListPage> {
                                     ).then((_) => provider.fetchNotes());
                                   } else if (value == 'rename') {
                                     _showRenameDialog(context, note);
+                                  } else if (value == 'icon') {
+                                    _showChangeIconDialog(context, note);
                                   } else if (value == 'delete') {
                                     _showDeleteDialog(
                                       context,
@@ -261,6 +277,11 @@ class _NoteListPageState extends State<NoteListPage> {
                                   const PopupMenuItem(
                                     value: 'rename',
                                     child: Text('Ubah Nama'),
+                                  ),
+                                  // ==> MENU BARU <==
+                                  const PopupMenuItem(
+                                    value: 'icon',
+                                    child: Text('Ubah Ikon'),
                                   ),
                                   const PopupMenuDivider(),
                                   const PopupMenuItem(

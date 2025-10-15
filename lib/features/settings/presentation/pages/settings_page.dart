@@ -11,8 +11,9 @@ import '../dialogs/repetition_code_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/progress_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/task_settings_dialog.dart';
 import '../dialogs/motivational_quotes_dialog.dart';
-// ==> IMPORT DIALOG BARU <==
 import '../dialogs/server_config_dialog.dart';
+// ==> IMPORT DIALOG BARU <==
+import 'package:my_aplication/features/notes/presentation/dialogs/note_settings_dialog.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -59,6 +60,14 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Kelola dan buat daftar kata-kata motivasi harian.',
             onTap: () => showMotivationalQuotesDialog(context),
           ),
+          // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
+          _buildSettingsTile(
+            context,
+            icon: Icons.note_alt_outlined,
+            title: 'Pengaturan Catatan',
+            subtitle: 'Atur ikon default untuk catatan baru.',
+            onTap: () => showNoteSettingsDialog(context),
+          ),
           _buildSettingsTile(
             context,
             icon: Icons.timer_outlined,
@@ -86,7 +95,6 @@ class SettingsPage extends StatelessWidget {
 
           const Divider(),
           _buildCategoryHeader(context, 'Konektivitas & AI'),
-          // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
           _buildSettingsTile(
             context,
             icon: Icons.dns_outlined,
