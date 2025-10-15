@@ -13,7 +13,6 @@ class NoteTopicProvider with ChangeNotifier {
   List<NoteTopic> _topics = [];
   List<NoteTopic> get topics => _topics;
 
-  // ==> STATE BARU UNTUK MODE URUTKAN <==
   bool _isReorderModeEnabled = false;
   bool get isReorderModeEnabled => _isReorderModeEnabled;
 
@@ -21,7 +20,6 @@ class NoteTopicProvider with ChangeNotifier {
     fetchTopics();
   }
 
-  // ==> FUNGSI BARU UNTUK TOGGLE MODE <==
   void toggleReorderMode() {
     _isReorderModeEnabled = !_isReorderModeEnabled;
     notifyListeners();
@@ -35,11 +33,9 @@ class NoteTopicProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU UNTUK MENGURUTKAN <==
+  // ==> PERBAIKAN DI SINI <==
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
+    // Blok 'if (newIndex > oldIndex)' dihapus dari sini.
     final item = _topics.removeAt(oldIndex);
     _topics.insert(newIndex, item);
 
