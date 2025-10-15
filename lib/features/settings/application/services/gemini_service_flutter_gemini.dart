@@ -13,7 +13,6 @@ class GeminiServiceFlutterGemini {
   final GeminiSettingsService _settingsService = GeminiSettingsService();
   final PathService _pathService = PathService();
 
-  /// Menginisialisasi Gemini dengan API Key yang sedang aktif.
   Future<void> _initializeGeminiWithActiveKey() async {
     final settings = await _settingsService.loadSettings();
     String apiKey = '';
@@ -53,6 +52,7 @@ class GeminiServiceFlutterGemini {
 
   // --- Gemini API Calls ---
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL <==
   Future<void> generateAndSaveMotivationalQuotes({int count = 10}) async {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();
@@ -72,8 +72,21 @@ class GeminiServiceFlutterGemini {
             .replaceAll('```json', '')
             .replaceAll('```', '')
             .trim();
-        final List<dynamic> jsonResponse = jsonDecode(cleanedResponse);
-        final newQuotes = List<String>.from(jsonResponse);
+
+        List<String> newQuotes;
+
+        try {
+          // Coba parsing sebagai JSON terlebih dahulu
+          final List<dynamic> jsonResponse = jsonDecode(cleanedResponse);
+          newQuotes = List<String>.from(jsonResponse);
+        } on FormatException {
+          // Jika gagal, parsing sebagai numbered list
+          newQuotes = cleanedResponse
+              .split('\n')
+              .map((line) => line.replaceAll(RegExp(r'^\d+\.\s*'), '').trim())
+              .where((line) => line.isNotEmpty)
+              .toList();
+        }
 
         final quotesPath = await _pathService.motivationalQuotesPath;
         final quotesFile = File(quotesPath);
@@ -251,7 +264,6 @@ class GeminiServiceFlutterGemini {
     }
   }
 
-  // Sisa fungsi tidak berubah (generateQuizQuestions, suggestColorPalette, etc.)
   Future<String> generateHtmlTemplate(String themeDescription) async {
     await _initializeGeminiWithActiveKey();
     final settings = await _settingsService.loadSettings();
