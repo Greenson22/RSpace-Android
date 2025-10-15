@@ -15,6 +15,13 @@ class NoteListProvider with ChangeNotifier {
   List<Note> _filteredNotes = [];
   List<Note> get notes => _filteredNotes;
 
+  // ==> STATE BARU UNTUK PENGURUTAN <==
+  String _sortType = 'modifiedAt'; // Default: urutkan berdasarkan tanggal
+  String get sortType => _sortType;
+  bool _sortAscending = false; // Default: terlama (false for descending/newest)
+  bool get sortAscending => _sortAscending;
+  String _searchQuery = '';
+
   NoteListProvider(this.topicName) {
     fetchNotes();
   }
@@ -23,21 +30,51 @@ class NoteListProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     _allNotes = await _noteService.getNotes(topicName);
-    _filteredNotes = _allNotes;
+    _applyFiltersAndSort(); // Terapkan pengurutan awal
     _isLoading = false;
     notifyListeners();
   }
 
+  // ==> FUNGSI BARU UNTUK MENERAPKAN PENGURUTAN <==
+  void applySort(String sortType, bool sortAscending) {
+    _sortType = sortType;
+    _sortAscending = sortAscending;
+    _applyFiltersAndSort();
+  }
+
   void search(String query) {
-    if (query.isEmpty) {
-      _filteredNotes = _allNotes;
+    _searchQuery = query.toLowerCase();
+    _applyFiltersAndSort();
+  }
+
+  // ==> FUNGSI TERPUSAT UNTUK FILTER & SORT <==
+  void _applyFiltersAndSort() {
+    if (_searchQuery.isEmpty) {
+      _filteredNotes = List.from(_allNotes);
     } else {
-      final q = query.toLowerCase();
       _filteredNotes = _allNotes.where((note) {
-        return note.title.toLowerCase().contains(q) ||
-            note.content.toLowerCase().contains(q);
+        return note.title.toLowerCase().contains(_searchQuery) ||
+            note.content.toLowerCase().contains(_searchQuery);
       }).toList();
     }
+
+    // Terapkan logika pengurutan
+    _filteredNotes.sort((a, b) {
+      int result;
+      switch (_sortType) {
+        case 'title':
+          result = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          break;
+        case 'modifiedAt':
+        default:
+          result = a.modifiedAt.compareTo(b.modifiedAt);
+          break;
+      }
+      // Untuk tanggal, ascending = true berarti terlama ke terbaru
+      // Untuk judul, ascending = true berarti A ke Z
+      return _sortAscending ? result : -result;
+    });
+
     notifyListeners();
   }
 

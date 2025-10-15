@@ -95,6 +95,86 @@ class _NoteListPageState extends State<NoteListPage> {
     );
   }
 
+  // ==> DIALOG PENGURUTAN BARU <==
+  Future<void> _showSortDialog(BuildContext context) async {
+    final provider = Provider.of<NoteListProvider>(context, listen: false);
+    String sortType = provider.sortType;
+    bool sortAscending = provider.sortAscending;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Urutkan Catatan'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Urutkan berdasarkan:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Tanggal Modifikasi'),
+                    value: 'modifiedAt',
+                    groupValue: sortType,
+                    onChanged: (value) =>
+                        setDialogState(() => sortType = value!),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Judul'),
+                    value: 'title',
+                    groupValue: sortType,
+                    onChanged: (value) =>
+                        setDialogState(() => sortType = value!),
+                  ),
+                  const Divider(),
+                  const Text(
+                    'Urutan:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  RadioListTile<bool>(
+                    title: const Text('Terbaru / A-Z'),
+                    value: false, // false for descending date, true for A-Z
+                    groupValue: sortAscending,
+                    onChanged: (value) =>
+                        setDialogState(() => sortAscending = false),
+                  ),
+                  RadioListTile<bool>(
+                    title: const Text('Terlama / Z-A'),
+                    value: true, // true for ascending date, false for Z-A
+                    groupValue: sortAscending,
+                    onChanged: (value) =>
+                        setDialogState(() => sortAscending = true),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Logic to handle ascending/descending based on type
+                    bool isAsc = sortType == 'title'
+                        ? sortAscending
+                        : !sortAscending;
+                    provider.applySort(sortType, isAsc);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Terapkan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -102,7 +182,17 @@ class _NoteListPageState extends State<NoteListPage> {
       child: Consumer<NoteListProvider>(
         builder: (context, provider, child) {
           return Scaffold(
-            appBar: AppBar(title: Text(widget.topicName)),
+            appBar: AppBar(
+              title: Text(widget.topicName),
+              // ==> TOMBOL SORT DITAMBAHKAN DI SINI <==
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  onPressed: () => _showSortDialog(context),
+                  tooltip: 'Urutkan Catatan',
+                ),
+              ],
+            ),
             body: Column(
               children: [
                 Padding(

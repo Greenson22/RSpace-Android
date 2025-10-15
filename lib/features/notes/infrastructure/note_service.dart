@@ -31,7 +31,6 @@ class NoteService {
         final jsonString = await configFile.readAsString();
         topics.add(NoteTopic.fromJson(jsonDecode(jsonString)));
       } else {
-        // Fallback for older folders without config
         topics.add(NoteTopic(name: path.basename(dir.path)));
       }
     }
@@ -70,7 +69,7 @@ class NoteService {
     }
 
     await oldDir.rename(newDir.path);
-    await saveTopic(NoteTopic(name: newName, icon: '🗒️')); // Create new config
+    await saveTopic(NoteTopic(name: newName, icon: '🗒️'));
     final oldConfigFile = File(
       path.join(newDir.path, oldName, _configFileName),
     );
@@ -101,7 +100,7 @@ class NoteService {
       final jsonString = await file.readAsString();
       notes.add(Note.fromJson(jsonDecode(jsonString)));
     }
-    notes.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+    // ==> PENGURUTAN DEFAULT DIHAPUS DARI SINI <==
     return notes;
   }
 
