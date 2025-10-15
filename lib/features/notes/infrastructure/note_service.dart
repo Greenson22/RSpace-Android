@@ -20,24 +20,68 @@ class NoteService {
     return dir;
   }
 
+  // ==> FUNGSI INI DIPERBARUI TOTAL UNTUK MENGELOLA POSISI <==
   Future<List<NoteTopic>> getTopics() async {
     final baseDir = await _getNotesBaseDir();
     final topicDirs = baseDir.listSync().whereType<Directory>();
 
-    final List<NoteTopic> topics = [];
+    List<NoteTopic> topics = [];
     for (final dir in topicDirs) {
       final configFile = File(path.join(dir.path, _configFileName));
       if (await configFile.exists()) {
         final jsonString = await configFile.readAsString();
         topics.add(NoteTopic.fromJson(jsonDecode(jsonString)));
       } else {
-        // Fallback for older folders without config
-        topics.add(NoteTopic(name: path.basename(dir.path)));
+        final topicName = path.basename(dir.path);
+        final newTopic = NoteTopic(name: topicName);
+        await saveTopic(newTopic); // Buat file config jika belum ada
+        topics.add(newTopic);
       }
     }
 
-    topics.sort((a, b) => a.name.compareTo(b.name));
-    return topics;
+    // Logika untuk memperbaiki dan mengurutkan posisi
+    final positionedTopics = topics.where((t) => t.position != -1).toList();
+    final unpositionedTopics = topics.where((t) => t.position == -1).toList();
+
+    positionedTopics.sort((a, b) => a.position.compareTo(b.position));
+
+    int maxPosition = positionedTopics.isNotEmpty
+        ? positionedTopics
+              .map((t) => t.position)
+              .reduce((a, b) => a > b ? a : b)
+        : -1;
+
+    for (final topic in unpositionedTopics) {
+      maxPosition++;
+      topic.position = maxPosition;
+      await saveTopic(topic);
+    }
+
+    final allTopics = [...positionedTopics, ...unpositionedTopics];
+    allTopics.sort((a, b) => a.position.compareTo(b.position));
+
+    bool needsResave = false;
+    for (int i = 0; i < allTopics.length; i++) {
+      if (allTopics[i].position != i) {
+        allTopics[i].position = i;
+        needsResave = true;
+      }
+    }
+
+    if (needsResave) {
+      await saveTopicsOrder(allTopics);
+    }
+
+    return allTopics;
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN URUTAN <==
+  Future<void> saveTopicsOrder(List<NoteTopic> topics) async {
+    for (int i = 0; i < topics.length; i++) {
+      final topic = topics[i];
+      topic.position = i;
+      await saveTopic(topic);
+    }
   }
 
   Future<void> saveTopic(NoteTopic topic) async {
@@ -54,7 +98,8 @@ class NoteService {
       throw Exception('Topik dengan nama "$name" sudah ada.');
     }
     await newDir.create();
-    await saveTopic(NoteTopic(name: name));
+    final topics = await getTopics();
+    await saveTopic(NoteTopic(name: name, position: topics.length));
   }
 
   Future<void> renameTopic(String oldName, String newName) async {
@@ -69,14 +114,22 @@ class NoteService {
       throw Exception('Topik dengan nama "$newName" sudah ada.');
     }
 
-    await oldDir.rename(newDir.path);
-    await saveTopic(NoteTopic(name: newName, icon: '🗒️')); // Create new config
-    final oldConfigFile = File(
-      path.join(newDir.path, oldName, _configFileName),
-    );
+    final oldConfigFile = File(path.join(oldDir.path, _configFileName));
+    NoteTopic oldTopic = NoteTopic(name: oldName);
     if (await oldConfigFile.exists()) {
-      await oldConfigFile.delete();
+      oldTopic = NoteTopic.fromJson(
+        jsonDecode(await oldConfigFile.readAsString()),
+      );
     }
+
+    await oldDir.rename(newDir.path);
+    await saveTopic(
+      NoteTopic(
+        name: newName,
+        icon: oldTopic.icon,
+        position: oldTopic.position,
+      ),
+    );
   }
 
   Future<void> deleteTopic(String name) async {
@@ -120,7 +173,6 @@ class NoteService {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMINDAHKAN FILE CATATAN <==
   Future<void> moveNote(Note note, String fromTopic, String toTopic) async {
     final baseDir = await _getNotesBaseDir();
     final fromDir = Directory(path.join(baseDir.path, fromTopic));

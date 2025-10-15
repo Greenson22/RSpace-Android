@@ -8,6 +8,8 @@ import 'package:my_aplication/features/notes/domain/models/note_topic_model.dart
 import 'package:my_aplication/features/notes/presentation/pages/note_list_page.dart';
 import 'package:my_aplication/features/notes/presentation/widgets/note_topic_grid_tile.dart';
 import 'package:provider/provider.dart';
+// ==> IMPORT BARU <==
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 class NoteTopicPage extends StatelessWidget {
   const NoteTopicPage({super.key});
@@ -111,7 +113,21 @@ class NoteTopicPage extends StatelessWidget {
           }
 
           return Scaffold(
-            appBar: AppBar(title: const Text('Topik Catatan')),
+            appBar: AppBar(
+              title: const Text('Topik Catatan'),
+              // ==> TAMBAHKAN TOMBOL SORT DI SINI <==
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    provider.isReorderModeEnabled ? Icons.check : Icons.sort,
+                  ),
+                  onPressed: () => provider.toggleReorderMode(),
+                  tooltip: provider.isReorderModeEnabled
+                      ? 'Selesai Mengurutkan'
+                      : 'Urutkan Topik',
+                ),
+              ],
+            ),
             body: provider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : provider.topics.isEmpty
@@ -122,7 +138,9 @@ class NoteTopicPage extends StatelessWidget {
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      return GridView.builder(
+                      // ==> GUNAKAN ReorderableGridView.builder <==
+                      return ReorderableGridView.builder(
+                        dragEnabled: provider.isReorderModeEnabled,
                         padding: const EdgeInsets.all(12.0),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: getCrossAxisCount(
@@ -139,13 +157,15 @@ class NoteTopicPage extends StatelessWidget {
                             key: ValueKey(topic.name),
                             topic: topic,
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      NoteListPage(topicName: topic.name),
-                                ),
-                              );
+                              if (!provider.isReorderModeEnabled) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        NoteListPage(topicName: topic.name),
+                                  ),
+                                );
+                              }
                             },
                             onRename: () =>
                                 _showEditTopicDialog(context, topic),
@@ -155,14 +175,19 @@ class NoteTopicPage extends StatelessWidget {
                                 _showDeleteTopicDialog(context, topic.name),
                           );
                         },
+                        onReorder: (oldIndex, newIndex) {
+                          provider.reorderTopics(oldIndex, newIndex);
+                        },
                       );
                     },
                   ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => _showAddTopicDialog(context),
-              child: const Icon(Icons.add),
-              tooltip: 'Tambah Topik',
-            ),
+            floatingActionButton: provider.isReorderModeEnabled
+                ? null
+                : FloatingActionButton(
+                    onPressed: () => _showAddTopicDialog(context),
+                    child: const Icon(Icons.add),
+                    tooltip: 'Tambah Topik',
+                  ),
           );
         },
       ),
