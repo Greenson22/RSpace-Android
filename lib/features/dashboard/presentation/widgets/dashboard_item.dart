@@ -34,16 +34,16 @@ class DashboardItem extends StatelessWidget {
 
   Widget _buildQuickAccess(BuildContext context) {
     return Material(
-      borderRadius: BorderRadius.circular(15), // Mengurangi radius border
+      borderRadius: BorderRadius.circular(15),
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(15), // Mengurangi radius border
+        borderRadius: BorderRadius.circular(15),
         splashColor: Colors.white.withOpacity(0.3),
         highlightColor: Colors.white.withOpacity(0.1),
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15), // Mengurangi radius border
+            borderRadius: BorderRadius.circular(15),
             gradient: LinearGradient(
               colors: gradientColors,
               begin: Alignment.topLeft,
@@ -56,26 +56,27 @@ class DashboardItem extends StatelessWidget {
                   )
                 : null,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                icon,
-                size: 28,
-                color: Colors.white,
-              ), // Ukuran ikon lebih kecil
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12, // Ukuran font lebih kecil
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+          // =========== AWAL PERUBAHAN ===========
+          child: Padding(
+            padding: const EdgeInsets.all(8.0), // Menambahkan padding di sini
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(icon, size: 28, color: Colors.white),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          // =========== AKHIR PERUBAHAN ===========
         ),
       ),
     );

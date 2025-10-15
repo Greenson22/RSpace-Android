@@ -1,5 +1,4 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
-
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +19,6 @@ import 'dashboard_item.dart';
 import '../../../progress/presentation/pages/progress_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_topic_page.dart';
-// ==> IMPORT HALAMAN BARU <==
 import 'package:my_aplication/features/notes/presentation/pages/note_topic_page.dart';
 
 List<VoidCallback> buildDashboardActions(
@@ -33,7 +31,6 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
     ),
-    // ==> TAMBAHKAN AKSI NAVIGASI BARU <==
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const NoteTopicPage()),
@@ -113,8 +110,6 @@ class DashboardGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final screenWidth = MediaQuery.of(context).size.width;
-
         final List<Map<String, dynamic>> allItemData = [
           {
             'icon': Icons.topic_outlined,
@@ -122,7 +117,6 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Kelola semua materi Anda',
             'colors': AppTheme.gradientColors1,
           },
-          // ==> TAMBAHKAN ITEM BARU DI SINI <==
           {
             'icon': Icons.note_alt_outlined,
             'label': 'Catatan',
@@ -215,36 +209,32 @@ class DashboardGrid extends StatelessWidget {
             .where((item) => item['label'] != 'Penyimpanan' || !isPathSet)
             .toList();
 
-        final horizontalItems = itemData.take(5).toList();
-        final verticalItems = itemData.skip(5).toList();
+        final quickAccessItems = itemData.take(5).toList();
+        final listItems = itemData.skip(5).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 100, // Memberikan tinggi tetap untuk list horizontal
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: horizontalItems.length,
-                itemBuilder: (context, index) {
-                  final item = horizontalItems[index];
-                  return SizedBox(
-                    width: 110, // Memberikan lebar tetap untuk setiap item
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: DashboardItem(
-                        icon: item['icon'],
-                        label: item['label'],
-                        gradientColors: item['colors'],
-                        onTap: dashboardActions[index],
-                        isFocused: isKeyboardActive && focusedIndex == index,
-                        type: DashboardItemType.quickAccess,
-                      ),
+            // ========== PERUBAHAN UTAMA DI SINI ==========
+            Row(
+              children: List.generate(quickAccessItems.length, (index) {
+                final item = quickAccessItems[index];
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: DashboardItem(
+                      icon: item['icon'],
+                      label: item['label'],
+                      gradientColors: item['colors'],
+                      onTap: dashboardActions[index],
+                      isFocused: isKeyboardActive && focusedIndex == index,
+                      type: DashboardItemType.quickAccess,
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              }),
             ),
+            // ========== AKHIR PERUBAHAN ==========
             const SizedBox(height: 24),
             Text(
               "Fitur Lainnya",
@@ -252,12 +242,12 @@ class DashboardGrid extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListView.separated(
-              itemCount: verticalItems.length,
+              itemCount: listItems.length,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final item = verticalItems[index];
+                final item = listItems[index];
                 final overallIndex = index + 5;
                 return DashboardItem(
                   icon: item['icon'],
