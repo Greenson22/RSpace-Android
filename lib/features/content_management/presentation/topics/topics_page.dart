@@ -325,7 +325,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                 tooltip: 'Tambah Topik',
                 child: const Icon(Icons.add),
               ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        // ========== PERUBAHAN UTAMA DI SINI ==========
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }

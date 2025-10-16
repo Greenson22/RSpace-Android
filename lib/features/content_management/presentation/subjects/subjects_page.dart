@@ -366,6 +366,37 @@ class _SubjectsPageState extends State<SubjectsPage> {
     Subject subject,
   ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final editorChoice = themeProvider.defaultHtmlEditor;
+
+    Future<void> openInternalEditor() async {
+      try {
+        final content = await provider.readIndexFileContent(subject);
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HtmlEditorPage(
+                pageTitle: 'Template: ${subject.name}',
+                initialContent: content,
+                onSave: (newContent) =>
+                    provider.saveIndexFileContent(subject, newContent),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        _showSnackBar('Gagal memuat konten: ${e.toString()}', isError: true);
+      }
+    }
+
+    Future<void> openExternalEditor() async {
+      try {
+        await provider.editSubjectIndexFile(subject);
+      } catch (e) {
+        _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
+      }
+    }
 
     final choice = await showDialog<String>(
       context: context,
@@ -389,7 +420,40 @@ class _SubjectsPageState extends State<SubjectsPage> {
             ),
           ),
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'manual'),
+            onPressed: () async {
+              Navigator.pop(context); // Close the options dialog first
+              if (editorChoice == 'internal') {
+                await openInternalEditor();
+              } else if (editorChoice == 'external') {
+                await openExternalEditor();
+              } else {
+                // If no default is set, show the choice dialog
+                final subChoice = await showDialog<String>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Pilih Editor'),
+                    content: const Text(
+                      'Buka dengan editor internal atau aplikasi eksternal?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, 'internal'),
+                        child: const Text('Internal'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, 'external'),
+                        child: const Text('Eksternal'),
+                      ),
+                    ],
+                  ),
+                );
+                if (subChoice == 'internal') {
+                  await openInternalEditor();
+                } else if (subChoice == 'external') {
+                  await openExternalEditor();
+                }
+              }
+            },
             child: const ListTile(
               leading: Icon(Icons.edit_document),
               title: Text('Edit Manual'),
@@ -413,53 +477,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       }
     } else if (choice == 'ai_prompt' && mounted) {
       await showGenerateIndexPromptDialog(context, subject);
-    } else if (choice == 'manual' && mounted) {
-      final editorChoice = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Pilih Editor'),
-          content: const Text(
-            'Buka dengan editor internal atau aplikasi eksternal?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'internal'),
-              child: const Text('Internal'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'external'),
-              child: const Text('Eksternal'),
-            ),
-          ],
-        ),
-      );
-
-      if (editorChoice == 'internal' && mounted) {
-        try {
-          final content = await provider.readIndexFileContent(subject);
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => HtmlEditorPage(
-                  pageTitle: 'Template: ${subject.name}',
-                  initialContent: content,
-                  onSave: (newContent) =>
-                      provider.saveIndexFileContent(subject, newContent),
-                ),
-              ),
-            );
-          }
-        } catch (e) {
-          _showSnackBar('Gagal memuat konten: ${e.toString()}', isError: true);
-        }
-      } else if (editorChoice == 'external' && mounted) {
-        try {
-          await provider.editSubjectIndexFile(subject);
-        } catch (e) {
-          _showSnackBar('Gagal membuka file: ${e.toString()}', isError: true);
-        }
-      }
     }
   }
 
@@ -599,7 +616,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
-    // ==> TAMBAHKAN KODE BARU DI SINI <==
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isTransparent =
         themeProvider.backgroundImagePath != null ||
@@ -629,13 +645,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
             const AdBannerWidget(),
           ],
         ),
+        // ========== PERUBAHAN UTAMA DI SINI ==========
         floatingActionButton: provider.isSelectionMode
             ? null
-            : FloatingActionButton.extended(
+            : FloatingActionButton(
                 onPressed: () => _addSubject(context),
                 tooltip: 'Tambah Subject',
-                icon: const Icon(Icons.add),
-                label: const Text('Tambah Subject'),
+                child: const Icon(Icons.add),
               ),
       ),
     );
