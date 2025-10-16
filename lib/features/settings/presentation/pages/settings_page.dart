@@ -12,7 +12,6 @@ import '../../../dashboard/presentation/dialogs/progress_settings_dialog.dart';
 import '../../../dashboard/presentation/dialogs/task_settings_dialog.dart';
 import '../dialogs/motivational_quotes_dialog.dart';
 import '../dialogs/server_config_dialog.dart';
-// ==> IMPORT DIALOG BARU <==
 import 'package:my_aplication/features/notes/presentation/dialogs/note_settings_dialog.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -67,7 +66,6 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Pilih editor default saat mengedit file HTML.',
             onTap: () => _showHtmlEditorChoiceDialog(context),
           ),
-          // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
           _buildSettingsTile(
             context,
             icon: Icons.note_alt_outlined,
@@ -157,60 +155,78 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _showHtmlEditorChoiceDialog(BuildContext context) {
-    final provider = Provider.of<ThemeProvider>(context, listen: false);
-
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            String? currentChoice = provider.defaultHtmlEditor;
+      builder: (context) => const _HtmlEditorChoiceDialog(),
+    );
+  }
+}
 
-            return AlertDialog(
-              title: const Text('Pilih Editor HTML Default'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<String?>(
-                    title: const Text('Selalu Tanya'),
-                    value: null,
-                    groupValue: currentChoice,
-                    onChanged: (value) =>
-                        setDialogState(() => currentChoice = value),
-                  ),
-                  RadioListTile<String?>(
-                    title: const Text('Editor Internal'),
-                    value: 'internal',
-                    groupValue: currentChoice,
-                    onChanged: (value) =>
-                        setDialogState(() => currentChoice = value),
-                  ),
-                  RadioListTile<String?>(
-                    title: const Text('Editor Eksternal'),
-                    value: 'external',
-                    groupValue: currentChoice,
-                    onChanged: (value) =>
-                        setDialogState(() => currentChoice = value),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    provider.updateDefaultHtmlEditor(currentChoice);
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Simpan'),
-                ),
-              ],
-            );
+// == PERBAIKAN UTAMA DI SINI ==
+// Dialog diubah menjadi StatefulWidget terpisah
+class _HtmlEditorChoiceDialog extends StatefulWidget {
+  const _HtmlEditorChoiceDialog();
+
+  @override
+  State<_HtmlEditorChoiceDialog> createState() =>
+      _HtmlEditorChoiceDialogState();
+}
+
+class _HtmlEditorChoiceDialogState extends State<_HtmlEditorChoiceDialog> {
+  String? _currentChoice;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi state dari provider saat widget pertama kali dibuat
+    _currentChoice = Provider.of<ThemeProvider>(
+      context,
+      listen: false,
+    ).defaultHtmlEditor;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<ThemeProvider>(context, listen: false);
+
+    return AlertDialog(
+      title: const Text('Pilih Editor HTML Default'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RadioListTile<String?>(
+            title: const Text('Selalu Tanya'),
+            value: null,
+            groupValue: _currentChoice,
+            onChanged: (value) => setState(() => _currentChoice = value),
+          ),
+          RadioListTile<String?>(
+            title: const Text('Editor Internal'),
+            value: 'internal',
+            groupValue: _currentChoice,
+            onChanged: (value) => setState(() => _currentChoice = value),
+          ),
+          RadioListTile<String?>(
+            title: const Text('Editor Eksternal'),
+            value: 'external',
+            groupValue: _currentChoice,
+            onChanged: (value) => setState(() => _currentChoice = value),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            provider.updateDefaultHtmlEditor(_currentChoice);
+            Navigator.of(context).pop();
           },
-        );
-      },
+          child: const Text('Simpan'),
+        ),
+      ],
     );
   }
 }

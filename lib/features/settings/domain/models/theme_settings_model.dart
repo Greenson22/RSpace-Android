@@ -139,7 +139,6 @@ class ThemeSettings {
       recentColorValues: recentColorValues ?? this.recentColorValues,
       dashboardItemScale: dashboardItemScale ?? this.dashboardItemScale,
       uiScaleFactor: uiScaleFactor ?? this.uiScaleFactor,
-      // ==> TAMBAHKAN DI COPYWITH <==
       dashboardComponentOpacity:
           dashboardComponentOpacity ?? this.dashboardComponentOpacity,
       showFloatingCharacter:

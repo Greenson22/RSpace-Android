@@ -30,7 +30,6 @@ class ThemeProvider with ChangeNotifier {
   String? get backgroundImagePath => _localBackgroundImagePath;
   double get dashboardItemScale => _settings?.dashboardItemScale ?? 1.0;
   double get uiScaleFactor => _settings?.uiScaleFactor ?? 1.0;
-  // ==> GETTER BARU DITAMBAHKAN <==
   double get dashboardComponentOpacity =>
       _settings?.dashboardComponentOpacity ?? 0.9;
   bool get showFloatingCharacter => _settings?.showFloatingCharacter ?? true;
@@ -84,7 +83,6 @@ class ThemeProvider with ChangeNotifier {
     _saveAndUpdate(_settings!.copyWith(defaultNoteIcon: newIcon));
   }
 
-  // ==> FUNGSI INI DIPERBARUI
   void updateTheme({
     bool? isDark,
     bool? isChristmas,
@@ -206,8 +204,10 @@ class ThemeProvider with ChangeNotifier {
     _saveAndUpdate(_settings!.copyWith(htmlEditorTheme: () => themeName));
   }
 
+  // == PERBAIKAN UTAMA DI SINI ==
   Future<void> updateDefaultHtmlEditor(String? editorChoice) async {
     if (_settings == null) return;
+    // Gunakan ValueGetter untuk menangani kasus null dengan benar
     _saveAndUpdate(_settings!.copyWith(defaultHtmlEditor: () => editorChoice));
   }
 }
