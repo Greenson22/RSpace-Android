@@ -117,6 +117,7 @@ class PointTile extends StatelessWidget {
     final pointTitleStyle = defaultTitleStyle.copyWith(
       color: effectiveTextColor,
       decoration: isFinished ? TextDecoration.lineThrough : null,
+      fontSize: 10.0,
     );
 
     // 3. Lakukan hal yang sama untuk subtitle (Date & Code).
