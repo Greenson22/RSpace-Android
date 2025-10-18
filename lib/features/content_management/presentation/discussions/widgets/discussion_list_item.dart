@@ -35,6 +35,10 @@ class DiscussionListItem extends StatelessWidget {
   final VoidCallback onDelete;
   final bool isPointReorderMode;
   final VoidCallback onToggleReorder;
+  final double leadingIconSize;
+  final double trailingIconSize;
+  final double?
+  titleFontSize; // <<< Tambahkan properti baru untuk ukuran font judul
 
   const DiscussionListItem({
     super.key,
@@ -48,8 +52,12 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
+    this.leadingIconSize = 24.0,
+    this.trailingIconSize = 24.0,
+    this.titleFontSize = 12.0, // <<< Tambahkan di constructor
   });
 
+  // ... (fungsi _showSnackBar, _copyDiscussionContent, dll tetap sama)
   void _showSnackBar(
     BuildContext context,
     String message, {
@@ -296,6 +304,7 @@ class DiscussionListItem extends StatelessWidget {
             },
             leading: IconButton(
               icon: Icon(iconData, color: iconColor),
+              iconSize: leadingIconSize, // Gunakan ukuran ikon kiri
               onPressed: onPressedAction,
               tooltip: tooltip,
             ),
@@ -304,6 +313,7 @@ class DiscussionListItem extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: isFinished ? TextDecoration.lineThrough : null,
+                fontSize: titleFontSize, // <<< Gunakan ukuran font judul
               ),
             ),
             subtitle: Column(
@@ -323,6 +333,7 @@ class DiscussionListItem extends StatelessWidget {
               ],
             ),
             trailing: Row(
+              // Widget Row tetap ada
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!provider.isSelectionMode)
@@ -386,6 +397,7 @@ class DiscussionListItem extends StatelessWidget {
                           : Icons.expand_more,
                       color: isPointReorderMode ? theme.primaryColor : null,
                     ),
+                    iconSize: trailingIconSize, // Gunakan ukuran ikon kanan
                     onPressed: () => onToggleVisibility(index),
                     tooltip: isPointReorderMode
                         ? 'Selesai Mengurutkan'
