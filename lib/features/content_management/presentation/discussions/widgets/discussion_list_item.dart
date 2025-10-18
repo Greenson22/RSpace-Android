@@ -37,8 +37,9 @@ class DiscussionListItem extends StatelessWidget {
   final VoidCallback onToggleReorder;
   final double leadingIconSize;
   final double trailingIconSize;
-  final double?
-  titleFontSize; // <<< Tambahkan properti baru untuk ukuran font judul
+  final double? titleFontSize;
+  final double? horizontalGap; // <<< Jarak antara leading dan title
+  final double? trailingSpacing; // <<< Jarak di dalam trailing
 
   const DiscussionListItem({
     super.key,
@@ -54,7 +55,9 @@ class DiscussionListItem extends StatelessWidget {
     required this.onToggleReorder,
     this.leadingIconSize = 24.0,
     this.trailingIconSize = 24.0,
-    this.titleFontSize = 12.0, // <<< Tambahkan di constructor
+    this.titleFontSize = 12.0,
+    this.horizontalGap = 12.0, // <<< Nilai default jarak leading-title
+    this.trailingSpacing = 0.0, // <<< Nilai default jarak di trailing
   });
 
   // ... (fungsi _showSnackBar, _copyDiscussionContent, dll tetap sama)
@@ -288,6 +291,7 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
+            horizontalTitleGap: horizontalGap, // <<< Gunakan jarak horizontal
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
@@ -313,7 +317,7 @@ class DiscussionListItem extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: isFinished ? TextDecoration.lineThrough : null,
-                fontSize: titleFontSize, // <<< Gunakan ukuran font judul
+                fontSize: titleFontSize, // Gunakan ukuran font judul
               ),
             ),
             subtitle: Column(
@@ -333,7 +337,6 @@ class DiscussionListItem extends StatelessWidget {
               ],
             ),
             trailing: Row(
-              // Widget Row tetap ada
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!provider.isSelectionMode)
@@ -387,6 +390,11 @@ class DiscussionListItem extends StatelessWidget {
                       }
                     },
                   ),
+                // <<< Tambahkan SizedBox di sini jika kedua ikon ada >>>
+                if (!provider.isSelectionMode && discussion.points.isNotEmpty)
+                  SizedBox(
+                    width: trailingSpacing ?? 0,
+                  ), // <<< Gunakan jarak trailing
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
                     icon: Icon(
