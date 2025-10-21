@@ -1,4 +1,4 @@
-// lib/presentation/widgets/point_edit_popup_menu.dart
+// lib/features/content_management/presentation/discussions/widgets/point_edit_popup_menu.dart
 import 'package:flutter/material.dart';
 
 class PointEditPopupMenu extends StatelessWidget {
@@ -23,8 +23,16 @@ class PointEditPopupMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // === PERBAIKAN DI SINI: Hitung ukuran ikon berdasarkan skala ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseIconSize = 24.0; // Ukuran ikon default
+    final scaledIconSize = baseIconSize * textScaleFactor;
+    // === AKHIR PERBAIKAN ===
+
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert),
+      // Terapkan ukuran ikon yang sudah diskalakan
+      iconSize: scaledIconSize,
+      icon: const Icon(Icons.more_vert), // Ikon titik tiga
       onSelected: (value) {
         if (value == 'edit_date' && onDateChange != null) onDateChange!();
         if (value == 'edit_code' && onCodeChange != null) onCodeChange!();
