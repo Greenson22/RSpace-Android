@@ -13,6 +13,8 @@ import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../domain/models/discussion_model.dart';
 import 'dialogs/add_discussion_from_content_dialog.dart';
+// Import ThemeProvider untuk mendapatkan status latar belakang
+import '../../../settings/application/theme_provider.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -261,6 +263,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
+    // Dapatkan ThemeProvider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     // Hitung ukuran ikon & jarak AppBar
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
@@ -274,17 +281,20 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
+        // Terapkan transparansi Scaffold
+        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: provider.isSelectionMode
             ? _buildSelectionAppBar(
                 provider,
                 scaledAppBarIconSize,
                 scaledAppBarSpacing,
-              ) // Kirim ukuran & jarak
+              )
             : _buildDefaultAppBar(
                 provider,
                 scaledAppBarIconSize,
                 scaledAppBarSpacing,
-              ), // Kirim ukuran & jarak
+                isTransparent: isTransparent,
+              ),
         body: Column(
           children: [
             Expanded(child: _buildBody(provider)),
@@ -319,7 +329,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  // === PERBAIKAN DI SINI: Terima parameter scaledIconSize & scaledSpacing ===
   AppBar _buildSelectionAppBar(
     DiscussionProvider provider,
     double scaledIconSize,
@@ -339,25 +348,27 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onPressed: () => provider.selectAllFiltered(),
           tooltip: 'Pilih Semua',
         ),
-        SizedBox(width: scaledSpacing), // Terapkan jarak
+        SizedBox(width: scaledSpacing),
         IconButton(
           icon: const Icon(Icons.move_up),
           iconSize: scaledIconSize,
           onPressed: () => _moveSelectedDiscussions(provider),
           tooltip: 'Pindahkan Pilihan',
         ),
-        SizedBox(width: scaledSpacing), // Terapkan jarak (opsional di akhir)
+        SizedBox(width: scaledSpacing),
       ],
     );
   }
 
-  // === PERBAIKAN DI SINI: Terima parameter scaledIconSize & scaledSpacing ===
   AppBar _buildDefaultAppBar(
     DiscussionProvider provider,
     double scaledIconSize,
-    double scaledSpacing,
-  ) {
+    double scaledSpacing, {
+    required bool isTransparent,
+  }) {
     return AppBar(
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      elevation: isTransparent ? 0 : null,
       title: _isSearching
           ? TextField(
               controller: _searchController,
@@ -379,7 +390,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             if (!_isSearching) _searchController.clear();
           }),
         ),
-        SizedBox(width: scaledSpacing), // Terapkan jarak
+        SizedBox(width: scaledSpacing),
         if (provider.activeFilterType != 'code')
           IconButton(
             icon: Icon(
@@ -393,14 +404,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 : 'Tampilkan Selesai',
             onPressed: () => provider.toggleShowFinished(),
           ),
-        SizedBox(width: scaledSpacing), // Terapkan jarak
+        SizedBox(width: scaledSpacing),
         IconButton(
           icon: const Icon(Icons.filter_list),
           iconSize: scaledIconSize,
           tooltip: 'Filter Diskusi',
           onPressed: () => _showFilterDialog(provider),
         ),
-        SizedBox(width: scaledSpacing), // Terapkan jarak
+        SizedBox(width: scaledSpacing),
         IconButton(
           icon: const Icon(Icons.sort),
           iconSize: scaledIconSize,
@@ -415,7 +426,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             },
           ),
         ),
-        SizedBox(width: scaledSpacing), // Terapkan jarak (opsional di akhir)
+        SizedBox(width: scaledSpacing),
       ],
     );
   }
@@ -603,4 +614,4 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       ),
     );
   }
-}
+} // Akhir _DiscussionsPageState
