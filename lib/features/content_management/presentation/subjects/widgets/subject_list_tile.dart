@@ -67,7 +67,15 @@ class SubjectListTile extends StatelessWidget {
     final EdgeInsets padding = const EdgeInsets.all(16.0);
     final double iconFontSize = 28;
     final double titleFontSize = 18;
-    // Hapus subtitleFontSize = 12;
+
+    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double basePopupIconSize = 24.0;
+    const double baseLinkIconSize = 18.0; // Ukuran dasar ikon link
+    final scaledPopupIconSize = basePopupIconSize * textScaleFactor;
+    final scaledLinkIconSize =
+        baseLinkIconSize * textScaleFactor; // Ukuran link diskalakan
+    // === AKHIR PERBAIKAN ===
 
     final tileContent = Material(
       borderRadius: BorderRadius.circular(15),
@@ -114,7 +122,8 @@ class SubjectListTile extends StatelessWidget {
                         child: Icon(
                           Icons.ac_unit,
                           color: Colors.blue.shade700,
-                          size: 16,
+                          size:
+                              16 * textScaleFactor, // Skalakan ikon kecil juga
                         ),
                       ),
                   ],
@@ -134,7 +143,8 @@ class SubjectListTile extends StatelessWidget {
                             child: Icon(
                               Icons.link,
                               color: theme.primaryColor,
-                              size: 18,
+                              // Terapkan ukuran ikon link yang diskalakan
+                              size: scaledLinkIconSize,
                             ),
                           ),
                         Expanded(
@@ -152,7 +162,6 @@ class SubjectListTile extends StatelessWidget {
                     ),
                     if (hasSubtitle) ...[
                       const SizedBox(height: 4),
-                      // Hapus parameter fontSize dari pemanggilan
                       _buildSubtitle(context, textColor),
                     ],
                     const SizedBox(height: 6),
@@ -162,6 +171,8 @@ class SubjectListTile extends StatelessWidget {
               ),
               if (!provider.isSelectionMode)
                 PopupMenuButton<String>(
+                  // Terapkan ukuran ikon titik tiga yang sudah diskalakan
+                  iconSize: scaledPopupIconSize,
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'delete') onDelete();
@@ -301,7 +312,6 @@ class SubjectListTile extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI INI TELAH DIPERBAIKI <==
   PopupMenuEntry<String> _buildSubMenu({
     required IconData icon,
     required String label,
@@ -323,7 +333,6 @@ class SubjectListTile extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, Color? textColor) {
-    // Ukuran font untuk statistik ini juga dihapus agar mengikuti skala
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(color: textColor);
@@ -339,13 +348,16 @@ class SubjectListTile extends StatelessWidget {
         return indexA.compareTo(indexB);
       });
 
+    // Skalakan ukuran ikon statistik
+    final double scaledStatIconSize = (textStyle?.fontSize ?? 12.0);
+
     return Row(
       children: [
         Icon(
           Icons.chat_bubble_outline,
-          size: textStyle?.fontSize ?? 12.0,
+          size: scaledStatIconSize,
           color: textColor,
-        ), // Gunakan ukuran font
+        ), // Gunakan ukuran ikon yang diskalakan
         const SizedBox(width: 4),
         Text(
           '${subject.discussionCount} (${subject.finishedDiscussionCount} ✔)',
@@ -389,28 +401,19 @@ class SubjectListTile extends StatelessWidget {
     );
   }
 
-  // ==> PERBAIKAN DI SINI <==
   Widget _buildSubtitle(BuildContext context, Color? textColor) {
-    // 1. Dapatkan textScaleFactor dari MediaQuery
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    // 2. Tentukan ukuran font dasar (misalnya, default untuk bodySmall)
-    const double baseFontSize = 12.0; // Ukuran font default bodySmall
-    // 3. Hitung ukuran font yang diskalakan
+    const double baseFontSize = 12.0;
     final scaledFontSize = baseFontSize * textScaleFactor;
-    // 4. Hitung ukuran ikon yang diskalakan
-    final scaledIconSize =
-        (baseFontSize * 0.95) *
-        textScaleFactor; // Sedikit lebih kecil dari font
+    final scaledIconSize = (baseFontSize * 0.95) * textScaleFactor;
 
-    // 5. Buat TextStyle baru dengan ukuran yang sudah diskalakan
-    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: textColor,
-      fontSize: scaledFontSize, // Terapkan ukuran yang sudah diskalakan
-    );
+    final subtitleStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: textColor, fontSize: scaledFontSize);
 
     return RichText(
       text: TextSpan(
-        style: subtitleStyle, // Gunakan style baru
+        style: subtitleStyle,
         children: [
           if (subject.date != null)
             WidgetSpan(
@@ -418,7 +421,7 @@ class SubjectListTile extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4.0),
                 child: Icon(
                   Icons.calendar_today_outlined,
-                  size: scaledIconSize, // Gunakan ukuran ikon yang diskalakan
+                  size: scaledIconSize,
                   color: subject.isHidden ? textColor : Colors.amber[800],
                 ),
               ),
@@ -428,8 +431,6 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.date,
               style: TextStyle(
-                // Harus TextStyle eksplisit di sini
-                // Tidak perlu fontSize, akan diwarisi dari style TextSpan induk
                 color: subject.isHidden ? textColor : Colors.amber[800],
                 fontWeight: FontWeight.bold,
               ),
@@ -442,7 +443,7 @@ class SubjectListTile extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4.0),
                 child: Icon(
                   Icons.repeat,
-                  size: scaledIconSize, // Gunakan ukuran ikon yang diskalakan
+                  size: scaledIconSize,
                   color: subject.isHidden
                       ? textColor
                       : getColorForRepetitionCode(subject.repetitionCode!),
@@ -454,8 +455,6 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.repetitionCode,
               style: TextStyle(
-                // Harus TextStyle eksplisit di sini
-                // Tidak perlu fontSize, akan diwarisi dari style TextSpan induk
                 color: subject.isHidden
                     ? textColor
                     : getColorForRepetitionCode(subject.repetitionCode!),

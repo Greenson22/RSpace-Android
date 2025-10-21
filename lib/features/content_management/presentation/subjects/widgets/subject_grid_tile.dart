@@ -62,6 +62,18 @@ class SubjectGridTile extends StatelessWidget {
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
 
+    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double basePopupIconSize = 24.0;
+    const double baseLinkIconSize = 16.0; // Ukuran dasar ikon link kecil
+    const double baseFreezeIconSize = 16.0; // Ukuran dasar ikon freeze kecil
+    final scaledPopupIconSize = basePopupIconSize * textScaleFactor;
+    final scaledLinkIconSize =
+        baseLinkIconSize * textScaleFactor; // Ukuran link diskalakan
+    final scaledFreezeIconSize =
+        baseFreezeIconSize * textScaleFactor; // Ukuran freeze diskalakan
+    // === AKHIR PERBAIKAN ===
+
     final tileContent = Material(
       borderRadius: BorderRadius.circular(15),
       color: Colors.transparent,
@@ -103,7 +115,8 @@ class SubjectGridTile extends StatelessWidget {
                             child: Icon(
                               Icons.link,
                               color: theme.primaryColor,
-                              size: 16,
+                              // Terapkan ukuran ikon link yang diskalakan
+                              size: scaledLinkIconSize,
                             ),
                           ),
                         if (isFrozen && !isSelected)
@@ -113,7 +126,8 @@ class SubjectGridTile extends StatelessWidget {
                             child: Icon(
                               Icons.ac_unit,
                               color: Colors.blue.shade700,
-                              size: 16,
+                              // Terapkan ukuran ikon freeze yang diskalakan
+                              size: scaledFreezeIconSize,
                             ),
                           ),
                       ],
@@ -121,6 +135,8 @@ class SubjectGridTile extends StatelessWidget {
                   ),
                   if (!provider.isSelectionMode)
                     PopupMenuButton<String>(
+                      // Terapkan ukuran ikon titik tiga yang sudah diskalakan
+                      iconSize: scaledPopupIconSize,
                       onSelected: (value) {
                         if (value == 'rename') onRename();
                         if (value == 'change_icon') onIconChange();
@@ -241,7 +257,6 @@ class SubjectGridTile extends StatelessWidget {
               ),
               if (hasSubtitle) ...[
                 const SizedBox(height: 6),
-                // Hapus parameter fontSize dari pemanggilan
                 _buildSubtitle(context, textColor),
               ],
               const SizedBox(height: 6),
@@ -284,7 +299,6 @@ class SubjectGridTile extends StatelessWidget {
     );
   }
 
-  // ==> FUNGSI INI TELAH DIPERBAIKI <==
   PopupMenuEntry<String> _buildSubMenu({
     required IconData icon,
     required String label,
@@ -306,7 +320,8 @@ class SubjectGridTile extends StatelessWidget {
   }
 
   Widget _buildStatsInfo(BuildContext context, Color? textColor) {
-    // Ukuran font untuk statistik ini juga dihapus agar mengikuti skala
+    // Skalakan ukuran ikon statistik
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(color: textColor);
@@ -322,6 +337,10 @@ class SubjectGridTile extends StatelessWidget {
         return indexA.compareTo(indexB);
       });
 
+    // Skalakan ukuran ikon statistik
+    final double scaledStatIconSize =
+        (textStyle?.fontSize ?? 12.0); // Gunakan ukuran font sebagai basis
+
     return Column(
       children: [
         Row(
@@ -329,9 +348,9 @@ class SubjectGridTile extends StatelessWidget {
           children: [
             Icon(
               Icons.chat_bubble_outline,
-              size: textStyle?.fontSize ?? 12.0,
+              size: scaledStatIconSize,
               color: textColor,
-            ), // Gunakan ukuran font
+            ), // Gunakan ukuran diskalakan
             const SizedBox(width: 4),
             Text(
               '${subject.discussionCount} (${subject.finishedDiscussionCount} ✔)',
@@ -370,28 +389,19 @@ class SubjectGridTile extends StatelessWidget {
     );
   }
 
-  // ==> PERBAIKAN DI SINI <==
   Widget _buildSubtitle(BuildContext context, Color? textColor) {
-    // 1. Dapatkan textScaleFactor dari MediaQuery
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    // 2. Tentukan ukuran font dasar (misalnya, default untuk bodySmall)
-    const double baseFontSize = 11.0; // Sedikit lebih kecil untuk grid
-    // 3. Hitung ukuran font yang diskalakan
+    const double baseFontSize = 11.0;
     final scaledFontSize = baseFontSize * textScaleFactor;
-    // 4. Hitung ukuran ikon yang diskalakan
-    final scaledIconSize =
-        (baseFontSize * 0.95) *
-        textScaleFactor; // Sedikit lebih kecil dari font
+    final scaledIconSize = (baseFontSize * 0.95) * textScaleFactor;
 
-    // 5. Buat TextStyle baru dengan ukuran yang sudah diskalakan
-    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: textColor,
-      fontSize: scaledFontSize, // Terapkan ukuran yang sudah diskalakan
-    );
+    final subtitleStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: textColor, fontSize: scaledFontSize);
 
     return RichText(
       text: TextSpan(
-        style: subtitleStyle, // Gunakan style baru
+        style: subtitleStyle,
         children: [
           if (subject.date != null)
             WidgetSpan(
@@ -399,7 +409,7 @@ class SubjectGridTile extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4.0),
                 child: Icon(
                   Icons.calendar_today_outlined,
-                  size: scaledIconSize, // Gunakan ukuran ikon yang diskalakan
+                  size: scaledIconSize,
                   color: subject.isHidden ? textColor : Colors.amber[800],
                 ),
               ),
@@ -409,8 +419,6 @@ class SubjectGridTile extends StatelessWidget {
             TextSpan(
               text: subject.date,
               style: TextStyle(
-                // Harus TextStyle eksplisit di sini
-                // Tidak perlu fontSize, akan diwarisi dari style TextSpan induk
                 color: subject.isHidden ? textColor : Colors.amber[800],
                 fontWeight: FontWeight.bold,
               ),
@@ -421,8 +429,6 @@ class SubjectGridTile extends StatelessWidget {
             TextSpan(
               text: subject.repetitionCode,
               style: TextStyle(
-                // Harus TextStyle eksplisit di sini
-                // Tidak perlu fontSize, akan diwarisi dari style TextSpan induk
                 color: subject.isHidden
                     ? textColor
                     : getColorForRepetitionCode(subject.repetitionCode!),

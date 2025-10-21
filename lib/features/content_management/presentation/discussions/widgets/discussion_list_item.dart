@@ -50,7 +50,7 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
-    this.titleFontSize = 24.0, // Bisa disesuaikan atau dihilangkan
+    this.titleFontSize = 18.0, // Bisa disesuaikan atau dihilangkan
     this.horizontalGap = 14.0,
   });
 
