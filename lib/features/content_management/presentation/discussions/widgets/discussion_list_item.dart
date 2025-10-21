@@ -12,7 +12,7 @@ import '../../../../webview_page/presentation/pages/webview_page.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
-import 'discussion_action_menu.dart'; // Pastikan DiscussionActionMenu diimpor
+import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
@@ -35,8 +35,8 @@ class DiscussionListItem extends StatelessWidget {
   final VoidCallback onDelete;
   final bool isPointReorderMode;
   final VoidCallback onToggleReorder;
-  final double? titleFontSize;
-  final double? horizontalGap; // <<< Jarak antara leading dan title
+  final double? titleFontSize; // Tetap ada untuk fleksibilitas judul
+  final double? horizontalGap;
 
   const DiscussionListItem({
     super.key,
@@ -50,10 +50,11 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
-    this.titleFontSize = 14.0,
-    this.horizontalGap = 14.0, // <<< Nilai default jarak leading-title
+    this.titleFontSize = 24.0, // Bisa disesuaikan atau dihilangkan
+    this.horizontalGap = 14.0,
   });
 
+  // ... (fungsi helper _showSnackBar, _copyDiscussionContent, dll tetap sama)
   void _showSnackBar(
     BuildContext context,
     String message, {
@@ -273,17 +274,20 @@ class DiscussionListItem extends StatelessWidget {
       }
     }
 
-    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon & Jarak Berdasarkan Skala ===
+    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon, Jarak, dan Padding Berdasarkan Skala ===
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     const double baseLeadingIconSize = 24.0;
-    const double baseTrailingIconSize =
-        24.0; // Ukuran dasar untuk ikon panah expand/collapse
-    const double baseTrailingSpacing = 0.0; // Jarak dasar antar ikon trailing
+    const double baseTrailingIconSize = 24.0;
+    const double baseTrailingSpacing = 0.0;
+    const double baseVerticalPadding = 4.0; // Padding vertikal dasar ListTile
 
     final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
-    final scaledTrailingIconSize =
-        baseTrailingIconSize * textScaleFactor; // Ukuran untuk panah
+    final scaledTrailingIconSize = baseTrailingIconSize * textScaleFactor;
     final scaledTrailingSpacing = baseTrailingSpacing * textScaleFactor;
+    final scaledVerticalPadding = baseVerticalPadding * textScaleFactor;
+
+    // Hitung juga horizontal gap jika belum diskalakan
+    final scaledHorizontalGap = (horizontalGap ?? 14.0) * textScaleFactor;
     // === AKHIR PERBAIKAN UTAMA ===
 
     return Card(
@@ -297,7 +301,15 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            horizontalTitleGap: horizontalGap,
+            // Terapkan padding vertikal yang diskalakan
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16.0, // Padding horizontal bisa tetap
+              vertical: scaledVerticalPadding,
+            ),
+            // Terapkan gap horizontal yang diskalakan
+            horizontalTitleGap: scaledHorizontalGap,
+            visualDensity:
+                VisualDensity.adaptivePlatformDensity, // Bantu penyesuaian
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
@@ -314,17 +326,22 @@ class DiscussionListItem extends StatelessWidget {
             },
             leading: IconButton(
               icon: Icon(iconData, color: iconColor),
-              // Gunakan ukuran ikon kiri yang sudah diskalakan
               iconSize: scaledLeadingIconSize,
               onPressed: onPressedAction,
               tooltip: tooltip,
+              // Sesuaikan padding/constraints jika perlu agar ikon tidak terpotong
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
             title: Text(
               discussion.discussion,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: isFinished ? TextDecoration.lineThrough : null,
-                fontSize: titleFontSize,
+                // Ukuran font judul bisa tetap atau diskalakan juga jika mau
+                fontSize: titleFontSize != null
+                    ? titleFontSize! * textScaleFactor
+                    : null,
               ),
             ),
             subtitle: Column(
@@ -338,7 +355,11 @@ class DiscussionListItem extends StatelessWidget {
                       discussion.url ?? 'URL tidak valid',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: theme.primaryColor, fontSize: 12),
+                      // Skalakan juga font subtitle URL jika perlu
+                      style: TextStyle(
+                        color: theme.primaryColor,
+                        fontSize: (12.0 * textScaleFactor), // Skalakan
+                      ),
                     ),
                   ),
               ],
@@ -346,9 +367,9 @@ class DiscussionListItem extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // DiscussionActionMenu sekarang akan menghitung ukurannya sendiri
                 if (!provider.isSelectionMode)
                   DiscussionActionMenu(
+                    // DiscussionActionMenu sudah diskalakan di dalamnya
                     isFinished: isFinished,
                     hasFile: hasFile,
                     canCreateFile: subjectLinkedPath != null,
@@ -417,6 +438,9 @@ class DiscussionListItem extends StatelessWidget {
                     tooltip: isPointReorderMode
                         ? 'Selesai Mengurutkan'
                         : 'Tampilkan/Sembunyikan Poin',
+                    // Sesuaikan padding/constraints jika perlu
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
               ],
             ),
@@ -437,6 +461,7 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
+  // ... (Sisa fungsi helper _openUrlWithOptions, _addPoint, dll tidak berubah) ...
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
