@@ -241,7 +241,8 @@ class SubjectGridTile extends StatelessWidget {
               ),
               if (hasSubtitle) ...[
                 const SizedBox(height: 6),
-                _buildSubtitle(context, textColor, 11),
+                // Hapus parameter fontSize dari pemanggilan
+                _buildSubtitle(context, textColor),
               ],
               const SizedBox(height: 6),
               _buildStatsInfo(context, textColor),
@@ -305,9 +306,10 @@ class SubjectGridTile extends StatelessWidget {
   }
 
   Widget _buildStatsInfo(BuildContext context, Color? textColor) {
+    // Ukuran font untuk statistik ini juga dihapus agar mengikuti skala
     final textStyle = Theme.of(
       context,
-    ).textTheme.bodySmall?.copyWith(fontSize: 10, color: textColor);
+    ).textTheme.bodySmall?.copyWith(color: textColor);
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final displayOrder = provider.repetitionCodeDisplayOrder;
 
@@ -325,10 +327,14 @@ class SubjectGridTile extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.chat_bubble_outline, size: 12, color: textColor),
+            Icon(
+              Icons.chat_bubble_outline,
+              size: textStyle?.fontSize ?? 12.0,
+              color: textColor,
+            ), // Gunakan ukuran font
             const SizedBox(width: 4),
             Text(
-              '${subject.discussionCount} Discussions (${subject.finishedDiscussionCount} ✔)',
+              '${subject.discussionCount} (${subject.finishedDiscussionCount} ✔)',
               style: textStyle,
             ),
           ],
@@ -364,16 +370,28 @@ class SubjectGridTile extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(
-    BuildContext context,
-    Color? textColor,
-    double fontSize,
-  ) {
+  // ==> PERBAIKAN DI SINI <==
+  Widget _buildSubtitle(BuildContext context, Color? textColor) {
+    // 1. Dapatkan textScaleFactor dari MediaQuery
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    // 2. Tentukan ukuran font dasar (misalnya, default untuk bodySmall)
+    const double baseFontSize = 11.0; // Sedikit lebih kecil untuk grid
+    // 3. Hitung ukuran font yang diskalakan
+    final scaledFontSize = baseFontSize * textScaleFactor;
+    // 4. Hitung ukuran ikon yang diskalakan
+    final scaledIconSize =
+        (baseFontSize * 0.95) *
+        textScaleFactor; // Sedikit lebih kecil dari font
+
+    // 5. Buat TextStyle baru dengan ukuran yang sudah diskalakan
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: textColor,
+      fontSize: scaledFontSize, // Terapkan ukuran yang sudah diskalakan
+    );
+
     return RichText(
       text: TextSpan(
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontSize: fontSize, color: textColor),
+        style: subtitleStyle, // Gunakan style baru
         children: [
           if (subject.date != null)
             WidgetSpan(
@@ -381,7 +399,7 @@ class SubjectGridTile extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4.0),
                 child: Icon(
                   Icons.calendar_today_outlined,
-                  size: fontSize,
+                  size: scaledIconSize, // Gunakan ukuran ikon yang diskalakan
                   color: subject.isHidden ? textColor : Colors.amber[800],
                 ),
               ),
@@ -391,6 +409,8 @@ class SubjectGridTile extends StatelessWidget {
             TextSpan(
               text: subject.date,
               style: TextStyle(
+                // Harus TextStyle eksplisit di sini
+                // Tidak perlu fontSize, akan diwarisi dari style TextSpan induk
                 color: subject.isHidden ? textColor : Colors.amber[800],
                 fontWeight: FontWeight.bold,
               ),
@@ -401,6 +421,8 @@ class SubjectGridTile extends StatelessWidget {
             TextSpan(
               text: subject.repetitionCode,
               style: TextStyle(
+                // Harus TextStyle eksplisit di sini
+                // Tidak perlu fontSize, akan diwarisi dari style TextSpan induk
                 color: subject.isHidden
                     ? textColor
                     : getColorForRepetitionCode(subject.repetitionCode!),
