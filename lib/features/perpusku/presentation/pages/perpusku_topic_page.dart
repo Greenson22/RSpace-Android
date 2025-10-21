@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+// Import ThemeProvider
 import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
@@ -52,11 +53,20 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
+    // Akses ThemeProvider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     return Scaffold(
+      // Terapkan transparansi Scaffold
+      backgroundColor: isTransparent ? Colors.transparent : null,
       appBar: AppBar(
+        // Terapkan transparansi AppBar
+        backgroundColor: isTransparent ? Colors.transparent : null,
+        elevation: isTransparent ? 0 : null,
         title: const Text('Perpusku - Topik'),
-        // >> TAMBAHKAN ACTIONS UNTUK MENAMPUNG TOMBOL TOGGLE <<
         actions: [
           IconButton(
             icon: Icon(

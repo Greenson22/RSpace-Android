@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+// Import ThemeProvider
 import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
@@ -38,7 +39,6 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      // Logika pencarian sekarang hanya ada di sini, tidak ada listener provider
       Provider.of<PerpuskuProvider>(
         context,
         listen: false,
@@ -55,9 +55,21 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
+    // Akses ThemeProvider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.topic.name)),
+      // Terapkan transparansi Scaffold
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      appBar: AppBar(
+        // Terapkan transparansi AppBar
+        backgroundColor: isTransparent ? Colors.transparent : null,
+        elevation: isTransparent ? 0 : null,
+        title: Text(widget.topic.name),
+      ),
       body: Column(
         children: [
           Padding(

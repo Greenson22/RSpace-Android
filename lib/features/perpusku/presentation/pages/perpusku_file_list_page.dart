@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+// ThemeProvider sudah diimpor
 import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
@@ -42,7 +43,6 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
     _provider.addListener(_filterList);
     _searchController.addListener(_filterList);
 
-    // Inisialisasi daftar filter dengan data awal
     _filteredFiles = _provider.files;
   }
 
@@ -74,10 +74,21 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
+    // Akses ThemeProvider
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.subject.name)),
+      // Terapkan transparansi Scaffold
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      appBar: AppBar(
+        // Terapkan transparansi AppBar
+        backgroundColor: isTransparent ? Colors.transparent : null,
+        elevation: isTransparent ? 0 : null,
+        title: Text(widget.subject.name),
+      ),
       body: Column(
         children: [
           Padding(
