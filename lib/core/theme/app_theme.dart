@@ -94,7 +94,6 @@ class AppTheme {
           backgroundColor: Colors.grey[900],
           foregroundColor: Colors.white,
         ),
-        // ==> TAMBAHKAN THEME UNTUK TAB BAR DI SINI (DARK) <==
         tabBarTheme: TabBarThemeData(
           labelColor: offWhite,
           unselectedLabelColor: offWhite.withOpacity(0.7),
@@ -128,12 +127,15 @@ class AppTheme {
           backgroundColor: christmasRed,
           foregroundColor: Colors.white,
         ),
-        // ==> TAMBAHKAN THEME UNTUK TAB BAR DI SINI (LIGHT) <==
+        // ### PERBAIKAN DI SINI ###
         tabBarTheme: TabBarThemeData(
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.8),
-          indicatorColor: Colors.white,
+          labelColor: christmasGreen, // Warna teks aktif
+          unselectedLabelColor: christmasGreen.withOpacity(
+            0.7,
+          ), // Warna teks non-aktif
+          indicatorColor: christmasGreen, // Warna garis indikator
         ),
+        // ### AKHIR PERBAIKAN ###
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: christmasRed,
           foregroundColor: Colors.white,
