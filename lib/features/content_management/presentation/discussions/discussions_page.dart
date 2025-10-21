@@ -1,11 +1,12 @@
 // lib/features/content_management/presentation/discussions/discussions_page.dart
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 import '../../application/discussion_provider.dart';
-import 'dialogs/discussion_dialogs.dart';
+import 'dialogs/discussion_dialogs.dart'; // Import utama untuk dialog
 import 'widgets/discussion_list_item.dart';
 import 'widgets/discussion_stats_header.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
@@ -15,6 +16,8 @@ import '../../domain/models/discussion_model.dart';
 import 'dialogs/add_discussion_from_content_dialog.dart';
 // Import ThemeProvider untuk mendapatkan status latar belakang
 import '../../../settings/application/theme_provider.dart';
+// Import dialog move discussion secara spesifik jika diperlukan
+// import 'dialogs/move_discussion_dialog.dart'; // Sudah termasuk dalam discussion_dialogs.dart
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -65,8 +68,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
+  // === FUNGSI INI TELAH DIPERBAIKI ===
   void _moveSelectedDiscussions(DiscussionProvider provider) async {
-    final targetInfo = await showMoveDiscussionDialog(context);
+    // Kirim nama Subject asal saat memanggil dialog
+    final targetInfo = await showMoveDiscussionDialog(
+      context,
+      widget.subjectName,
+    );
 
     if (targetInfo != null && mounted) {
       try {
@@ -83,9 +91,16 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           'Gagal memindahkan diskusi: ${e.toString()}',
           isError: true,
         );
+      } finally {
+        // Hapus seleksi setelah selesai (baik berhasil maupun gagal)
+        provider.clearSelection();
       }
+    } else {
+      // Jika pengguna membatalkan dialog, hapus juga seleksi
+      provider.clearSelection();
     }
   }
+  // === AKHIR PERBAIKAN ===
 
   void _showSnackBar(
     String message, {

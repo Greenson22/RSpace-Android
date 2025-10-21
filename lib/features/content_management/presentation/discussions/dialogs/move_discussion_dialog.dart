@@ -1,4 +1,4 @@
-// lib/presentation/pages/3_discussions_page/dialogs/move_discussion_dialog.dart
+// lib/features/content_management/presentation/discussions/dialogs/move_discussion_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import '../../../domain/models/subject_model.dart';
@@ -11,15 +11,23 @@ import '../../../domain/services/topic_service.dart';
 /// Mengembalikan Map berisi 'jsonPath' dan 'linkedPath' jika berhasil.
 Future<Map<String, String?>?> showMoveDiscussionDialog(
   BuildContext context,
+  // === 1. TAMBAHKAN PARAMETER BARU ===
+  String currentSubjectName,
 ) async {
   return await showDialog<Map<String, String?>?>(
     context: context,
-    builder: (context) => const MoveDiscussionDialog(),
+    builder: (context) => MoveDiscussionDialog(
+      // === 2. KIRIM PARAMETER KE WIDGET ===
+      currentSubjectName: currentSubjectName,
+    ),
   );
 }
 
 class MoveDiscussionDialog extends StatefulWidget {
-  const MoveDiscussionDialog({super.key});
+  // === 3. TAMBAHKAN PROPERTI BARU ===
+  final String currentSubjectName;
+
+  const MoveDiscussionDialog({super.key, required this.currentSubjectName});
 
   @override
   State<MoveDiscussionDialog> createState() => _MoveDiscussionDialogState();
@@ -34,6 +42,7 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
   List<Subject> _subjects = [];
   bool _isLoading = true;
   String? _selectedTopicPath;
+  Topic? _selectedTopic; // Simpan objek Topic yang dipilih
   bool _isTopicView = true;
 
   @override
@@ -99,6 +108,7 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                         final topicPath = path.join(topicsPath, topic.name);
                         setState(() {
                           _selectedTopicPath = topicPath;
+                          _selectedTopic = topic; // Simpan Topic yang dipilih
                           _isTopicView = false;
                         });
                         _loadSubjects(topicPath);
@@ -109,6 +119,16 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                     final bool isLinked =
                         subject.linkedPath != null &&
                         subject.linkedPath!.isNotEmpty;
+
+                    // === 4. TAMBAHKAN KONDISI FILTER DI SINI ===
+                    // Jangan tampilkan subject jika namanya sama dengan subject asal
+                    // DAN topiknya juga sama dengan topik asal (jika _selectedTopic tersedia)
+                    if (_selectedTopic != null &&
+                        _selectedTopic!.name == subject.topicName &&
+                        subject.name == widget.currentSubjectName) {
+                      return const SizedBox.shrink(); // Jangan tampilkan ListTile
+                    }
+                    // === AKHIR KONDISI FILTER ===
 
                     return ListTile(
                       enabled: isLinked,
@@ -145,6 +165,7 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
               setState(() {
                 _isTopicView = true;
                 _selectedTopicPath = null;
+                _selectedTopic = null; // Reset Topic yang dipilih
               });
             },
             child: const Text('Kembali'),

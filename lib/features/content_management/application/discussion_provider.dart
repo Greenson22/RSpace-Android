@@ -18,6 +18,13 @@ import 'mixins/discussion_filter_sort_mixin.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:my_aplication/features/quiz/application/quiz_service.dart';
 import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
+// Import dialog move discussion
+import '../presentation/discussions/dialogs/move_discussion_dialog.dart';
+// Import dialog lain yang mungkin dibutuhkan dari discussion_dialogs
+import '../presentation/discussions/dialogs/discussion_dialogs.dart';
+// Import provider neuron dan utils snackbar
+import '../../../../core/providers/neuron_provider.dart';
+import '../../../../core/utils/scaffold_messenger_utils.dart';
 
 class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {

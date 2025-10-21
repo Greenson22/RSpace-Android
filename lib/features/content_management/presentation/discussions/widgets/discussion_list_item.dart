@@ -9,13 +9,13 @@ import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import '../../../../settings/application/theme_provider.dart';
 import '../../../../webview_page/presentation/pages/webview_page.dart';
-import '../dialogs/discussion_dialogs.dart';
+import '../dialogs/discussion_dialogs.dart'; // Import utama
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
 import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
-import '../../subjects/subjects_page.dart';
+import '../../subjects/subjects_page.dart'; // Untuk mendapatkan topicName
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_question_list_page.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 import 'package:my_aplication/features/quiz/presentation/dialogs/generate_quiz_from_html_dialog.dart';
@@ -23,6 +23,11 @@ import 'package:my_aplication/features/quiz/application/quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
 import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
+// Import utils dan provider neuron
+import '../../../../../core/utils/scaffold_messenger_utils.dart';
+import '../../../../../core/providers/neuron_provider.dart';
+// Import dialog move secara spesifik
+import '../dialogs/move_discussion_dialog.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -35,7 +40,7 @@ class DiscussionListItem extends StatelessWidget {
   final VoidCallback onDelete;
   final bool isPointReorderMode;
   final VoidCallback onToggleReorder;
-  final double? titleFontSize; // Tetap ada untuk fleksibilitas judul
+  final double? titleFontSize;
   final double? horizontalGap;
 
   const DiscussionListItem({
@@ -50,17 +55,57 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
-    this.titleFontSize = 18.0, // Bisa disesuaikan atau dihilangkan
+    this.titleFontSize = 18.0,
     this.horizontalGap = 14.0,
   });
 
-  // ... (fungsi helper _showSnackBar, _copyDiscussionContent, dll tetap sama)
+  // === Fungsi helper _moveDiscussion didefinisikan di sini ===
+  void _moveDiscussion(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) async {
+    // Pastikan item ini terpilih jika belum dalam mode seleksi
+    if (!provider.isSelectionMode) {
+      provider.toggleSelection(discussion);
+    }
+
+    final targetInfo = await showMoveDiscussionDialog(context, subjectName);
+
+    // Gunakan mounted check
+    if (!context.mounted) return;
+
+    if (targetInfo != null) {
+      try {
+        final String log = await provider.moveSelectedDiscussions(
+          targetInfo['jsonPath']!,
+          targetInfo['linkedPath'],
+        );
+        _showSnackBar(context, log, isLong: true);
+      } catch (e) {
+        _showSnackBar(
+          context,
+          'Gagal memindahkan: ${e.toString()}',
+          isError: true,
+        );
+      } finally {
+        // Hapus seleksi setelah selesai (baik berhasil maupun gagal)
+        provider.clearSelection();
+      }
+    } else {
+      // Jika pengguna membatalkan dialog, hapus juga seleksi
+      provider.clearSelection();
+    }
+  }
+  // === Akhir definisi _moveDiscussion ===
+
+  // Fungsi helper lainnya
   void _showSnackBar(
     BuildContext context,
     String message, {
     bool isError = false,
     bool isLong = false,
   }) {
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -218,250 +263,6 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<DiscussionProvider>(context, listen: false);
-    final theme = Theme.of(context);
-    final isSelected = provider.selectedDiscussions.contains(discussion);
-    final isFinished = discussion.finished;
-    final isWebLink = discussion.linkType == DiscussionLinkType.link;
-    final isQuiz = discussion.linkType == DiscussionLinkType.perpuskuQuiz;
-    final hasFile =
-        discussion.linkType == DiscussionLinkType.html &&
-        discussion.filePath != null &&
-        discussion.filePath!.isNotEmpty;
-
-    final iconColor = isFinished
-        ? Colors.green
-        : (isSelected ? theme.primaryColor : null);
-
-    IconData iconData;
-    if (isFinished) {
-      iconData = Icons.check_circle;
-    } else if (isQuiz) {
-      iconData = Icons.assignment_turned_in_outlined;
-    } else if (isWebLink) {
-      iconData = Icons.link;
-    } else if (hasFile) {
-      iconData = Icons.insert_drive_file_outlined;
-    } else {
-      iconData = Icons.chat_bubble_outline;
-    }
-
-    if (isSelected) {
-      iconData = Icons.check_circle_outline;
-    }
-
-    VoidCallback? onPressedAction;
-    String? tooltip;
-
-    if (!provider.isSelectionMode) {
-      if (isQuiz) {
-        onPressedAction = () => _startQuiz(context);
-        tooltip = 'Mulai Kuis';
-      } else if (isWebLink) {
-        onPressedAction = () => _openUrlWithOptions(context);
-        tooltip = 'Buka Tautan';
-      } else if (hasFile) {
-        onPressedAction = () async {
-          try {
-            await provider.openDiscussionFile(discussion, context);
-          } catch (e) {
-            _showSnackBar(context, e.toString(), isError: true);
-          }
-        };
-        tooltip = 'Buka File';
-      }
-    }
-
-    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon, Jarak, dan Padding Berdasarkan Skala ===
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseLeadingIconSize = 24.0;
-    const double baseTrailingIconSize = 24.0;
-    const double baseTrailingSpacing = 0.0;
-    const double baseVerticalPadding = 4.0; // Padding vertikal dasar ListTile
-
-    final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
-    final scaledTrailingIconSize = baseTrailingIconSize * textScaleFactor;
-    final scaledTrailingSpacing = baseTrailingSpacing * textScaleFactor;
-    final scaledVerticalPadding = baseVerticalPadding * textScaleFactor;
-
-    // Hitung juga horizontal gap jika belum diskalakan
-    final scaledHorizontalGap = (horizontalGap ?? 14.0) * textScaleFactor;
-    // === AKHIR PERBAIKAN UTAMA ===
-
-    return Card(
-      color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        side: isFocused
-            ? BorderSide(color: theme.primaryColor, width: 2.5)
-            : BorderSide.none,
-      ),
-      child: Column(
-        children: [
-          ListTile(
-            // Terapkan padding vertikal yang diskalakan
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16.0, // Padding horizontal bisa tetap
-              vertical: scaledVerticalPadding,
-            ),
-            // Terapkan gap horizontal yang diskalakan
-            horizontalTitleGap: scaledHorizontalGap,
-            visualDensity:
-                VisualDensity.adaptivePlatformDensity, // Bantu penyesuaian
-            onTap: () {
-              if (provider.isSelectionMode) {
-                provider.toggleSelection(discussion);
-              } else {
-                if (isQuiz) {
-                  _startQuiz(context);
-                } else {
-                  onToggleVisibility(index);
-                }
-              }
-            },
-            onLongPress: () {
-              provider.toggleSelection(discussion);
-            },
-            leading: IconButton(
-              icon: Icon(iconData, color: iconColor),
-              iconSize: scaledLeadingIconSize,
-              onPressed: onPressedAction,
-              tooltip: tooltip,
-              // Sesuaikan padding/constraints jika perlu agar ikon tidak terpotong
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            title: Text(
-              discussion.discussion,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                decoration: isFinished ? TextDecoration.lineThrough : null,
-                // Ukuran font judul bisa tetap atau diskalakan juga jika mau
-                fontSize: titleFontSize != null
-                    ? titleFontSize! * textScaleFactor
-                    : null,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DiscussionSubtitle(discussion: discussion, isCompact: true),
-                if (isWebLink)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2.0),
-                    child: Text(
-                      discussion.url ?? 'URL tidak valid',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      // Skalakan juga font subtitle URL jika perlu
-                      style: TextStyle(
-                        color: theme.primaryColor,
-                        fontSize: (12.0 * textScaleFactor), // Skalakan
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!provider.isSelectionMode)
-                  DiscussionActionMenu(
-                    // DiscussionActionMenu sudah diskalakan di dalamnya
-                    isFinished: isFinished,
-                    hasFile: hasFile,
-                    canCreateFile: subjectLinkedPath != null,
-                    hasPoints: discussion.points.isNotEmpty,
-                    linkType: discussion.linkType,
-                    onAddPoint: () => _addPoint(context, provider),
-                    onMove: () => _moveDiscussion(context, provider),
-                    onRename: () => _renameDiscussion(context, provider),
-                    onDateChange: () =>
-                        _changeDiscussionDate(context, provider),
-                    onCodeChange: () =>
-                        _changeDiscussionCode(context, provider),
-                    onCreateFile: () => _createHtmlFileForDiscussion(
-                      context,
-                      provider,
-                      subjectLinkedPath!,
-                    ),
-                    onSetFilePath: () => _setFilePath(context, provider),
-                    onGenerateHtml: () => _generateHtml(context),
-                    onEditFile: () => provider.editDiscussionFileWithSelection(
-                      discussion,
-                      context,
-                    ),
-                    onRemoveFilePath: () => _removeFilePath(context, provider),
-                    onSmartLink: () => _findSmartLink(context, provider),
-                    onFinish: () => _markAsFinished(context, provider),
-                    onReactivate: () =>
-                        _reactivateDiscussion(context, provider),
-                    onDelete: onDelete,
-                    onCopy: () => _copyDiscussionContent(context, discussion),
-                    onReorderPoints: onToggleReorder,
-                    onAddQuizQuestion: () => _navigateAndEditQuiz(context),
-                    onChangeQuizLink: () => _changeQuizLink(context),
-                    onConvertToQuiz: () => _convertToQuiz(context),
-                    onGenerateQuizPrompt: () {
-                      try {
-                        final correctPath = provider.getCorrectRelativePath(
-                          discussion,
-                        );
-                        showGenerateQuizFromHtmlDialog(
-                          context,
-                          relativeHtmlPath: correctPath,
-                          discussionTitle: discussion.discussion,
-                        );
-                      } catch (e) {
-                        _showSnackBar(context, e.toString(), isError: true);
-                      }
-                    },
-                  ),
-                // Gunakan jarak trailing yang sudah diskalakan
-                if (!provider.isSelectionMode && discussion.points.isNotEmpty)
-                  SizedBox(width: scaledTrailingSpacing),
-                if (discussion.points.isNotEmpty && !provider.isSelectionMode)
-                  IconButton(
-                    icon: Icon(
-                      (arePointsVisible[index] ?? false)
-                          ? (isPointReorderMode
-                                ? Icons.check
-                                : Icons.expand_less)
-                          : Icons.expand_more,
-                      color: isPointReorderMode ? theme.primaryColor : null,
-                    ),
-                    // Gunakan ukuran ikon kanan yang sudah diskalakan
-                    iconSize: scaledTrailingIconSize,
-                    onPressed: () => onToggleVisibility(index),
-                    tooltip: isPointReorderMode
-                        ? 'Selesai Mengurutkan'
-                        : 'Tampilkan/Sembunyikan Poin',
-                    // Sesuaikan padding/constraints jika perlu
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-              ],
-            ),
-          ),
-          if (discussion.points.isNotEmpty &&
-              (arePointsVisible[index] ?? false))
-            const Divider(height: 1, indent: 16, endIndent: 16),
-          if (discussion.points.isNotEmpty)
-            Visibility(
-              visible: arePointsVisible[index] ?? false,
-              child: DiscussionPointList(
-                discussion: discussion,
-                isReorderMode: isPointReorderMode,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ... (Sisa fungsi helper _openUrlWithOptions, _addPoint, dll tidak berubah) ...
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
@@ -515,31 +316,6 @@ class DiscussionListItem extends StatelessWidget {
         _showSnackBar(context, 'Poin berhasil ditambahkan.');
       },
     );
-  }
-
-  void _moveDiscussion(
-    BuildContext context,
-    DiscussionProvider provider,
-  ) async {
-    if (!provider.isSelectionMode) {
-      provider.toggleSelection(discussion);
-    }
-    final targetInfo = await showMoveDiscussionDialog(context);
-    if (targetInfo != null && context.mounted) {
-      try {
-        final log = await provider.moveSelectedDiscussions(
-          targetInfo['jsonPath']!,
-          targetInfo['linkedPath'],
-        );
-        _showSnackBar(context, log, isLong: true);
-      } catch (e) {
-        _showSnackBar(
-          context,
-          'Gagal memindahkan: ${e.toString()}',
-          isError: true,
-        );
-      }
-    }
   }
 
   void _renameDiscussion(BuildContext context, DiscussionProvider provider) {
@@ -703,27 +479,235 @@ class DiscussionListItem extends StatelessWidget {
     _showSnackBar(context, 'Diskusi diaktifkan kembali.');
   }
 
-  void _deleteDiscussion(BuildContext context, DiscussionProvider provider) {
-    showDeleteDiscussionConfirmationDialog(
-      context: context,
-      discussionName: discussion.discussion,
-      hasLinkedFile:
-          discussion.filePath != null && discussion.filePath!.isNotEmpty,
-      onDelete: () async {
-        try {
-          await provider.deleteDiscussion(discussion);
-          if (context.mounted) {
-            _showSnackBar(
-              context,
-              'Diskusi "${discussion.discussion}" berhasil dihapus.',
-            );
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<DiscussionProvider>(context, listen: false);
+    final theme = Theme.of(context);
+    final isSelected = provider.selectedDiscussions.contains(discussion);
+    final isFinished = discussion.finished;
+    final isWebLink = discussion.linkType == DiscussionLinkType.link;
+    final isQuiz = discussion.linkType == DiscussionLinkType.perpuskuQuiz;
+    final hasFile =
+        discussion.linkType == DiscussionLinkType.html &&
+        discussion.filePath != null &&
+        discussion.filePath!.isNotEmpty;
+
+    final iconColor = isFinished
+        ? Colors.green
+        : (isSelected ? theme.primaryColor : null);
+
+    IconData iconData;
+    if (isFinished) {
+      iconData = Icons.check_circle;
+    } else if (isQuiz) {
+      iconData = Icons.assignment_turned_in_outlined;
+    } else if (isWebLink) {
+      iconData = Icons.link;
+    } else if (hasFile) {
+      iconData = Icons.insert_drive_file_outlined;
+    } else {
+      iconData = Icons.chat_bubble_outline;
+    }
+
+    if (isSelected) {
+      iconData = Icons.check_circle_outline;
+    }
+
+    VoidCallback? onPressedAction;
+    String? tooltip;
+
+    if (!provider.isSelectionMode) {
+      if (isQuiz) {
+        onPressedAction = () => _startQuiz(context);
+        tooltip = 'Mulai Kuis';
+      } else if (isWebLink) {
+        onPressedAction = () => _openUrlWithOptions(context);
+        tooltip = 'Buka Tautan';
+      } else if (hasFile) {
+        onPressedAction = () async {
+          try {
+            await provider.openDiscussionFile(discussion, context);
+          } catch (e) {
+            _showSnackBar(context, e.toString(), isError: true);
           }
-        } catch (e) {
-          if (context.mounted) {
-            _showSnackBar(context, "Gagal menghapus: ${e.toString()}");
-          }
-        }
-      },
+        };
+        tooltip = 'Buka File';
+      }
+    }
+
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseLeadingIconSize = 24.0;
+    const double baseTrailingIconSize = 24.0;
+    const double baseTrailingSpacing = 0.0;
+    const double baseVerticalPadding = 4.0;
+
+    final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
+    final scaledTrailingIconSize = baseTrailingIconSize * textScaleFactor;
+    final scaledTrailingSpacing = baseTrailingSpacing * textScaleFactor;
+    final scaledVerticalPadding = baseVerticalPadding * textScaleFactor;
+    final scaledHorizontalGap = (horizontalGap ?? 14.0) * textScaleFactor;
+
+    return Card(
+      color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        side: isFocused
+            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            : BorderSide.none,
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: scaledVerticalPadding,
+            ),
+            horizontalTitleGap: scaledHorizontalGap,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            onTap: () {
+              if (provider.isSelectionMode) {
+                provider.toggleSelection(discussion);
+              } else {
+                if (isQuiz) {
+                  _startQuiz(context);
+                } else {
+                  onToggleVisibility(index);
+                }
+              }
+            },
+            onLongPress: () {
+              provider.toggleSelection(discussion);
+            },
+            leading: IconButton(
+              icon: Icon(iconData, color: iconColor),
+              iconSize: scaledLeadingIconSize,
+              onPressed: onPressedAction,
+              tooltip: tooltip,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            title: Text(
+              discussion.discussion,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                decoration: isFinished ? TextDecoration.lineThrough : null,
+                fontSize: titleFontSize != null
+                    ? titleFontSize! * textScaleFactor
+                    : null,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DiscussionSubtitle(discussion: discussion, isCompact: true),
+                if (isWebLink)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Text(
+                      discussion.url ?? 'URL tidak valid',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: theme.primaryColor,
+                        fontSize: (12.0 * textScaleFactor),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!provider.isSelectionMode)
+                  DiscussionActionMenu(
+                    isFinished: isFinished,
+                    hasFile: hasFile,
+                    canCreateFile: subjectLinkedPath != null,
+                    hasPoints: discussion.points.isNotEmpty,
+                    linkType: discussion.linkType,
+                    onAddPoint: () => _addPoint(context, provider),
+                    onMove: () => _moveDiscussion(
+                      context,
+                      provider,
+                    ), // Panggil fungsi lokal
+                    onRename: () => _renameDiscussion(context, provider),
+                    onDateChange: () =>
+                        _changeDiscussionDate(context, provider),
+                    onCodeChange: () =>
+                        _changeDiscussionCode(context, provider),
+                    onCreateFile: () => _createHtmlFileForDiscussion(
+                      context,
+                      provider,
+                      subjectLinkedPath!,
+                    ),
+                    onSetFilePath: () => _setFilePath(context, provider),
+                    onGenerateHtml: () => _generateHtml(context),
+                    onEditFile: () => provider.editDiscussionFileWithSelection(
+                      discussion,
+                      context,
+                    ),
+                    onRemoveFilePath: () => _removeFilePath(context, provider),
+                    onSmartLink: () => _findSmartLink(context, provider),
+                    onFinish: () => _markAsFinished(context, provider),
+                    onReactivate: () =>
+                        _reactivateDiscussion(context, provider),
+                    onDelete: onDelete,
+                    onCopy: () => _copyDiscussionContent(context, discussion),
+                    onReorderPoints: onToggleReorder,
+                    onAddQuizQuestion: () => _navigateAndEditQuiz(context),
+                    onChangeQuizLink: () => _changeQuizLink(context),
+                    onConvertToQuiz: () => _convertToQuiz(context),
+                    onGenerateQuizPrompt: () {
+                      try {
+                        final correctPath = provider.getCorrectRelativePath(
+                          discussion,
+                        );
+                        showGenerateQuizFromHtmlDialog(
+                          context,
+                          relativeHtmlPath: correctPath,
+                          discussionTitle: discussion.discussion,
+                        );
+                      } catch (e) {
+                        _showSnackBar(context, e.toString(), isError: true);
+                      }
+                    },
+                  ),
+                if (!provider.isSelectionMode && discussion.points.isNotEmpty)
+                  SizedBox(width: scaledTrailingSpacing),
+                if (discussion.points.isNotEmpty && !provider.isSelectionMode)
+                  IconButton(
+                    icon: Icon(
+                      (arePointsVisible[index] ?? false)
+                          ? (isPointReorderMode
+                                ? Icons.check
+                                : Icons.expand_less)
+                          : Icons.expand_more,
+                      color: isPointReorderMode ? theme.primaryColor : null,
+                    ),
+                    iconSize: scaledTrailingIconSize,
+                    onPressed: () => onToggleVisibility(index),
+                    tooltip: isPointReorderMode
+                        ? 'Selesai Mengurutkan'
+                        : 'Tampilkan/Sembunyikan Poin',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+              ],
+            ),
+          ),
+          if (discussion.points.isNotEmpty &&
+              (arePointsVisible[index] ?? false))
+            const Divider(height: 1, indent: 16, endIndent: 16),
+          if (discussion.points.isNotEmpty)
+            Visibility(
+              visible: arePointsVisible[index] ?? false,
+              child: DiscussionPointList(
+                discussion: discussion,
+                isReorderMode: isPointReorderMode,
+              ),
+            ),
+        ],
+      ),
     );
   }
-}
+} // Akhir class DiscussionListItem
