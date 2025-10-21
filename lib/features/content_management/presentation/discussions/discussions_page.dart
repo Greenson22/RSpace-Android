@@ -39,7 +39,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
 
-  // ==> STATE BARU UNTUK MENGELOLA MODE URUT POIN <==
   int? _reorderingDiscussionIndex;
 
   @override
@@ -190,7 +189,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   void _togglePointsVisibility(int index) {
     setState(() {
       _arePointsVisible[index] = !(_arePointsVisible[index] ?? false);
-      // Jika menutup panel, nonaktifkan mode reorder
       if (_arePointsVisible[index] == false) {
         if (_reorderingDiscussionIndex == index) {
           _reorderingDiscussionIndex = null;
@@ -264,13 +262,29 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
 
+    // Hitung ukuran ikon & jarak AppBar
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseAppBarIconSize = 24.0;
+    const double baseAppBarSpacing = 8.0; // Jarak dasar antar ikon AppBar
+    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+    final scaledAppBarSpacing =
+        baseAppBarSpacing * textScaleFactor; // Jarak diskalakan
+
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
         appBar: provider.isSelectionMode
-            ? _buildSelectionAppBar(provider)
-            : _buildDefaultAppBar(provider),
+            ? _buildSelectionAppBar(
+                provider,
+                scaledAppBarIconSize,
+                scaledAppBarSpacing,
+              ) // Kirim ukuran & jarak
+            : _buildDefaultAppBar(
+                provider,
+                scaledAppBarIconSize,
+                scaledAppBarSpacing,
+              ), // Kirim ukuran & jarak
         body: Column(
           children: [
             Expanded(child: _buildBody(provider)),
@@ -305,29 +319,44 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
   }
 
-  AppBar _buildSelectionAppBar(DiscussionProvider provider) {
+  // === PERBAIKAN DI SINI: Terima parameter scaledIconSize & scaledSpacing ===
+  AppBar _buildSelectionAppBar(
+    DiscussionProvider provider,
+    double scaledIconSize,
+    double scaledSpacing,
+  ) {
     return AppBar(
       title: Text('${provider.selectedDiscussions.length} dipilih'),
       leading: IconButton(
         icon: const Icon(Icons.close),
+        iconSize: scaledIconSize,
         onPressed: () => provider.clearSelection(),
       ),
       actions: [
         IconButton(
           icon: const Icon(Icons.select_all),
+          iconSize: scaledIconSize,
           onPressed: () => provider.selectAllFiltered(),
           tooltip: 'Pilih Semua',
         ),
+        SizedBox(width: scaledSpacing), // Terapkan jarak
         IconButton(
           icon: const Icon(Icons.move_up),
+          iconSize: scaledIconSize,
           onPressed: () => _moveSelectedDiscussions(provider),
           tooltip: 'Pindahkan Pilihan',
         ),
+        SizedBox(width: scaledSpacing), // Terapkan jarak (opsional di akhir)
       ],
     );
   }
 
-  AppBar _buildDefaultAppBar(DiscussionProvider provider) {
+  // === PERBAIKAN DI SINI: Terima parameter scaledIconSize & scaledSpacing ===
+  AppBar _buildDefaultAppBar(
+    DiscussionProvider provider,
+    double scaledIconSize,
+    double scaledSpacing,
+  ) {
     return AppBar(
       title: _isSearching
           ? TextField(
@@ -344,11 +373,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       actions: [
         IconButton(
           icon: Icon(_isSearching ? Icons.close : Icons.search),
+          iconSize: scaledIconSize,
           onPressed: () => setState(() {
             _isSearching = !_isSearching;
             if (!_isSearching) _searchController.clear();
           }),
         ),
+        SizedBox(width: scaledSpacing), // Terapkan jarak
         if (provider.activeFilterType != 'code')
           IconButton(
             icon: Icon(
@@ -356,18 +387,23 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   ? Icons.visibility_off
                   : Icons.visibility,
             ),
+            iconSize: scaledIconSize,
             tooltip: provider.showFinishedDiscussions
                 ? 'Sembunyikan Selesai'
                 : 'Tampilkan Selesai',
             onPressed: () => provider.toggleShowFinished(),
           ),
+        SizedBox(width: scaledSpacing), // Terapkan jarak
         IconButton(
           icon: const Icon(Icons.filter_list),
+          iconSize: scaledIconSize,
           tooltip: 'Filter Diskusi',
           onPressed: () => _showFilterDialog(provider),
         ),
+        SizedBox(width: scaledSpacing), // Terapkan jarak
         IconButton(
           icon: const Icon(Icons.sort),
+          iconSize: scaledIconSize,
           tooltip: 'Urutkan Diskusi & Poin',
           onPressed: () => showSortDialog(
             context: context,
@@ -379,6 +415,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             },
           ),
         ),
+        SizedBox(width: scaledSpacing), // Terapkan jarak (opsional di akhir)
       ],
     );
   }
