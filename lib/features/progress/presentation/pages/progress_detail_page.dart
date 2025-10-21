@@ -11,6 +11,8 @@ import '../../domain/models/progress_subject_model.dart';
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+// ==> 1. IMPORT BARU <==
+import '../../../settings/application/theme_provider.dart';
 
 // 1. Ubah menjadi StatefulWidget
 class ProgressDetailPage extends StatefulWidget {
@@ -26,6 +28,12 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(context);
 
+    // ==> 2. TAMBAHKAN KODE BARU DI SINI <==
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isTransparent =
+        themeProvider.backgroundImagePath != null ||
+        themeProvider.isUnderwaterTheme;
+
     int _getCrossAxisCount(double screenWidth) {
       if (screenWidth > 1200) return 5;
       if (screenWidth > 900) return 4;
@@ -34,7 +42,12 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     }
 
     return Scaffold(
+      // ==> 3. TERAPKAN TRANSPARANSI SCAFFOLD <==
+      backgroundColor: isTransparent ? Colors.transparent : null,
       appBar: AppBar(
+        // ==> 4. TERAPKAN TRANSPARANSI APPBAR <==
+        backgroundColor: isTransparent ? Colors.transparent : null,
+        elevation: isTransparent ? 0 : null,
         title: Text(provider.topic.topics),
         // 3. Tambahkan actions di AppBar
         actions: [
