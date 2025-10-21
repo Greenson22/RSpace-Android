@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import 'point_edit_popup_menu.dart';
-import '../../../../../core/widgets/linkify_text.dart';
+import '../../../../../core/widgets/linkify_text.dart'; // Pastikan LinkifyText diimpor
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 import '../../../../../core/providers/neuron_provider.dart';
@@ -105,32 +105,30 @@ class PointTile extends StatelessWidget {
         ? defaultTextColor
         : inactiveColor;
 
-    // ========== AWAL PERBAIKAN UTAMA ==========
-    // 1. Ambil gaya teks default dari tema untuk judul ListTile.
-    // Gaya ini sudah diskalakan oleh pengaturan global.
-    final defaultTitleStyle =
-        ListTileTheme.of(context).titleTextStyle ??
-        Theme.of(context).textTheme.titleMedium!;
+    // === PERBAIKAN UTAMA: Hitung Ukuran Font & Ikon Berdasarkan Skala ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    // Tentukan ukuran font dasar (sesuaikan jika perlu)
+    const double baseTitleFontSize = 14.0;
+    const double baseSubtitleFontSize = 10.0;
+    const double baseLeadingIconSize = 16.0;
 
-    // 2. Buat gaya baru dengan hanya mengubah warna dan dekorasi,
-    //    mempertahankan ukuran font yang sudah diskalakan.
-    final pointTitleStyle = defaultTitleStyle.copyWith(
+    // Hitung ukuran yang diskalakan
+    final scaledTitleFontSize = baseTitleFontSize * textScaleFactor;
+    final scaledSubtitleFontSize = baseSubtitleFontSize * textScaleFactor;
+    final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
+
+    // Buat TextStyle baru dengan ukuran yang sudah diskalakan
+    final pointTitleStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: effectiveTextColor,
       decoration: isFinished ? TextDecoration.lineThrough : null,
-      fontSize: 10.0,
+      fontSize: scaledTitleFontSize, // Terapkan ukuran judul
     );
 
-    // 3. Lakukan hal yang sama untuk subtitle (Date & Code).
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    // ===== UKURAN FONT DIPERKECIL DI SINI =====
-    const double baseFontSize = 10.0;
-    final scaledFontSize = baseFontSize * textScaleFactor;
-
-    final subtitleStyle = TextStyle(
-      fontSize: scaledFontSize,
+    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
       color: effectiveTextColor,
+      fontSize: scaledSubtitleFontSize, // Terapkan ukuran subtitle
     );
-    // ========== AKHIR PERBAIKAN UTAMA ==========
+    // === AKHIR PERBAIKAN UTAMA ===
 
     return ListTile(
       dense: true,
@@ -141,19 +139,25 @@ class PointTile extends StatelessWidget {
       leading: Icon(
         isFinished ? Icons.check_circle_outline : Icons.arrow_right,
         color: isFinished ? Colors.green : Colors.grey,
+        size: scaledLeadingIconSize, // Terapkan ukuran ikon leading
       ),
-      // 4. Terapkan gaya baru ke title
+      // Gunakan style baru ke title
       title: LinkifyText(point.pointText, style: pointTitleStyle),
       subtitle: isFinished
-          ? Text('Selesai pada: ${point.finish_date ?? ''}')
+          ? Text(
+              'Selesai pada: ${point.finish_date ?? ''}',
+              style: subtitleStyle, // Terapkan style subtitle
+            )
           : RichText(
               text: TextSpan(
-                style: subtitleStyle, // 5. Terapkan gaya baru ke subtitle
+                style: subtitleStyle, // Terapkan style subtitle
                 children: [
                   const TextSpan(text: 'Date: '),
                   TextSpan(
                     text: point.date,
                     style: TextStyle(
+                      // Harus TextStyle eksplisit
+                      // fontSize TIDAK perlu diatur di sini
                       color: isActive ? Colors.amber : inactiveColor,
                       fontWeight: FontWeight.bold,
                     ),
@@ -162,6 +166,8 @@ class PointTile extends StatelessWidget {
                   TextSpan(
                     text: point.repetitionCode,
                     style: TextStyle(
+                      // Harus TextStyle eksplisit
+                      // fontSize TIDAK perlu diatur di sini
                       color: isActive
                           ? getColorForRepetitionCode(point.repetitionCode)
                           : inactiveColor,
