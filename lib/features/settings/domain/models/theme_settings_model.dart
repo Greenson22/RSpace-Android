@@ -11,7 +11,6 @@ class ThemeSettings {
   final List<int> recentColorValues;
   final double dashboardItemScale;
   final double uiScaleFactor;
-  // ==> PROPERTI BARU DITAMBAHKAN <==
   final double dashboardComponentOpacity;
   final bool showFloatingCharacter;
   final bool showQuickFab;
@@ -32,8 +31,8 @@ class ThemeSettings {
     required this.primaryColorValue,
     this.recentColorValues = const [],
     this.dashboardItemScale = 1.0,
-    this.uiScaleFactor = 1.0,
-    // ==> TAMBAHKAN DI KONSTRUKTOR <==
+    // ==> PERUBAHAN DI SINI: Default diubah ke 0.8 <==
+    this.uiScaleFactor = 0.8,
     this.dashboardComponentOpacity = 0.9,
     this.showFloatingCharacter = true,
     this.showQuickFab = true,
@@ -63,8 +62,8 @@ class ThemeSettings {
           [],
       dashboardItemScale:
           (json['dashboardItemScale'] as num?)?.toDouble() ?? 1.0,
-      uiScaleFactor: (json['uiScaleFactor'] as num?)?.toDouble() ?? 1.0,
-      // ==> BACA DARI JSON (dengan fallback ke nilai lama untuk kompatibilitas) <==
+      // ==> PERUBAHAN DI SINI: Fallback diubah ke 0.8 <==
+      uiScaleFactor: (json['uiScaleFactor'] as num?)?.toDouble() ?? 0.8,
       dashboardComponentOpacity:
           (json['dashboardComponentOpacity'] as num?)?.toDouble() ??
           (json['headerOpacity'] as num?)?.toDouble() ??
@@ -93,7 +92,6 @@ class ThemeSettings {
       'recentColorValues': recentColorValues,
       'dashboardItemScale': dashboardItemScale,
       'uiScaleFactor': uiScaleFactor,
-      // ==> SIMPAN KE JSON <==
       'dashboardComponentOpacity': dashboardComponentOpacity,
       'showFloatingCharacter': showFloatingCharacter,
       'showQuickFab': showQuickFab,
@@ -117,7 +115,6 @@ class ThemeSettings {
     List<int>? recentColorValues,
     double? dashboardItemScale,
     double? uiScaleFactor,
-    // ==> TAMBAHKAN DI COPYWITH <==
     double? dashboardComponentOpacity,
     bool? showFloatingCharacter,
     bool? showQuickFab,
