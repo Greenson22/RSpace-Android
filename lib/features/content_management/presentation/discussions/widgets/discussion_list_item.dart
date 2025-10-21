@@ -55,8 +55,8 @@ class DiscussionListItem extends StatelessWidget {
     required this.onToggleReorder,
     this.leadingIconSize = 24.0,
     this.trailingIconSize = 24.0,
-    this.titleFontSize = 12.0,
-    this.horizontalGap = 12.0, // <<< Nilai default jarak leading-title
+    this.titleFontSize = 14.0,
+    this.horizontalGap = 14.0, // <<< Nilai default jarak leading-title
     this.trailingSpacing = 0.0, // <<< Nilai default jarak di trailing
   });
 
