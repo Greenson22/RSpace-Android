@@ -28,7 +28,6 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onAddQuizQuestion;
   final VoidCallback onGenerateQuizPrompt;
   final VoidCallback onChangeQuizLink;
-  // ==> TAMBAHKAN CALLBACK BARU <==
   final VoidCallback onConvertToQuiz;
 
   const DiscussionActionMenu({
@@ -57,12 +56,20 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onAddQuizQuestion,
     required this.onGenerateQuizPrompt,
     required this.onChangeQuizLink,
-    required this.onConvertToQuiz, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onConvertToQuiz,
   });
 
   @override
   Widget build(BuildContext context) {
+    // === PERBAIKAN DI SINI: Hitung ukuran ikon berdasarkan skala ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseIconSize = 24.0; // Ukuran ikon default
+    final scaledIconSize = baseIconSize * textScaleFactor;
+    // === AKHIR PERBAIKAN ===
+
     return PopupMenuButton<String>(
+      // Terapkan ukuran ikon yang sudah diskalakan
+      iconSize: scaledIconSize,
       onSelected: (value) {
         final actions = {
           'add_point': onAddPoint,
@@ -84,7 +91,7 @@ class DiscussionActionMenu extends StatelessWidget {
           'add_perpusku_quiz_question': onAddQuizQuestion,
           'generate_quiz_prompt': onGenerateQuizPrompt,
           'change_perpusku_quiz_link': onChangeQuizLink,
-          'convert_to_quiz': onConvertToQuiz, // ==> TAMBAHKAN AKSI
+          'convert_to_quiz': onConvertToQuiz,
         };
         actions[value]?.call();
       },
@@ -93,6 +100,7 @@ class DiscussionActionMenu extends StatelessWidget {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems() {
+    // ... (Logika _buildMenuItems tetap sama)
     if (linkType == DiscussionLinkType.perpuskuQuiz) {
       return <PopupMenuEntry<String>>[
         _buildMenuItem(
@@ -148,7 +156,6 @@ class DiscussionActionMenu extends StatelessWidget {
           icon: Icons.description_outlined,
           label: 'File & Tautan',
           children: [
-            // ==> TAMBAHKAN MENU KONVERSI DI SINI <==
             if (linkType != DiscussionLinkType.perpuskuQuiz)
               _buildMenuItem(
                 'convert_to_quiz',

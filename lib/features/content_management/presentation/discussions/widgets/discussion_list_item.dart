@@ -12,7 +12,7 @@ import '../../../../webview_page/presentation/pages/webview_page.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
-import 'discussion_action_menu.dart';
+import 'discussion_action_menu.dart'; // Pastikan DiscussionActionMenu diimpor
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
@@ -35,11 +35,8 @@ class DiscussionListItem extends StatelessWidget {
   final VoidCallback onDelete;
   final bool isPointReorderMode;
   final VoidCallback onToggleReorder;
-  final double leadingIconSize;
-  final double trailingIconSize;
   final double? titleFontSize;
   final double? horizontalGap; // <<< Jarak antara leading dan title
-  final double? trailingSpacing; // <<< Jarak di dalam trailing
 
   const DiscussionListItem({
     super.key,
@@ -53,14 +50,10 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
-    this.leadingIconSize = 24.0,
-    this.trailingIconSize = 24.0,
     this.titleFontSize = 14.0,
     this.horizontalGap = 14.0, // <<< Nilai default jarak leading-title
-    this.trailingSpacing = 0.0, // <<< Nilai default jarak di trailing
   });
 
-  // ... (fungsi _showSnackBar, _copyDiscussionContent, dll tetap sama)
   void _showSnackBar(
     BuildContext context,
     String message, {
@@ -280,6 +273,19 @@ class DiscussionListItem extends StatelessWidget {
       }
     }
 
+    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon & Jarak Berdasarkan Skala ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseLeadingIconSize = 24.0;
+    const double baseTrailingIconSize =
+        24.0; // Ukuran dasar untuk ikon panah expand/collapse
+    const double baseTrailingSpacing = 0.0; // Jarak dasar antar ikon trailing
+
+    final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
+    final scaledTrailingIconSize =
+        baseTrailingIconSize * textScaleFactor; // Ukuran untuk panah
+    final scaledTrailingSpacing = baseTrailingSpacing * textScaleFactor;
+    // === AKHIR PERBAIKAN UTAMA ===
+
     return Card(
       color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
       shape: RoundedRectangleBorder(
@@ -291,7 +297,7 @@ class DiscussionListItem extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            horizontalTitleGap: horizontalGap, // <<< Gunakan jarak horizontal
+            horizontalTitleGap: horizontalGap,
             onTap: () {
               if (provider.isSelectionMode) {
                 provider.toggleSelection(discussion);
@@ -308,7 +314,8 @@ class DiscussionListItem extends StatelessWidget {
             },
             leading: IconButton(
               icon: Icon(iconData, color: iconColor),
-              iconSize: leadingIconSize, // Gunakan ukuran ikon kiri
+              // Gunakan ukuran ikon kiri yang sudah diskalakan
+              iconSize: scaledLeadingIconSize,
               onPressed: onPressedAction,
               tooltip: tooltip,
             ),
@@ -317,7 +324,7 @@ class DiscussionListItem extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: isFinished ? TextDecoration.lineThrough : null,
-                fontSize: titleFontSize, // Gunakan ukuran font judul
+                fontSize: titleFontSize,
               ),
             ),
             subtitle: Column(
@@ -339,6 +346,7 @@ class DiscussionListItem extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // DiscussionActionMenu sekarang akan menghitung ukurannya sendiri
                 if (!provider.isSelectionMode)
                   DiscussionActionMenu(
                     isFinished: isFinished,
@@ -390,11 +398,9 @@ class DiscussionListItem extends StatelessWidget {
                       }
                     },
                   ),
-                // <<< Tambahkan SizedBox di sini jika kedua ikon ada >>>
+                // Gunakan jarak trailing yang sudah diskalakan
                 if (!provider.isSelectionMode && discussion.points.isNotEmpty)
-                  SizedBox(
-                    width: trailingSpacing ?? 0,
-                  ), // <<< Gunakan jarak trailing
+                  SizedBox(width: scaledTrailingSpacing),
                 if (discussion.points.isNotEmpty && !provider.isSelectionMode)
                   IconButton(
                     icon: Icon(
@@ -405,7 +411,8 @@ class DiscussionListItem extends StatelessWidget {
                           : Icons.expand_more,
                       color: isPointReorderMode ? theme.primaryColor : null,
                     ),
-                    iconSize: trailingIconSize, // Gunakan ukuran ikon kanan
+                    // Gunakan ukuran ikon kanan yang sudah diskalakan
+                    iconSize: scaledTrailingIconSize,
                     onPressed: () => onToggleVisibility(index),
                     tooltip: isPointReorderMode
                         ? 'Selesai Mengurutkan'
