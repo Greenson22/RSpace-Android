@@ -8,6 +8,8 @@ import 'package:my_aplication/features/notes/application/note_topic_provider.dar
 import 'package:my_aplication/features/notes/presentation/pages/note_editor_page.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_view_page.dart';
 import 'package:provider/provider.dart';
+// Import ThemeProvider
+import 'package:my_aplication/features/settings/application/theme_provider.dart';
 
 class NoteListPage extends StatefulWidget {
   final String topicName;
@@ -108,14 +110,12 @@ class _NoteListPageState extends State<NoteListPage> {
     );
   }
 
-  // ==> DIALOG UNTUK MEMINDAHKAN CATATAN <==
   Future<void> _showMoveDialog(BuildContext context) async {
     final noteListProvider = Provider.of<NoteListProvider>(
       context,
       listen: false,
     );
 
-    // Gunakan NoteTopicProvider untuk mendapatkan daftar topik
     final destinationTopic = await showDialog<String>(
       context: context,
       builder: (context) => ChangeNotifierProvider(
@@ -230,7 +230,15 @@ class _NoteListPageState extends State<NoteListPage> {
       create: (_) => NoteListProvider(widget.topicName),
       child: Consumer<NoteListProvider>(
         builder: (context, provider, child) {
+          // Akses ThemeProvider
+          final themeProvider = Provider.of<ThemeProvider>(context);
+          final isTransparent =
+              themeProvider.backgroundImagePath != null ||
+              themeProvider.isUnderwaterTheme;
+
           return Scaffold(
+            // Terapkan transparansi Scaffold
+            backgroundColor: isTransparent ? Colors.transparent : null,
             appBar: provider.isSelectionMode
                 ? AppBar(
                     leading: IconButton(
@@ -288,6 +296,9 @@ class _NoteListPageState extends State<NoteListPage> {
                     ],
                   )
                 : AppBar(
+                    // Terapkan transparansi AppBar
+                    backgroundColor: isTransparent ? Colors.transparent : null,
+                    elevation: isTransparent ? 0 : null,
                     title: Text(widget.topicName),
                     actions: [
                       IconButton(

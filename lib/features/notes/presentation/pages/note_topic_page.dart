@@ -8,8 +8,9 @@ import 'package:my_aplication/features/notes/domain/models/note_topic_model.dart
 import 'package:my_aplication/features/notes/presentation/pages/note_list_page.dart';
 import 'package:my_aplication/features/notes/presentation/widgets/note_topic_grid_tile.dart';
 import 'package:provider/provider.dart';
-// ==> IMPORT BARU <==
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+// Import ThemeProvider
+import 'package:my_aplication/features/settings/application/theme_provider.dart';
 
 class NoteTopicPage extends StatelessWidget {
   const NoteTopicPage({super.key});
@@ -105,6 +106,12 @@ class NoteTopicPage extends StatelessWidget {
       create: (_) => NoteTopicProvider(),
       child: Consumer<NoteTopicProvider>(
         builder: (context, provider, child) {
+          // Akses ThemeProvider
+          final themeProvider = Provider.of<ThemeProvider>(context);
+          final isTransparent =
+              themeProvider.backgroundImagePath != null ||
+              themeProvider.isUnderwaterTheme;
+
           int getCrossAxisCount(double screenWidth) {
             if (screenWidth > 1200) return 5;
             if (screenWidth > 900) return 4;
@@ -113,9 +120,13 @@ class NoteTopicPage extends StatelessWidget {
           }
 
           return Scaffold(
+            // Terapkan transparansi Scaffold
+            backgroundColor: isTransparent ? Colors.transparent : null,
             appBar: AppBar(
+              // Terapkan transparansi AppBar
+              backgroundColor: isTransparent ? Colors.transparent : null,
+              elevation: isTransparent ? 0 : null,
               title: const Text('Topik Catatan'),
-              // ==> TAMBAHKAN TOMBOL SORT DI SINI <==
               actions: [
                 IconButton(
                   icon: Icon(
@@ -138,7 +149,6 @@ class NoteTopicPage extends StatelessWidget {
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      // ==> GUNAKAN ReorderableGridView.builder <==
                       return ReorderableGridView.builder(
                         dragEnabled: provider.isReorderModeEnabled,
                         padding: const EdgeInsets.all(12.0),
