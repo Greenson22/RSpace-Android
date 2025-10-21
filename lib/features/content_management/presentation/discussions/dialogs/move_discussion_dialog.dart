@@ -11,23 +11,59 @@ import '../../../domain/services/topic_service.dart';
 /// Mengembalikan Map berisi 'jsonPath' dan 'linkedPath' jika berhasil.
 Future<Map<String, String?>?> showMoveDiscussionDialog(
   BuildContext context,
-  // === 1. TAMBAHKAN PARAMETER BARU ===
-  String currentSubjectName,
+  String currentSubjectName, // Terima nama Subject asal
 ) async {
+  // === Ambil Topic asal dari SubjectService atau provider jika memungkinkan ===
+  // Untuk contoh ini, kita asumsikan topicName bisa didapatkan dari context atau argument lain jika perlu
+  // Jika tidak, kita perlu cara lain untuk mendapatkannya agar perbandingan lebih akurat.
+  // Misalnya, DiscussionProvider bisa menyimpannya.
+  // Untuk sementara, kita asumsikan kita punya topicName asal.
+  // Jika Anda menggunakan Provider, Anda bisa ambil dari sana:
+  // final currentTopicName = Provider.of<DiscussionProvider>(context, listen: false).subject.topicName;
+
+  // Jika tidak, kita perlu modifikasi lebih lanjut untuk mendapatkan nama Topic asal.
+  // Untuk sementara kita pakai asumsi kasar (ini mungkin perlu disesuaikan):
+  String? currentTopicName; // Inisialisasi null
+  try {
+    // Mencoba mencari topicName berdasarkan subjectName (mungkin tidak selalu akurat jika ada nama subject sama di topik berbeda)
+    final topicService = TopicService();
+    final pathService = PathService();
+    final topicsPath = await pathService.topicsPath;
+    final topics = await topicService.getTopics();
+    for (var topic in topics) {
+      final topicPath = path.join(topicsPath, topic.name);
+      final subjectService = SubjectService();
+      final subjects = await subjectService.getSubjects(topicPath);
+      if (subjects.any((s) => s.name == currentSubjectName)) {
+        currentTopicName = topic.name;
+        break;
+      }
+    }
+  } catch (e) {
+    print("Error getting current topic name: $e");
+    currentTopicName = null; // Gagal mendapatkan nama topik
+  }
+
   return await showDialog<Map<String, String?>?>(
     context: context,
     builder: (context) => MoveDiscussionDialog(
-      // === 2. KIRIM PARAMETER KE WIDGET ===
       currentSubjectName: currentSubjectName,
+      // === Kirim juga nama Topic asal ===
+      currentTopicName: currentTopicName,
     ),
   );
 }
 
 class MoveDiscussionDialog extends StatefulWidget {
-  // === 3. TAMBAHKAN PROPERTI BARU ===
   final String currentSubjectName;
+  // === Tambahkan properti untuk nama Topic asal ===
+  final String? currentTopicName;
 
-  const MoveDiscussionDialog({super.key, required this.currentSubjectName});
+  const MoveDiscussionDialog({
+    super.key,
+    required this.currentSubjectName,
+    this.currentTopicName, // Terima nama Topic asal
+  });
 
   @override
   State<MoveDiscussionDialog> createState() => _MoveDiscussionDialogState();
@@ -64,15 +100,23 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       // Handle error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error memuat topik: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   Future<void> _loadSubjects(String topicPath) async {
     setState(() => _isLoading = true);
     try {
+      // Dapatkan subject, termasuk topicName di dalamnya
       final subjects = await _subjectService.getSubjects(topicPath);
       if (!mounted) return;
       setState(() {
+        // Filter subject yang tidak hidden
         _subjects = subjects.where((s) => !s.isHidden).toList();
         _isLoading = false;
       });
@@ -80,6 +124,12 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       // Handle error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error memuat subject: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -120,27 +170,49 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                         subject.linkedPath != null &&
                         subject.linkedPath!.isNotEmpty;
 
-                    // === 4. TAMBAHKAN KONDISI FILTER DI SINI ===
-                    // Jangan tampilkan subject jika namanya sama dengan subject asal
-                    // DAN topiknya juga sama dengan topik asal (jika _selectedTopic tersedia)
-                    if (_selectedTopic != null &&
-                        _selectedTopic!.name == subject.topicName &&
-                        subject.name == widget.currentSubjectName) {
-                      return const SizedBox.shrink(); // Jangan tampilkan ListTile
-                    }
-                    // === AKHIR KONDISI FILTER ===
+                    // === PERUBAHAN LOGIKA FILTER DI SINI ===
+                    // Cek apakah ini adalah subject asal
+                    final bool isSourceSubject =
+                        _selectedTopic != null &&
+                        _selectedTopic!.name ==
+                            widget
+                                .currentTopicName && // Bandingkan nama topiknya juga
+                        subject.name == widget.currentSubjectName;
+                    // === AKHIR PERUBAHAN LOGIKA FILTER ===
 
                     return ListTile(
-                      enabled: isLinked,
+                      // Nonaktifkan jika tidak linked ATAU jika ini adalah subject asal
+                      enabled: isLinked && !isSourceSubject,
                       leading: Text(
                         subject.icon,
-                        style: const TextStyle(fontSize: 24),
+                        style: TextStyle(
+                          fontSize: 24,
+                          // Beri warna abu-abu jika subject asal
+                          color: isSourceSubject ? Colors.grey : null,
+                        ),
                       ),
-                      title: Text(subject.name),
+                      title: Text(
+                        subject.name,
+                        style: TextStyle(
+                          // Beri warna abu-abu jika subject asal
+                          color: isSourceSubject ? Colors.grey : null,
+                        ),
+                      ),
                       trailing: !isLinked
                           ? const Icon(Icons.link_off, color: Colors.grey)
+                          // Tampilkan indikator jika subject asal
+                          : isSourceSubject
+                          ? const Text(
+                              "(Asal)",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            )
                           : null,
-                      onTap: isLinked
+                      onTap:
+                          (isLinked &&
+                              !isSourceSubject) // Hanya bisa tap jika linked DAN bukan subject asal
                           ? () {
                               final subjectJsonPath = path.join(
                                 _selectedTopicPath!,
@@ -152,7 +224,7 @@ class _MoveDiscussionDialogState extends State<MoveDiscussionDialog> {
                               };
                               Navigator.of(context).pop(result);
                             }
-                          : null,
+                          : null, // onTap null jika tidak aktif
                     );
                   }
                 },
