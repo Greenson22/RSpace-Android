@@ -14,7 +14,8 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onToggleVisibility;
   final VoidCallback onLinkPath;
   final VoidCallback onEditIndexFile;
-  final VoidCallback onMove; // ==> TAMBAHKAN CALLBACK BARU
+  final VoidCallback onMove;
+  final VoidCallback onToggleFreeze;
   final bool isFocused;
 
   const SubjectListTile({
@@ -27,7 +28,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onToggleVisibility,
     required this.onLinkPath,
     required this.onEditIndexFile,
-    required this.onMove, // ==> TAMBAHKAN DI KONSTRUKTOR
+    required this.onMove,
+    required this.onToggleFreeze,
     this.isFocused = false,
   });
 
@@ -37,9 +39,10 @@ class SubjectListTile extends StatelessWidget {
     final bool hasSubtitle =
         subject.date != null || subject.repetitionCode != null;
     final bool isHidden = subject.isHidden;
+    final bool isFrozen = subject.isFrozen;
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
-        : theme.cardColor;
+        : (isFrozen ? Colors.lightBlue.shade50 : theme.cardColor);
     final Color? textColor = isHidden ? theme.disabledColor : null;
     final double elevation = isHidden ? 1 : 3;
 
@@ -65,12 +68,30 @@ class SubjectListTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  subject.icon,
-                  style: TextStyle(fontSize: iconFontSize, color: textColor),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      subject.icon,
+                      style: TextStyle(
+                        fontSize: iconFontSize,
+                        color: textColor,
+                      ),
+                    ),
+                    if (isFrozen)
+                      Positioned(
+                        bottom: -2,
+                        right: -2,
+                        child: Icon(
+                          Icons.ac_unit,
+                          color: Colors.blue.shade700,
+                          size: 16,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -120,7 +141,8 @@ class SubjectListTile extends StatelessWidget {
                   if (value == 'toggle_visibility') onToggleVisibility();
                   if (value == 'link_path') onLinkPath();
                   if (value == 'edit_index') onEditIndexFile();
-                  if (value == 'move') onMove(); // ==> TAMBAHKAN AKSI BARU
+                  if (value == 'move') onMove();
+                  if (value == 'toggle_freeze') onToggleFreeze();
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -169,7 +191,6 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // ==> TAMBAHKAN ITEM MENU BARU DI SINI <==
                   const PopupMenuItem<String>(
                     value: 'move',
                     child: Row(
@@ -180,7 +201,18 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // ==> AKHIR PENAMBAHAN <==
+                  PopupMenuItem<String>(
+                    value: 'toggle_freeze',
+                    child: Row(
+                      children: [
+                        Icon(
+                          isFrozen ? Icons.play_arrow_outlined : Icons.ac_unit,
+                        ),
+                        SizedBox(width: 8),
+                        Text(isFrozen ? 'Unfreeze' : 'Freeze'),
+                      ],
+                    ),
+                  ),
                   PopupMenuItem<String>(
                     value: 'toggle_visibility',
                     child: Row(
@@ -235,13 +267,11 @@ class SubjectListTile extends StatelessWidget {
     final textStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontSize: 11, color: textColor);
-    // ==> DAPATKAN URUTAN TAMPILAN DARI PROVIDER <==
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final displayOrder = provider.repetitionCodeDisplayOrder;
 
     final codeEntries = subject.repetitionCodeCounts.entries.toList()
       ..sort((a, b) {
-        // ==> GUNAKAN URUTAN TAMPILAN UNTUK SORTING VISUAL <==
         int indexA = displayOrder.indexOf(a.key);
         int indexB = displayOrder.indexOf(b.key);
         if (indexA == -1) indexA = 999;

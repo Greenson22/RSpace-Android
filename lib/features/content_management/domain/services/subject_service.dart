@@ -65,6 +65,8 @@ class SubjectService {
           repetitionCode: relevantDiscussionInfo['code'],
           isHidden: metadata['isHidden'] as bool? ?? false,
           linkedPath: metadata['linkedPath'] as String?,
+          isFrozen: metadata['isFrozen'] as bool? ?? false,
+          frozenDate: metadata['frozenDate'] as String?,
           discussionCount: discussions.length,
           finishedDiscussionCount: discussions.where((d) => d.finished).length,
           repetitionCodeCounts: repetitionCodeCounts,
@@ -86,6 +88,31 @@ class SubjectService {
     }
 
     return subjects;
+  }
+
+  // ==> FUNGSI BARU UNTUK MEMBACA DISKUSI <==
+  Future<List<Discussion>> getDiscussionsForSubject(
+    String topicPath,
+    String subjectName,
+  ) async {
+    final subjectJsonPath = await _pathService.getSubjectPath(
+      topicPath,
+      subjectName,
+    );
+    return await _discussionService.loadDiscussions(subjectJsonPath);
+  }
+
+  // ==> FUNGSI BARU UNTUK MENYIMPAN DISKUSI <==
+  Future<void> saveDiscussionsForSubject(
+    String topicPath,
+    String subjectName,
+    List<Discussion> discussions,
+  ) async {
+    final subjectJsonPath = await _pathService.getSubjectPath(
+      topicPath,
+      subjectName,
+    );
+    await _discussionService.saveDiscussions(subjectJsonPath, discussions);
   }
 
   List<Discussion> _getFilteredAndSortedDiscussions(
@@ -226,6 +253,8 @@ class SubjectService {
       'position': subject.position,
       'isHidden': subject.isHidden,
       'linkedPath': subject.linkedPath,
+      'isFrozen': subject.isFrozen,
+      'frozenDate': subject.frozenDate,
     };
 
     await _repository.writeSubjectJson(filePath, jsonData);

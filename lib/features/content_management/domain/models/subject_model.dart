@@ -1,4 +1,5 @@
 // lib/features/content_management/domain/models/subject_model.dart
+
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 
 class Subject {
@@ -11,6 +12,8 @@ class Subject {
   int position;
   bool isHidden;
   String? linkedPath;
+  bool isFrozen; // ==> DITAMBAHKAN
+  String? frozenDate; // ==> DITAMBAHKAN
 
   // Properti ini dihitung secara dinamis oleh service berdasarkan konten
   String? date;
@@ -31,6 +34,8 @@ class Subject {
     this.repetitionCode,
     this.isHidden = false,
     this.linkedPath,
+    this.isFrozen = false, // ==> DITAMBAHKAN
+    this.frozenDate, // ==> DITAMBAHKAN
     this.discussionCount = 0,
     this.finishedDiscussionCount = 0,
     this.repetitionCodeCounts = const {},
@@ -56,6 +61,8 @@ class Subject {
       position: metadata['position'] as int? ?? -1,
       isHidden: metadata['isHidden'] as bool? ?? false,
       linkedPath: metadata['linkedPath'] as String?,
+      isFrozen: metadata['isFrozen'] as bool? ?? false, // ==> DITAMBAHKAN
+      frozenDate: metadata['frozenDate'] as String?, // ==> DITAMBAHKAN
       discussions: discussions,
       discussionCount: discussions.length,
       finishedDiscussionCount: discussions.where((d) => d.finished).length,
@@ -70,6 +77,8 @@ class Subject {
         'position': position,
         'isHidden': isHidden,
         'linkedPath': linkedPath,
+        'isFrozen': isFrozen, // ==> DITAMBAHKAN
+        'frozenDate': frozenDate, // ==> DITAMBAHKAN
       },
       'content': discussions.map((d) => d.toJson()).toList(),
     };

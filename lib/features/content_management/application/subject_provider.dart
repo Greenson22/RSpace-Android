@@ -1,5 +1,6 @@
 // lib/features/content_management/application/subject_provider.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_actions.dart';
@@ -192,6 +193,58 @@ class SubjectProvider with ChangeNotifier {
     await fetchSubjects();
   }
 
+  Future<void> toggleSubjectFreeze(String subjectName) async {
+    final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
+    subject.isFrozen = !subject.isFrozen;
+
+    if (subject.isFrozen) {
+      subject.frozenDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    } else {
+      if (subject.frozenDate != null) {
+        try {
+          final frozenDate = DateTime.parse(subject.frozenDate!);
+          final now = DateTime.now();
+          final difference = now.difference(frozenDate).inDays;
+
+          if (difference > 0) {
+            final discussions = await _subjectService.getDiscussionsForSubject(
+              topicPath,
+              subject.name,
+            );
+            for (var discussion in discussions) {
+              _updateDate(discussion, difference);
+              for (var point in discussion.points) {
+                _updateDate(point, difference);
+              }
+            }
+            await _subjectService.saveDiscussionsForSubject(
+              topicPath,
+              subject.name,
+              discussions,
+            );
+          }
+        } catch (e) {
+          debugPrint("Error calculating date difference: $e");
+        }
+      }
+      subject.frozenDate = null;
+    }
+
+    await _subjectService.updateSubjectMetadata(topicPath, subject);
+    await fetchSubjects();
+  }
+
+  void _updateDate(dynamic item, int daysToAdd) {
+    if (item.date == null) return;
+    try {
+      final currentDate = DateTime.parse(item.date!);
+      final newDate = currentDate.add(Duration(days: daysToAdd));
+      item.date = DateFormat('yyyy-MM-dd').format(newDate);
+    } catch (e) {
+      // Abaikan jika parsing tanggal gagal
+    }
+  }
+
   Future<void> addSubject(String name) async {
     await _subjectService.addSubject(topicPath, name);
     await fetchSubjects();
@@ -228,7 +281,6 @@ class SubjectProvider with ChangeNotifier {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK MEMBACA & MENYIMPAN KONTEN INDEX
   Future<String> readIndexFileContent(Subject subject) async {
     if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
       throw Exception('Subject tidak memiliki tautan.');
@@ -245,7 +297,6 @@ class SubjectProvider with ChangeNotifier {
       content,
     );
   }
-  // <== AKHIR FUNGSI BARU
 
   Future<void> editSubjectIndexFile(Subject subject) async {
     if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {

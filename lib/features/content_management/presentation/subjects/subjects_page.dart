@@ -32,7 +32,6 @@ class SubjectsPage extends StatefulWidget {
 }
 
 class _SubjectsPageState extends State<SubjectsPage> {
-  // ... (properti state tidak berubah) ...
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
@@ -67,7 +66,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     super.dispose();
   }
 
-  // ... (fungsi _handleKeyEvent, _showSnackBar, _moveSubject, dll tidak berubah) ...
   void _handleKeyEvent(RawKeyEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.altLeft ||
         event.logicalKey == LogicalKeyboardKey.altRight) {
@@ -268,7 +266,17 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI TOTAL
+  Future<void> _toggleFreeze(BuildContext context, Subject subject) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    try {
+      await provider.toggleSubjectFreeze(subject.name);
+      final message = subject.isFrozen ? 'diaktifkan kembali' : 'dibekukan';
+      _showSnackBar('Subject "${subject.name}" berhasil $message.');
+    } catch (e) {
+      _showSnackBar(e.toString(), isError: true);
+    }
+  }
+
   Future<void> _showEditIndexOptions(
     BuildContext context,
     Subject subject,
@@ -322,7 +330,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     } else if (choice == 'ai_prompt' && mounted) {
       await showGenerateIndexPromptDialog(context, subject);
     } else if (choice == 'manual' && mounted) {
-      // ==> TAMPILKAN DIALOG PEMILIHAN EDITOR
       final editorChoice = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
@@ -376,6 +383,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
     BuildContext context,
     Subject subject,
   ) async {
+    if (subject.isFrozen) {
+      _showSnackBar('Subject ini sedang dibekukan dan tidak bisa dibuka.');
+      return;
+    }
+
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
@@ -502,7 +514,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ... (sisa kode build widgets tidak berubah) ...
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
@@ -543,6 +554,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onLinkPath: () => _linkSubject(context, subject),
               onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
+              onToggleFreeze: () => _toggleFreeze(context, subject),
             );
           },
         );
@@ -583,6 +595,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onLinkPath: () => _linkSubject(context, subject),
               onEditIndexFile: () => _showEditIndexOptions(context, subject),
               onMove: () => _moveSubject(context, subject),
+              onToggleFreeze: () => _toggleFreeze(context, subject),
             );
           },
         );
