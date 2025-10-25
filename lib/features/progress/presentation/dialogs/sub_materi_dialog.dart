@@ -9,7 +9,7 @@ import '../../domain/models/progress_subject_model.dart';
 import 'move_sub_materi_dialog.dart';
 import 'move_sub_materi_topic_dialog.dart';
 // Import Scaffold Messenger Utils
-import '../../../../core/utils/scaffold_messenger_utils.dart';
+import '../../../../core/utils/scaffold_messenger_utils.dart'; // Pastikan path ini benar
 
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
   showDialog(
@@ -35,7 +35,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isSelectionMode = false;
   final Set<SubMateri> _selectedSubMateri = {};
 
-  // ... (fungsi _showAddSubMateriDialog, _showAddRangedSubMateriDialog, _showEditSubMateriDialog, _showDeleteConfirmDialog, _deleteSelectedItems, _moveSelectedItems, _moveSelectedItemsToTopic, _getProgressColor, _showResetConfirmDialog tetap sama) ...
+  // ... (fungsi _showAddSubMateriDialog, _showAddRangedSubMateriDialog, _showEditSubMateriDialog, _showDeleteConfirmDialog, _deleteSelectedItems, _moveSelectedItems, _moveSelectedItemsToTopic, _getProgressColor, _showResetConfirmDialog tetap sama seperti sebelumnya) ...
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -342,12 +342,10 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
       context,
       listen: false,
     );
-    // Hitung berapa item yang akan di-reset
     final finishedCount = widget.subject.subMateri
         .where((s) => s.progress == 'selesai')
         .length;
 
-    // Jika tidak ada yang selesai, tampilkan pesan dan jangan tampilkan dialog
     if (finishedCount == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -602,21 +600,15 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                               });
                             }
                           },
-                          // == PENAMBAHAN FITUR SALIN ==
+                          // == KEMBALIKAN FUNGSI SELEKSI ==
                           onLongPress: () {
-                            if (_isSelectionMode) {
+                            // Selalu masuk ke mode seleksi saat long press pertama
+                            // dan langsung pilih item yang ditekan lama.
+                            if (!_isSelectionMode) {
                               setState(() {
                                 _isSelectionMode = true;
                                 _selectedSubMateri.add(sub);
                               });
-                            } else {
-                              Clipboard.setData(
-                                ClipboardData(text: sub.namaMateri),
-                              );
-                              showAppSnackBar(
-                                context,
-                                'Teks disalin: "${sub.namaMateri}"',
-                              );
                             }
                           },
                           leading: _isSelectionMode
@@ -642,7 +634,16 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                               ? null
                               : PopupMenuButton<String>(
                                   onSelected: (value) {
-                                    if (value == 'edit') {
+                                    // == TAMBAHKAN KASUS UNTUK SALIN ==
+                                    if (value == 'copy') {
+                                      Clipboard.setData(
+                                        ClipboardData(text: sub.namaMateri),
+                                      );
+                                      showAppSnackBar(
+                                        context,
+                                        'Teks disalin: "${sub.namaMateri}"',
+                                      );
+                                    } else if (value == 'edit') {
                                       _showEditSubMateriDialog(context, sub);
                                     } else if (value == 'delete') {
                                       _showDeleteConfirmDialog(context, sub);
@@ -702,6 +703,16 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                           ),
                                         ),
                                         const PopupMenuDivider(),
+                                        // == TAMBAHKAN ITEM MENU SALIN ==
+                                        const PopupMenuItem<String>(
+                                          value: 'copy',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.copy_all_outlined,
+                                            ),
+                                            title: Text('Salin Teks'),
+                                          ),
+                                        ),
                                         const PopupMenuItem<String>(
                                           value: 'edit',
                                           child: ListTile(
@@ -758,8 +769,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
 }
 
 // Widget _AddRangedSubMateriDialog tetap sama
-
-// Widget untuk dialog tambah rentang (tidak perlu diubah)
 class _AddRangedSubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
   final SubMateriInsertPosition position;
