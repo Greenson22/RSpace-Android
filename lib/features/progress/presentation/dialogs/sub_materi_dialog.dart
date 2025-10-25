@@ -1,13 +1,15 @@
 // lib/features/progress/presentation/dialogs/sub_materi_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart'; // Import Clipboard
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
 import 'move_sub_materi_dialog.dart';
 import 'move_sub_materi_topic_dialog.dart';
+// Import Scaffold Messenger Utils
+import '../../../../core/utils/scaffold_messenger_utils.dart';
 
 void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
   showDialog(
@@ -33,6 +35,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isSelectionMode = false;
   final Set<SubMateri> _selectedSubMateri = {};
 
+  // ... (fungsi _showAddSubMateriDialog, _showAddRangedSubMateriDialog, _showEditSubMateriDialog, _showDeleteConfirmDialog, _deleteSelectedItems, _moveSelectedItems, _moveSelectedItemsToTopic, _getProgressColor, _showResetConfirmDialog tetap sama) ...
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -334,7 +337,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     }
   }
 
-  // ==> FUNGSI BARU UNTUK DIALOG KONFIRMASI RESET <==
   void _showResetConfirmDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -386,16 +388,13 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
       ),
     );
   }
-  // ==> AKHIR FUNGSI BARU <==
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ProgressDetailProvider>(
       builder: (context, provider, child) {
-        // Cari instance subject terbaru dari provider
         final currentSubject = provider.topic.subjects.firstWhere(
           (s) => s.namaMateri == widget.subject.namaMateri,
-          // Fallback jika subject tidak ditemukan (misalnya baru dihapus)
           orElse: () => widget.subject,
         );
 
@@ -476,7 +475,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                           style: const TextStyle(color: Colors.white),
                         ),
                       ),
-                      // ==> TAMBAHKAN TOMBOL RESET DI SINI <==
                       IconButton(
                         icon: const Icon(Icons.refresh, color: Colors.white),
                         onPressed: () => _showResetConfirmDialog(context),
@@ -604,11 +602,22 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                               });
                             }
                           },
+                          // == PENAMBAHAN FITUR SALIN ==
                           onLongPress: () {
-                            setState(() {
-                              _isSelectionMode = true;
-                              _selectedSubMateri.add(sub);
-                            });
+                            if (_isSelectionMode) {
+                              setState(() {
+                                _isSelectionMode = true;
+                                _selectedSubMateri.add(sub);
+                              });
+                            } else {
+                              Clipboard.setData(
+                                ClipboardData(text: sub.namaMateri),
+                              );
+                              showAppSnackBar(
+                                context,
+                                'Teks disalin: "${sub.namaMateri}"',
+                              );
+                            }
                           },
                           leading: _isSelectionMode
                               ? Icon(
@@ -747,6 +756,8 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
   }
 }
+
+// Widget _AddRangedSubMateriDialog tetap sama
 
 // Widget untuk dialog tambah rentang (tidak perlu diubah)
 class _AddRangedSubMateriDialog extends StatefulWidget {
