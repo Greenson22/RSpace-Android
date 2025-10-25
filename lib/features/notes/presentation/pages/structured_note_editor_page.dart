@@ -22,7 +22,9 @@ class StructuredNoteEditorPage extends StatefulWidget {
       _StructuredNoteEditorPageState();
 }
 
-class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
+// ==> TAMBAHKAN 'SingleTickerProviderStateMixin' <==
+class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage>
+    with SingleTickerProviderStateMixin {
   final NoteService _noteService = NoteService();
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
@@ -33,57 +35,57 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
   List<TextEditingController> _fieldDefControllers = [];
   List<List<TextEditingController>> _dataEntryControllers = [];
 
+  // ==> Controller untuk TabBar <==
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    // ==> Inisialisasi TabController <==
+    _tabController = TabController(length: 2, vsync: this); // 2 tab
+
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     _currentNote =
         widget.note ??
         Note(
           title: '',
-          content: '', // Konten tidak digunakan di sini
-          icon: themeProvider.defaultNoteIcon,
-          type: NoteType.structured, // Set tipe ke structured
-          fieldDefinitions: ['Field 1'], // Default field awal
+          icon: '📊', // Icon default untuk structured
+          type: NoteType.structured,
+          fieldDefinitions: ['Field 1'],
           dataEntries: [],
         );
 
-    // Jika note yang ada bukan structured, konversi (atau beri error)
     if (widget.note != null && widget.note!.type != NoteType.structured) {
       _currentNote.type = NoteType.structured;
       if (_currentNote.fieldDefinitions.isEmpty) {
-        _currentNote.fieldDefinitions = [
-          'Field 1',
-        ]; // Pastikan ada field default
+        _currentNote.fieldDefinitions = ['Field 1'];
       }
-      _currentNote.dataEntries = []; // Kosongkan data lama jika ada
-      _currentNote.content = ''; // Kosongkan konten teks
-      _currentNote.icon = '📊'; // Ganti ikon
+      _currentNote.dataEntries = [];
+      _currentNote.content = '';
+      _currentNote.icon = '📊';
     }
 
     _titleController = TextEditingController(text: _currentNote.title);
 
-    // Inisialisasi controller untuk field definitions
     _fieldDefControllers = _currentNote.fieldDefinitions
         .map((field) => TextEditingController(text: field))
         .toList();
 
-    // Inisialisasi controller untuk data entries
     _dataEntryControllers = _currentNote.dataEntries.map((entry) {
       return _currentNote.fieldDefinitions.map((field) {
         return TextEditingController(text: entry[field] ?? '');
       }).toList();
     }).toList();
 
-    // Pastikan selalu ada minimal satu field definition controller
     if (_fieldDefControllers.isEmpty) {
-      _addFieldDefinition();
+      _addFieldDefinition(); // Panggil setelah inisialisasi awal
     }
   }
 
   @override
   void dispose() {
+    _tabController.dispose(); // Dispose TabController
     _titleController.dispose();
     for (var controller in _fieldDefControllers) {
       controller.dispose();
@@ -100,10 +102,12 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
     setState(() {
       final newController = TextEditingController(text: 'Field Baru');
       _fieldDefControllers.add(newController);
-      // Tambahkan controller kosong ke setiap data entry yang sudah ada
       for (var rowControllers in _dataEntryControllers) {
+        // Tambahkan controller baru ke setiap baris data yang ada
         rowControllers.add(TextEditingController());
       }
+      // Pindah ke tab Definisi Field jika baru ditambahkan
+      _tabController.animateTo(1);
     });
   }
 
@@ -117,17 +121,39 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
       );
       return;
     }
-    setState(() {
-      _fieldDefControllers[index].dispose();
-      _fieldDefControllers.removeAt(index);
-      // Hapus controller terkait dari setiap data entry
-      for (var rowControllers in _dataEntryControllers) {
-        if (rowControllers.length > index) {
-          rowControllers[index].dispose();
-          rowControllers.removeAt(index);
-        }
-      }
-    });
+    // Konfirmasi sebelum menghapus
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hapus Field?'),
+        content: Text(
+          'Anda yakin ingin menghapus field "${_fieldDefControllers[index].text}" beserta datanya di semua entri?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Tutup dialog konfirmasi
+              setState(() {
+                _fieldDefControllers[index].dispose();
+                _fieldDefControllers.removeAt(index);
+                // Hapus data terkait di semua entri
+                for (var rowControllers in _dataEntryControllers) {
+                  if (rowControllers.length > index) {
+                    rowControllers[index].dispose();
+                    rowControllers.removeAt(index);
+                  }
+                }
+              });
+            },
+            child: Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _addDataEntry() {
@@ -138,6 +164,8 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
           (_) => TextEditingController(),
         ),
       );
+      // Pindah ke tab Data Entri jika baru ditambahkan
+      _tabController.animateTo(0);
     });
   }
 
@@ -152,7 +180,6 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
 
   Future<void> _saveNote() async {
     if (!_formKey.currentState!.validate()) return;
-    // Validasi tambahan: cek nama field tidak boleh kosong
     for (int i = 0; i < _fieldDefControllers.length; i++) {
       if (_fieldDefControllers[i].text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,6 +188,7 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
             backgroundColor: Colors.red,
           ),
         );
+        _tabController.animateTo(1); // Arahkan ke tab field
         return;
       }
     }
@@ -169,27 +197,31 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
 
     _currentNote.title = _titleController.text;
     _currentNote.modifiedAt = DateTime.now();
+    _currentNote.icon = _currentNote.icon; // Pastikan ikon tersimpan
 
-    // Update field definitions dari controllers
     _currentNote.fieldDefinitions = _fieldDefControllers
         .map((c) => c.text.trim())
         .toList();
 
-    // Update data entries dari controllers
     _currentNote.dataEntries = _dataEntryControllers.map((rowControllers) {
       final entry = <String, String>{};
       for (int i = 0; i < _currentNote.fieldDefinitions.length; i++) {
         if (i < rowControllers.length) {
-          // Safety check
           entry[_currentNote.fieldDefinitions[i]] = rowControllers[i].text;
+        } else {
+          entry[_currentNote.fieldDefinitions[i]] =
+              ''; // Handle jika controller kurang
         }
       }
+      // Hapus field yang tidak ada lagi definisinya dari entri data
+      entry.removeWhere(
+        (key, value) => !_currentNote.fieldDefinitions.contains(key),
+      );
       return entry;
     }).toList();
 
-    // Pastikan tipe adalah structured sebelum menyimpan
     _currentNote.type = NoteType.structured;
-    _currentNote.content = ''; // Kosongkan content teks
+    _currentNote.content = '';
 
     try {
       await _noteService.saveNote(widget.topicName, _currentNote);
@@ -252,14 +284,24 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
             tooltip: 'Simpan Catatan',
           ),
         ],
+        // ==> Tambahkan TabBar di AppBar <==
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.list_alt), text: 'Data Entri'),
+            Tab(icon: Icon(Icons.edit_note), text: 'Definisi Field'),
+          ],
+        ),
       ),
+      // ==> Ubah Body menjadi TabBarView <==
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
+          // Pindahkan Form ke sini agar validasi bekerja di kedua tab
           key: _formKey,
           child: Column(
             children: [
-              // --- Judul dan Ikon ---
+              // --- Judul dan Ikon (tetap di atas TabBarView) ---
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -296,141 +338,15 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // --- Manajemen Field Definitions ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Definisi Field (Kolom)',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: _addFieldDefinition,
-                    tooltip: 'Tambah Field',
-                  ),
-                ],
-              ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _fieldDefControllers.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _fieldDefControllers[index],
-                            decoration: InputDecoration(
-                              labelText: 'Nama Field ${index + 1}',
-                              border: const OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                            color: Colors.red,
-                          ),
-                          onPressed: () => _removeFieldDefinition(index),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              const Divider(height: 24),
-
-              // --- Manajemen Data Entries ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Data Entri (Baris)',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: _addDataEntry,
-                    tooltip: 'Tambah Data',
-                  ),
-                ],
-              ),
+              // --- TabBarView untuk konten ---
               Expanded(
-                child: _dataEntryControllers.isEmpty
-                    ? const Center(
-                        child: Text('Belum ada data. Klik + untuk menambah.'),
-                      )
-                    : ListView.builder(
-                        itemCount: _dataEntryControllers.length,
-                        itemBuilder: (context, rowIndex) {
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                children: [
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: _fieldDefControllers.length,
-                                    itemBuilder: (context, colIndex) {
-                                      // Pastikan controller ada sebelum diakses
-                                      if (colIndex >=
-                                          _dataEntryControllers[rowIndex]
-                                              .length) {
-                                        return const SizedBox.shrink(); // Atau tampilkan error/placeholder
-                                      }
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 4.0,
-                                        ),
-                                        child: TextFormField(
-                                          controller:
-                                              _dataEntryControllers[rowIndex][colIndex],
-                                          decoration: InputDecoration(
-                                            labelText:
-                                                _fieldDefControllers.length >
-                                                    colIndex
-                                                ? _fieldDefControllers[colIndex]
-                                                          .text
-                                                          .trim()
-                                                          .isNotEmpty
-                                                      ? _fieldDefControllers[colIndex]
-                                                            .text
-                                                            .trim()
-                                                      : 'Field ${colIndex + 1}' // Fallback label
-                                                : 'Field ${colIndex + 1}', // Fallback jika controller tidak ada
-                                            border: const OutlineInputBorder(),
-                                            isDense: true,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () =>
-                                          _removeDataEntry(rowIndex),
-                                      tooltip: 'Hapus Data Ini',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildDataEntriesTab(), // Tab untuk Data Entri
+                    _buildFieldDefinitionsTab(), // Tab untuk Definisi Field
+                  ],
+                ),
               ),
             ],
           ),
@@ -438,4 +354,171 @@ class _StructuredNoteEditorPageState extends State<StructuredNoteEditorPage> {
       ),
     );
   }
+
+  // ==> Widget untuk Tab Definisi Field <==
+  Widget _buildFieldDefinitionsTab() {
+    // Gunakan ListView agar bisa di-scroll jika field banyak
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Definisi Field (Kolom)',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: _addFieldDefinition,
+                  tooltip: 'Tambah Field',
+                ),
+              ],
+            ),
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _fieldDefControllers.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _fieldDefControllers[index],
+                        decoration: InputDecoration(
+                          labelText: 'Nama Field ${index + 1}',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        // Validasi bisa ditambahkan di sini jika perlu
+                        // validator: (value) => value!.trim().isEmpty ? 'Nama field kosong' : null,
+                        onChanged: (_) => setState(
+                          () {},
+                        ), // Update UI saat nama field berubah
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.remove_circle_outline,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => _removeFieldDefinition(index),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> Widget untuk Tab Data Entri <==
+  Widget _buildDataEntriesTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Data Entri (Baris)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: _addDataEntry,
+                tooltip: 'Tambah Data',
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _dataEntryControllers.isEmpty
+              ? const Center(
+                  child: Text('Belum ada data. Klik + untuk menambah.'),
+                )
+              : ListView.builder(
+                  itemCount: _dataEntryControllers.length,
+                  itemBuilder: (context, rowIndex) {
+                    // Pastikan jumlah controller di baris data sesuai dengan jumlah field
+                    // Ini penting jika field baru saja ditambahkan/dihapus
+                    while (_dataEntryControllers[rowIndex].length <
+                        _fieldDefControllers.length) {
+                      _dataEntryControllers[rowIndex].add(
+                        TextEditingController(),
+                      );
+                    }
+                    while (_dataEntryControllers[rowIndex].length >
+                        _fieldDefControllers.length) {
+                      _dataEntryControllers[rowIndex].removeLast().dispose();
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          children: [
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _fieldDefControllers
+                                  .length, // Gunakan jumlah field def
+                              itemBuilder: (context, colIndex) {
+                                // Dapatkan nama field yang benar
+                                final fieldName =
+                                    _fieldDefControllers[colIndex].text
+                                        .trim()
+                                        .isNotEmpty
+                                    ? _fieldDefControllers[colIndex].text.trim()
+                                    : 'Field ${colIndex + 1}'; // Fallback
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4.0,
+                                  ),
+                                  child: TextFormField(
+                                    controller:
+                                        _dataEntryControllers[rowIndex][colIndex],
+                                    decoration: InputDecoration(
+                                      labelText:
+                                          fieldName, // Gunakan nama field sebagai label
+                                      border: const OutlineInputBorder(),
+                                      isDense: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _removeDataEntry(rowIndex),
+                                tooltip: 'Hapus Data Ini',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
 }
+
+// Widget _AddRangedSubMateriDialog tidak diperlukan di file ini, hapus jika ada.

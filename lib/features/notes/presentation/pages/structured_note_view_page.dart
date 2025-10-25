@@ -9,14 +9,12 @@ class StructuredNoteViewPage extends StatelessWidget {
   final String topicName;
   final Note note;
 
-  // ==> HAPUS 'const' DARI SINI <==
+  // Hapus 'const'
   StructuredNoteViewPage({
     super.key,
     required this.topicName,
     required this.note,
-  }) : assert(
-         note.type == NoteType.structured,
-       ); // Assert tetap berjalan di debug mode
+  }) : assert(note.type == NoteType.structured); // Pastikan tipenya benar
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +24,6 @@ class StructuredNoteViewPage extends StatelessWidget {
       'id_ID',
     ).format(note.modifiedAt);
 
-    // Filter field definitions yang tidak kosong
     final validFieldDefinitions = note.fieldDefinitions
         .where((field) => field.trim().isNotEmpty)
         .toList();
@@ -38,7 +35,6 @@ class StructuredNoteViewPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // Navigasi ke editor yang sesuai
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (_) => StructuredNoteEditorPage(
@@ -100,29 +96,47 @@ class StructuredNoteViewPage extends StatelessWidget {
             ),
             const Divider(height: 24),
 
-            // Tampilkan data dalam bentuk tabel jika ada field dan data
             if (validFieldDefinitions.isNotEmpty && note.dataEntries.isNotEmpty)
               SingleChildScrollView(
-                // Agar tabel bisa di-scroll horizontal jika lebar
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  columns: validFieldDefinitions
-                      .map(
-                        (field) => DataColumn(
-                          label: Text(
-                            field,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                  // ==> TAMBAHKAN KOLOM NOMOR DI AWAL <==
+                  columns: [
+                    const DataColumn(
+                      label: Text(
+                        'No.',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      numeric: true, // Membuatnya rata kanan (opsional)
+                    ),
+                    // Kolom lainnya dari field definitions
+                    ...validFieldDefinitions
+                        .map(
+                          (field) => DataColumn(
+                            label: Text(
+                              field,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
-                  rows: note.dataEntries.map((entry) {
+                        )
+                        .toList(),
+                  ],
+                  // ==> GENERATE BARIS DENGAN NOMOR <==
+                  rows: note.dataEntries.asMap().entries.map((indexedEntry) {
+                    // Gunakan asMap().entries untuk mendapatkan index
+                    int rowIndex = indexedEntry.key;
+                    Map<String, String> entry = indexedEntry.value;
                     return DataRow(
-                      cells: validFieldDefinitions.map((field) {
-                        return DataCell(
-                          SelectableText(entry[field] ?? ''),
-                        ); // Buat teks bisa dipilih
-                      }).toList(),
+                      cells: [
+                        // Sel untuk nomor baris
+                        DataCell(Text('${rowIndex + 1}')),
+                        // Sel lainnya dari data entri
+                        ...validFieldDefinitions.map((field) {
+                          return DataCell(SelectableText(entry[field] ?? ''));
+                        }).toList(),
+                      ],
                     );
                   }).toList(),
                 ),
