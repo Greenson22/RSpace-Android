@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 
 class NoteEditorPage extends StatefulWidget {
   final String topicName;
-  final Note? note;
+  final Note? note; // Bisa null jika membuat baru
 
   const NoteEditorPage({super.key, required this.topicName, this.note});
 
@@ -34,9 +34,21 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         Note(
           title: '',
           content: '',
-          // ==> GUNAKAN IKON DEFAULT DARI PROVIDER <==
           icon: themeProvider.defaultNoteIcon,
+          type: NoteType.text, // Pastikan tipe adalah text saat membuat baru
         );
+
+    // Jika note yang ada bukan text, konversi
+    if (widget.note != null && widget.note!.type != NoteType.text) {
+      _currentNote.type = NoteType.text;
+      _currentNote.fieldDefinitions = []; // Kosongkan definisi field
+      _currentNote.dataEntries = []; // Kosongkan data entri
+      // Konten bisa diambil dari representasi string data lama jika diinginkan,
+      // tapi untuk simple kita kosongkan saja atau biarkan apa adanya.
+      // _currentNote.content = _convertStructuredToString(widget.note!.dataEntries, widget.note!.fieldDefinitions);
+      _currentNote.icon = '🗒️'; // Ganti ikon ke default text
+    }
+
     _titleController = TextEditingController(text: _currentNote.title);
     _contentController = TextEditingController(text: _currentNote.content);
   }
@@ -56,6 +68,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     _currentNote.title = _titleController.text;
     _currentNote.content = _contentController.text;
     _currentNote.modifiedAt = DateTime.now();
+    _currentNote.type = NoteType.text; // Pastikan tipe adalah text
+    _currentNote.fieldDefinitions = []; // Kosongkan field terstruktur
+    _currentNote.dataEntries = []; // Kosongkan data terstruktur
 
     try {
       await _noteService.saveNote(widget.topicName, _currentNote);
@@ -126,7 +141,6 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ==> TOMBOL UNTUK MENGUBAH IKON <==
                   Padding(
                     padding: const EdgeInsets.only(right: 12.0, top: 4.0),
                     child: InkWell(

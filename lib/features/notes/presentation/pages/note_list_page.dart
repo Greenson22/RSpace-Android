@@ -5,11 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:my_aplication/features/notes/application/note_list_provider.dart';
 import 'package:my_aplication/features/notes/application/note_topic_provider.dart';
+import 'package:my_aplication/features/notes/domain/models/note_model.dart'; // Import Note model
 import 'package:my_aplication/features/notes/presentation/pages/note_editor_page.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_view_page.dart';
 import 'package:provider/provider.dart';
 // Import ThemeProvider
 import 'package:my_aplication/features/settings/application/theme_provider.dart';
+// ==> Import Editor & Viewer Baru <==
+import 'structured_note_editor_page.dart';
+import 'structured_note_view_page.dart';
 
 class NoteListPage extends StatefulWidget {
   final String topicName;
@@ -39,6 +43,8 @@ class _NoteListPageState extends State<NoteListPage> {
     super.dispose();
   }
 
+  // Fungsi dialog _showRenameDialog, _showChangeIconDialog, _showDeleteDialog, _showMoveDialog, _showSortDialog tidak berubah
+  // ... (Salin fungsi-fungsi dialog dari kode Anda sebelumnya ke sini) ...
   void _showRenameDialog(BuildContext context, note) {
     final provider = Provider.of<NoteListProvider>(context, listen: false);
     final controller = TextEditingController(text: note.title);
@@ -187,14 +193,14 @@ class _NoteListPageState extends State<NoteListPage> {
                   ),
                   RadioListTile<bool>(
                     title: Text(sortType == 'title' ? 'A-Z' : 'Terbaru'),
-                    value: false,
+                    value: false, // Perbaikan: false untuk terbaru/A-Z
                     groupValue: sortAscending,
                     onChanged: (value) =>
                         setDialogState(() => sortAscending = false),
                   ),
                   RadioListTile<bool>(
                     title: Text(sortType == 'title' ? 'Z-A' : 'Terlama'),
-                    value: true,
+                    value: true, // Perbaikan: true untuk terlama/Z-A
                     groupValue: sortAscending,
                     onChanged: (value) =>
                         setDialogState(() => sortAscending = true),
@@ -208,10 +214,11 @@ class _NoteListPageState extends State<NoteListPage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    bool isAsc = sortType == 'title'
+                    // Logika sortAscending dibalik untuk date
+                    bool isActuallyAscending = sortType == 'title'
                         ? sortAscending
                         : !sortAscending;
-                    provider.applySort(sortType, isAsc);
+                    provider.applySort(sortType, isActuallyAscending);
                     Navigator.pop(context);
                   },
                   child: const Text('Terapkan'),
@@ -224,23 +231,93 @@ class _NoteListPageState extends State<NoteListPage> {
     );
   }
 
+  // ==> Fungsi untuk menampilkan dialog pilihan tipe catatan <==
+  Future<NoteType?> _showNoteTypeSelectionDialog(BuildContext context) {
+    return showDialog<NoteType>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Pilih Tipe Catatan Baru'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, NoteType.text),
+            child: const ListTile(
+              leading: Icon(Icons.notes),
+              title: Text('Catatan Teks Biasa'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, NoteType.structured),
+            child: const ListTile(
+              leading: Icon(Icons.table_chart_outlined),
+              title: Text('Catatan Terstruktur'),
+              subtitle: Text('(Buat field sendiri)'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> Fungsi untuk navigasi ke editor yang sesuai <==
+  void _navigateToEditor(BuildContext context, NoteType type, {Note? note}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) {
+          if (type == NoteType.structured) {
+            return StructuredNoteEditorPage(
+              topicName: widget.topicName,
+              note: note,
+            );
+          } else {
+            return NoteEditorPage(topicName: widget.topicName, note: note);
+          }
+        },
+      ),
+      // Refresh list setelah kembali dari editor
+    ).then(
+      (_) => Provider.of<NoteListProvider>(context, listen: false).fetchNotes(),
+    );
+  }
+
+  // ==> Fungsi untuk navigasi ke viewer yang sesuai <==
+  void _navigateToViewer(BuildContext context, Note note) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) {
+          if (note.type == NoteType.structured) {
+            return StructuredNoteViewPage(
+              topicName: widget.topicName,
+              note: note,
+            );
+          } else {
+            return NoteViewPage(topicName: widget.topicName, note: note);
+          }
+        },
+      ),
+      // Refresh list setelah kembali dari viewer (jika ada perubahan di sana nanti)
+    ).then(
+      (_) => Provider.of<NoteListProvider>(context, listen: false).fetchNotes(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => NoteListProvider(widget.topicName),
       child: Consumer<NoteListProvider>(
         builder: (context, provider, child) {
-          // Akses ThemeProvider
           final themeProvider = Provider.of<ThemeProvider>(context);
           final isTransparent =
               themeProvider.backgroundImagePath != null ||
               themeProvider.isUnderwaterTheme;
 
           return Scaffold(
-            // Terapkan transparansi Scaffold
             backgroundColor: isTransparent ? Colors.transparent : null,
             appBar: provider.isSelectionMode
                 ? AppBar(
+                    // ... (AppBar mode seleksi tetap sama) ...
                     leading: IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => provider.clearSelection(),
@@ -296,7 +373,6 @@ class _NoteListPageState extends State<NoteListPage> {
                     ],
                   )
                 : AppBar(
-                    // Terapkan transparansi AppBar
                     backgroundColor: isTransparent ? Colors.transparent : null,
                     elevation: isTransparent ? 0 : null,
                     title: Text(widget.topicName),
@@ -355,22 +431,22 @@ class _NoteListPageState extends State<NoteListPage> {
                               ),
                               title: Text(note.title),
                               subtitle: Text(
-                                'Diperbarui: ${DateFormat.yMd().add_jm().format(note.modifiedAt)}',
+                                // ==> Tampilkan jumlah data jika terstruktur
+                                note.type == NoteType.structured
+                                    ? '${note.dataEntries.length} data entries • ${DateFormat.yMd().add_jm().format(note.modifiedAt)}'
+                                    : 'Diperbarui: ${DateFormat.yMd().add_jm().format(note.modifiedAt)}',
                               ),
                               trailing: provider.isSelectionMode
                                   ? null
                                   : PopupMenuButton<String>(
                                       onSelected: (value) {
-                                        if (value == 'view') {
-                                          Navigator.push(
+                                        // ==> Arahkan ke editor yang sesuai
+                                        if (value == 'edit') {
+                                          _navigateToEditor(
                                             context,
-                                            MaterialPageRoute(
-                                              builder: (_) => NoteViewPage(
-                                                topicName: widget.topicName,
-                                                note: note,
-                                              ),
-                                            ),
-                                          ).then((_) => provider.fetchNotes());
+                                            note.type,
+                                            note: note,
+                                          );
                                         } else if (value == 'rename') {
                                           _showRenameDialog(context, note);
                                         } else if (value == 'icon') {
@@ -384,13 +460,14 @@ class _NoteListPageState extends State<NoteListPage> {
                                         }
                                       },
                                       itemBuilder: (context) => [
+                                        // ==> Ubah teks menu 'Lihat' menjadi 'Edit'
                                         const PopupMenuItem(
-                                          value: 'view',
-                                          child: Text('Lihat Catatan'),
+                                          value: 'edit',
+                                          child: Text('Lihat / Edit Catatan'),
                                         ),
                                         const PopupMenuItem(
                                           value: 'rename',
-                                          child: Text('Ubah Nama'),
+                                          child: Text('Ubah Judul'),
                                         ),
                                         const PopupMenuItem(
                                           value: 'icon',
@@ -410,15 +487,8 @@ class _NoteListPageState extends State<NoteListPage> {
                                 if (provider.isSelectionMode) {
                                   provider.toggleSelection(note);
                                 } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => NoteViewPage(
-                                        topicName: widget.topicName,
-                                        note: note,
-                                      ),
-                                    ),
-                                  ).then((_) => provider.fetchNotes());
+                                  // ==> Arahkan ke viewer yang sesuai
+                                  _navigateToViewer(context, note);
                                 }
                               },
                               onLongPress: () {
@@ -433,14 +503,14 @@ class _NoteListPageState extends State<NoteListPage> {
             floatingActionButton: provider.isSelectionMode
                 ? null
                 : FloatingActionButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      // ==> Tampilkan dialog pemilihan tipe
+                      final selectedType = await _showNoteTypeSelectionDialog(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              NoteEditorPage(topicName: widget.topicName),
-                        ),
-                      ).then((_) => provider.fetchNotes());
+                      );
+                      if (selectedType != null) {
+                        _navigateToEditor(context, selectedType);
+                      }
                     },
                     child: const Icon(Icons.add),
                     tooltip: 'Tambah Catatan',
