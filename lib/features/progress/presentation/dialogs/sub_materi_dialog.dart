@@ -334,12 +334,68 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     }
   }
 
+  // ==> FUNGSI BARU UNTUK DIALOG KONFIRMASI RESET <==
+  void _showResetConfirmDialog(BuildContext context) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    // Hitung berapa item yang akan di-reset
+    final finishedCount = widget.subject.subMateri
+        .where((s) => s.progress == 'selesai')
+        .length;
+
+    // Jika tidak ada yang selesai, tampilkan pesan dan jangan tampilkan dialog
+    if (finishedCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak ada sub-materi yang berstatus selesai.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Konfirmasi Reset Progress'),
+        content: Text(
+          'Anda yakin ingin mengembalikan status $finishedCount sub-materi yang sudah selesai menjadi "belum"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            onPressed: () async {
+              await provider.resetFinishedSubMateri(widget.subject);
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Progress sub-materi selesai telah di-reset.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+            child: const Text('Ya, Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+  // ==> AKHIR FUNGSI BARU <==
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ProgressDetailProvider>(
       builder: (context, provider, child) {
+        // Cari instance subject terbaru dari provider
         final currentSubject = provider.topic.subjects.firstWhere(
           (s) => s.namaMateri == widget.subject.namaMateri,
+          // Fallback jika subject tidak ditemukan (misalnya baru dihapus)
           orElse: () => widget.subject,
         );
 
@@ -419,6 +475,12 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                           currentSubject.namaMateri,
                           style: const TextStyle(color: Colors.white),
                         ),
+                      ),
+                      // ==> TAMBAHKAN TOMBOL RESET DI SINI <==
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        onPressed: () => _showResetConfirmDialog(context),
+                        tooltip: 'Reset Progress Selesai',
                       ),
                       IconButton(
                         icon: Icon(
@@ -600,7 +662,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                                             title: Text('Selesai'),
                                           ),
                                         ),
-                                        // ==> OPSI MENU BARU <==
                                         const PopupMenuItem<String>(
                                           value: 'finish_and_move',
                                           child: ListTile(
@@ -687,6 +748,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   }
 }
 
+// Widget untuk dialog tambah rentang (tidak perlu diubah)
 class _AddRangedSubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
   final SubMateriInsertPosition position;

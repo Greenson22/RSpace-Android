@@ -90,26 +90,42 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
   Future<void> finishAndMoveSubMateriToBottom(
     ProgressSubject subject,
     SubMateri subMateri,
   ) async {
-    // 1. Update status dan tanggal
     subMateri.progress = 'selesai';
     subMateri.finishedDate = DateFormat(
       'yyyy-MM-dd HH:mm',
     ).format(DateTime.now());
 
-    // 2. Pindahkan ke bawah
     subject.subMateri.remove(subMateri);
     subject.subMateri.add(subMateri);
 
-    // 3. Update progres parent dan simpan
     _updateParentSubjectProgress(subject);
     await save();
     notifyListeners();
   }
+
+  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
+  /// Mengembalikan semua sub-materi yang sudah 'selesai' menjadi 'belum'.
+  Future<void> resetFinishedSubMateri(ProgressSubject subject) async {
+    bool changed = false;
+    for (var sub in subject.subMateri) {
+      if (sub.progress == 'selesai') {
+        sub.progress = 'belum';
+        sub.finishedDate = null;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      _updateParentSubjectProgress(subject);
+      await save();
+      notifyListeners();
+    }
+  }
+  // ==> AKHIR FUNGSI BARU <==
 
   Future<void> addSubject(String name) async {
     final newSubject = ProgressSubject(
@@ -337,10 +353,11 @@ class ProgressDetailProvider with ChangeNotifier {
       (sub) => sub.progress == 'selesai',
     );
     if (anyFinished) {
-      subject.progress = 'sementara';
+      subject.progress = 'sementara'; // Tetap sementara jika ada yg selesai
       return;
     }
 
+    // Jika tidak ada yang selesai atau sementara, berarti semua 'belum'
     subject.progress = 'belum';
   }
 
