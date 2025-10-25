@@ -2,16 +2,21 @@
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+// ==> 1. Tambahkan Enum untuk Tipe Task <==
+enum TaskType { simple, progress }
+
 class MyTask {
   final String id;
   String name;
-  int count;
+  int count; // Nilai saat ini
   String date;
   bool checked;
   int countToday;
-  String lastUpdated; // Menyimpan tanggal dalam format YYYY-MM-DD
-  // ==> FIELD BARU DITAMBAHKAN <==
+  String lastUpdated;
   int targetCountToday;
+  // ==> 2. Tambahkan Field Baru <==
+  final TaskType type; // Tipe task (simple atau progress)
+  int targetCount; // Target untuk 100% (hanya relevan jika type == progress)
 
   MyTask({
     String? id,
@@ -21,10 +26,24 @@ class MyTask {
     required this.checked,
     this.countToday = 0,
     String? lastUpdated,
-    this.targetCountToday = 0, // ==> TAMBAHAN DI KONSTRUKTOR
+    this.targetCountToday = 0,
+    // ==> 3. Tambahkan di Konstruktor <==
+    this.type = TaskType.simple, // Default ke tipe simple
+    this.targetCount = 1, // Default target 1 (agar tidak error pembagian 0)
   }) : id = id ?? const Uuid().v4(),
        lastUpdated =
            lastUpdated ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  // ==> 4. Helper untuk menghitung persentase (CLAMP DIHAPUS) <==
+  double get progressPercentage {
+    if (type != TaskType.progress || targetCount <= 0) {
+      return 0.0;
+    }
+    // Hapus .clamp(0.0, 1.0) dari sini
+    return (count / targetCount);
+    // Jika ingin membatasi nilai minimum 0 (tapi tidak maksimum):
+    // return max(0.0, count / targetCount);
+  }
 
   factory MyTask.fromJson(Map<String, dynamic> json) {
     final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -38,10 +57,12 @@ class MyTask {
       checked: json['checked'] ?? false,
       countToday: lastUpdatedString == todayString
           ? json['countToday'] ?? 0
-          : 0,
+          : 0, // Reset countToday jika bukan hari ini
       lastUpdated: lastUpdatedString,
-      // ==> MEMBACA DATA DARI JSON <==
       targetCountToday: json['targetCountToday'] as int? ?? 0,
+      // ==> 5. Baca dari JSON <==
+      type: TaskType.values[json['type'] as int? ?? TaskType.simple.index],
+      targetCount: json['targetCount'] as int? ?? 1, // Default 1
     );
   }
 
@@ -54,12 +75,15 @@ class MyTask {
       'checked': checked,
       'countToday': countToday,
       'lastUpdated': lastUpdated,
-      // ==> MENYIMPAN DATA KE JSON <==
       'targetCountToday': targetCountToday,
+      // ==> 6. Simpan ke JSON <==
+      'type': type.index, // Simpan index enum
+      'targetCount': targetCount,
     };
   }
 }
 
+// Class TaskCategory tidak berubah
 class TaskCategory {
   final String name;
   final String icon;

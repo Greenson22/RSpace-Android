@@ -12,6 +12,7 @@ class MyTaskProvider with ChangeNotifier {
   final TimeLogService _timeLogService = TimeLogService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
+  // ... (properti dan metode lain seperti isLoading, categories, dll.) ...
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -43,6 +44,7 @@ class MyTaskProvider with ChangeNotifier {
     fetchTasks();
   }
 
+  // ... (fungsi toggleTaskSelection, selectAllTasksInCategory, clearTaskSelection, moveSelectedTasks, dll.) ...
   void toggleTaskSelection(TaskCategory category, MyTask task) {
     _selectedTasks.putIfAbsent(category.name, () => {});
     if (_selectedTasks[category.name]!.contains(task.id)) {
@@ -215,12 +217,21 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addTask(TaskCategory category, String taskName) async {
+  Future<void> addTask(
+    TaskCategory category,
+    String taskName, {
+    TaskType type = TaskType.simple,
+    int targetCount = 1,
+  }) async {
     final newTask = MyTask(
       name: taskName,
       count: 0,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       checked: false,
+      type: type,
+      targetCount: (type == TaskType.progress && targetCount > 0)
+          ? targetCount
+          : 1,
     );
     final categoryIndex = _allCategories.indexWhere(
       (c) => c.name == category.name,
@@ -231,11 +242,16 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> renameTask(
+  Future<void> editTask(
     TaskCategory category,
-    MyTask task,
-    String newName,
-  ) async {
+    MyTask task, {
+    required String newName,
+    required TaskType newType, // Tipe tidak diubah
+    required int newCount,
+    required int newTargetCount,
+    required DateTime newDate,
+    required int newTargetToday,
+  }) async {
     final categoryIndex = _allCategories.indexWhere(
       (c) => c.name == category.name,
     );
@@ -244,7 +260,20 @@ class MyTaskProvider with ChangeNotifier {
         (t) => t.id == task.id,
       );
       if (taskIndex != -1) {
-        _allCategories[categoryIndex].tasks[taskIndex].name = newName;
+        final currentTask = _allCategories[categoryIndex].tasks[taskIndex];
+        currentTask.name = newName;
+        // Tipe tidak diubah di sini
+        currentTask.count = newCount;
+        currentTask.date = DateFormat('yyyy-MM-dd').format(newDate);
+        currentTask.targetCountToday = newTargetToday;
+        if (currentTask.type == TaskType.progress) {
+          currentTask.targetCount = newTargetCount > 0 ? newTargetCount : 1;
+          // **PENTING:** Hapus clamp jika Anda ingin count bisa melebihi target
+          // Jika count harus dibatasi oleh target baru, biarkan baris ini:
+          // if (currentTask.count > currentTask.targetCount) {
+          //   currentTask.count = currentTask.targetCount;
+          // }
+        }
         await _saveTasks();
       }
     }
@@ -261,6 +290,8 @@ class MyTaskProvider with ChangeNotifier {
   }
 
   Future<void> incrementTaskCount(TaskCategory category, MyTask task) async {
+    if (task.type != TaskType.simple) return;
+
     final categoryIndex = _allCategories.indexWhere(
       (c) => c.name == category.name,
     );
@@ -282,6 +313,42 @@ class MyTaskProvider with ChangeNotifier {
     }
   }
 
+  Future<void> addProgressCount(
+    TaskCategory category,
+    MyTask task,
+    int amount,
+  ) async {
+    if (task.type != TaskType.progress || amount <= 0) return;
+
+    final categoryIndex = _allCategories.indexWhere(
+      (c) => c.name == category.name,
+    );
+    if (categoryIndex != -1) {
+      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
+        (t) => t.id == task.id,
+      );
+      if (taskIndex != -1) {
+        final currentTask = _allCategories[categoryIndex].tasks[taskIndex];
+
+        // **--- PERUBAHAN ADA DI SINI ---**
+        // Hapus .clamp(0, currentTask.targetCount)
+        currentTask.count = (currentTask.count + amount);
+        // Pastikan count tidak kurang dari 0 jika amount negatif (opsional)
+        if (currentTask.count < 0) {
+          currentTask.count = 0;
+        }
+        // **--- AKHIR PERUBAHAN ---**
+
+        currentTask.countToday += amount;
+        currentTask.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        currentTask.lastUpdated = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now());
+        await _saveTasks();
+      }
+    }
+  }
+
   Future<void> _updateTimeLogForTask(String myTaskId) async {
     List<TimeLogEntry> allLogs = await _timeLogService.loadTimeLogs();
     bool logChanged = false;
@@ -289,7 +356,7 @@ class MyTaskProvider with ChangeNotifier {
     for (var logEntry in allLogs) {
       for (var loggedTask in logEntry.tasks) {
         if (loggedTask.linkedTaskIds.contains(myTaskId)) {
-          loggedTask.durationMinutes += 30;
+          loggedTask.durationMinutes += 30; // Asumsi penambahan 30 menit
           logChanged = true;
         }
       }
@@ -299,65 +366,4 @@ class MyTaskProvider with ChangeNotifier {
       await _timeLogService.saveTimeLogs(allLogs);
     }
   }
-
-  Future<void> updateTaskDate(
-    TaskCategory category,
-    MyTask task,
-    DateTime newDate,
-  ) async {
-    final categoryIndex = _allCategories.indexWhere(
-      (c) => c.name == category.name,
-    );
-    if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
-        (t) => t.id == task.id,
-      );
-      if (taskIndex != -1) {
-        _allCategories[categoryIndex].tasks[taskIndex].date = DateFormat(
-          'yyyy-MM-dd',
-        ).format(newDate);
-        await _saveTasks();
-      }
-    }
-  }
-
-  Future<void> updateTaskCount(
-    TaskCategory category,
-    MyTask task,
-    int newCount,
-  ) async {
-    final categoryIndex = _allCategories.indexWhere(
-      (c) => c.name == category.name,
-    );
-    if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
-        (t) => t.id == task.id,
-      );
-      if (taskIndex != -1) {
-        _allCategories[categoryIndex].tasks[taskIndex].count = newCount;
-        await _saveTasks();
-      }
-    }
-  }
-
-  // ==> FUNGSI BARU UNTUK MENGUPDATE TARGET HARIAN <==
-  Future<void> updateTaskTargetCount(
-    TaskCategory category,
-    MyTask task,
-    int newTarget,
-  ) async {
-    final categoryIndex = _allCategories.indexWhere(
-      (c) => c.name == category.name,
-    );
-    if (categoryIndex != -1) {
-      final taskIndex = _allCategories[categoryIndex].tasks.indexWhere(
-        (t) => t.id == task.id,
-      );
-      if (taskIndex != -1) {
-        _allCategories[categoryIndex].tasks[taskIndex].targetCountToday =
-            newTarget < 0 ? 0 : newTarget;
-        await _saveTasks();
-      }
-    }
-  }
-}
+} // Akhir class MyTaskProvider
