@@ -12,7 +12,6 @@ class MyTaskProvider with ChangeNotifier {
   final TimeLogService _timeLogService = TimeLogService();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
 
-  // ... (properti dan metode lain seperti isLoading, categories, dll.) ...
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -44,7 +43,6 @@ class MyTaskProvider with ChangeNotifier {
     fetchTasks();
   }
 
-  // ... (fungsi toggleTaskSelection, selectAllTasksInCategory, clearTaskSelection, moveSelectedTasks, dll.) ...
   void toggleTaskSelection(TaskCategory category, MyTask task) {
     _selectedTasks.putIfAbsent(category.name, () => {});
     if (_selectedTasks[category.name]!.contains(task.id)) {
@@ -268,11 +266,6 @@ class MyTaskProvider with ChangeNotifier {
         currentTask.targetCountToday = newTargetToday;
         if (currentTask.type == TaskType.progress) {
           currentTask.targetCount = newTargetCount > 0 ? newTargetCount : 1;
-          // **PENTING:** Hapus clamp jika Anda ingin count bisa melebihi target
-          // Jika count harus dibatasi oleh target baru, biarkan baris ini:
-          // if (currentTask.count > currentTask.targetCount) {
-          //   currentTask.count = currentTask.targetCount;
-          // }
         }
         await _saveTasks();
       }
@@ -330,20 +323,21 @@ class MyTaskProvider with ChangeNotifier {
       if (taskIndex != -1) {
         final currentTask = _allCategories[categoryIndex].tasks[taskIndex];
 
-        // **--- PERUBAHAN ADA DI SINI ---**
-        // Hapus .clamp(0, currentTask.targetCount)
         currentTask.count = (currentTask.count + amount);
-        // Pastikan count tidak kurang dari 0 jika amount negatif (opsional)
+
         if (currentTask.count < 0) {
           currentTask.count = 0;
         }
-        // **--- AKHIR PERUBAHAN ---**
 
         currentTask.countToday += amount;
         currentTask.date = DateFormat('yyyy-MM-dd').format(DateTime.now());
         currentTask.lastUpdated = DateFormat(
           'yyyy-MM-dd',
         ).format(DateTime.now());
+
+        // Panggil fungsi ini agar jurnal terupdate
+        await _updateTimeLogForTask(currentTask.id);
+
         await _saveTasks();
       }
     }
@@ -353,11 +347,20 @@ class MyTaskProvider with ChangeNotifier {
     List<TimeLogEntry> allLogs = await _timeLogService.loadTimeLogs();
     bool logChanged = false;
 
+    // Hanya update log hari ini (opsi: atau cari log terbaru)
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    // Cari log hari ini, jika tidak ada, skip atau buat baru (disini kita hanya update yang ada)
+    // Asumsi: TimeLogService.loadTimeLogs() sudah membuat entri hari ini jika belum ada.
+
     for (var logEntry in allLogs) {
-      for (var loggedTask in logEntry.tasks) {
-        if (loggedTask.linkedTaskIds.contains(myTaskId)) {
-          loggedTask.durationMinutes += 30; // Asumsi penambahan 30 menit
-          logChanged = true;
+      // Kita hanya ingin menambah durasi pada log hari ini
+      if (DateFormat('yyyy-MM-dd').format(logEntry.date) == today) {
+        for (var loggedTask in logEntry.tasks) {
+          if (loggedTask.linkedTaskIds.contains(myTaskId)) {
+            loggedTask.durationMinutes += 30; // Asumsi penambahan 30 menit
+            logChanged = true;
+          }
         }
       }
     }
@@ -366,4 +369,4 @@ class MyTaskProvider with ChangeNotifier {
       await _timeLogService.saveTimeLogs(allLogs);
     }
   }
-} // Akhir class MyTaskProvider
+}
