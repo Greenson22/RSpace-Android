@@ -140,8 +140,6 @@ class _MyTasksViewState extends State<_MyTasksView> {
               });
             }
           }
-        } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-          Navigator.of(context).pop();
         }
       }
     }

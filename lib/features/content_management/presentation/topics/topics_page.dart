@@ -15,7 +15,6 @@ import 'widgets/topic_grid_tile.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
-// ==> IMPORT BARU <==
 import '../../../settings/application/theme_provider.dart';
 
 class TopicsPage extends StatelessWidget {
@@ -119,8 +118,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             topicProvider.filteredTopics[_focusedIndex],
           );
         }
-      } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-        Navigator.of(context).pop();
       }
     }
   }
@@ -325,7 +322,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                 tooltip: 'Tambah Topik',
                 child: const Icon(Icons.add),
               ),
-        // ========== PERUBAHAN UTAMA DI SINI ==========
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );

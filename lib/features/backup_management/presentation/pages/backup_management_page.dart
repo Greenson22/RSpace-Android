@@ -1,4 +1,4 @@
-// lib/presentation/pages/backup_management_page.dart
+// lib/features/backup_management/presentation/pages/backup_management_page.dart
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -37,8 +37,6 @@ class _BackupManagementPageState extends State<BackupManagementPage> {
     _focusTimer?.cancel();
     super.dispose();
   }
-
-  // Hapus _handleKeyEvent dari sini
 
   @override
   Widget build(BuildContext context) {
@@ -98,8 +96,6 @@ class _BackupManagementPageState extends State<BackupManagementPage> {
               } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
                 if (provider.isSelectionMode) {
                   provider.clearSelection();
-                } else {
-                  Navigator.of(context).pop();
                 }
               }
             }

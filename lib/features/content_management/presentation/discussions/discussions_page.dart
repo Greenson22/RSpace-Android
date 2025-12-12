@@ -197,8 +197,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           final originalIndex = provider.allDiscussions.indexOf(discussion);
           _togglePointsVisibility(originalIndex);
         }
-      } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-        Navigator.of(context).pop();
       }
     }
   }

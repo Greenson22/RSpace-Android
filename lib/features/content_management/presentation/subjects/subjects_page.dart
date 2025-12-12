@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
-import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
-import 'package:my_aplication/features/content_management/application/subject_provider.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+import '../../domain/models/subject_model.dart';
+import '../../application/discussion_provider.dart';
+import '../../application/subject_provider.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/discussions_page.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_dialogs.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/move_subject_dialog.dart';
@@ -21,7 +22,6 @@ import 'package:my_aplication/features/html_editor/presentation/pages/html_edito
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_password_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
 import 'dialogs/view_json_dialog.dart';
-// ==> IMPORT BARU <==
 import '../../../settings/application/theme_provider.dart';
 
 class SubjectsPage extends StatefulWidget {
@@ -116,8 +116,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
             provider.filteredSubjects[_focusedIndex],
           );
         }
-      } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-        Navigator.of(context).pop();
       }
     }
   }
@@ -645,7 +643,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
             const AdBannerWidget(),
           ],
         ),
-        // ========== PERUBAHAN UTAMA DI SINI ==========
         floatingActionButton: provider.isSelectionMode
             ? null
             : FloatingActionButton(

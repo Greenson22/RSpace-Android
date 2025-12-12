@@ -1,4 +1,4 @@
-// lib/presentation/pages/statistics_page.dart
+// lib/features/statistics/presentation/pages/statistics_page.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -84,8 +84,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 !_isPanelExpanded[_focusedTopicIndex];
           });
         }
-      } else if (event.logicalKey == LogicalKeyboardKey.backspace) {
-        Navigator.of(context).pop();
       }
     }
   }
