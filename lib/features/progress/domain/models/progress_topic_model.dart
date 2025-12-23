@@ -7,14 +7,16 @@ class ProgressTopic {
   List<ProgressSubject> subjects;
   Map<String, dynamic> metadata;
   int position;
-  String icon; // Properti baru untuk ikon
+  String icon;
+  bool isHidden; // Properti baru untuk status sembunyi
 
   ProgressTopic({
     required this.topics,
     required this.subjects,
     this.metadata = const {},
     this.position = -1,
-    this.icon = '🎓', // Nilai default
+    this.icon = '🎓',
+    this.isHidden = false, // Default tidak tersembunyi
   });
 
   factory ProgressTopic.fromJson(Map<String, dynamic> json) {
@@ -30,14 +32,17 @@ class ProgressTopic {
       subjects: subjects,
       metadata: metadata,
       position: metadata['position'] as int? ?? -1,
-      icon: metadata['icon'] as String? ?? '🎓', // Baca ikon dari metadata
+      icon: metadata['icon'] as String? ?? '🎓',
+      isHidden:
+          metadata['isHidden'] as bool? ?? false, // Baca status dari metadata
     );
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> mutableMetadata = Map.from(metadata);
     mutableMetadata['position'] = position;
-    mutableMetadata['icon'] = icon; // Simpan ikon ke metadata
+    mutableMetadata['icon'] = icon;
+    mutableMetadata['isHidden'] = isHidden; // Simpan status ke metadata
 
     return {
       'topics': topics,

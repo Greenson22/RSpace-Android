@@ -9,6 +9,7 @@ class ProgressTopicGridTile extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
+  final VoidCallback onHide; // Callback baru
 
   const ProgressTopicGridTile({
     super.key,
@@ -17,6 +18,7 @@ class ProgressTopicGridTile extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onIconChange,
+    required this.onHide,
   });
 
   @override
@@ -25,6 +27,10 @@ class ProgressTopicGridTile extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      // Beri tanda visual jika item tersembunyi (opsional, misalnya opacity)
+      color: topic.isHidden
+          ? theme.cardColor.withOpacity(0.6)
+          : theme.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
       child: InkWell(
         onTap: onTap,
@@ -49,6 +55,10 @@ class ProgressTopicGridTile extends StatelessWidget {
                     topic.topics,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      // Coret teks jika tersembunyi agar jelas
+                      decoration: topic.isHidden
+                          ? TextDecoration.lineThrough
+                          : null,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -72,9 +82,10 @@ class ProgressTopicGridTile extends StatelessWidget {
                       onDelete();
                     } else if (value == 'icon') {
                       onIconChange();
+                    } else if (value == 'hide') {
+                      onHide();
                     }
                   },
-                  // ==> PERBAIKAN DI SINI <==
                   itemBuilder: (BuildContext context) =>
                       <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
@@ -89,6 +100,20 @@ class ProgressTopicGridTile extends StatelessWidget {
                           child: ListTile(
                             leading: Icon(Icons.emoji_emotions_outlined),
                             title: Text('Ubah Ikon'),
+                          ),
+                        ),
+                        // Opsi Sembunyikan/Tampilkan
+                        PopupMenuItem<String>(
+                          value: 'hide',
+                          child: ListTile(
+                            leading: Icon(
+                              topic.isHidden
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            title: Text(
+                              topic.isHidden ? 'Tampilkan' : 'Sembunyikan',
+                            ),
                           ),
                         ),
                         const PopupMenuDivider(),
@@ -109,6 +134,17 @@ class ProgressTopicGridTile extends StatelessWidget {
                 ),
               ),
             ),
+            // Indikator visual tambahan untuk item hidden
+            if (topic.isHidden)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Icon(
+                  Icons.visibility_off,
+                  size: 16,
+                  color: theme.disabledColor,
+                ),
+              ),
           ],
         ),
       ),

@@ -13,6 +13,10 @@ class ProgressProvider with ChangeNotifier {
   List<ProgressTopic> _topics = [];
   List<ProgressTopic> get topics => _topics;
 
+  // State untuk filter tampilan hidden
+  bool _showHidden = false;
+  bool get showHidden => _showHidden;
+
   ProgressProvider() {
     fetchTopics();
   }
@@ -25,13 +29,25 @@ class ProgressProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Toggle untuk menampilkan/menyembunyikan item hidden secara global di UI
+  void toggleShowHidden() {
+    _showHidden = !_showHidden;
+    notifyListeners();
+  }
+
+  // Fungsi untuk mengubah status hidden pada topik spesifik
+  Future<void> toggleTopicVisibility(ProgressTopic topic) async {
+    topic.isHidden = !topic.isHidden;
+    await _progressService.saveTopic(topic);
+    notifyListeners();
+  }
+
   Future<void> addTopic(String name) async {
     await _progressService.addTopic(name);
     await fetchTopics();
   }
 
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
-    // Penyesuaian indeks tidak lagi diperlukan di sini
     final item = _topics.removeAt(oldIndex);
     _topics.insert(newIndex, item);
 
@@ -44,7 +60,6 @@ class ProgressProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  // Fungsi baru untuk mengubah ikon topik
   Future<void> editTopicIcon(ProgressTopic topic, String newIcon) async {
     topic.icon = newIcon;
     await _progressService.saveTopic(topic);

@@ -9,7 +9,6 @@ import '../../domain/models/progress_topic_model.dart';
 import 'progress_detail_page.dart';
 import '../../application/progress_detail_provider.dart';
 import '../widgets/progress_topic_grid_tile.dart';
-// ==> IMPORT BARU <==
 import '../../../settings/application/theme_provider.dart';
 
 class ProgressPage extends StatelessWidget {
@@ -37,11 +36,17 @@ class _ProgressViewState extends State<_ProgressView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context);
-    // ==> TAMBAHKAN KODE BARU DI SINI <==
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isTransparent =
         themeProvider.backgroundImagePath != null ||
         themeProvider.isUnderwaterTheme;
+
+    // Filter topics:
+    // Jika sedang mode reorder OR showHidden aktif, tampilkan semua.
+    // Jika tidak, tampilkan hanya yang tidak hidden.
+    final displayTopics = (_isReorderMode || provider.showHidden)
+        ? provider.topics
+        : provider.topics.where((t) => !t.isHidden).toList();
 
     int _getCrossAxisCount(double screenWidth) {
       if (screenWidth > 1200) return 5;
@@ -57,12 +62,29 @@ class _ProgressViewState extends State<_ProgressView> {
         elevation: isTransparent ? 0 : null,
         title: const Text('Progress Belajar'),
         actions: [
+          // Tombol Toggle Hidden
+          IconButton(
+            icon: Icon(
+              provider.showHidden ? Icons.visibility : Icons.visibility_off,
+            ),
+            tooltip: provider.showHidden
+                ? 'Sembunyikan Item Hidden'
+                : 'Tampilkan Item Hidden',
+            onPressed: () {
+              provider.toggleShowHidden();
+            },
+          ),
           IconButton(
             icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
             onPressed: () {
               setState(() {
                 _isReorderMode = !_isReorderMode;
               });
+              // Jika masuk mode reorder, otomatis tampilkan semua agar index sinkron
+              if (_isReorderMode && !provider.showHidden) {
+                // Opsional: kita bisa memaksa showHidden = true di provider,
+                // tapi logika displayTopics di atas sudah menangani tampilannya.
+              }
             },
             tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Topik',
           ),
@@ -70,12 +92,14 @@ class _ProgressViewState extends State<_ProgressView> {
       ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : provider.topics.isEmpty
-          ? const Center(
+          : displayTopics.isEmpty
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  'Belum ada topik progress.\nTekan tombol + untuk memulai.',
+                  provider.topics.isNotEmpty
+                      ? 'Semua topik disembunyikan.\nTekan ikon mata di atas untuk melihat.'
+                      : 'Belum ada topik progress.\nTekan tombol + untuk memulai.',
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -90,13 +114,13 @@ class _ProgressViewState extends State<_ProgressView> {
                     mainAxisSpacing: 12.0,
                     childAspectRatio: 1.1,
                   ),
-                  itemCount: provider.topics.length,
+                  itemCount: displayTopics.length,
                   dragEnabled: _isReorderMode,
                   onReorder: (oldIndex, newIndex) {
                     provider.reorderTopics(oldIndex, newIndex);
                   },
                   itemBuilder: (context, index) {
-                    final topic = provider.topics[index];
+                    final topic = displayTopics[index];
                     return ProgressTopicGridTile(
                       key: ValueKey(topic.topics),
                       topic: topic,
@@ -118,6 +142,7 @@ class _ProgressViewState extends State<_ProgressView> {
                       onEdit: () => _showEditTopicDialog(context, topic),
                       onDelete: () => _showDeleteConfirmDialog(context, topic),
                       onIconChange: () => _showEditIconDialog(context, topic),
+                      onHide: () => provider.toggleTopicVisibility(topic),
                     );
                   },
                 );
