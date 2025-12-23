@@ -13,7 +13,6 @@ class ProgressProvider with ChangeNotifier {
   List<ProgressTopic> _topics = [];
   List<ProgressTopic> get topics => _topics;
 
-  // State untuk filter tampilan hidden
   bool _showHidden = false;
   bool get showHidden => _showHidden;
 
@@ -29,17 +28,33 @@ class ProgressProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Toggle untuk menampilkan/menyembunyikan item hidden secara global di UI
   void toggleShowHidden() {
     _showHidden = !_showHidden;
     notifyListeners();
   }
 
-  // Fungsi untuk mengubah status hidden pada topik spesifik
   Future<void> toggleTopicVisibility(ProgressTopic topic) async {
     topic.isHidden = !topic.isHidden;
     await _progressService.saveTopic(topic);
     notifyListeners();
+  }
+
+  // ==> BARU: Fungsi untuk menyembunyikan/menampilkan banyak topik sekaligus
+  Future<void> toggleVisibilityMultipleTopics(
+    List<ProgressTopic> selectedTopics,
+    bool makeHidden,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+
+    for (var topic in selectedTopics) {
+      if (topic.isHidden != makeHidden) {
+        topic.isHidden = makeHidden;
+        await _progressService.saveTopic(topic);
+      }
+    }
+
+    await fetchTopics(); // Refresh list
   }
 
   Future<void> addTopic(String name) async {
@@ -50,7 +65,6 @@ class ProgressProvider with ChangeNotifier {
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
     final item = _topics.removeAt(oldIndex);
     _topics.insert(newIndex, item);
-
     await _progressService.saveTopicsOrder(_topics);
     notifyListeners();
   }
@@ -68,6 +82,18 @@ class ProgressProvider with ChangeNotifier {
 
   Future<void> deleteTopic(ProgressTopic topic) async {
     await _progressService.deleteTopic(topic);
+    await fetchTopics();
+  }
+
+  // ==> BARU: Fungsi untuk menghapus banyak topik sekaligus
+  Future<void> deleteMultipleTopics(List<ProgressTopic> selectedTopics) async {
+    _isLoading = true;
+    notifyListeners();
+
+    for (var topic in selectedTopics) {
+      await _progressService.deleteTopic(topic);
+    }
+
     await fetchTopics();
   }
 }

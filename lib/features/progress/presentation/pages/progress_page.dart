@@ -33,6 +33,38 @@ class _ProgressView extends StatefulWidget {
 class _ProgressViewState extends State<_ProgressView> {
   bool _isReorderMode = false;
 
+  // ==> State untuk Multi-select
+  bool _isSelectionMode = false;
+  final Set<ProgressTopic> _selectedTopics = {};
+
+  void _enterSelectionMode(ProgressTopic initialTopic) {
+    setState(() {
+      _isSelectionMode = true;
+      _isReorderMode = false; // Matikan reorder jika aktif
+      _selectedTopics.add(initialTopic);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedTopics.clear();
+    });
+  }
+
+  void _toggleItemSelection(ProgressTopic topic) {
+    setState(() {
+      if (_selectedTopics.contains(topic)) {
+        _selectedTopics.remove(topic);
+        if (_selectedTopics.isEmpty) {
+          _exitSelectionMode();
+        }
+      } else {
+        _selectedTopics.add(topic);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressProvider>(context);
@@ -41,10 +73,9 @@ class _ProgressViewState extends State<_ProgressView> {
         themeProvider.backgroundImagePath != null ||
         themeProvider.isUnderwaterTheme;
 
-    // Filter topics:
-    // Jika sedang mode reorder OR showHidden aktif, tampilkan semua.
-    // Jika tidak, tampilkan hanya yang tidak hidden.
-    final displayTopics = (_isReorderMode || provider.showHidden)
+    // Filter display topics
+    final displayTopics =
+        (_isReorderMode || provider.showHidden || _isSelectionMode)
         ? provider.topics
         : provider.topics.where((t) => !t.isHidden).toList();
 
@@ -57,39 +88,9 @@ class _ProgressViewState extends State<_ProgressView> {
 
     return Scaffold(
       backgroundColor: isTransparent ? Colors.transparent : null,
-      appBar: AppBar(
-        backgroundColor: isTransparent ? Colors.transparent : null,
-        elevation: isTransparent ? 0 : null,
-        title: const Text('Progress Belajar'),
-        actions: [
-          // Tombol Toggle Hidden
-          IconButton(
-            icon: Icon(
-              provider.showHidden ? Icons.visibility : Icons.visibility_off,
-            ),
-            tooltip: provider.showHidden
-                ? 'Sembunyikan Item Hidden'
-                : 'Tampilkan Item Hidden',
-            onPressed: () {
-              provider.toggleShowHidden();
-            },
-          ),
-          IconButton(
-            icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
-            onPressed: () {
-              setState(() {
-                _isReorderMode = !_isReorderMode;
-              });
-              // Jika masuk mode reorder, otomatis tampilkan semua agar index sinkron
-              if (_isReorderMode && !provider.showHidden) {
-                // Opsional: kita bisa memaksa showHidden = true di provider,
-                // tapi logika displayTopics di atas sudah menangani tampilannya.
-              }
-            },
-            tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Topik',
-          ),
-        ],
-      ),
+      appBar: _isSelectionMode
+          ? _buildSelectionAppBar(context, provider, isTransparent)
+          : _buildNormalAppBar(context, provider, isTransparent),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : displayTopics.isEmpty
@@ -115,7 +116,8 @@ class _ProgressViewState extends State<_ProgressView> {
                     childAspectRatio: 1.1,
                   ),
                   itemCount: displayTopics.length,
-                  dragEnabled: _isReorderMode,
+                  // Drag hanya aktif jika mode reorder aktif DAN bukan mode selection
+                  dragEnabled: _isReorderMode && !_isSelectionMode,
                   onReorder: (oldIndex, newIndex) {
                     provider.reorderTopics(oldIndex, newIndex);
                   },
@@ -124,8 +126,17 @@ class _ProgressViewState extends State<_ProgressView> {
                     return ProgressTopicGridTile(
                       key: ValueKey(topic.topics),
                       topic: topic,
+
+                      // Konfigurasi Selection Mode
+                      isSelectionMode: _isSelectionMode,
+                      isSelected: _selectedTopics.contains(topic),
+                      onSelect: () => _toggleItemSelection(topic),
+                      onLongPress: _isReorderMode
+                          ? null
+                          : () => _enterSelectionMode(topic),
+
                       onTap: () {
-                        if (!_isReorderMode) {
+                        if (!_isReorderMode && !_isSelectionMode) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -148,12 +159,164 @@ class _ProgressViewState extends State<_ProgressView> {
                 );
               },
             ),
-      floatingActionButton: _isReorderMode
+      floatingActionButton: (_isReorderMode || _isSelectionMode)
           ? null
           : FloatingActionButton(
               onPressed: () => _showAddTopicDialog(context),
               child: const Icon(Icons.add),
             ),
+    );
+  }
+
+  // AppBar Normal
+  PreferredSizeWidget _buildNormalAppBar(
+    BuildContext context,
+    ProgressProvider provider,
+    bool isTransparent,
+  ) {
+    return AppBar(
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      elevation: isTransparent ? 0 : null,
+      title: const Text('Progress Belajar'),
+      actions: [
+        IconButton(
+          icon: Icon(
+            provider.showHidden ? Icons.visibility : Icons.visibility_off,
+          ),
+          tooltip: provider.showHidden
+              ? 'Sembunyikan Item Hidden'
+              : 'Tampilkan Item Hidden',
+          onPressed: () {
+            provider.toggleShowHidden();
+          },
+        ),
+        IconButton(
+          icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
+          onPressed: () {
+            setState(() {
+              _isReorderMode = !_isReorderMode;
+            });
+          },
+          tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Topik',
+        ),
+        // Opsi tambahan di menu titik tiga
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'select_multiple') {
+              if (provider.topics.isNotEmpty) {
+                _enterSelectionMode(provider.topics.first);
+              }
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'select_multiple',
+              child: ListTile(
+                leading: Icon(Icons.checklist),
+                title: Text('Pilih Banyak'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // AppBar Selection Mode
+  PreferredSizeWidget _buildSelectionAppBar(
+    BuildContext context,
+    ProgressProvider provider,
+    bool isTransparent,
+  ) {
+    return AppBar(
+      backgroundColor: isTransparent ? Colors.transparent : Colors.grey[800],
+      elevation: isTransparent ? 0 : null,
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _exitSelectionMode,
+      ),
+      title: Text('${_selectedTopics.length} Dipilih'),
+      actions: [
+        // Tombol Sembunyikan/Tampilkan Massal
+        if (_selectedTopics.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.visibility_outlined),
+            tooltip: 'Ubah Visibilitas',
+            onPressed: () => _handleBatchVisibility(context, provider),
+          ),
+
+        // Tombol Hapus Massal
+        if (_selectedTopics.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Hapus Terpilih',
+            onPressed: () => _handleBatchDelete(context, provider),
+          ),
+      ],
+    );
+  }
+
+  // Logic Dialogs
+  void _handleBatchVisibility(BuildContext context, ProgressProvider provider) {
+    // Tentukan aksi berdasarkan item pertama yang dipilih:
+    // Jika ada yang visible, kita tawarkan "Sembunyikan". Jika semua hidden, "Tampilkan".
+    final anyVisible = _selectedTopics.any((t) => !t.isHidden);
+    final actionLabel = anyVisible ? 'Sembunyikan' : 'Tampilkan';
+    final makeHidden = anyVisible;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$actionLabel ${_selectedTopics.length} Topik?'),
+        content: Text(
+          'Aksi ini akan mengubah status visibilitas untuk topik yang dipilih.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.toggleVisibilityMultipleTopics(
+                _selectedTopics.toList(),
+                makeHidden,
+              );
+              _exitSelectionMode();
+              Navigator.pop(context);
+            },
+            child: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleBatchDelete(BuildContext context, ProgressProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hapus ${_selectedTopics.length} Topik?'),
+        content: const Text(
+          'Topik yang dihapus beserta isinya tidak dapat dikembalikan. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              provider.deleteMultipleTopics(_selectedTopics.toList());
+              _exitSelectionMode();
+              Navigator.pop(context);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
     );
   }
 
