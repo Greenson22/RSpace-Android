@@ -12,7 +12,7 @@ import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
 import '../domain/services/encryption_service.dart';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io'; // Import untuk Platform dan File
 import 'package:path/path.dart' as path;
 
 // ==> IMPORT TAMBAHAN UNTUK IMPORT/EXPORT
@@ -99,7 +99,6 @@ class SubjectProvider with ChangeNotifier {
     } catch (e) {
       debugPrint("Error picking files: $e");
     } finally {
-      // Pastikan loading dimatikan jika terjadi error tanpa fetch
       if (_isLoading && _allSubjects.isNotEmpty) {
         _isLoading = false;
         notifyListeners();
@@ -108,13 +107,13 @@ class SubjectProvider with ChangeNotifier {
     return 0;
   }
 
-  // ==> FITUR EXPORT SELECTED SUBJECTS
-  Future<void> exportSelectedSubjects() async {
-    if (_selectedSubjects.isEmpty) return;
+  // ==> FITUR EXPORT SELECTED SUBJECTS (PERBAIKAN UNTUK LINUX/DESKTOP)
+  Future<String?> exportSelectedSubjects() async {
+    if (_selectedSubjects.isEmpty) return null;
 
     try {
-      List<XFile> xFiles = [];
-
+      // 1. Kumpulkan file fisik yang valid
+      List<File> filesToExport = [];
       for (var subject in _selectedSubjects) {
         final filePath = await _pathService.getSubjectPath(
           topicPath,
@@ -122,15 +121,47 @@ class SubjectProvider with ChangeNotifier {
         );
         final file = File(filePath);
         if (await file.exists()) {
-          xFiles.add(XFile(filePath));
+          filesToExport.add(file);
         }
       }
 
-      if (xFiles.isNotEmpty) {
-        await Share.shareXFiles(xFiles, text: 'Backup Subject RSpace');
+      if (filesToExport.isEmpty) {
+        throw Exception("Tidak ada file fisik yang ditemukan untuk diexport.");
       }
 
-      clearSelection();
+      // 2. Cek Platform untuk menentukan metode export
+      if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+        // === LOGIKA DESKTOP: Pilih Folder ===
+        String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+          dialogTitle: 'Pilih Folder Tujuan Export',
+        );
+
+        if (selectedDirectory != null) {
+          int count = 0;
+          for (var file in filesToExport) {
+            final fileName = path.basename(file.path);
+            final newPath = path.join(selectedDirectory, fileName);
+
+            // Salin file ke folder tujuan
+            await file.copy(newPath);
+            count++;
+          }
+
+          clearSelection();
+          return "$count subject berhasil diexport ke: $selectedDirectory";
+        } else {
+          return null; // User membatalkan pemilihan folder
+        }
+      } else {
+        // === LOGIKA MOBILE (Android/iOS): Share Sheet ===
+        List<XFile> xFiles = filesToExport.map((f) => XFile(f.path)).toList();
+
+        // Share UI akan muncul (hasilnya void)
+        await Share.shareXFiles(xFiles, text: 'Backup Subject RSpace');
+
+        clearSelection();
+        return null; // Share UI menangani feedbacknya sendiri
+      }
     } catch (e) {
       debugPrint("Error exporting subjects: $e");
       rethrow;

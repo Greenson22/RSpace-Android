@@ -125,11 +125,15 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI EXPORT <==
+  // ==> FUNGSI EXPORT (DIPERBARUI) <==
   Future<void> _exportSelectedSubjects(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     try {
-      await provider.exportSelectedSubjects();
+      final message = await provider.exportSelectedSubjects();
+      // Tampilkan pesan sukses jika ada (terutama untuk Desktop)
+      if (message != null && mounted) {
+        _showSnackBar(message);
+      }
     } catch (e) {
       _showSnackBar('Gagal mengekspor: ${e.toString()}', isError: true);
     }
