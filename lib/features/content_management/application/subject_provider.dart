@@ -65,46 +65,6 @@ class SubjectProvider with ChangeNotifier {
   Set<Subject> get selectedSubjects => _selectedSubjects;
   bool get isSelectionMode => _selectedSubjects.isNotEmpty;
 
-  // ==> FITUR IMPORT SUBJECTS (File JSON Biasa)
-  Future<int> importSubjects() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        allowMultiple: true,
-      );
-
-      if (result != null) {
-        _isLoading = true;
-        notifyListeners();
-
-        int successCount = 0;
-        for (var pickedFile in result.files) {
-          if (pickedFile.path != null) {
-            try {
-              final file = File(pickedFile.path!);
-              await _subjectService.importSubject(topicPath, file);
-              successCount++;
-            } catch (e) {
-              debugPrint("Gagal import ${pickedFile.name}: $e");
-            }
-          }
-        }
-
-        await fetchSubjects();
-        return successCount;
-      }
-    } catch (e) {
-      debugPrint("Error picking files: $e");
-    } finally {
-      if (_isLoading && _allSubjects.isNotEmpty) {
-        _isLoading = false;
-        notifyListeners();
-      }
-    }
-    return 0;
-  }
-
   // ==> FITUR IMPORT BULK SUBJECTS FROM ZIP (BARU) <==
   Future<String?> importBulkSubjectsZip() async {
     try {

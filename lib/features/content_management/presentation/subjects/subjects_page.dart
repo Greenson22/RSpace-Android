@@ -120,15 +120,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI IMPORT JSON BIASA <==
-  Future<void> _importSubjectsJson(BuildContext context) async {
-    final provider = Provider.of<SubjectProvider>(context, listen: false);
-    final count = await provider.importSubjects();
-    if (count > 0 && mounted) {
-      _showSnackBar('$count subject berhasil diimpor.');
-    }
-  }
-
   // ==> FUNGSI IMPORT ZIP (BARU) <==
   Future<void> _importSubjectsZip(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
@@ -779,24 +770,13 @@ class _SubjectsPageState extends State<SubjectsPage> {
         // ==> UPDATE PADA POPUP MENU ITEM UNTUK IMPORT ZIP <==
         PopupMenuButton<String>(
           onSelected: (value) {
-            if (value == 'import_json') {
-              _importSubjectsJson(context);
-            } else if (value == 'import_zip') {
+            if (value == 'import_zip') {
               _importSubjectsZip(context);
             } else if (value == 'show_hidden') {
               provider.toggleShowHidden();
             }
           },
           itemBuilder: (context) => [
-            // Opsi Import JSON (Lama)
-            const PopupMenuItem(
-              value: 'import_json',
-              child: ListTile(
-                leading: Icon(Icons.description),
-                title: Text('Import JSON'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
             // Opsi Import ZIP (Baru)
             const PopupMenuItem(
               value: 'import_zip',
