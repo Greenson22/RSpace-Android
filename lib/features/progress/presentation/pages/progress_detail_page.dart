@@ -1,38 +1,77 @@
 // lib/features/progress/presentation/pages/progress_detail_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:provider/provider.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+
 import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 import 'package:my_aplication/features/progress/domain/models/color_palette_model.dart';
-import 'package:provider/provider.dart';
-// Import ReorderableGridView
-import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../application/progress_detail_provider.dart';
 import '../../domain/models/progress_subject_model.dart';
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-// ==> 1. IMPORT BARU <==
 import '../../../settings/application/theme_provider.dart';
 
-// 1. Ubah menjadi StatefulWidget
 class ProgressDetailPage extends StatefulWidget {
+  const ProgressDetailPage({super.key});
+
   @override
   State<ProgressDetailPage> createState() => _ProgressDetailPageState();
 }
 
 class _ProgressDetailPageState extends State<ProgressDetailPage> {
-  // 2. Tambahkan state untuk mode reorder
   bool _isReorderMode = false;
+
+  // State untuk Multi-select
+  bool _isSelectionMode = false;
+  final Set<ProgressSubject> _selectedSubjects = {};
+
+  void _enterSelectionMode(ProgressSubject? initialSubject) {
+    setState(() {
+      _isSelectionMode = true;
+      _isReorderMode = false; // Matikan reorder jika aktif
+      if (initialSubject != null) {
+        _selectedSubjects.add(initialSubject);
+      }
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedSubjects.clear();
+    });
+  }
+
+  void _toggleItemSelection(ProgressSubject subject) {
+    setState(() {
+      if (_selectedSubjects.contains(subject)) {
+        _selectedSubjects.remove(subject);
+        if (_selectedSubjects.isEmpty) {
+          _exitSelectionMode();
+        }
+      } else {
+        _selectedSubjects.add(subject);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(context);
-
-    // ==> 2. TAMBAHKAN KODE BARU DI SINI <==
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isTransparent =
         themeProvider.backgroundImagePath != null ||
         themeProvider.isUnderwaterTheme;
+
+    // Filter subjek yang ditampilkan
+    // Jika mode reorder, selection, atau showHidden aktif -> tampilkan semua
+    // Jika tidak -> tampilkan hanya yang tidak hidden
+    final displaySubjects =
+        (_isReorderMode || provider.showHidden || _isSelectionMode)
+        ? provider.topic.subjects
+        : provider.topic.subjects.where((s) => !s.isHidden).toList();
 
     int _getCrossAxisCount(double screenWidth) {
       if (screenWidth > 1200) return 5;
@@ -42,31 +81,24 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     }
 
     return Scaffold(
-      // ==> 3. TERAPKAN TRANSPARANSI SCAFFOLD <==
       backgroundColor: isTransparent ? Colors.transparent : null,
-      appBar: AppBar(
-        // ==> 4. TERAPKAN TRANSPARANSI APPBAR <==
-        backgroundColor: isTransparent ? Colors.transparent : null,
-        elevation: isTransparent ? 0 : null,
-        title: Text(provider.topic.topics),
-        // 3. Tambahkan actions di AppBar
-        actions: [
-          IconButton(
-            icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
-            onPressed: () {
-              setState(() {
-                _isReorderMode = !_isReorderMode;
-              });
-            },
-            tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Materi',
-          ),
-        ],
-      ),
-      body: provider.topic.subjects.isEmpty
-          ? const Center(child: Text('Belum ada materi di dalam topik ini.'))
+      appBar: _isSelectionMode
+          ? _buildSelectionAppBar(context, provider, isTransparent)
+          : _buildNormalAppBar(context, provider, isTransparent),
+      body: displaySubjects.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  provider.topic.subjects.isNotEmpty
+                      ? 'Semua materi disembunyikan.\nTekan ikon mata di atas untuk melihat.'
+                      : 'Belum ada materi di dalam topik ini.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
           : LayoutBuilder(
               builder: (context, constraints) {
-                // 4. Ganti GridView.builder dengan ReorderableGridView.builder
                 return ReorderableGridView.builder(
                   padding: const EdgeInsets.all(12.0),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -75,19 +107,28 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                     mainAxisSpacing: 12.0,
                     childAspectRatio: 1.2,
                   ),
-                  itemCount: provider.topic.subjects.length,
-                  dragEnabled: _isReorderMode, // Aktifkan drag
+                  itemCount: displaySubjects.length,
+                  // Drag hanya aktif di reorder mode DAN bukan selection mode
+                  dragEnabled: _isReorderMode && !_isSelectionMode,
                   onReorder: (oldIndex, newIndex) {
                     provider.reorderSubjects(oldIndex, newIndex);
                   },
                   itemBuilder: (context, index) {
-                    final subject = provider.topic.subjects[index];
+                    final subject = displaySubjects[index];
                     return ProgressSubjectGridTile(
-                      // 5. Tambahkan Key yang unik
                       key: ValueKey(subject.namaMateri),
                       subject: subject,
+
+                      // Konfigurasi Selection Mode
+                      isSelectionMode: _isSelectionMode,
+                      isSelected: _selectedSubjects.contains(subject),
+                      onSelect: () => _toggleItemSelection(subject),
+                      onLongPress: _isReorderMode
+                          ? null
+                          : () => _enterSelectionMode(subject),
+
                       onTap: () {
-                        if (!_isReorderMode) {
+                        if (!_isReorderMode && !_isSelectionMode) {
                           showSubMateriDialog(context, subject);
                         }
                       },
@@ -96,12 +137,13 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                           _showDeleteConfirmDialog(context, subject),
                       onColorEdit: () =>
                           _showAppearanceDialog(context, subject),
+                      onHide: () => provider.toggleSubjectVisibility(subject),
                     );
                   },
                 );
               },
             ),
-      floatingActionButton: _isReorderMode
+      floatingActionButton: (_isReorderMode || _isSelectionMode)
           ? null
           : FloatingActionButton(
               onPressed: () => _showAddSubjectDialog(context),
@@ -111,7 +153,161 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     );
   }
 
-  // ... (Sisa kode dialog tidak perlu diubah) ...
+  // --- AppBar Builders ---
+
+  PreferredSizeWidget _buildNormalAppBar(
+    BuildContext context,
+    ProgressDetailProvider provider,
+    bool isTransparent,
+  ) {
+    return AppBar(
+      backgroundColor: isTransparent ? Colors.transparent : null,
+      elevation: isTransparent ? 0 : null,
+      title: Text(provider.topic.topics),
+      actions: [
+        // Tombol Toggle Hidden
+        IconButton(
+          icon: Icon(
+            provider.showHidden ? Icons.visibility : Icons.visibility_off,
+          ),
+          tooltip: provider.showHidden
+              ? 'Sembunyikan Materi Hidden'
+              : 'Tampilkan Materi Hidden',
+          onPressed: () {
+            provider.toggleShowHidden();
+          },
+        ),
+        IconButton(
+          icon: Icon(_isReorderMode ? Icons.check : Icons.sort),
+          onPressed: () {
+            setState(() {
+              _isReorderMode = !_isReorderMode;
+            });
+          },
+          tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Materi',
+        ),
+        // Menu titik tiga untuk opsi tambahan
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'select_multiple') {
+              if (provider.topic.subjects.isNotEmpty) {
+                _enterSelectionMode(null);
+              }
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'select_multiple',
+              child: ListTile(
+                leading: Icon(Icons.checklist),
+                title: Text('Pilih Banyak'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _buildSelectionAppBar(
+    BuildContext context,
+    ProgressDetailProvider provider,
+    bool isTransparent,
+  ) {
+    return AppBar(
+      backgroundColor: isTransparent ? Colors.transparent : Colors.grey[800],
+      elevation: isTransparent ? 0 : null,
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _exitSelectionMode,
+      ),
+      title: Text('${_selectedSubjects.length} Dipilih'),
+      actions: [
+        if (_selectedSubjects.isNotEmpty) ...[
+          IconButton(
+            icon: const Icon(Icons.visibility_outlined),
+            tooltip: 'Ubah Visibilitas',
+            onPressed: () => _handleBatchVisibility(context, provider),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Hapus Terpilih',
+            onPressed: () => _handleBatchDelete(context, provider),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // --- Dialog Logics ---
+
+  void _handleBatchVisibility(
+    BuildContext context,
+    ProgressDetailProvider provider,
+  ) {
+    final anyVisible = _selectedSubjects.any((s) => !s.isHidden);
+    final actionLabel = anyVisible ? 'Sembunyikan' : 'Tampilkan';
+    final makeHidden = anyVisible;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$actionLabel ${_selectedSubjects.length} Materi?'),
+        content: Text(
+          'Aksi ini akan mengubah status visibilitas materi yang dipilih.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.toggleVisibilityMultipleSubjects(
+                _selectedSubjects.toList(),
+                makeHidden,
+              );
+              _exitSelectionMode();
+              Navigator.pop(context);
+            },
+            child: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleBatchDelete(
+    BuildContext context,
+    ProgressDetailProvider provider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hapus ${_selectedSubjects.length} Materi?'),
+        content: const Text(
+          'Materi yang dihapus beserta semua sub-materinya tidak dapat dikembalikan. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              provider.deleteMultipleSubjects(_selectedSubjects.toList());
+              _exitSelectionMode();
+              Navigator.pop(context);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddSubjectDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -221,7 +417,6 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
       context,
       listen: false,
     );
-
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -233,6 +428,8 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     );
   }
 }
+
+// --- Kelas Dialog Appearance (Tetap Sama) ---
 
 class _EditAppearanceDialog extends StatefulWidget {
   final ProgressSubject subject;

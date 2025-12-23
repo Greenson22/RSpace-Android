@@ -21,9 +21,51 @@ class ProgressDetailProvider with ChangeNotifier {
   List<ColorPalette> _customPalettes = [];
   List<ColorPalette> get customPalettes => _customPalettes;
 
+  // State untuk filter tampilan hidden
+  bool _showHidden = false;
+  bool get showHidden => _showHidden;
+
   ProgressDetailProvider(this.topic) {
     _loadCustomPalettes();
   }
+
+  // ==> FUNGSI BARU UNTUK VISIBILITAS & SELEKSI BANYAK <==
+
+  void toggleShowHidden() {
+    _showHidden = !_showHidden;
+    notifyListeners();
+  }
+
+  Future<void> toggleSubjectVisibility(ProgressSubject subject) async {
+    subject.isHidden = !subject.isHidden;
+    await save();
+    notifyListeners();
+  }
+
+  Future<void> toggleVisibilityMultipleSubjects(
+    List<ProgressSubject> subjects,
+    bool makeHidden,
+  ) async {
+    bool changed = false;
+    for (var subject in subjects) {
+      if (subject.isHidden != makeHidden) {
+        subject.isHidden = makeHidden;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await save();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteMultipleSubjects(List<ProgressSubject> subjects) async {
+    topic.subjects.removeWhere((s) => subjects.contains(s));
+    await save();
+    notifyListeners();
+  }
+
+  // ==> END FUNGSI BARU <==
 
   Future<void> _loadCustomPalettes() async {
     _customPalettes = await _paletteService.loadPalettes();
@@ -107,8 +149,6 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ==> FUNGSI BARU DITAMBAHKAN DI SINI <==
-  /// Mengembalikan semua sub-materi yang sudah 'selesai' menjadi 'belum'.
   Future<void> resetFinishedSubMateri(ProgressSubject subject) async {
     bool changed = false;
     for (var sub in subject.subMateri) {
@@ -125,7 +165,6 @@ class ProgressDetailProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  // ==> AKHIR FUNGSI BARU <==
 
   Future<void> addSubject(String name) async {
     final newSubject = ProgressSubject(
@@ -357,7 +396,6 @@ class ProgressDetailProvider with ChangeNotifier {
       return;
     }
 
-    // Jika tidak ada yang selesai atau sementara, berarti semua 'belum'
     subject.progress = 'belum';
   }
 

@@ -3,7 +3,6 @@
 class SubMateri {
   String namaMateri;
   String progress;
-  // ==> PROPERTI BARU DITAMBAHKAN <==
   String? finishedDate;
 
   SubMateri({
@@ -16,7 +15,6 @@ class SubMateri {
     return SubMateri(
       namaMateri: json['nama_materi'] as String,
       progress: json['progress'] as String,
-      // ==> BACA DARI JSON <==
       finishedDate: json['finishedDate'] as String?,
     );
   }
@@ -25,7 +23,6 @@ class SubMateri {
     return {
       'nama_materi': namaMateri,
       'progress': progress,
-      // ==> SIMPAN KE JSON <==
       'finishedDate': finishedDate,
     };
   }
@@ -38,7 +35,8 @@ class ProgressSubject {
   int? backgroundColor;
   int? textColor;
   int? progressBarColor;
-  String icon; // Properti baru untuk ikon
+  String icon;
+  bool isHidden; // Properti baru
 
   ProgressSubject({
     required this.namaMateri,
@@ -47,7 +45,8 @@ class ProgressSubject {
     this.backgroundColor,
     this.textColor,
     this.progressBarColor,
-    this.icon = '📚', // Nilai default
+    this.icon = '📚',
+    this.isHidden = false, // Default false
   });
 
   factory ProgressSubject.fromJson(Map<String, dynamic> json) {
@@ -63,7 +62,8 @@ class ProgressSubject {
       backgroundColor: json['backgroundColor'] as int?,
       textColor: json['textColor'] as int?,
       progressBarColor: json['progressBarColor'] as int?,
-      icon: json['icon'] as String? ?? '📚', // Baca ikon dari JSON
+      icon: json['icon'] as String? ?? '📚',
+      isHidden: json['isHidden'] as bool? ?? false, // Baca status dari JSON
     );
   }
 
@@ -75,7 +75,8 @@ class ProgressSubject {
       'backgroundColor': backgroundColor,
       'textColor': textColor,
       'progressBarColor': progressBarColor,
-      'icon': icon, // Simpan ikon ke JSON
+      'icon': icon,
+      'isHidden': isHidden, // Simpan status ke JSON
     };
   }
 }
