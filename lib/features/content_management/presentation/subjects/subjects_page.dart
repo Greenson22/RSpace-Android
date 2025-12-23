@@ -24,7 +24,7 @@ import '../../../settings/application/theme_provider.dart';
 
 // ==> IMPORT DIALOG IMPORT & EXPORT
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/export_subject_dialog.dart';
-import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/export_bulk_subjects_dialog.dart'; // Import Baru
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/export_bulk_subjects_dialog.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -120,8 +120,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
-  // ==> FUNGSI IMPORT <==
-  Future<void> _importSubjects(BuildContext context) async {
+  // ==> FUNGSI IMPORT JSON BIASA <==
+  Future<void> _importSubjectsJson(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final count = await provider.importSubjects();
     if (count > 0 && mounted) {
@@ -129,16 +129,31 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI EXPORT (BULK - UPDATED TO ZIP) <==
+  // ==> FUNGSI IMPORT ZIP (BARU) <==
+  Future<void> _importSubjectsZip(BuildContext context) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    // Memanggil method importBulkSubjectsZip yang kita buat di Provider
+    final message = await provider.importBulkSubjectsZip();
+
+    if (message != null && mounted) {
+      // Tampilkan pesan hasil (sukses/gagal) dari return value provider
+      _showSnackBar(
+        message,
+        isError:
+            message.toLowerCase().contains('gagal') ||
+            message.toLowerCase().contains('error'),
+      );
+    }
+  }
+
+  // ==> FUNGSI EXPORT (BULK - ZIP) <==
   Future<void> _exportSelectedSubjects(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
 
-    // Cek apakah ada subject yang punya linkedPath untuk mengaktifkan opsi checkbox
     final hasLinkedPath = provider.selectedSubjects.any(
       (s) => s.linkedPath != null && s.linkedPath!.isNotEmpty,
     );
 
-    // 1. Tampilkan Dialog Konfigurasi Bulk
     final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => ExportBulkSubjectsDialog(
@@ -148,7 +163,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
       ),
     );
 
-    // 2. Eksekusi jika user setuju
     if (result != null && result is Map<String, dynamic> && mounted) {
       try {
         final message = await provider.exportBulkSubjectsZip(
@@ -169,13 +183,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
     BuildContext context,
     Subject subject,
   ) async {
-    // 1. Tampilkan Dialog Konfigurasi
     final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => ExportSubjectDialog(subject: subject),
     );
 
-    // 2. Eksekusi jika user setuju
     if (result != null && result is Map<String, dynamic> && mounted) {
       final provider = Provider.of<SubjectProvider>(context, listen: false);
       try {
@@ -714,9 +726,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
         onPressed: () => provider.clearSelection(),
       ),
       actions: [
-        // ==> TOMBOL EXPORT BARU
         IconButton(
-          icon: const Icon(Icons.archive_outlined), // Ganti icon jadi archive
+          icon: const Icon(Icons.archive_outlined),
           onPressed: () => _exportSelectedSubjects(context),
           tooltip: 'Export/Zip Selected Subjects',
         ),
@@ -765,23 +776,37 @@ class _SubjectsPageState extends State<SubjectsPage> {
           tooltip: 'Urutkan Subject',
           onPressed: () => showSubjectSortDialog(context: context),
         ),
+        // ==> UPDATE PADA POPUP MENU ITEM UNTUK IMPORT ZIP <==
         PopupMenuButton<String>(
           onSelected: (value) {
-            if (value == 'import') {
-              _importSubjects(context);
+            if (value == 'import_json') {
+              _importSubjectsJson(context);
+            } else if (value == 'import_zip') {
+              _importSubjectsZip(context);
             } else if (value == 'show_hidden') {
               provider.toggleShowHidden();
             }
           },
           itemBuilder: (context) => [
+            // Opsi Import JSON (Lama)
             const PopupMenuItem(
-              value: 'import',
+              value: 'import_json',
               child: ListTile(
-                leading: Icon(Icons.file_download),
-                title: Text('Import Subject'),
+                leading: Icon(Icons.description),
+                title: Text('Import JSON'),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
+            // Opsi Import ZIP (Baru)
+            const PopupMenuItem(
+              value: 'import_zip',
+              child: ListTile(
+                leading: Icon(Icons.folder_zip),
+                title: Text('Import ZIP'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const PopupMenuDivider(),
             PopupMenuItem(
               value: 'show_hidden',
               child: ListTile(

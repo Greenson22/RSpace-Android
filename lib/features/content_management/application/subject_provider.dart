@@ -65,7 +65,7 @@ class SubjectProvider with ChangeNotifier {
   Set<Subject> get selectedSubjects => _selectedSubjects;
   bool get isSelectionMode => _selectedSubjects.isNotEmpty;
 
-  // ==> FITUR IMPORT SUBJECTS
+  // ==> FITUR IMPORT SUBJECTS (File JSON Biasa)
   Future<int> importSubjects() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -103,6 +103,136 @@ class SubjectProvider with ChangeNotifier {
       }
     }
     return 0;
+  }
+
+  // ==> FITUR IMPORT BULK SUBJECTS FROM ZIP (BARU) <==
+  Future<String?> importBulkSubjectsZip() async {
+    try {
+      // 1. Pilih File ZIP
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.single.path == null) return null;
+
+      _isLoading = true;
+      notifyListeners();
+
+      final zipFile = File(result.files.single.path!);
+
+      // Buat direktori sementara untuk ekstraksi
+      final tempDir = await Directory.systemTemp.createTemp('rspace_import_');
+
+      try {
+        // 2. Ekstrak ZIP
+        final bytes = await zipFile.readAsBytes();
+        final archive = ZipDecoder().decodeBytes(bytes);
+
+        // Ekstrak konten ke folder temp
+        for (final file in archive) {
+          final filename = file.name;
+          if (file.isFile) {
+            final data = file.content as List<int>;
+            final f = File(path.join(tempDir.path, filename));
+            await f.parent.create(recursive: true);
+            await f.writeAsBytes(data);
+          } else {
+            await Directory(
+              path.join(tempDir.path, filename),
+            ).create(recursive: true);
+          }
+        }
+
+        int successCount = 0;
+        final perpuskuBasePath = await _pathService.perpuskuDataPath;
+
+        // 3. Iterasi setiap folder yang diekstrak
+        // Struktur ZIP Export biasanya: RootFolder/NamaSubject/Subject.json
+        final List<FileSystemEntity> entities = tempDir.listSync();
+
+        for (var entity in entities) {
+          // Kita hanya memproses Direktori (yang merepresentasikan satu Subject)
+          if (entity is Directory) {
+            final subjectDir = entity;
+            File? jsonFile;
+            Directory? perpuskuDataDir;
+
+            // Cari file JSON dan folder PerpusKu_Data di dalam folder subject tersebut
+            final subEntities = subjectDir.listSync();
+            for (var sub in subEntities) {
+              if (sub is File && sub.path.toLowerCase().endsWith('.json')) {
+                jsonFile = sub;
+              } else if (sub is Directory &&
+                  path.basename(sub.path) == 'PerpusKu_Data') {
+                perpuskuDataDir = sub;
+              }
+            }
+
+            // Proses jika ditemukan file JSON yang valid
+            if (jsonFile != null) {
+              try {
+                // A. Baca Metadata JSON untuk mendapatkan linkedPath
+                // Kita perlu tahu path folder PerpusKu SEBELUM import, karena
+                // linkedPath tidak berubah meskipun nama file subject berubah.
+                final jsonString = await jsonFile.readAsString();
+                final jsonData = jsonDecode(jsonString);
+                final metadata = jsonData['metadata'] as Map<String, dynamic>?;
+                final String? linkedPath = metadata?['linkedPath'];
+
+                // B. Import Subject (JSON)
+                // Service akan menangani duplikasi nama file
+                await _subjectService.importSubject(topicPath, jsonFile);
+
+                // C. Restore Data PerpusKu (Jika ada di ZIP dan subject memiliki link)
+                if (perpuskuDataDir != null &&
+                    linkedPath != null &&
+                    linkedPath.isNotEmpty) {
+                  final targetPath = path.join(
+                    perpuskuBasePath,
+                    'file_contents',
+                    'topics',
+                    linkedPath,
+                  );
+                  final targetDir = Directory(targetPath);
+
+                  // Buat direktori tujuan jika belum ada
+                  if (!await targetDir.exists()) {
+                    await targetDir.create(recursive: true);
+                  }
+
+                  // Copy isi folder PerpusKu_Data ke tujuan
+                  await _copyDirectory(perpuskuDataDir, targetDir);
+                }
+
+                successCount++;
+              } catch (e) {
+                debugPrint("Gagal mengimpor item dari ${subjectDir.path}: $e");
+              }
+            }
+          }
+        }
+
+        await fetchSubjects();
+        return "Berhasil mengimpor $successCount subject.";
+      } finally {
+        // Bersihkan folder temp setelah selesai
+        try {
+          if (await tempDir.exists()) {
+            await tempDir.delete(recursive: true);
+          }
+        } catch (e) {
+          debugPrint("Gagal membersihkan temp import: $e");
+        }
+      }
+    } catch (e) {
+      debugPrint("Error import bulk zip: $e");
+      return "Terjadi kesalahan saat mengimpor: $e";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // ==> FITUR EXPORT SINGLE SUBJECT TO ZIP
@@ -202,7 +332,7 @@ class SubjectProvider with ChangeNotifier {
     }
   }
 
-  // ==> FITUR EXPORT BULK SUBJECTS TO ZIP (BARU) <==
+  // ==> FITUR EXPORT BULK SUBJECTS TO ZIP
   Future<String?> exportBulkSubjectsZip(
     String zipFileName,
     bool includePerpusku,
