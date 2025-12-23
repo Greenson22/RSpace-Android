@@ -19,6 +19,8 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onToggleLock;
   final VoidCallback onTimeline;
   final VoidCallback onViewJson;
+  // ==> 1. TAMBAHKAN CALLBACK EXPORT
+  final VoidCallback onExport;
   final bool isFocused;
 
   const SubjectListTile({
@@ -36,6 +38,8 @@ class SubjectListTile extends StatelessWidget {
     required this.onToggleLock,
     required this.onTimeline,
     required this.onViewJson,
+    // ==> 2. TAMBAHKAN DI CONSTRUCTOR
+    required this.onExport,
     this.isFocused = false,
   });
 
@@ -68,14 +72,11 @@ class SubjectListTile extends StatelessWidget {
     final double iconFontSize = 28;
     final double titleFontSize = 18;
 
-    // === PERBAIKAN UTAMA: Hitung Ukuran Ikon ===
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     const double basePopupIconSize = 24.0;
-    const double baseLinkIconSize = 18.0; // Ukuran dasar ikon link
+    const double baseLinkIconSize = 18.0;
     final scaledPopupIconSize = basePopupIconSize * textScaleFactor;
-    final scaledLinkIconSize =
-        baseLinkIconSize * textScaleFactor; // Ukuran link diskalakan
-    // === AKHIR PERBAIKAN ===
+    final scaledLinkIconSize = baseLinkIconSize * textScaleFactor;
 
     final tileContent = Material(
       borderRadius: BorderRadius.circular(15),
@@ -122,8 +123,7 @@ class SubjectListTile extends StatelessWidget {
                         child: Icon(
                           Icons.ac_unit,
                           color: Colors.blue.shade700,
-                          size:
-                              16 * textScaleFactor, // Skalakan ikon kecil juga
+                          size: 16 * textScaleFactor,
                         ),
                       ),
                   ],
@@ -143,7 +143,6 @@ class SubjectListTile extends StatelessWidget {
                             child: Icon(
                               Icons.link,
                               color: theme.primaryColor,
-                              // Terapkan ukuran ikon link yang diskalakan
                               size: scaledLinkIconSize,
                             ),
                           ),
@@ -171,7 +170,6 @@ class SubjectListTile extends StatelessWidget {
               ),
               if (!provider.isSelectionMode)
                 PopupMenuButton<String>(
-                  // Terapkan ukuran ikon titik tiga yang sudah diskalakan
                   iconSize: scaledPopupIconSize,
                   onSelected: (value) {
                     if (value == 'rename') onRename();
@@ -185,6 +183,8 @@ class SubjectListTile extends StatelessWidget {
                     if (value == 'toggle_lock') onToggleLock();
                     if (value == 'timeline') onTimeline();
                     if (value == 'view_json') onViewJson();
+                    // ==> 3. HANDLER MENU EXPORT
+                    if (value == 'export_zip') onExport();
                   },
                   itemBuilder: (context) => <PopupMenuEntry<String>>[
                     _buildMenuItem(
@@ -193,6 +193,12 @@ class SubjectListTile extends StatelessWidget {
                       'Lihat Linimasa',
                     ),
                     _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
+                    // ==> 4. TAMBAHKAN MENU EXPORT ZIP
+                    _buildMenuItem(
+                      'export_zip',
+                      Icons.archive_outlined,
+                      'Export ke ZIP',
+                    ),
                     const PopupMenuDivider(),
                     _buildSubMenu(
                       icon: Icons.edit_outlined,
@@ -348,7 +354,6 @@ class SubjectListTile extends StatelessWidget {
         return indexA.compareTo(indexB);
       });
 
-    // Skalakan ukuran ikon statistik
     final double scaledStatIconSize = (textStyle?.fontSize ?? 12.0);
 
     return Row(
@@ -357,7 +362,7 @@ class SubjectListTile extends StatelessWidget {
           Icons.chat_bubble_outline,
           size: scaledStatIconSize,
           color: textColor,
-        ), // Gunakan ukuran ikon yang diskalakan
+        ),
         const SizedBox(width: 4),
         Text(
           '${subject.discussionCount} (${subject.finishedDiscussionCount} ✔)',

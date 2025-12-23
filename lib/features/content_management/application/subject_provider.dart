@@ -12,12 +12,13 @@ import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
 import '../domain/services/encryption_service.dart';
 import 'dart:convert';
-import 'dart:io'; // Import untuk Platform dan File
+import 'dart:io';
 import 'package:path/path.dart' as path;
 
 // ==> IMPORT TAMBAHAN UNTUK IMPORT/EXPORT
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:archive/archive_io.dart'; // Pastikan package 'archive' sudah ditambahkan di pubspec.yaml
 
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
@@ -29,9 +30,7 @@ class SubjectProvider with ChangeNotifier {
   final PathService _pathService = PathService();
   final String topicPath;
 
-  SubjectProvider(this.topicPath) {
-    // fetchSubjects dipanggil dari initState di halaman UI
-  }
+  SubjectProvider(this.topicPath);
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -92,7 +91,6 @@ class SubjectProvider with ChangeNotifier {
           }
         }
 
-        // Refresh daftar subject setelah import selesai
         await fetchSubjects();
         return successCount;
       }
@@ -107,12 +105,125 @@ class SubjectProvider with ChangeNotifier {
     return 0;
   }
 
-  // ==> FITUR EXPORT SELECTED SUBJECTS (PERBAIKAN UNTUK LINUX/DESKTOP)
+  // ==> FITUR EXPORT SINGLE SUBJECT TO ZIP (BARU)
+  Future<String?> exportSubjectZip(
+    Subject subject,
+    String zipFileName,
+    bool includePerpusku,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1. Siapkan folder temporary
+      final tempDir = await Directory.systemTemp.createTemp('rspace_export_');
+      final exportFolder = Directory(path.join(tempDir.path, subject.name));
+      await exportFolder.create();
+
+      // 2. Salin file JSON Subject
+      final subjectJsonPath = await _pathService.getSubjectPath(
+        topicPath,
+        subject.name,
+      );
+      final sourceJsonFile = File(subjectJsonPath);
+      if (await sourceJsonFile.exists()) {
+        await sourceJsonFile.copy(
+          path.join(exportFolder.path, '${subject.name}.json'),
+        );
+      } else {
+        throw Exception("File subject asli tidak ditemukan.");
+      }
+
+      // 3. Salin folder PerpusKu jika diminta dan tersedia
+      if (includePerpusku &&
+          subject.linkedPath != null &&
+          subject.linkedPath!.isNotEmpty) {
+        final perpuskuBasePath = await _pathService.perpuskuDataPath;
+        final perpuskuSourcePath = path.join(
+          perpuskuBasePath,
+          'file_contents',
+          'topics',
+          subject.linkedPath,
+        );
+
+        final sourceDir = Directory(perpuskuSourcePath);
+        if (await sourceDir.exists()) {
+          final perpuskuDestFolder = Directory(
+            path.join(exportFolder.path, 'PerpusKu_Data'),
+          );
+          await perpuskuDestFolder.create();
+          await _copyDirectory(sourceDir, perpuskuDestFolder);
+        }
+      }
+
+      // 4. Proses Zipping
+      final zipPath = path.join(tempDir.path, '$zipFileName.zip');
+      final encoder = ZipFileEncoder();
+      encoder.create(zipPath);
+      await encoder.addDirectory(exportFolder);
+      encoder.close();
+
+      final zipFile = File(zipPath);
+
+      // 5. Output berdasarkan Platform
+      String? returnMessage;
+      if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+        // Desktop: Pilih folder penyimpanan
+        String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+          dialogTitle: 'Pilih Folder Simpan Zip',
+        );
+
+        if (selectedDirectory != null) {
+          final finalPath = path.join(selectedDirectory, '$zipFileName.zip');
+          await zipFile.copy(finalPath);
+          returnMessage = "Export berhasil disimpan di: $finalPath";
+        }
+      } else {
+        // Mobile: Share Sheet
+        await Share.shareXFiles([
+          XFile(zipPath),
+        ], text: 'Export Subject: ${subject.name}');
+      }
+
+      // Bersihkan temp
+      try {
+        await tempDir.delete(recursive: true);
+      } catch (e) {
+        debugPrint("Gagal membersihkan temp: $e");
+      }
+
+      return returnMessage;
+    } catch (e) {
+      debugPrint("Error export zip: $e");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Helper untuk menyalin folder secara rekursif
+  Future<void> _copyDirectory(Directory source, Directory destination) async {
+    await for (var entity in source.list(recursive: false)) {
+      if (entity is Directory) {
+        final newDir = Directory(
+          path.join(destination.path, path.basename(entity.path)),
+        );
+        await newDir.create();
+        await _copyDirectory(entity, newDir);
+      } else if (entity is File) {
+        await entity.copy(
+          path.join(destination.path, path.basename(entity.path)),
+        );
+      }
+    }
+  }
+
+  // ==> FITUR EXPORT SELECTED SUBJECTS (BULK)
   Future<String?> exportSelectedSubjects() async {
     if (_selectedSubjects.isEmpty) return null;
 
     try {
-      // 1. Kumpulkan file fisik yang valid
       List<File> filesToExport = [];
       for (var subject in _selectedSubjects) {
         final filePath = await _pathService.getSubjectPath(
@@ -129,9 +240,7 @@ class SubjectProvider with ChangeNotifier {
         throw Exception("Tidak ada file fisik yang ditemukan untuk diexport.");
       }
 
-      // 2. Cek Platform untuk menentukan metode export
       if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
-        // === LOGIKA DESKTOP: Pilih Folder ===
         String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
           dialogTitle: 'Pilih Folder Tujuan Export',
         );
@@ -141,26 +250,19 @@ class SubjectProvider with ChangeNotifier {
           for (var file in filesToExport) {
             final fileName = path.basename(file.path);
             final newPath = path.join(selectedDirectory, fileName);
-
-            // Salin file ke folder tujuan
             await file.copy(newPath);
             count++;
           }
-
           clearSelection();
           return "$count subject berhasil diexport ke: $selectedDirectory";
         } else {
-          return null; // User membatalkan pemilihan folder
+          return null;
         }
       } else {
-        // === LOGIKA MOBILE (Android/iOS): Share Sheet ===
         List<XFile> xFiles = filesToExport.map((f) => XFile(f.path)).toList();
-
-        // Share UI akan muncul (hasilnya void)
         await Share.shareXFiles(xFiles, text: 'Backup Subject RSpace');
-
         clearSelection();
-        return null; // Share UI menangani feedbacknya sendiri
+        return null;
       }
     } catch (e) {
       debugPrint("Error exporting subjects: $e");
@@ -517,7 +619,7 @@ class SubjectProvider with ChangeNotifier {
       final newDate = currentDate.add(Duration(days: daysToAdd));
       item.date = DateFormat('yyyy-MM-dd').format(newDate);
     } catch (e) {
-      // Abaikan jika parsing tanggal gagal
+      // Abaikan
     }
   }
 
@@ -536,10 +638,7 @@ class SubjectProvider with ChangeNotifier {
     bool deleteLinkedFolder = false,
   }) async {
     if (deleteLinkedFolder) {
-      final subject = _allSubjects.firstWhere((s) => s.name == subjectName);
-      if (subject.linkedPath != null) {
-        // Logika penghapusan folder bisa ditambahkan di SubjectActions jika diperlukan
-      }
+      // Logika penghapusan folder
     }
     await _subjectService.deleteSubject(topicPath, subjectName);
     await fetchSubjects();

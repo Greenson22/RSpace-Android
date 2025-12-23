@@ -22,6 +22,9 @@ import 'package:my_aplication/features/content_management/presentation/timeline/
 import 'dialogs/view_json_dialog.dart';
 import '../../../settings/application/theme_provider.dart';
 
+// ==> IMPORT DIALOG BARU
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/export_subject_dialog.dart';
+
 class SubjectsPage extends StatefulWidget {
   final String topicName;
 
@@ -125,17 +128,45 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI EXPORT (DIPERBARUI) <==
+  // ==> FUNGSI EXPORT (BULK) <==
   Future<void> _exportSelectedSubjects(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     try {
       final message = await provider.exportSelectedSubjects();
-      // Tampilkan pesan sukses jika ada (terutama untuk Desktop)
       if (message != null && mounted) {
         _showSnackBar(message);
       }
     } catch (e) {
       _showSnackBar('Gagal mengekspor: ${e.toString()}', isError: true);
+    }
+  }
+
+  // ==> FUNGSI EXPORT SINGLE SUBJECT (ZIP) <==
+  Future<void> _exportSingleSubjectZip(
+    BuildContext context,
+    Subject subject,
+  ) async {
+    // 1. Tampilkan Dialog Konfigurasi
+    final result = await showDialog<dynamic>(
+      context: context,
+      builder: (context) => ExportSubjectDialog(subject: subject),
+    );
+
+    // 2. Eksekusi jika user setuju
+    if (result != null && result is Map<String, dynamic> && mounted) {
+      final provider = Provider.of<SubjectProvider>(context, listen: false);
+      try {
+        final message = await provider.exportSubjectZip(
+          subject,
+          result['fileName'],
+          result['includePerpus'],
+        );
+        if (message != null && mounted) {
+          _showSnackBar(message);
+        }
+      } catch (e) {
+        _showSnackBar('Gagal ekspor: ${e.toString()}', isError: true);
+      }
     }
   }
 
@@ -711,7 +742,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
           tooltip: 'Urutkan Subject',
           onPressed: () => showSubjectSortDialog(context: context),
         ),
-        // ==> MENU POPUP BARU (Termasuk IMPORT)
         PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'import') {
@@ -801,6 +831,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onToggleLock: () => _toggleLock(context, subject),
               onTimeline: () => _navigateToTimelinePage(context, subject),
               onViewJson: () => _showJsonContent(context, subject),
+              // ==> TAMBAHKAN CALLBACK INI
+              onExport: () => _exportSingleSubjectZip(context, subject),
             );
           },
         );
