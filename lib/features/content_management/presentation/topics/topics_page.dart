@@ -5,13 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../domain/models/topic_model.dart';
 import '../../application/subject_provider.dart';
 import '../../application/topic_provider.dart';
 import '../subjects/subjects_page.dart';
 import 'dialogs/topic_dialogs.dart';
-import 'widgets/topic_grid_tile.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
@@ -72,9 +70,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
     if (event is RawKeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
-          event.logicalKey == LogicalKeyboardKey.arrowUp ||
-          event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-          event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          event.logicalKey == LogicalKeyboardKey.arrowUp) {
         setState(() => _isKeyboardActive = true);
         _focusTimer?.cancel();
         _focusTimer = Timer(const Duration(milliseconds: 500), () {
@@ -88,21 +84,11 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         final totalItems = topicProvider.filteredTopics.length;
         if (totalItems == 0) return;
 
-        int crossAxisCount = (MediaQuery.of(context).size.width > 600)
-            ? (MediaQuery.of(context).size.width / 200).floor()
-            : 1;
-
         setState(() {
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            _focusedIndex = (_focusedIndex + crossAxisCount);
-            if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            _focusedIndex = (_focusedIndex - crossAxisCount);
-            if (_focusedIndex < 0) _focusedIndex = 0;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
             _focusedIndex = (_focusedIndex + 1);
             if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
             _focusedIndex = (_focusedIndex - 1);
             if (_focusedIndex < 0) _focusedIndex = 0;
           }
@@ -203,7 +189,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showIconPickerDialog(
       context: context,
-      name: topic.name, // Kirim nama topik
+      name: topic.name,
       onIconSelected: (newIcon) async {
         try {
           await provider.updateTopicIcon(topic.name, newIcon);
@@ -302,15 +288,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         body: Column(
           children: [
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 600) {
-                    return _buildGridView();
-                  } else {
-                    return _buildListView();
-                  }
-                },
-              ),
+              // Diperbarui: Langsung memanggil _buildListView()
+              child: _buildListView(),
             ),
             const AdBannerWidget(),
           ],
@@ -325,25 +304,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
-  }
-
-  Widget _buildEmptyState(TopicProvider provider) {
-    if (provider.allTopics.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada topik. Tekan + untuk menambah.'),
-      );
-    }
-    if (provider.filteredTopics.isEmpty && provider.searchQuery.isNotEmpty) {
-      return const Center(child: Text('Topik tidak ditemukan.'));
-    }
-    if (provider.filteredTopics.isEmpty && !provider.showHiddenTopics) {
-      return const Center(
-        child: Text(
-          'Tidak ada topik yang terlihat. Coba tampilkan topik tersembunyi.',
-        ),
-      );
-    }
-    return const SizedBox.shrink();
   }
 
   Widget _buildListView() {
@@ -390,53 +350,22 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  Widget _buildGridView() {
-    return Consumer<TopicProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final topicsToShow = provider.filteredTopics;
-        if (topicsToShow.isEmpty) {
-          return _buildEmptyState(provider);
-        }
-
-        final isReorderActive =
-            provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
-
-        return ReorderableGridView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: topicsToShow.length,
-          dragEnabled: isReorderActive,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: (MediaQuery.of(context).size.width / 200).floor(),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1,
-          ),
-          itemBuilder: (context, index) {
-            final topic = topicsToShow[index];
-            return TopicGridTile(
-              key: ValueKey(topic.name),
-              topic: topic,
-              isFocused: _isKeyboardActive && index == _focusedIndex,
-              onTap: isReorderActive
-                  ? null
-                  : () => _navigateToSubjectsPage(context, topic),
-              onRename: () => _renameTopic(context, topic),
-              onDelete: () => _deleteTopic(context, topic),
-              onIconChange: () => _changeIcon(context, topic),
-              onToggleVisibility: () => _toggleVisibility(context, topic),
-            );
-          },
-          onReorder: (oldIndex, newIndex) {
-            if (isReorderActive) {
-              provider.reorderTopics(oldIndex, newIndex);
-            }
-          },
-        );
-      },
-    );
+  Widget _buildEmptyState(TopicProvider provider) {
+    if (provider.allTopics.isEmpty) {
+      return const Center(
+        child: Text('Tidak ada topik. Tekan + untuk menambah.'),
+      );
+    }
+    if (provider.filteredTopics.isEmpty && provider.searchQuery.isNotEmpty) {
+      return const Center(child: Text('Topik tidak ditemukan.'));
+    }
+    if (provider.filteredTopics.isEmpty && !provider.showHiddenTopics) {
+      return const Center(
+        child: Text(
+          'Tidak ada topik yang terlihat. Coba tampilkan topik tersembunyi.',
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

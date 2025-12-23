@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../domain/models/subject_model.dart';
 import '../../application/discussion_provider.dart';
 import '../../application/subject_provider.dart';
@@ -13,7 +12,6 @@ import 'package:my_aplication/features/content_management/presentation/discussio
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_dialogs.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/move_subject_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_sort_dialog.dart';
-import 'package:my_aplication/features/content_management/presentation/subjects/widgets/subject_grid_tile.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/widgets/subject_list_tile.dart';
 import 'package:my_aplication/core/widgets/ad_banner_widget.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/generate_index_template_dialog.dart';
@@ -76,9 +74,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
     if (event is RawKeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
-          event.logicalKey == LogicalKeyboardKey.arrowUp ||
-          event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-          event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          event.logicalKey == LogicalKeyboardKey.arrowUp) {
         setState(() => _isKeyboardActive = true);
         _focusTimer?.cancel();
         _focusTimer = Timer(const Duration(milliseconds: 500), () {
@@ -89,21 +85,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
         final totalItems = provider.filteredSubjects.length;
         if (totalItems == 0) return;
 
-        int crossAxisCount = (MediaQuery.of(context).size.width > 600)
-            ? (MediaQuery.of(context).size.width / 200).floor()
-            : 1;
-
         setState(() {
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            _focusedIndex = (_focusedIndex + crossAxisCount);
-            if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            _focusedIndex = (_focusedIndex - crossAxisCount);
-            if (_focusedIndex < 0) _focusedIndex = 0;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
             _focusedIndex = (_focusedIndex + 1);
             if (_focusedIndex >= totalItems) _focusedIndex = totalItems - 1;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
             _focusedIndex = (_focusedIndex - 1);
             if (_focusedIndex < 0) _focusedIndex = 0;
           }
@@ -419,13 +405,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
           ),
           SimpleDialogOption(
             onPressed: () async {
-              Navigator.pop(context); // Close the options dialog first
+              Navigator.pop(context);
               if (editorChoice == 'internal') {
                 await openInternalEditor();
               } else if (editorChoice == 'external') {
                 await openExternalEditor();
               } else {
-                // If no default is set, show the choice dialog
                 final subChoice = await showDialog<String>(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -630,15 +615,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
         body: Column(
           children: [
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 600) {
-                    return _buildGridView(context);
-                  } else {
-                    return _buildListView(context);
-                  }
-                },
-              ),
+              // Diperbarui: Langsung memanggil _buildListView()
+              child: _buildListView(context),
             ),
             const AdBannerWidget(),
           ],
@@ -751,56 +729,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
           itemBuilder: (context, index) {
             final subject = subjectsToShow[index];
             return SubjectListTile(
-              key: ValueKey(subject.name + subject.position.toString()),
-              subject: subject,
-              isFocused: _isKeyboardActive && index == _focusedIndex,
-              onTap: () {
-                if (provider.isSelectionMode) {
-                  provider.toggleSubjectSelection(subject);
-                } else {
-                  _navigateToDiscussionsPage(context, subject);
-                }
-              },
-              onRename: () => _renameSubject(context, subject),
-              onDelete: () => _deleteSubject(context, subject),
-              onIconChange: () => _changeIcon(context, subject),
-              onToggleVisibility: () => _toggleVisibility(context, subject),
-              onLinkPath: () => _linkSubject(context, subject),
-              onEditIndexFile: () => _showEditIndexOptions(context, subject),
-              onMove: () => _moveSubject(context, subject),
-              onToggleFreeze: () => _toggleFreeze(context, subject),
-              onToggleLock: () => _toggleLock(context, subject),
-              onTimeline: () => _navigateToTimelinePage(context, subject),
-              onViewJson: () => _showJsonContent(context, subject),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildGridView(BuildContext context) {
-    return Consumer<SubjectProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (provider.filteredSubjects.isEmpty) {
-          return _buildEmptyState(provider);
-        }
-        final subjectsToShow = provider.filteredSubjects;
-        return GridView.builder(
-          padding: const EdgeInsets.all(16.0),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: (MediaQuery.of(context).size.width / 200).floor(),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1,
-          ),
-          itemCount: subjectsToShow.length,
-          itemBuilder: (context, index) {
-            final subject = subjectsToShow[index];
-            return SubjectGridTile(
               key: ValueKey(subject.name + subject.position.toString()),
               subject: subject,
               isFocused: _isKeyboardActive && index == _focusedIndex,
