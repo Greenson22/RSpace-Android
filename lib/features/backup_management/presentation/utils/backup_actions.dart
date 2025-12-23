@@ -28,21 +28,39 @@ Future<void> backupContents(BuildContext context, String type) async {
 }
 
 Future<void> importContents(BuildContext context, String type) async {
+  // ==> PERBAIKAN DI SINI <==
+  // Cek apakah platform adalah Linux
+  final isLinux = Platform.isLinux;
+
+  // Jika Linux, gunakan FileType.any agar file ZIP pasti terlihat.
+  // Jika bukan Linux, gunakan filter custom 'zip' seperti biasa.
   final result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['zip'],
+    type: isLinux ? FileType.any : FileType.custom,
+    allowedExtensions: isLinux ? null : ['zip'],
   );
+
   if (result == null || result.files.single.path == null) {
     if (context.mounted) showAppSnackBar(context, 'Import dibatalkan.');
     return;
   }
 
   final zipFile = File(result.files.single.path!);
-  // ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation <==
+
+  // Validasi tambahan khusus Linux (karena kita mengizinkan semua file)
+  if (isLinux && !zipFile.path.toLowerCase().endsWith('.zip')) {
+    if (context.mounted) {
+      showAppSnackBar(
+        context,
+        'File yang dipilih bukan format .zip',
+        isError: true,
+      );
+    }
+    return;
+  }
+
   await importSpecificFile(context, zipFile, type, showConfirmation: true);
 }
 
-// ==> PERBAIKAN DI SINI: Tambahkan parameter showConfirmation pada definisi fungsi <==
 Future<void> importSpecificFile(
   BuildContext context,
   File zipFile,
@@ -61,17 +79,14 @@ Future<void> importSpecificFile(
     return;
   }
 
-  // Gunakan provider baru untuk operasi ini agar tidak mengganggu state provider utama
   final importOperationProvider = BackupProvider();
   showAppSnackBar(context, 'Memulai proses import...');
   try {
     await importOperationProvider.importContents(zipFile, type);
     if (context.mounted) {
       if (type == 'RSpace') {
-        // Refresh data di provider yang relevan
         await Provider.of<TopicProvider>(context, listen: false).fetchTopics();
       }
-      // Refresh daftar file backup di provider backup utama
       await Provider.of<BackupProvider>(
         context,
         listen: false,
