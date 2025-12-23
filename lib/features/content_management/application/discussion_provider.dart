@@ -368,6 +368,18 @@ class DiscussionProvider
     saveDiscussions();
   }
 
+  // ==> BARU: Method untuk update highlight <==
+  void updateDiscussionHighlight(
+    Discussion discussion,
+    int? color,
+    String? label,
+  ) {
+    discussion.highlightColor = color;
+    discussion.highlightLabel = label;
+    saveDiscussions();
+    notifyListeners();
+  }
+
   Future<void> deleteDiscussion(Discussion discussion) async {
     String? fullPathToDelete;
     if (discussion.filePath != null && discussion.filePath!.isNotEmpty) {

@@ -55,6 +55,10 @@ class Discussion {
   final String? url;
   String? quizName;
 
+  // ==> BARU: Field untuk Highlight <==
+  int? highlightColor; // Menyimpan warna sebagai int (0xAARRGGBB)
+  String? highlightLabel; // Label keterangan highlight
+
   Discussion({
     required this.discussion,
     this.date,
@@ -67,6 +71,8 @@ class Discussion {
     this.linkType = DiscussionLinkType.html,
     this.url,
     this.quizName,
+    this.highlightColor,
+    this.highlightLabel,
   });
 
   Point? get _pointWithMinRepetitionCode {
@@ -127,6 +133,8 @@ class Discussion {
       linkType: DiscussionLinkType.values[linkTypeIndex],
       url: json['url'] as String?,
       quizName: json['quizName'] as String?,
+      highlightColor: json['highlight_color'],
+      highlightLabel: json['highlight_label'],
     );
   }
 
@@ -142,6 +150,8 @@ class Discussion {
       'linkType': linkType.index,
       'url': url,
       'quizName': quizName,
+      'highlight_color': highlightColor,
+      'highlight_label': highlightLabel,
     };
   }
 }

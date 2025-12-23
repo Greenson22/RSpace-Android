@@ -30,6 +30,8 @@ class DiscussionActionMenu extends StatelessWidget {
   final VoidCallback onGenerateQuizPrompt;
   final VoidCallback onChangeQuizLink;
   final VoidCallback onConvertToQuiz;
+  // ==> BARU: Callback Highlight <==
+  final VoidCallback onHighlight;
 
   const DiscussionActionMenu({
     super.key,
@@ -58,6 +60,7 @@ class DiscussionActionMenu extends StatelessWidget {
     required this.onGenerateQuizPrompt,
     required this.onChangeQuizLink,
     required this.onConvertToQuiz,
+    required this.onHighlight,
   });
 
   @override
@@ -90,6 +93,7 @@ class DiscussionActionMenu extends StatelessWidget {
           'generate_quiz_prompt': onGenerateQuizPrompt,
           'change_perpusku_quiz_link': onChangeQuizLink,
           'convert_to_quiz': onConvertToQuiz,
+          'highlight': onHighlight, // Mapping menu highlight
         };
         actions[value]?.call();
       },
@@ -118,6 +122,13 @@ class DiscussionActionMenu extends StatelessWidget {
           Icons.find_replace_outlined,
           'Ubah Tautan Kuis',
         ),
+        // ==> BARU: Tambahkan Highlight di menu Quiz
+        _buildMenuItem(
+          'highlight',
+          Icons.palette_outlined,
+          'Highlight',
+          color: Colors.amber[800],
+        ),
         _buildMenuItem('rename', Icons.drive_file_rename_outline, 'Ubah Nama'),
         _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
         const PopupMenuDivider(),
@@ -136,6 +147,13 @@ class DiscussionActionMenu extends StatelessWidget {
       if (!isFinished && hasPoints)
         _buildMenuItem('reorder_points', Icons.sort, 'Urutkan Poin'),
       _buildMenuItem('copy', Icons.copy_outlined, 'Salin Judul'),
+      // ==> BARU: Menu Highlight Utama
+      _buildMenuItem(
+        'highlight',
+        Icons.palette_outlined,
+        'Highlight',
+        color: Colors.amber[800],
+      ),
       _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
       _buildSubMenu(
         icon: Icons.edit_outlined,
@@ -156,11 +174,13 @@ class DiscussionActionMenu extends StatelessWidget {
           ],
         ],
       ),
+      // ... (Menu File & Tautan) ...
       if (!isFinished)
         _buildSubMenu(
           icon: Icons.description_outlined,
           label: 'File & Tautan',
           children: [
+            // ...
             if (linkType != DiscussionLinkType.perpuskuQuiz)
               _buildMenuItem(
                 'convert_to_quiz',
@@ -213,6 +233,7 @@ class DiscussionActionMenu extends StatelessWidget {
                 color: Colors.amber,
               ),
             ],
+            // ...
           ],
         ),
       const PopupMenuDivider(),
@@ -229,7 +250,7 @@ class DiscussionActionMenu extends StatelessWidget {
     ];
   }
 
-  // ... (Helper methods _buildMenuItem & _buildSubMenu tetap sama)
+  // ... (Helper methods tetap sama) ...
   PopupMenuItem<String> _buildMenuItem(
     String value,
     IconData icon,
