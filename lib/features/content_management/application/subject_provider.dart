@@ -109,9 +109,10 @@ class SubjectProvider with ChangeNotifier {
   Future<String?> importBulkSubjectsZip() async {
     try {
       // 1. Pilih File ZIP
+      final isLinux = Platform.isLinux;
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['zip'],
+        type: isLinux ? FileType.any : FileType.custom,
+        allowedExtensions: isLinux ? null : ['zip'],
         allowMultiple: false,
       );
 
