@@ -190,14 +190,20 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     String newRelativePath,
   ) async {
     discussion.filePath = newRelativePath;
+    // Set tipe link ke HTML agar ikon berubah
+    discussion.linkType = DiscussionLinkType.html;
     filterAndSortDiscussions();
     await saveDiscussions();
+    internalNotifyListeners(); // Update UI
   }
 
   Future<void> removeDiscussionFilePath(Discussion discussion) async {
     discussion.filePath = null;
+    // Kembalikan ke tipe manual/biasa
+    discussion.linkType = DiscussionLinkType.none;
     filterAndSortDiscussions();
     await saveDiscussions();
+    internalNotifyListeners(); // Update UI
   }
 
   Future<String> moveSelectedDiscussions(
@@ -278,8 +284,11 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       discussionName: discussion.discussion,
     );
     discussion.filePath = path.join(subjectLinkedPath, newFileName);
+    // Set tipe link ke HTML agar ikon berubah
+    discussion.linkType = DiscussionLinkType.html;
     filterAndSortDiscussions();
     await saveDiscussions();
+    internalNotifyListeners(); // Paksa rebuild UI agar ikon berubah
   }
 
   Future<void> writeHtmlToFile(
