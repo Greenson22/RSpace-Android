@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 
 class DiscussionActionMenu extends StatelessWidget {
+  // ... (Constructor dan properti tetap sama) ...
   final bool isFinished;
   final bool hasFile;
   final bool canCreateFile;
   final bool hasPoints;
   final DiscussionLinkType linkType;
-
+  // ... (callbacks) ...
   final VoidCallback onAddPoint;
   final VoidCallback onMove;
   final VoidCallback onRename;
@@ -61,14 +62,11 @@ class DiscussionActionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // === PERBAIKAN DI SINI: Hitung ukuran ikon berdasarkan skala ===
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseIconSize = 24.0; // Ukuran ikon default
+    const double baseIconSize = 24.0;
     final scaledIconSize = baseIconSize * textScaleFactor;
-    // === AKHIR PERBAIKAN ===
 
     return PopupMenuButton<String>(
-      // Terapkan ukuran ikon yang sudah diskalakan
       iconSize: scaledIconSize,
       onSelected: (value) {
         final actions = {
@@ -100,8 +98,15 @@ class DiscussionActionMenu extends StatelessWidget {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems() {
-    // ... (Logika _buildMenuItems tetap sama)
+    // Memaksa 'effectiveHasFile' menjadi true jika tipe Markdown,
+    // agar menu 'Edit Catatan' muncul dan memicu Auto-Create.
+    final bool effectiveHasFile =
+        hasFile || linkType == DiscussionLinkType.markdown;
+    final bool isMarkdown = linkType == DiscussionLinkType.markdown;
+
+    // ... (Logika Quiz tetap sama)
     if (linkType == DiscussionLinkType.perpuskuQuiz) {
+      // ... (kode menu kuis)
       return <PopupMenuEntry<String>>[
         _buildMenuItem(
           'add_perpusku_quiz_question',
@@ -162,7 +167,7 @@ class DiscussionActionMenu extends StatelessWidget {
                 Icons.quiz_outlined,
                 'Jadikan Kuis',
               ),
-            if (canCreateFile && !hasFile)
+            if (canCreateFile && !effectiveHasFile)
               _buildMenuItem(
                 'create_file',
                 Icons.note_add_outlined,
@@ -170,21 +175,22 @@ class DiscussionActionMenu extends StatelessWidget {
               ),
             _buildMenuItem(
               'set_file_path',
-              hasFile
+              effectiveHasFile
                   ? Icons.folder_open_outlined
                   : Icons.create_new_folder_outlined,
-              hasFile ? 'Ubah Path File' : 'Set Path File',
+              effectiveHasFile ? 'Ubah Path File' : 'Set Path File',
             ),
-            if (hasFile) ...[
-              _buildMenuItem(
-                'generate_html',
-                Icons.auto_awesome_outlined,
-                'Generate Konten (AI)',
-              ),
+            if (effectiveHasFile) ...[
+              if (!isMarkdown)
+                _buildMenuItem(
+                  'generate_html',
+                  Icons.auto_awesome_outlined,
+                  'Generate Konten (AI)',
+                ),
               _buildMenuItem(
                 'edit_file_path',
                 Icons.edit_document,
-                'Edit File Konten',
+                isMarkdown ? 'Edit Catatan' : 'Edit File Konten',
               ),
               const PopupMenuDivider(),
               _buildMenuItem(
@@ -223,6 +229,7 @@ class DiscussionActionMenu extends StatelessWidget {
     ];
   }
 
+  // ... (Helper methods _buildMenuItem & _buildSubMenu tetap sama)
   PopupMenuItem<String> _buildMenuItem(
     String value,
     IconData icon,

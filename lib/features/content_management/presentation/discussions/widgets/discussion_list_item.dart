@@ -9,13 +9,13 @@ import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import '../../../../settings/application/theme_provider.dart';
 import '../../../../webview_page/presentation/pages/webview_page.dart';
-import '../dialogs/discussion_dialogs.dart'; // Import utama
+import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
 import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
-import '../../subjects/subjects_page.dart'; // Untuk mendapatkan topicName
+import '../../subjects/subjects_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_question_list_page.dart';
 import 'package:my_aplication/features/quiz/application/quiz_detail_provider.dart';
 import 'package:my_aplication/features/quiz/presentation/dialogs/generate_quiz_from_html_dialog.dart';
@@ -23,10 +23,8 @@ import 'package:my_aplication/features/quiz/application/quiz_service.dart';
 import 'package:my_aplication/features/quiz/domain/models/quiz_model.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_player_page.dart';
 import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
-// Import utils dan provider neuron
 import '../../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../../core/providers/neuron_provider.dart';
-// Import dialog move secara spesifik
 import '../dialogs/move_discussion_dialog.dart';
 
 class DiscussionListItem extends StatelessWidget {
@@ -59,19 +57,16 @@ class DiscussionListItem extends StatelessWidget {
     this.horizontalGap = 14.0,
   });
 
-  // === Fungsi helper _moveDiscussion didefinisikan di sini ===
   void _moveDiscussion(
     BuildContext context,
     DiscussionProvider provider,
   ) async {
-    // Pastikan item ini terpilih jika belum dalam mode seleksi
     if (!provider.isSelectionMode) {
       provider.toggleSelection(discussion);
     }
 
     final targetInfo = await showMoveDiscussionDialog(context, subjectName);
 
-    // Gunakan mounted check
     if (!context.mounted) return;
 
     if (targetInfo != null) {
@@ -88,17 +83,13 @@ class DiscussionListItem extends StatelessWidget {
           isError: true,
         );
       } finally {
-        // Hapus seleksi setelah selesai (baik berhasil maupun gagal)
         provider.clearSelection();
       }
     } else {
-      // Jika pengguna membatalkan dialog, hapus juga seleksi
       provider.clearSelection();
     }
   }
-  // === Akhir definisi _moveDiscussion ===
 
-  // Fungsi helper lainnya
   void _showSnackBar(
     BuildContext context,
     String message, {
@@ -362,18 +353,23 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  void _createHtmlFileForDiscussion(
+  // ==> FUNGSI DIPERBARUI: Menangani pembuatan HTML dan Markdown <==
+  void _createFileForDiscussion(
     BuildContext context,
     DiscussionProvider provider,
     String subjectLinkedPath,
   ) async {
+    final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
+    final fileType = isMarkdown ? 'Markdown' : 'HTML';
+    final extension = isMarkdown ? '.md' : '.html';
+
     final confirmed =
         await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Buat File HTML?'),
+            title: Text('Buat File $fileType?'),
             content: Text(
-              'Ini akan membuat file .html baru dan menautkannya ke diskusi "${discussion.discussion}".',
+              'Ini akan membuat file $extension baru dan menautkannya ke diskusi "${discussion.discussion}".',
             ),
             actions: [
               TextButton(
@@ -391,8 +387,15 @@ class DiscussionListItem extends StatelessWidget {
 
     if (confirmed && context.mounted) {
       try {
-        await provider.createAndLinkHtmlFile(discussion, subjectLinkedPath);
-        _showSnackBar(context, 'File HTML berhasil dibuat dan ditautkan.');
+        if (isMarkdown) {
+          await provider.createAndLinkMarkdownFile(
+            discussion,
+            subjectLinkedPath,
+          );
+        } else {
+          await provider.createAndLinkHtmlFile(discussion, subjectLinkedPath);
+        }
+        _showSnackBar(context, 'File $fileType berhasil dibuat dan ditautkan.');
       } catch (e) {
         _showSnackBar(
           context,
@@ -487,8 +490,11 @@ class DiscussionListItem extends StatelessWidget {
     final isFinished = discussion.finished;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
     final isQuiz = discussion.linkType == DiscussionLinkType.perpuskuQuiz;
+
+    // ==> PERBAIKAN: Deteksi Markdown <==
+    final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
     final hasFile =
-        discussion.linkType == DiscussionLinkType.html &&
+        (discussion.linkType == DiscussionLinkType.html || isMarkdown) &&
         discussion.filePath != null &&
         discussion.filePath!.isNotEmpty;
 
@@ -503,6 +509,9 @@ class DiscussionListItem extends StatelessWidget {
       iconData = Icons.assignment_turned_in_outlined;
     } else if (isWebLink) {
       iconData = Icons.link;
+    } else if (isMarkdown) {
+      // ==> Ikon untuk Markdown <==
+      iconData = Icons.article;
     } else if (hasFile) {
       iconData = Icons.insert_drive_file_outlined;
     } else {
@@ -524,6 +533,7 @@ class DiscussionListItem extends StatelessWidget {
         onPressedAction = () => _openUrlWithOptions(context);
         tooltip = 'Buka Tautan';
       } else if (hasFile) {
+        // ==> Aksi buka file (termasuk Markdown) <==
         onPressedAction = () async {
           try {
             await provider.openDiscussionFile(discussion, context);
@@ -531,7 +541,7 @@ class DiscussionListItem extends StatelessWidget {
             _showSnackBar(context, e.toString(), isError: true);
           }
         };
-        tooltip = 'Buka File';
+        tooltip = isMarkdown ? 'Buka Catatan (Markdown)' : 'Buka File (HTML)';
       }
     }
 
@@ -626,22 +636,21 @@ class DiscussionListItem extends StatelessWidget {
                     hasPoints: discussion.points.isNotEmpty,
                     linkType: discussion.linkType,
                     onAddPoint: () => _addPoint(context, provider),
-                    onMove: () => _moveDiscussion(
-                      context,
-                      provider,
-                    ), // Panggil fungsi lokal
+                    onMove: () => _moveDiscussion(context, provider),
                     onRename: () => _renameDiscussion(context, provider),
                     onDateChange: () =>
                         _changeDiscussionDate(context, provider),
                     onCodeChange: () =>
                         _changeDiscussionCode(context, provider),
-                    onCreateFile: () => _createHtmlFileForDiscussion(
+                    // ==> Menggunakan fungsi yang menangani MD/HTML <==
+                    onCreateFile: () => _createFileForDiscussion(
                       context,
                       provider,
                       subjectLinkedPath!,
                     ),
                     onSetFilePath: () => _setFilePath(context, provider),
                     onGenerateHtml: () => _generateHtml(context),
+                    // ==> Menggunakan fungsi edit yang support MD <==
                     onEditFile: () => provider.editDiscussionFileWithSelection(
                       discussion,
                       context,
@@ -710,4 +719,4 @@ class DiscussionListItem extends StatelessWidget {
       ),
     );
   }
-} // Akhir class DiscussionListItem
+}
