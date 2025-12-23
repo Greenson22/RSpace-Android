@@ -7,7 +7,6 @@ import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_actions.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
-// ==> IMPORT DIPERBARUI
 import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
@@ -16,10 +15,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+// ==> IMPORT TAMBAHAN UNTUK IMPORT/EXPORT
+import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
+
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
   final SubjectActions _subjectActions = SubjectActions();
-  // ==> INSTANCE DIPERBARUI
   final GeminiServiceFlutterGemini _geminiService =
       GeminiServiceFlutterGemini();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
@@ -27,7 +29,6 @@ class SubjectProvider with ChangeNotifier {
   final PathService _pathService = PathService();
   final String topicPath;
 
-  // ... (sisa properti tidak berubah)
   SubjectProvider(this.topicPath) {
     // fetchSubjects dipanggil dari initState di halaman UI
   }
@@ -65,7 +66,76 @@ class SubjectProvider with ChangeNotifier {
   Set<Subject> get selectedSubjects => _selectedSubjects;
   bool get isSelectionMode => _selectedSubjects.isNotEmpty;
 
-  // ... (fungsi lain sampai generateIndexFileWithAI tidak berubah)
+  // ==> FITUR IMPORT SUBJECTS
+  Future<int> importSubjects() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: true,
+      );
+
+      if (result != null) {
+        _isLoading = true;
+        notifyListeners();
+
+        int successCount = 0;
+        for (var pickedFile in result.files) {
+          if (pickedFile.path != null) {
+            try {
+              final file = File(pickedFile.path!);
+              await _subjectService.importSubject(topicPath, file);
+              successCount++;
+            } catch (e) {
+              debugPrint("Gagal import ${pickedFile.name}: $e");
+            }
+          }
+        }
+
+        // Refresh daftar subject setelah import selesai
+        await fetchSubjects();
+        return successCount;
+      }
+    } catch (e) {
+      debugPrint("Error picking files: $e");
+    } finally {
+      // Pastikan loading dimatikan jika terjadi error tanpa fetch
+      if (_isLoading && _allSubjects.isNotEmpty) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+    return 0;
+  }
+
+  // ==> FITUR EXPORT SELECTED SUBJECTS
+  Future<void> exportSelectedSubjects() async {
+    if (_selectedSubjects.isEmpty) return;
+
+    try {
+      List<XFile> xFiles = [];
+
+      for (var subject in _selectedSubjects) {
+        final filePath = await _pathService.getSubjectPath(
+          topicPath,
+          subject.name,
+        );
+        final file = File(filePath);
+        if (await file.exists()) {
+          xFiles.add(XFile(filePath));
+        }
+      }
+
+      if (xFiles.isNotEmpty) {
+        await Share.shareXFiles(xFiles, text: 'Backup Subject RSpace');
+      }
+
+      clearSelection();
+    } catch (e) {
+      debugPrint("Error exporting subjects: $e");
+      rethrow;
+    }
+  }
 
   Future<String> getRawJsonContent(Subject subject) async {
     final subjectPath = await _pathService.getSubjectPath(
@@ -480,7 +550,6 @@ class SubjectProvider with ChangeNotifier {
     await _subjectActions.openSubjectIndexFile(subject.linkedPath!);
   }
 
-  // ==> FUNGSI DIPERBARUI
   Future<void> generateIndexFileWithAI(
     Subject subject,
     String themePrompt,
@@ -488,7 +557,6 @@ class SubjectProvider with ChangeNotifier {
     if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
       throw Exception('Subject ini tidak memiliki tautan ke folder PerpusKu.');
     }
-    // Panggil service flutter_gemini
     final newHtmlContent = await _geminiService.generateHtmlTemplate(
       themePrompt,
     );

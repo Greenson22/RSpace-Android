@@ -1,4 +1,5 @@
 // lib/features/content_management/domain/services/subject_service.dart
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -22,12 +23,48 @@ class SubjectService {
   final EncryptionService _encryptionService = EncryptionService();
   static const String _defaultIcon = '📄';
 
-  // ==> FUNGSI INI DIPERBARUI SECARA SIGNIFIKAN <==
+  /// Mengimpor file JSON subject dari eksternal ke dalam topik saat ini.
+  /// Menangani duplikasi nama dengan menambahkan suffix (misal: nama_copy1).
+  Future<void> importSubject(String topicPath, File jsonFile) async {
+    try {
+      final content = await jsonFile.readAsString();
+      final jsonData = jsonDecode(content) as Map<String, dynamic>;
+
+      // Validasi sederhana struktur file
+      if (!jsonData.containsKey('metadata') &&
+          !jsonData.containsKey('content')) {
+        throw Exception('Format file JSON tidak valid untuk Subject RSpace.');
+      }
+
+      // Ambil nama file asli
+      String originalName = path.basenameWithoutExtension(jsonFile.path);
+      // Bersihkan nama file dari karakter aneh jika perlu
+      originalName = originalName.replaceAll(RegExp(r'[^\w\s\-]'), '');
+
+      String newName = originalName;
+      String newPath = await _pathService.getSubjectPath(topicPath, newName);
+
+      // Cek duplikasi: jika file ada, tambahkan suffix _copy1, _copy2, dst.
+      int counter = 1;
+      while (await File(newPath).exists()) {
+        newName = '${originalName}_copy$counter';
+        newPath = await _pathService.getSubjectPath(topicPath, newName);
+        counter++;
+      }
+
+      // Update metadata nama di dalam JSON jika perlu (opsional, tergantung implementasi model)
+      // Tapi biasanya nama diambil dari nama file, jadi cukup tulis file baru.
+
+      await _repository.writeSubjectJson(newPath, jsonData);
+    } catch (e) {
+      throw Exception('Gagal mengimpor subject: $e');
+    }
+  }
+
   Future<List<Subject>> getSubjects(String topicPath) async {
     final files = await _repository.getSubjectFiles(topicPath);
     List<Subject> subjects = [];
 
-    // Muat preferensi di luar loop untuk efisiensi
     final sortPrefs = await _prefsService.loadSortPreferences();
     final filterPrefs = await _prefsService.loadFilterPreference();
     final customCodeSortOrder = await _prefsService.loadRepetitionCodeOrder();
@@ -41,10 +78,9 @@ class SubjectService {
       Subject subject;
 
       if (isLocked) {
-        // Jika terkunci, baca statistik langsung dari metadata
         subject = Subject(
           name: name,
-          topicName: '', // topicName diisi oleh provider
+          topicName: '',
           icon: metadata['icon'] as String? ?? _defaultIcon,
           position: metadata['position'] as int? ?? -1,
           isHidden: metadata['isHidden'] as bool? ?? false,
@@ -53,7 +89,6 @@ class SubjectService {
           frozenDate: metadata['frozenDate'] as String?,
           isLocked: isLocked,
           passwordHash: metadata['passwordHash'] as String?,
-          // Baca statistik yang sudah disimpan di metadata
           date: metadata['date'] as String?,
           repetitionCode: metadata['repetitionCode'] as String?,
           discussionCount: metadata['discussionCount'] as int? ?? 0,
@@ -62,10 +97,9 @@ class SubjectService {
           repetitionCodeCounts: Map<String, int>.from(
             metadata['repetitionCodeCounts'] ?? {},
           ),
-          discussions: [], // Biarkan kosong karena terenkripsi
+          discussions: [],
         );
       } else {
-        // Jika tidak terkunci, hitung statistik seperti biasa
         final content = jsonData['content'];
         final discussions = (content is! List<dynamic>)
             ? <Discussion>[]
@@ -86,7 +120,6 @@ class SubjectService {
 
         final repetitionCodeCounts = <String, int>{};
         for (final discussion in discussions) {
-          // Hitung dari semua diskusi, bukan yang difilter
           final code = discussion.effectiveRepetitionCode;
           repetitionCodeCounts[code] = (repetitionCodeCounts[code] ?? 0) + 1;
         }
@@ -102,7 +135,6 @@ class SubjectService {
           frozenDate: metadata['frozenDate'] as String?,
           isLocked: isLocked,
           passwordHash: metadata['passwordHash'] as String?,
-          // Hitung statistik dari konten
           date: relevantDiscussionInfo['date'],
           repetitionCode: relevantDiscussionInfo['code'],
           discussionCount: discussions.length,
@@ -114,7 +146,6 @@ class SubjectService {
       subjects.add(subject);
     }
 
-    // Logika untuk memperbaiki posisi tidak berubah
     bool needsResave = false;
     subjects.sort((a, b) => a.position.compareTo(b.position));
     for (int i = 0; i < subjects.length; i++) {
@@ -131,7 +162,6 @@ class SubjectService {
     return subjects;
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENYIMPAN STATISTIK <==
   Future<void> saveEncryptedSubject(
     String topicPath,
     Subject subject,
@@ -139,7 +169,6 @@ class SubjectService {
   ) async {
     final filePath = await _pathService.getSubjectPath(topicPath, subject.name);
 
-    // Hitung ulang statistik sebelum mengenkripsi
     final sortPrefs = await _prefsService.loadSortPreferences();
     final filterPrefs = await _prefsService.loadFilterPreference();
     final customCodeSortOrder = await _prefsService.loadRepetitionCodeOrder();
@@ -160,7 +189,6 @@ class SubjectService {
       repetitionCodeCounts[code] = (repetitionCodeCounts[code] ?? 0) + 1;
     }
 
-    // Buat metadata dengan statistik
     final metadata = {
       'icon': subject.icon,
       'position': subject.position,
@@ -170,7 +198,6 @@ class SubjectService {
       'frozenDate': subject.frozenDate,
       'isLocked': subject.isLocked,
       'passwordHash': subject.passwordHash,
-      // Simpan statistik
       'date': relevantDiscussionInfo['date'],
       'repetitionCode': relevantDiscussionInfo['code'],
       'discussionCount': subject.discussions.length,
@@ -192,7 +219,6 @@ class SubjectService {
     await _repository.writeSubjectJson(filePath, jsonData);
   }
 
-  // ==> FUNGSI INI DIPERBARUI UNTUK MENYIMPAN STATISTIK <==
   Future<void> _saveSubjectMetadata(String topicPath, Subject subject) async {
     final filePath = await _pathService.getSubjectPath(topicPath, subject.name);
     final file = File(filePath);
@@ -207,7 +233,6 @@ class SubjectService {
       'frozenDate': subject.frozenDate,
       'isLocked': subject.isLocked,
       'passwordHash': subject.passwordHash,
-      // Simpan statistik
       'date': subject.date,
       'repetitionCode': subject.repetitionCode,
       'discussionCount': subject.discussionCount,
@@ -218,7 +243,6 @@ class SubjectService {
     await _repository.writeSubjectJson(filePath, jsonData);
   }
 
-  // Sisa file tidak berubah (tetap sama seperti sebelumnya)
   Future<List<Discussion>> getDecryptedDiscussions(
     String topicPath,
     String subjectName,

@@ -116,6 +116,25 @@ class _SubjectsPageState extends State<SubjectsPage> {
     );
   }
 
+  // ==> FUNGSI IMPORT <==
+  Future<void> _importSubjects(BuildContext context) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    final count = await provider.importSubjects();
+    if (count > 0 && mounted) {
+      _showSnackBar('$count subject berhasil diimpor.');
+    }
+  }
+
+  // ==> FUNGSI EXPORT <==
+  Future<void> _exportSelectedSubjects(BuildContext context) async {
+    final provider = Provider.of<SubjectProvider>(context, listen: false);
+    try {
+      await provider.exportSelectedSubjects();
+    } catch (e) {
+      _showSnackBar('Gagal mengekspor: ${e.toString()}', isError: true);
+    }
+  }
+
   Future<void> _showJsonContent(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final content = await provider.getRawJsonContent(subject);
@@ -614,10 +633,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
             : _buildDefaultAppBar(provider, isTransparent),
         body: Column(
           children: [
-            Expanded(
-              // Diperbarui: Langsung memanggil _buildListView()
-              child: _buildListView(context),
-            ),
+            Expanded(child: _buildListView(context)),
             const AdBannerWidget(),
           ],
         ),
@@ -640,6 +656,12 @@ class _SubjectsPageState extends State<SubjectsPage> {
         onPressed: () => provider.clearSelection(),
       ),
       actions: [
+        // ==> TOMBOL EXPORT BARU
+        IconButton(
+          icon: const Icon(Icons.share),
+          onPressed: () => _exportSelectedSubjects(context),
+          tooltip: 'Export/Share Subject',
+        ),
         IconButton(
           icon: const Icon(Icons.select_all),
           onPressed: () => provider.selectAllFilteredSubjects(),
@@ -681,20 +703,45 @@ class _SubjectsPageState extends State<SubjectsPage> {
           },
         ),
         IconButton(
-          icon: Icon(
-            provider.showHiddenSubjects
-                ? Icons.visibility_off
-                : Icons.visibility,
-          ),
-          onPressed: () => provider.toggleShowHidden(),
-          tooltip: provider.showHiddenSubjects
-              ? 'Sembunyikan Subjects Tersembunyi'
-              : 'Tampilkan Subjects Tersembunyi',
-        ),
-        IconButton(
           icon: const Icon(Icons.sort),
           tooltip: 'Urutkan Subject',
           onPressed: () => showSubjectSortDialog(context: context),
+        ),
+        // ==> MENU POPUP BARU (Termasuk IMPORT)
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'import') {
+              _importSubjects(context);
+            } else if (value == 'show_hidden') {
+              provider.toggleShowHidden();
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'import',
+              child: ListTile(
+                leading: Icon(Icons.file_download),
+                title: Text('Import Subject'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'show_hidden',
+              child: ListTile(
+                leading: Icon(
+                  provider.showHiddenSubjects
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                ),
+                title: Text(
+                  provider.showHiddenSubjects
+                      ? 'Sembunyikan Subjects Tersembunyi'
+                      : 'Tampilkan Subjects Tersembunyi',
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
         ),
       ],
     );
