@@ -1,7 +1,7 @@
-// lib/presentation/providers/topic_provider.dart
+// lib/features/content_management/application/topic_provider.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:archive/archive_io.dart'; // DIUBAH: Menggunakan pustaka baru
+import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import '../domain/models/topic_model.dart';
@@ -79,11 +79,9 @@ class TopicProvider with ChangeNotifier {
 
     // Filter berdasarkan status isHidden
     if (_showHiddenTopics) {
-      tempTopics = _allTopics; // Tampilkan semua
+      tempTopics = _allTopics;
     } else {
-      tempTopics = _allTopics
-          .where((topic) => !topic.isHidden)
-          .toList(); // Sembunyikan yang tersembunyi
+      tempTopics = _allTopics.where((topic) => !topic.isHidden).toList();
     }
 
     // Filter berdasarkan query pencarian
@@ -98,7 +96,12 @@ class TopicProvider with ChangeNotifier {
   }
 
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
-    // Penyesuaian indeks tidak lagi diperlukan di sini karena ReorderableListView sudah menanganinya
+    // PERBAIKAN: Logika penyesuaian index untuk ReorderableListView
+    // Jika item dipindah ke bawah, index tujuan harus dikurangi 1
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
     final Topic item = _allTopics.removeAt(oldIndex);
     _allTopics.insert(newIndex, item);
 
@@ -106,9 +109,11 @@ class TopicProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Simpan urutan baru ke konfigurasi file
       await _topicService.saveTopicsOrder(_allTopics);
     } finally {
       _isBackingUp = false;
+      // Refresh data untuk memastikan sinkronisasi
       await fetchTopics();
     }
   }
@@ -144,7 +149,6 @@ class TopicProvider with ChangeNotifier {
     await fetchTopics();
   }
 
-  // DIUBAH: Fungsi backup diperbarui untuk menggunakan pustaka 'archive'
   Future<String> backupContents({required String destinationPath}) async {
     _isBackingUp = true;
     notifyListeners();
@@ -176,7 +180,6 @@ class TopicProvider with ChangeNotifier {
     }
   }
 
-  // DIUBAH: Fungsi import diperbarui untuk menggunakan pustaka 'archive'
   Future<void> importContents(File zipFile) async {
     try {
       final topicsPath = await _pathService.topicsPath;
@@ -194,7 +197,6 @@ class TopicProvider with ChangeNotifier {
         await myTasksFile.delete();
       }
 
-      // Menggunakan fungsi dari pustaka 'archive' untuk ekstraksi
       await extractFileToDisk(zipFile.path, contentsPath);
     } catch (e) {
       rethrow;
