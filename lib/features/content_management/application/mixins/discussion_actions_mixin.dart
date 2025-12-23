@@ -1,5 +1,3 @@
-// lib/features/content_management/application/mixins/discussion_actions_mixin.dart
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -10,6 +8,8 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:markdown/markdown.dart' as md; // Import library markdown
+
 import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
 import '../../../../features/settings/application/theme_provider.dart';
 import '../../../../features/webview_page/presentation/pages/webview_page.dart';
@@ -50,7 +50,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     return path.join(sourceSubjectLinkedPath!, discussion.filePath!);
   }
 
-  // ... (Bagian kode helper lainnya: repetitionCodes, toggleSelection, dll tetap sama) ...
   List<String> get repetitionCodes => kRepetitionCodes;
 
   void toggleSelection(Discussion discussion) {
@@ -189,6 +188,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     String newRelativePath,
   ) async {
     discussion.filePath = newRelativePath;
+    // Deteksi tipe file berdasarkan ekstensi
     if (newRelativePath.toLowerCase().endsWith('.md')) {
       discussion.linkType = DiscussionLinkType.markdown;
     } else {
@@ -276,6 +276,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     String subjectLinkedPath,
   ) async {
     final perpuskuBasePath = await getPerpuskuHtmlBasePath();
+    // Sanitasi nama file
     final safeName = discussion.discussion.replaceAll(RegExp(r'[^\w\s-]'), '');
     final fileName = '$safeName.md';
     final fullPath = path.join(perpuskuBasePath, subjectLinkedPath, fileName);
@@ -354,10 +355,17 @@ mixin DiscussionActionsMixin on ChangeNotifier {
         throw Exception('File Markdown tidak ditemukan: $fullPath');
       }
 
-      final content = await file.readAsString();
+      // 1. Baca konten mentah
+      final rawContent = await file.readAsString();
 
-      // Bungkus Markdown dalam HTML sederhana untuk ditampilkan
-      final simpleHtmlWrapper =
+      // 2. Konversi ke HTML menggunakan package markdown
+      final htmlBody = md.markdownToHtml(
+        rawContent,
+        extensionSet: md.ExtensionSet.gitHubFlavored,
+      );
+
+      // 3. Bungkus dengan HTML & CSS agar cantik
+      final styledHtmlWrapper =
           '''
 <!DOCTYPE html>
 <html lang="en">
@@ -366,21 +374,53 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${discussion.discussion}</title>
     <style>
-      body { font-family: sans-serif; line-height: 1.6; padding: 16px; color: #333; }
-      pre { background: #f4f4f4; padding: 12px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; font-family: monospace; }
-      h1 { font-size: 1.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.5em; }
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        line-height: 1.6; 
+        padding: 20px; 
+        color: #24292e; 
+        max-width: 800px; 
+        margin: 0 auto; 
+      }
+      h1, h2, h3 { border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
+      code { 
+        background-color: #f6f8fa; 
+        padding: 0.2em 0.4em; 
+        border-radius: 3px; 
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; 
+        font-size: 85%; 
+      }
+      pre { 
+        background-color: #f6f8fa; 
+        padding: 16px; 
+        border-radius: 6px; 
+        overflow: auto; 
+      }
+      pre code { background-color: transparent; padding: 0; }
+      blockquote { 
+        color: #6a737d; 
+        border-left: 0.25em solid #dfe2e5; 
+        padding: 0 1em; 
+        margin: 0; 
+      }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+      table, th, td { border: 1px solid #dfe2e5; }
+      th, td { padding: 6px 13px; }
+      tr:nth-child(2n) { background-color: #f6f8fa; }
+      img { max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; }
+      a { color: #0366d6; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      ul, ol { padding-left: 2em; }
     </style>
 </head>
 <body>
-    <h1>${discussion.discussion}</h1>
-    <pre>$content</pre>
+    $htmlBody
 </body>
 </html>
 ''';
 
       final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
-      // ==> PERBAIKAN: Jika bukan Android, buka di browser eksternal <==
       if (themeProvider.openInAppBrowser && Platform.isAndroid) {
         Navigator.push(
           context,
@@ -389,14 +429,14 @@ mixin DiscussionActionsMixin on ChangeNotifier {
               value: this as DiscussionProvider,
               child: WebViewPage(
                 title: discussion.discussion,
-                htmlContent: simpleHtmlWrapper,
+                htmlContent: styledHtmlWrapper,
                 discussion: discussion,
               ),
             ),
           ),
         );
       } else {
-        // Mode Desktop/External: Simpan sebagai .html sementara dan buka
+        // Mode Desktop/External: Simpan sementara sebagai .html agar dibuka browser
         final tempDir = await getTemporaryDirectory();
         final safeName = discussion.discussion.replaceAll(
           RegExp(r'[^\w\s-]'),
@@ -405,7 +445,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
         final tempFile = File(
           path.join(tempDir.path, '${safeName}_preview.html'),
         );
-        await tempFile.writeAsString(simpleHtmlWrapper);
+        await tempFile.writeAsString(styledHtmlWrapper);
 
         final result = await OpenFile.open(tempFile.path);
         if (result.type != ResultType.done) {
@@ -416,7 +456,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
 
     // ==========================================
-    // HANDLING HTML (Code Lama)
+    // HANDLING HTML BIASA
     // ==========================================
     final contentPath = path.join(basePath, finalRelativePath);
     final subjectPath = path.dirname(contentPath);
@@ -501,7 +541,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
-  // ... (Sisa fungsi editDiscussionFileWithSelection, _openWithInternalEditor, dll tetap sama)
   Future<void> editDiscussionFileWithSelection(
     Discussion discussion,
     BuildContext context,
@@ -548,11 +587,13 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
+    // Handling Editor Markdown
     if (discussion.linkType == DiscussionLinkType.markdown) {
       await _openWithInternalMarkdownEditor(discussion, context);
       return;
     }
 
+    // Default HTML Editor
     final content = await readHtmlFromFile(discussion);
     final correctPath = getCorrectRelativePath(discussion);
 
@@ -574,7 +615,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    // 1. Cek Auto-Create untuk Editor
+    // 1. Cek apakah path file kosong. Jika ya, coba buat file baru.
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       if (sourceSubjectLinkedPath != null &&
           sourceSubjectLinkedPath!.isNotEmpty) {
@@ -655,6 +696,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
   }
 }
 
+// Widget Editor Sederhana untuk Markdown
 class _SimpleMarkdownEditor extends StatefulWidget {
   final String title;
   final String initialContent;
