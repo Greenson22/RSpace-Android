@@ -96,25 +96,25 @@ class TopicProvider with ChangeNotifier {
   }
 
   Future<void> reorderTopics(int oldIndex, int newIndex) async {
-    // PERBAIKAN: Logika penyesuaian index untuk ReorderableListView
-    // Jika item dipindah ke bawah, index tujuan harus dikurangi 1
+    // 1. Penyesuaian index standar Flutter ReorderableListView
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
 
+    // 2. Lakukan perubahan pada list lokal secara instan agar animasi mulus
     final Topic item = _allTopics.removeAt(oldIndex);
     _allTopics.insert(newIndex, item);
 
-    _isBackingUp = true;
-    notifyListeners();
+    // 3. Update filter agar UI tetap sinkron tanpa animasi melompat balik
+    _filterTopics();
 
+    // 4. Simpan ke storage di background tanpa menginterupsi animasi
     try {
-      // Simpan urutan baru ke konfigurasi file
       await _topicService.saveTopicsOrder(_allTopics);
-    } finally {
-      _isBackingUp = false;
-      // Refresh data untuk memastikan sinkronisasi
+    } catch (e) {
+      // Jika gagal, baru ambil data ulang dari storage untuk sinkronisasi
       await fetchTopics();
+      debugPrint("Gagal menyimpan urutan: $e");
     }
   }
 
