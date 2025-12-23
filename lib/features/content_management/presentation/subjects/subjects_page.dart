@@ -22,8 +22,9 @@ import 'package:my_aplication/features/content_management/presentation/timeline/
 import 'dialogs/view_json_dialog.dart';
 import '../../../settings/application/theme_provider.dart';
 
-// ==> IMPORT DIALOG BARU
+// ==> IMPORT DIALOG IMPORT & EXPORT
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/export_subject_dialog.dart';
+import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/export_bulk_subjects_dialog.dart'; // Import Baru
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
@@ -128,16 +129,38 @@ class _SubjectsPageState extends State<SubjectsPage> {
     }
   }
 
-  // ==> FUNGSI EXPORT (BULK) <==
+  // ==> FUNGSI EXPORT (BULK - UPDATED TO ZIP) <==
   Future<void> _exportSelectedSubjects(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    try {
-      final message = await provider.exportSelectedSubjects();
-      if (message != null && mounted) {
-        _showSnackBar(message);
+
+    // Cek apakah ada subject yang punya linkedPath untuk mengaktifkan opsi checkbox
+    final hasLinkedPath = provider.selectedSubjects.any(
+      (s) => s.linkedPath != null && s.linkedPath!.isNotEmpty,
+    );
+
+    // 1. Tampilkan Dialog Konfigurasi Bulk
+    final result = await showDialog<dynamic>(
+      context: context,
+      builder: (context) => ExportBulkSubjectsDialog(
+        count: provider.selectedSubjects.length,
+        topicName: widget.topicName,
+        hasAnyLinkedPath: hasLinkedPath,
+      ),
+    );
+
+    // 2. Eksekusi jika user setuju
+    if (result != null && result is Map<String, dynamic> && mounted) {
+      try {
+        final message = await provider.exportBulkSubjectsZip(
+          result['fileName'],
+          result['includePerpus'],
+        );
+        if (message != null && mounted) {
+          _showSnackBar(message);
+        }
+      } catch (e) {
+        _showSnackBar('Gagal mengekspor: ${e.toString()}', isError: true);
       }
-    } catch (e) {
-      _showSnackBar('Gagal mengekspor: ${e.toString()}', isError: true);
     }
   }
 
@@ -693,9 +716,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
       actions: [
         // ==> TOMBOL EXPORT BARU
         IconButton(
-          icon: const Icon(Icons.share),
+          icon: const Icon(Icons.archive_outlined), // Ganti icon jadi archive
           onPressed: () => _exportSelectedSubjects(context),
-          tooltip: 'Export/Share Subject',
+          tooltip: 'Export/Zip Selected Subjects',
         ),
         IconButton(
           icon: const Icon(Icons.select_all),
@@ -831,7 +854,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
               onToggleLock: () => _toggleLock(context, subject),
               onTimeline: () => _navigateToTimelinePage(context, subject),
               onViewJson: () => _showJsonContent(context, subject),
-              // ==> TAMBAHKAN CALLBACK INI
               onExport: () => _exportSingleSubjectZip(context, subject),
             );
           },
