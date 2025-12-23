@@ -55,7 +55,6 @@ class _AddDiscussionDialogContentState
   final _controller = TextEditingController();
   final _urlController = TextEditingController();
   DiscussionLinkType _linkType = DiscussionLinkType.none;
-  // ==> PERBAIKAN 1: Ganti nama class
   QuizPickerResult? _selectedQuiz;
 
   @override
@@ -71,7 +70,10 @@ class _AddDiscussionDialogContentState
         widget.subjectLinkedPath != null &&
         widget.subjectLinkedPath!.isNotEmpty;
 
-    if (!canCreateNew && _linkType == DiscussionLinkType.html) {
+    // ==> PERBAIKAN: Reset jika tipe file (html/markdown) tidak bisa dibuat <==
+    if (!canCreateNew &&
+        (_linkType == DiscussionLinkType.html ||
+            _linkType == DiscussionLinkType.markdown)) {
       _linkType = DiscussionLinkType.none;
     }
 
@@ -159,6 +161,25 @@ class _AddDiscussionDialogContentState
                     ? (value) => setState(() => _linkType = value!)
                     : null,
               ),
+              // ==> PERBAIKAN: Menambahkan opsi Markdown <==
+              RadioListTile<DiscussionLinkType>(
+                secondary: const Icon(Icons.article),
+                title: const Text("File Markdown Baru"),
+                subtitle: Text(
+                  canCreateNew
+                      ? "Membuat file .md baru di folder subjek."
+                      : "Subjek ini tidak tertaut ke PerpusKu.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: canCreateNew ? null : Colors.orange,
+                  ),
+                ),
+                value: DiscussionLinkType.markdown,
+                groupValue: _linkType,
+                onChanged: canCreateNew
+                    ? (value) => setState(() => _linkType = value!)
+                    : null,
+              ),
               RadioListTile<DiscussionLinkType>(
                 secondary: const Icon(Icons.quiz_outlined),
                 title: const Text("Kuis"),
@@ -185,7 +206,6 @@ class _AddDiscussionDialogContentState
               ),
               if (_linkType == DiscussionLinkType.perpuskuQuiz) ...[
                 const Divider(),
-                // ==> PERBAIKAN DI SINI: Tampilkan pilihan aksi <==
                 ListTile(
                   title: Text(
                     _selectedQuiz == null
@@ -206,8 +226,6 @@ class _AddDiscussionDialogContentState
                       label: const Text('Buat Baru'),
                       onPressed: () {
                         setState(() {
-                          // Gunakan nama diskusi sebagai nama kuis, dan tandai untuk dibuat baru
-                          // ==> PERBAIKAN 2: Ganti nama class
                           _selectedQuiz = QuizPickerResult(
                             subjectPath: 'create_new_quiz',
                             quizName: _controller.text.trim(),
@@ -219,7 +237,6 @@ class _AddDiscussionDialogContentState
                       icon: const Icon(Icons.link),
                       label: const Text('Tautkan'),
                       onPressed: () async {
-                        // ==> PERBAIKAN 3: Ganti nama fungsi
                         final result = await showQuizPickerDialog(context);
                         if (result != null) {
                           setState(() {
@@ -257,12 +274,13 @@ class _AddDiscussionDialogContentState
               }
 
               dynamic linkData;
-              if (_linkType == DiscussionLinkType.html) {
+              // ==> PERBAIKAN: Menangani data untuk HTML dan Markdown <==
+              if (_linkType == DiscussionLinkType.html ||
+                  _linkType == DiscussionLinkType.markdown) {
                 linkData = canCreateNew ? 'create_new' : null;
               } else if (_linkType == DiscussionLinkType.link) {
                 linkData = _urlController.text.trim();
               } else if (_linkType == DiscussionLinkType.perpuskuQuiz) {
-                // Jika subjectPath adalah 'create_new_quiz', provider akan tahu untuk membuat baru
                 if (_selectedQuiz!.subjectPath == 'create_new_quiz') {
                   linkData = 'create_new_quiz';
                 } else {

@@ -2,7 +2,8 @@
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-enum DiscussionLinkType { html, none, link, perpuskuQuiz }
+// ==> PERBAIKAN: Menambahkan 'markdown' ke enum <==
+enum DiscussionLinkType { html, none, link, perpuskuQuiz, markdown }
 
 class Point {
   String pointText;
@@ -50,7 +51,6 @@ class Discussion {
   String? filePath;
   String? archivedHtmlContent;
 
-  // ==> PERBAIKAN DI SINI: Hapus 'final' <==
   DiscussionLinkType linkType;
   final String? url;
   String? quizName;
