@@ -1,9 +1,10 @@
-// lib/presentation/pages/1_topics_page/widgets/topic_list_tile.dart
+// lib/features/content_management/presentation/topics/widgets/topic_list_tile.dart
 import 'package:flutter/material.dart';
 import '../../../domain/models/topic_model.dart';
 
 class TopicListTile extends StatelessWidget {
   final Topic topic;
+  final int index; // Ditambahkan: untuk mengetahui posisi item
   final VoidCallback? onTap;
   final VoidCallback onRename;
   final VoidCallback onDelete;
@@ -15,6 +16,7 @@ class TopicListTile extends StatelessWidget {
   const TopicListTile({
     super.key,
     required this.topic,
+    required this.index, // Ditambahkan
     this.onTap,
     required this.onRename,
     required this.onDelete,
@@ -80,7 +82,7 @@ class TopicListTile extends StatelessWidget {
               ),
               if (isReorderActive)
                 ReorderableDragStartListener(
-                  index: 0,
+                  index: index, // Diperbarui: Menggunakan index yang benar
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Icon(Icons.drag_handle),

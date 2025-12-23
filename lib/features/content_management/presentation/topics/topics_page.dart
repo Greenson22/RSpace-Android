@@ -287,10 +287,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         ),
         body: Column(
           children: [
-            Expanded(
-              // Diperbarui: Langsung memanggil _buildListView()
-              child: _buildListView(),
-            ),
+            Expanded(child: _buildListView()),
             const AdBannerWidget(),
           ],
         ),
@@ -323,12 +320,21 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
         return ReorderableListView.builder(
           itemCount: topicsToShow.length,
-          buildDefaultDragHandles: isReorderActive,
+          buildDefaultDragHandles: false,
+          proxyDecorator:
+              (Widget child, int index, Animation<double> animation) {
+                return Material(
+                  elevation: 4,
+                  color: Colors.transparent,
+                  child: child,
+                );
+              },
           itemBuilder: (context, index) {
             final topic = topicsToShow[index];
             return TopicListTile(
               key: ValueKey(topic.name),
               topic: topic,
+              index: index, // Diperbarui: Mengirimkan index ke list tile
               isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: isReorderActive
                   ? null
