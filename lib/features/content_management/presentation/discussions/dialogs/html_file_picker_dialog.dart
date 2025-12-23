@@ -4,16 +4,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
-// Fungsi helper untuk menampilkan dialog
+// ==> PERBAIKAN: Menambahkan parameter allowedExtensions <==
 Future<String?> showHtmlFilePicker(
   BuildContext context,
   String basePath, {
   String? initialPath,
+  List<String> allowedExtensions = const ['.html'],
 }) async {
   final result = await showDialog<String>(
     context: context,
-    builder: (context) =>
-        HtmlFilePickerDialog(basePath: basePath, initialPath: initialPath),
+    builder: (context) => HtmlFilePickerDialog(
+      basePath: basePath,
+      initialPath: initialPath,
+      allowedExtensions: allowedExtensions,
+    ),
   );
 
   return result;
@@ -25,11 +29,13 @@ enum _PickerViewState { topics, subjects, files }
 class HtmlFilePickerDialog extends StatefulWidget {
   final String basePath;
   final String? initialPath;
+  final List<String> allowedExtensions; // ==> PERBAIKAN: Field baru
 
   const HtmlFilePickerDialog({
     super.key,
     required this.basePath,
     this.initialPath,
+    this.allowedExtensions = const ['.html'], // ==> Default ke .html
   });
 
   @override
@@ -37,6 +43,7 @@ class HtmlFilePickerDialog extends StatefulWidget {
 }
 
 class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
+  // ... (kode state lainnya tetap sama)
   _PickerViewState _currentView = _PickerViewState.topics;
   String _selectedTopic = '';
   String _selectedSubject = '';
@@ -68,6 +75,8 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     });
   }
 
+  // ... (dispose dan initializeDialog tetap sama) ...
+  // Namun pastikan _initializeDialog memanggil _loadAllFilesForSearch yang baru
   Future<void> _initializeDialog() async {
     if (widget.initialPath != null && widget.initialPath!.isNotEmpty) {
       try {
@@ -128,11 +137,15 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
             };
           }
 
-          final htmlFiles = subjectDir.listSync().whereType<File>().where(
-            (f) => f.path.toLowerCase().endsWith('.html'),
-          );
+          // ==> PERBAIKAN: Filter menggunakan allowedExtensions <==
+          final validFiles = subjectDir.listSync().whereType<File>().where((f) {
+            final lowerPath = f.path.toLowerCase();
+            return widget.allowedExtensions.any(
+              (ext) => lowerPath.endsWith(ext),
+            );
+          });
 
-          for (final file in htmlFiles) {
+          for (final file in validFiles) {
             final fileName = path.basename(file.path);
             allData.add({
               'title': currentTitles[fileName] ?? fileName,
@@ -154,7 +167,9 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     }
   }
 
+  // ... (_loadTopics dan _loadSubjects tetap sama) ...
   Future<void> _loadTopics() async {
+    // ... (kode lama)
     setState(() {
       _isLoading = true;
       _error = null;
@@ -175,6 +190,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   }
 
   Future<void> _loadSubjects(String topicPath) async {
+    // ... (kode lama)
     setState(() {
       _isLoading = true;
       _error = null;
@@ -198,10 +214,12 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     try {
       final filesDir = Directory(subjectPath);
       final items = filesDir.listSync();
-      _currentSubjectFiles = items
-          .whereType<File>()
-          .where((file) => file.path.toLowerCase().endsWith('.html'))
-          .toList();
+
+      // ==> PERBAIKAN: Filter menggunakan allowedExtensions <==
+      _currentSubjectFiles = items.whereType<File>().where((file) {
+        final lowerPath = file.path.toLowerCase();
+        return widget.allowedExtensions.any((ext) => lowerPath.endsWith(ext));
+      }).toList();
 
       final metadataFile = File(path.join(subjectPath, 'metadata.json'));
       if (await metadataFile.exists()) {
@@ -219,7 +237,9 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
     setState(() => _isLoading = false);
   }
 
+  // ... (_filterContent, _buildGlobalSearchView, _buildLocalSearchView, _buildNavigationView, _buildListView tetap sama) ...
   void _filterContent() {
+    // ... (kode lama)
     if (_searchQuery.isEmpty) {
       _filteredGlobalFiles = [];
       _filteredLocalFiles = [];
@@ -282,6 +302,7 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
   }
 
   Widget _buildNavigationView() {
+    // ... (kode lama)
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -356,10 +377,15 @@ class _HtmlFilePickerDialogState extends State<HtmlFilePickerDialog> {
       case _PickerViewState.subjects:
         return 'Pilih Subjek (dari: $_selectedTopic)';
       case _PickerViewState.files:
-        return 'Pilih File HTML (dari: $_selectedSubject)';
+        // ==> PERBAIKAN: Judul dinamis sesuai ekstensi <==
+        final extString = widget.allowedExtensions
+            .map((e) => e.replaceAll('.', '').toUpperCase())
+            .join('/');
+        return 'Pilih File $extString (dari: $_selectedSubject)';
     }
   }
 
+  // ... (onBackPressed dan build tetap sama)
   void _onBackPressed() {
     if (_searchQuery.isNotEmpty) {
       _searchController.clear();
