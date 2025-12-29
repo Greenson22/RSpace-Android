@@ -1,14 +1,13 @@
 // lib/features/prompt_library/presentation/prompt_library_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/services.dart'; // Import untuk Clipboard
 import 'package:flutter_markdown/flutter_markdown.dart'; // Import Markdown
+import 'package:provider/provider.dart';
 import '../application/prompt_provider.dart';
 import '../domain/models/prompt_concept_model.dart';
 import 'widgets/prompt_dialogs.dart';
 
-// ... (Bagian atas file PromptLibraryPage tetap sama) ...
 class PromptLibraryPage extends StatelessWidget {
   const PromptLibraryPage({super.key});
 
@@ -26,11 +25,13 @@ class _PromptLibraryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ... (Kode build tetap sama, tidak berubah) ...
     final provider = Provider.of<PromptProvider>(context);
     final theme = Theme.of(context);
+
+    // Menentukan judul halaman berdasarkan state
     final String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
 
+    // Handle back button behavior manually to clear category selection
     return PopScope(
       canPop: provider.selectedCategory == null,
       onPopInvoked: (didPop) {
@@ -84,9 +85,8 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // ... (Widget _buildCategoryGrid tetap sama) ...
+  // TAMPILAN GRID KATEGORI
   Widget _buildCategoryGrid(BuildContext context, PromptProvider provider) {
-    // ... copy paste kode lama ...
     if (provider.categories.isEmpty) {
       return Center(
         child: Column(
@@ -130,9 +130,8 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // ... (Widget _buildPromptList tetap sama) ...
+  // TAMPILAN LIST PROMPT
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
-    // ... copy paste kode lama ...
     if (provider.prompts.isEmpty) {
       return Center(
         child: Column(
@@ -168,7 +167,10 @@ class _PromptLibraryView extends StatelessWidget {
   }
 }
 
-// ... (_PromptTopicTile tetap sama) ...
+// =============================================================================
+// WIDGETS TAMBAHAN
+// =============================================================================
+
 class _PromptTopicTile extends StatelessWidget {
   final String title;
   final Color color;
@@ -182,7 +184,6 @@ class _PromptTopicTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ... copy paste kode lama ...
     final theme = Theme.of(context);
 
     return Card(
@@ -232,7 +233,7 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt Baru (DIUPDATE UNTUK EDIT & MARKDOWN)
+// Widget Card Prompt Baru (Dengan Markdown & Edit)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
 
@@ -259,7 +260,7 @@ class _PromptCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Icon + Judul + Deskripsi
+              // Header: Icon + Judul + Deskripsi + Edit Button
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -298,7 +299,6 @@ class _PromptCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Tombol Edit Kecil di Card
                   IconButton(
                     icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
                     onPressed: () {
@@ -312,7 +312,7 @@ class _PromptCard extends StatelessWidget {
               Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
               const SizedBox(height: 12),
 
-              // Preview Isi Prompt (Markdown Style)
+              // Preview Isi Prompt (Code block style / Markdown)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -325,26 +325,30 @@ class _PromptCard extends StatelessWidget {
                     color: theme.dividerColor.withOpacity(0.2),
                   ),
                 ),
-                // Gunakan MarkdownBody untuk preview singkat
                 child: ShaderMask(
                   shaderCallback: (Rect bounds) {
-                    return LinearGradient(
+                    return const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [Colors.black, Colors.transparent],
-                      stops: const [0.7, 1.0],
+                      stops: [0.6, 1.0],
                     ).createShader(bounds);
                   },
                   blendMode: BlendMode.dstIn,
                   child: SizedBox(
-                    height: 80, // Batasi tinggi preview
-                    child: MarkdownBody(
-                      data: prompt.content,
-                      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                        p: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                        ),
+                    height: 80,
+                    // Fix Overflow: Bungkus MarkdownBody dengan SingleChildScrollView + NeverScrollable
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: MarkdownBody(
+                        data: prompt.content,
+                        styleSheet: MarkdownStyleSheet.fromTheme(theme)
+                            .copyWith(
+                              p: theme.textTheme.bodySmall?.copyWith(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                              ),
+                            ),
                       ),
                     ),
                   ),
@@ -380,7 +384,7 @@ class _PromptCard extends StatelessWidget {
     );
   }
 
-  // Detail Dialog (Markdown Full View & Edit Option)
+  // Helper untuk melihat detail prompt
   void _showDetailDialog(BuildContext context, PromptConcept prompt) {
     showDialog(
       context: context,
@@ -391,9 +395,10 @@ class _PromptCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
-                Navigator.pop(ctx); // Tutup detail dulu
+                Navigator.pop(ctx);
                 showEditPromptDialog(context, prompt);
               },
+              tooltip: 'Edit Prompt',
             ),
           ],
         ),
