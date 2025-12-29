@@ -233,7 +233,7 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt Baru (Dengan Markdown & Edit & Delete)
+// Widget Card Prompt Baru (Versi Ringkas: Hanya Judul)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
 
@@ -245,8 +245,8 @@ class _PromptCard extends StatelessWidget {
     final provider = Provider.of<PromptProvider>(context, listen: false);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 8), // Margin sedikit diperkecil
+      elevation: 1, // Elevasi sedikit dikurangi agar lebih flat
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
@@ -257,142 +257,50 @@ class _PromptCard extends StatelessWidget {
           _showDetailDialog(context, prompt);
         },
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+          child: Row(
             children: [
-              // Header: Icon + Judul + Deskripsi + Edit Button + Delete Button
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.article_outlined,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          prompt.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          prompt.description,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Tombol Edit
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
-                    onPressed: () {
-                      showEditPromptDialog(context, prompt);
-                    },
-                    tooltip: 'Edit Prompt',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 12),
-                  // --- TOMBOL HAPUS BARU ---
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 20,
-                      color: Colors.red,
-                    ),
-                    onPressed: () => _showDeleteConfirmation(context, provider),
-                    tooltip: 'Hapus Prompt',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
-              const SizedBox(height: 12),
-
-              // Preview Isi Prompt (Code block style / Markdown)
+              // Icon Kiri
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                    0.5,
-                  ),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: theme.dividerColor.withOpacity(0.2),
-                  ),
                 ),
-                child: ShaderMask(
-                  shaderCallback: (Rect bounds) {
-                    return const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.black, Colors.transparent],
-                      stops: [0.6, 1.0],
-                    ).createShader(bounds);
-                  },
-                  blendMode: BlendMode.dstIn,
-                  child: SizedBox(
-                    height: 80,
-                    // Fix Overflow: Bungkus MarkdownBody dengan SingleChildScrollView + NeverScrollable
-                    child: SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: MarkdownBody(
-                        data: prompt.content,
-                        styleSheet: MarkdownStyleSheet.fromTheme(theme)
-                            .copyWith(
-                              p: theme.textTheme.bodySmall?.copyWith(
-                                fontFamily: 'monospace',
-                                fontSize: 12,
-                              ),
-                            ),
-                      ),
-                    ),
+                child: Icon(
+                  Icons.article_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Judul Prompt (Hanya Judul)
+              Expanded(
+                child: Text(
+                  prompt.title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
 
-              const SizedBox(height: 8),
-
-              // Action Buttons
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: prompt.content));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Isi prompt berhasil disalin!'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: const Text('Salin Prompt'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
+              // Tombol Hapus (Tanpa Edit)
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: Colors.grey, // Warna lebih subtle sampai ditekan
                 ),
+                // Gunakan style tombol agar merah saat dihover/tekan jika diinginkan
+                style: IconButton.styleFrom(
+                  hoverColor: theme.colorScheme.error.withOpacity(0.1),
+                  highlightColor: theme.colorScheme.error.withOpacity(0.2),
+                ),
+                onPressed: () => _showDeleteConfirmation(context, provider),
+                tooltip: 'Hapus Prompt',
               ),
             ],
           ),
@@ -460,6 +368,7 @@ class _PromptCard extends StatelessWidget {
         title: Row(
           children: [
             Expanded(child: Text(prompt.title)),
+            // Tombol Edit tetap ada di dalam detail view
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
@@ -477,6 +386,7 @@ class _PromptCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Deskripsi muncul di sini
                 Text(
                   prompt.description,
                   style: const TextStyle(
