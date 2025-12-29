@@ -1,5 +1,6 @@
 // lib/features/settings/presentation/dialogs/server_config_dialog.dart
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,6 +35,10 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
 
   bool _isLoading = true;
   bool _isLocalMode = true; // Default ke mode lokal
+
+  // Status scanning
+  bool _isScanning = false;
+  String _scanStatusMessage = '';
 
   @override
   void initState() {
@@ -74,7 +79,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
             _onlineDomainController.text = savedDomain;
           }
         } else {
-          // Jika kosong, coba auto-detect IP untuk kenyamanan awal
+          // Jika kosong, coba auto-detect IP sendiri untuk kenyamanan awal
           _autoDetectLocalIp();
         }
         _isLoading = false;
@@ -82,7 +87,6 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     }
   }
 
-  // Helper sederhana untuk mengecek apakah host terlihat seperti IP lokal
   bool _isLikelyLocalIp(String host) {
     return host.startsWith('192.168.') ||
         host.startsWith('10.') ||
@@ -90,43 +94,169 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
         host == 'localhost';
   }
 
-  Future<void> _autoDetectLocalIp() async {
+  // Mendapatkan IP Perangkat sendiri (Self-IP)
+  Future<String?> _getMyIp() async {
     try {
-      // Mencari interface jaringan yang aktif
       final interfaces = await NetworkInterface.list(
         type: InternetAddressType.IPv4,
       );
+      // Prioritaskan 192.168.x.x
       for (var interface in interfaces) {
         for (var addr in interface.addresses) {
-          // Prioritaskan 192.168.x.x karena paling umum untuk Wi-Fi rumah
           if (addr.address.startsWith('192.168.')) {
-            if (mounted) {
-              setState(() {
-                _ipController.text = addr.address;
-              });
-            }
-            return;
+            return addr.address;
           }
         }
       }
-
-      // Jika tidak ketemu 192.168, ambil IP pertama yang bukan loopback
+      // Fallback ke IP non-loopback lainnya
       for (var interface in interfaces) {
         for (var addr in interface.addresses) {
           if (!addr.isLoopback) {
-            if (mounted) {
-              setState(() {
-                _ipController.text = addr.address;
-              });
-            }
-            return;
+            return addr.address;
           }
         }
       }
     } catch (e) {
-      debugPrint("Gagal mendeteksi IP: $e");
+      debugPrint("Gagal mendeteksi Self-IP: $e");
+    }
+    return null;
+  }
+
+  Future<void> _autoDetectLocalIp() async {
+    final ip = await _getMyIp();
+    if (ip != null && mounted) {
+      setState(() {
+        _ipController.text = ip;
+      });
     }
   }
+
+  // --- LOGIKA PEMINDAIAN JARINGAN (NETWORK SCAN) ---
+
+  Future<void> _scanNetwork() async {
+    final portText = _portController.text.trim();
+    if (portText.isEmpty) {
+      showAppSnackBar(context, 'Tentukan port terlebih dahulu (misal: 3000)');
+      return;
+    }
+    final int port = int.tryParse(portText) ?? 3000;
+
+    setState(() {
+      _isScanning = true;
+      _scanStatusMessage = 'Mendapatkan Subnet...';
+    });
+
+    try {
+      // 1. Dapatkan IP sendiri untuk tahu Subnet-nya
+      final myIp = await _getMyIp();
+      if (myIp == null) {
+        throw Exception("Tidak terhubung ke jaringan (WiFi/LAN).");
+      }
+
+      // 2. Tentukan Prefix Subnet (misal: 192.168.1)
+      final lastDotIndex = myIp.lastIndexOf('.');
+      final subnetPrefix = myIp.substring(0, lastDotIndex);
+
+      setState(() {
+        _scanStatusMessage = 'Memindai $subnetPrefix.1 - 255...';
+      });
+
+      // 3. Scan Parallel (1-255)
+      final List<String> activeServers = [];
+      final List<Future<void>> futures = [];
+
+      // Batasi concurrency jika perlu, tapi 254 socket biasanya aman di mobile
+      for (int i = 1; i < 255; i++) {
+        final targetIp = '$subnetPrefix.$i';
+        futures.add(
+          _checkPort(targetIp, port).then((isActive) {
+            if (isActive) {
+              activeServers.add(targetIp);
+            }
+          }),
+        );
+      }
+
+      // Tunggu semua selesai (timeout diatur di _checkPort)
+      await Future.wait(futures);
+
+      // Urutkan IP agar rapi
+      activeServers.sort((a, b) {
+        final lastA = int.parse(a.split('.').last);
+        final lastB = int.parse(b.split('.').last);
+        return lastA.compareTo(lastB);
+      });
+
+      if (!mounted) return;
+      setState(() => _isScanning = false);
+
+      // 4. Tampilkan Hasil
+      if (activeServers.isEmpty) {
+        showAppSnackBar(context, "Tidak ditemukan server aktif di port $port.");
+      } else if (activeServers.length == 1) {
+        // Jika cuma 1, langsung isi dan beritahu user
+        _ipController.text = activeServers.first;
+        showAppSnackBar(context, "Ditemukan server: ${activeServers.first}");
+      } else {
+        // Jika banyak, suruh user milih
+        _showIpSelectionDialog(activeServers);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isScanning = false);
+        showAppSnackBar(context, "Scan error: $e");
+      }
+    }
+  }
+
+  // Cek koneksi ke IP:Port tertentu (TCP Connect)
+  Future<bool> _checkPort(String ip, int port) async {
+    try {
+      // Timeout pendek (500ms) agar scan cepat selesai
+      final socket = await Socket.connect(
+        ip,
+        port,
+        timeout: const Duration(milliseconds: 500),
+      );
+      socket.destroy(); // Tutup koneksi jika berhasil
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showIpSelectionDialog(List<String> ips) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Pilih Server"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: ips.length,
+              itemBuilder: (context, index) {
+                final ip = ips[index];
+                return ListTile(
+                  leading: const Icon(Icons.computer),
+                  title: Text(ip),
+                  onTap: () {
+                    setState(() {
+                      _ipController.text = ip;
+                    });
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ----------------------------------------------------
 
   Future<void> _saveConfig() async {
     if (!_formKey.currentState!.validate()) return;
@@ -136,21 +266,17 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     if (_isLocalMode) {
       final ip = _ipController.text.trim();
       final port = _portController.text.trim();
-      // Konstruksi URL Lokal: http://[IP]:[PORT]
       finalDomain = 'http://$ip:$port';
     } else {
       finalDomain = _onlineDomainController.text.trim();
-      // Pastikan tidak diakhiri slash untuk konsistensi
       if (finalDomain.endsWith('/')) {
         finalDomain = finalDomain.substring(0, finalDomain.length - 1);
       }
-      // Tambahkan protokol jika lupa diketik user
       if (!finalDomain.startsWith('http')) {
         finalDomain = 'https://$finalDomain';
       }
     }
 
-    // Simpan konfigurasi (apiKey dikosongkan sesuai permintaan sebelumnya)
     await _apiConfigService.saveConfig(finalDomain, '');
 
     if (mounted) {
@@ -175,7 +301,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Pilihan Mode: Lokal vs Online
+                    // Mode Selection
                     Row(
                       children: [
                         Expanded(
@@ -209,18 +335,28 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                     const Divider(),
                     const SizedBox(height: 10),
 
-                    // Form Input Dinamis
                     if (_isLocalMode) _buildLocalForm() else _buildOnlineForm(),
                   ],
                 ),
               ),
             ),
       actions: [
+        if (_isScanning)
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Text(
+              _scanStatusMessage,
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isScanning ? null : () => Navigator.of(context).pop(),
           child: const Text('Batal'),
         ),
-        ElevatedButton(onPressed: _saveConfig, child: const Text('Simpan')),
+        ElevatedButton(
+          onPressed: _isScanning ? null : _saveConfig,
+          child: const Text('Simpan'),
+        ),
       ],
     );
   }
@@ -229,9 +365,42 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Server Lokal (LAN/Wi-Fi)",
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Server Lokal (LAN/Wi-Fi)",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            // Tombol Scan Network
+            if (!_isScanning)
+              InkWell(
+                onTap: _scanNetwork,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Row(
+                    children: [
+                      Icon(Icons.radar, size: 14, color: Colors.blue),
+                      SizedBox(width: 4),
+                      Text(
+                        "Scan LAN",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              const SizedBox(
+                height: 14,
+                width: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         Row(
@@ -245,9 +414,10 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                   labelText: 'IP Address',
                   hintText: '192.168.1.x',
                   border: const OutlineInputBorder(),
+                  // Mengubah suffix icon menjadi opsi deteksi IP sendiri
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.wifi_find),
-                    tooltip: "Auto-detect IP Saya",
+                    icon: const Icon(Icons.my_location),
+                    tooltip: "Gunakan IP Perangkat Ini (Self)",
                     onPressed: _autoDetectLocalIp,
                   ),
                 ),
