@@ -9,15 +9,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
+import 'package:provider/provider.dart';
+
+// Imports internal
 import 'package:my_aplication/features/time_management/presentation/pages/time_log_page.dart';
 import '../../../../core/services/path_service.dart';
+import '../../../../core/utils/level_calculator.dart'; // Pastikan file ini sudah dibuat
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
 import '../../../settings/application/services/gemini_service_flutter_gemini.dart';
 import '../../../time_management/application/services/time_log_service.dart';
 import '../../../my_tasks/presentation/pages/my_tasks_page.dart';
 import '../../../content_management/presentation/topics/topics_page.dart';
-import 'package:provider/provider.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../../settings/application/services/dashboard_settings_service.dart';
 import '../../../settings/application/theme_provider.dart';
@@ -57,15 +60,16 @@ class _DashboardHeaderState extends State<DashboardHeader>
   final DashboardSettingsService _settingsService = DashboardSettingsService();
   final GeminiServiceFlutterGemini _geminiService =
       GeminiServiceFlutterGemini();
+
   late Future<_HeaderStats> _statsFuture;
-  late Future<String> _ipFuture; // Variabel untuk menyimpan Future IP Address
+  late Future<String> _ipFuture;
   String? _motivationalQuote;
 
   @override
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
-    _ipFuture = _getIpAddress(); // Inisialisasi pengambilan IP
+    _ipFuture = _getIpAddress();
     _displayQuoteFromCache();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -83,7 +87,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (mounted) {
         setState(() {
           _statsFuture = _loadHeaderStats();
-          _ipFuture = _getIpAddress(); // Refresh IP saat aplikasi resume
+          _ipFuture = _getIpAddress();
           _displayQuoteFromCache();
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
@@ -91,12 +95,10 @@ class _DashboardHeaderState extends State<DashboardHeader>
     }
   }
 
-  // Metode untuk mendapatkan IP Address
   Future<String> _getIpAddress() async {
     try {
       final interfaces = await NetworkInterface.list();
       for (var interface in interfaces) {
-        // Loopback (localhost) biasanya tidak diinginkan untuk ditampilkan
         for (var addr in interface.addresses) {
           if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
             return addr.address;
@@ -300,12 +302,10 @@ class _DashboardHeaderState extends State<DashboardHeader>
             borderRadius: BorderRadius.circular(15),
             color:
                 Theme.of(context).cardTheme.color?.withOpacity(
-                  themeProvider
-                      .dashboardComponentOpacity, // Gunakan nilai tunggal
+                  themeProvider.dashboardComponentOpacity,
                 ) ??
                 Theme.of(context).cardColor.withOpacity(
-                  themeProvider
-                      .dashboardComponentOpacity, // Gunakan nilai tunggal
+                  themeProvider.dashboardComponentOpacity,
                 ),
             boxShadow: [
               BoxShadow(
@@ -322,6 +322,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Bagian Kiri: Greeting, Tanggal, IP Address
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,8 +340,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
                           ).format(DateTime.now()),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        // ==> Menampilkan IP Address di sini <==
                         const SizedBox(height: 4),
+                        // Menampilkan IP Address
                         FutureBuilder<String>(
                           future: _ipFuture,
                           builder: (context, snapshot) {
@@ -354,27 +355,111 @@ class _DashboardHeaderState extends State<DashboardHeader>
                       ],
                     ),
                   ),
+
+                  // Bagian Kanan: Level & Stats
                   Consumer<NeuronProvider>(
                     builder: (context, neuronProvider, child) {
-                      return Chip(
-                        avatar: const Icon(
-                          Icons.psychology_outlined,
-                          color: Colors.white,
+                      // Hitung info level dari total neuron
+                      final levelInfo = LevelCalculator.calculate(
+                        neuronProvider.neuronCount,
+                      );
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
                         ),
-                        label: Text(
-                          '${neuronProvider.neuronCount} Neurons',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.deepPurple.withOpacity(0.3),
+                            width: 1,
                           ),
                         ),
-                        backgroundColor: Colors.deepPurple,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Icon Otak Bulat
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Colors.deepPurple,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.psychology_outlined,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // Kolom Informasi Level & Progress
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // ==> 1. Total Neurons (Yang diminta) <==
+                                Text(
+                                  '${neuronProvider.neuronCount} Neurons',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.deepPurple.withOpacity(0.8),
+                                  ),
+                                ),
+                                // ==> 2. Nama Level (Misal: Lv. 5 • Iron Scholar) <==
+                                Text(
+                                  'Lv. ${levelInfo.level} • ${levelInfo.fullName}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                // ==> 3. Bar Progress & Angka <==
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 80,
+                                      height: 6,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(3),
+                                        child: LinearProgressIndicator(
+                                          value: levelInfo.progress,
+                                          backgroundColor: Colors.deepPurple
+                                              .withOpacity(0.2),
+                                          valueColor:
+                                              const AlwaysStoppedAnimation<
+                                                Color
+                                              >(Colors.deepPurple),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${levelInfo.currentLevelPoints}/${levelInfo.pointsToNextLevel}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.deepPurple.withOpacity(
+                                          0.8,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
                 ],
               ),
               const SizedBox(height: 12),
+
+              // Quote Motivasi
               Text(
                 _motivationalQuote == null
                     ? 'Memuat motivasi...'
@@ -386,7 +471,10 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+
               const Divider(height: 24),
+
+              // Statistik (Pills)
               FutureBuilder<_HeaderStats>(
                 future: _statsFuture,
                 builder: (context, snapshot) {
