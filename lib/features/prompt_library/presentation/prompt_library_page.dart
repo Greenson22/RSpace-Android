@@ -161,7 +161,8 @@ class _PromptLibraryView extends StatelessWidget {
       itemCount: provider.prompts.length,
       itemBuilder: (context, index) {
         final prompt = provider.prompts[index];
-        return _PromptCard(prompt: prompt);
+        // Kita kirim index untuk variasi warna
+        return _PromptCard(prompt: prompt, index: index);
       },
     );
   }
@@ -233,20 +234,24 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt Baru (Versi Ringkas: Hanya Judul)
+// Widget Card Prompt Baru (Dengan Icon Berwarna & Deskripsi)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
+  final int index; // Index untuk variasi warna
 
-  const _PromptCard({required this.prompt});
+  const _PromptCard({required this.prompt, required this.index});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final provider = Provider.of<PromptProvider>(context, listen: false);
 
+    // Generate warna berdasarkan index
+    final color = Colors.primaries[index % Colors.primaries.length];
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 8), // Margin sedikit diperkecil
-      elevation: 1, // Elevasi sedikit dikurangi agar lebih flat
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
@@ -257,44 +262,58 @@ class _PromptCard extends StatelessWidget {
           _showDetailDialog(context, prompt);
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Kiri
+              // Icon Berwarna
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  Icons.article_outlined,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
+                child: Icon(Icons.article_rounded, color: color, size: 24),
               ),
               const SizedBox(width: 16),
 
-              // Judul Prompt (Hanya Judul)
+              // Judul & Deskripsi
               Expanded(
-                child: Text(
-                  prompt.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      prompt.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      prompt.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                      maxLines: 2, // Maksimal 2 baris
+                      overflow:
+                          TextOverflow.ellipsis, // Tambahkan ... jika panjang
+                    ),
+                  ],
                 ),
               ),
 
-              // Tombol Hapus (Tanpa Edit)
+              const SizedBox(width: 8),
+
+              // Tombol Hapus (Tanpa Edit di sini, agar bersih)
               IconButton(
                 icon: const Icon(
                   Icons.delete_outline,
                   size: 20,
-                  color: Colors.grey, // Warna lebih subtle sampai ditekan
+                  color: Colors.grey,
                 ),
-                // Gunakan style tombol agar merah saat dihover/tekan jika diinginkan
                 style: IconButton.styleFrom(
                   hoverColor: theme.colorScheme.error.withOpacity(0.1),
                   highlightColor: theme.colorScheme.error.withOpacity(0.2),
@@ -368,7 +387,7 @@ class _PromptCard extends StatelessWidget {
         title: Row(
           children: [
             Expanded(child: Text(prompt.title)),
-            // Tombol Edit tetap ada di dalam detail view
+            // Tombol Edit
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
@@ -386,7 +405,6 @@ class _PromptCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Deskripsi muncul di sini
                 Text(
                   prompt.description,
                   style: const TextStyle(
