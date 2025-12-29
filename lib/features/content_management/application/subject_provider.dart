@@ -784,14 +784,53 @@ class SubjectProvider with ChangeNotifier {
     await fetchSubjects();
   }
 
+  // ===> FUNGSI DELETE DIPERBARUI DI SINI <===
   Future<void> deleteSubject(
     String subjectName, {
     bool deleteLinkedFolder = false,
   }) async {
     if (deleteLinkedFolder) {
-      // Logika penghapusan folder
+      try {
+        // 1. Cari subject yang akan dihapus untuk mendapatkan linkedPath-nya
+        // Menggunakan firstWhere dengan orElse untuk keamanan
+        final subject = _allSubjects.firstWhere(
+          (s) => s.name == subjectName,
+          orElse: () =>
+              throw Exception("Subject $subjectName tidak ditemukan."),
+        );
+
+        // 2. Jika subject memiliki link ke folder PerpusKu, hapus foldernya
+        if (subject.linkedPath != null && subject.linkedPath!.isNotEmpty) {
+          final perpuskuBasePath = await _pathService.perpuskuDataPath;
+
+          // Susun path lengkap ke folder PerpusKu yang dilink
+          final linkedFolderPath = path.join(
+            perpuskuBasePath,
+            'file_contents',
+            'topics',
+            subject.linkedPath,
+          );
+
+          final directory = Directory(linkedFolderPath);
+          if (await directory.exists()) {
+            // Hapus folder secara rekursif (beserta isinya)
+            await directory.delete(recursive: true);
+            debugPrint("Folder PerpusKu berhasil dihapus: $linkedFolderPath");
+          } else {
+            debugPrint("Folder PerpusKu tidak ditemukan di: $linkedFolderPath");
+          }
+        }
+      } catch (e) {
+        debugPrint("Gagal menghapus folder PerpusKu terkait: $e");
+        // Kita lanjutkan penghapusan subject meskipun folder gagal dihapus,
+        // atau Anda bisa me-rethrow jika ingin proses berhenti.
+      }
     }
+
+    // 3. Hapus file subject (JSON)
     await _subjectService.deleteSubject(topicPath, subjectName);
+
+    // 4. Refresh daftar subject
     await fetchSubjects();
   }
 
