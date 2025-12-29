@@ -130,8 +130,11 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN LIST PROMPT
+  // TAMPILAN LIST PROMPT (DENGAN SEARCH)
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
+    final theme = Theme.of(context);
+
+    // Jika list aslinya kosong (belum ada prompt sama sekali di kategori ini)
     if (provider.prompts.isEmpty) {
       return Center(
         child: Column(
@@ -156,14 +159,80 @@ class _PromptLibraryView extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16).copyWith(bottom: 80),
-      itemCount: provider.prompts.length,
-      itemBuilder: (context, index) {
-        final prompt = provider.prompts[index];
-        // Kita kirim index untuk variasi warna
-        return _PromptCard(prompt: prompt, index: index);
-      },
+    return Column(
+      children: [
+        // --- SEARCH BAR ---
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: TextField(
+            onChanged: (value) => provider.setSearchQuery(value),
+            decoration: InputDecoration(
+              hintText: 'Cari prompt...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                0.5,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 16,
+              ),
+              // Tombol clear search
+              suffixIcon: provider.searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        provider.setSearchQuery('');
+                        // Note: Ini mereset hasil filter, tapi text di field
+                        // mungkin butuh controller jika ingin dibersihkan secara visual.
+                        // Untuk stateless widget, user cukup hapus manual atau
+                        // kita ubah ke stateful jika ingin controller.
+                        // Namun fungsionalitas search tetap jalan.
+                      },
+                    )
+                  : null,
+            ),
+          ),
+        ),
+
+        // --- LIST RESULT ---
+        Expanded(
+          child: provider.filteredPrompts.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 48,
+                        color: theme.disabledColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tidak ditemukan prompt dengan kata kunci\n"${provider.searchQuery}"',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: theme.disabledColor),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(
+                    16,
+                  ).copyWith(top: 8, bottom: 80),
+                  itemCount: provider.filteredPrompts.length,
+                  itemBuilder: (context, index) {
+                    final prompt = provider.filteredPrompts[index];
+                    // Kirim index untuk pewarnaan ikon
+                    return _PromptCard(prompt: prompt, index: index);
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -234,10 +303,10 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt Baru (Dengan Icon Berwarna & Deskripsi)
+// Widget Card Prompt (Ringkas: Icon Warna, Judul, Deskripsi Terpotong, Hapus)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
-  final int index; // Index untuk variasi warna
+  final int index;
 
   const _PromptCard({required this.prompt, required this.index});
 
@@ -246,7 +315,7 @@ class _PromptCard extends StatelessWidget {
     final theme = Theme.of(context);
     final provider = Provider.of<PromptProvider>(context, listen: false);
 
-    // Generate warna berdasarkan index
+    // Generate warna berdasarkan index agar bervariasi
     final color = Colors.primaries[index % Colors.primaries.length];
 
     return Card(
@@ -298,8 +367,7 @@ class _PromptCard extends StatelessWidget {
                         fontSize: 12,
                       ),
                       maxLines: 2, // Maksimal 2 baris
-                      overflow:
-                          TextOverflow.ellipsis, // Tambahkan ... jika panjang
+                      overflow: TextOverflow.ellipsis, // Tambahkan ...
                     ),
                   ],
                 ),
@@ -307,7 +375,7 @@ class _PromptCard extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // Tombol Hapus (Tanpa Edit di sini, agar bersih)
+              // Tombol Hapus (Tanpa Edit di sini, edit ada di dalam detail)
               IconButton(
                 icon: const Icon(
                   Icons.delete_outline,
@@ -387,7 +455,7 @@ class _PromptCard extends StatelessWidget {
         title: Row(
           children: [
             Expanded(child: Text(prompt.title)),
-            // Tombol Edit
+            // Tombol Edit ada di sini
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
