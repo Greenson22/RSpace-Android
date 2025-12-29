@@ -7,23 +7,23 @@ import 'point_tile.dart';
 
 class DiscussionPointList extends StatelessWidget {
   final Discussion discussion;
-  // ==> TAMBAHKAN PROPERTI BARU <==
   final bool isReorderMode;
 
   const DiscussionPointList({
     super.key,
     required this.discussion,
-    this.isReorderMode = false, // Nilai default
+    this.isReorderMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
 
-    // ==> TAMPILKAN WIDGET BERBEDA BERDASARKAN MODE <==
     if (isReorderMode) {
       // Gunakan ReorderableListView saat mode urut aktif
       return ReorderableListView.builder(
+        // === PERBAIKAN: Matikan handle default agar tidak muncul ganda ===
+        buildDefaultDragHandles: false,
         primary: false,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -40,6 +40,7 @@ class DiscussionPointList extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              // Karena buildDefaultDragHandles: false, ikon ini akan menjadi satu-satunya
               trailing: ReorderableDragStartListener(
                 index: index,
                 child: const Icon(Icons.drag_handle),
