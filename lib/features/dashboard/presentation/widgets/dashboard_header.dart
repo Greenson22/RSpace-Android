@@ -58,12 +58,14 @@ class _DashboardHeaderState extends State<DashboardHeader>
   final GeminiServiceFlutterGemini _geminiService =
       GeminiServiceFlutterGemini();
   late Future<_HeaderStats> _statsFuture;
+  late Future<String> _ipFuture; // Variabel untuk menyimpan Future IP Address
   String? _motivationalQuote;
 
   @override
   void initState() {
     super.initState();
     _statsFuture = _loadHeaderStats();
+    _ipFuture = _getIpAddress(); // Inisialisasi pengambilan IP
     _displayQuoteFromCache();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -81,10 +83,32 @@ class _DashboardHeaderState extends State<DashboardHeader>
       if (mounted) {
         setState(() {
           _statsFuture = _loadHeaderStats();
+          _ipFuture = _getIpAddress(); // Refresh IP saat aplikasi resume
           _displayQuoteFromCache();
         });
         Provider.of<NeuronProvider>(context, listen: false).loadNeurons();
       }
+    }
+  }
+
+  // Metode untuk mendapatkan IP Address
+  Future<String> _getIpAddress() async {
+    try {
+      final interfaces = await NetworkInterface.list();
+      for (var interface in interfaces) {
+        // Loopback (localhost) biasanya tidak diinginkan untuk ditampilkan
+        for (var addr in interface.addresses) {
+          if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
+            return addr.address;
+          }
+        }
+      }
+      return 'Tidak terhubung';
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting IP: $e');
+      }
+      return 'Tidak diketahui';
     }
   }
 
@@ -314,6 +338,18 @@ class _DashboardHeaderState extends State<DashboardHeader>
                             'id_ID',
                           ).format(DateTime.now()),
                           style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        // ==> Menampilkan IP Address di sini <==
+                        const SizedBox(height: 4),
+                        FutureBuilder<String>(
+                          future: _ipFuture,
+                          builder: (context, snapshot) {
+                            final ip = snapshot.data ?? '...';
+                            return Text(
+                              'IP: $ip',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            );
+                          },
                         ),
                       ],
                     ),
