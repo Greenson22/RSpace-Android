@@ -1,12 +1,14 @@
 // lib/features/prompt_library/presentation/prompt_library_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import untuk Clipboard
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart'; // Import Markdown
 import '../application/prompt_provider.dart';
 import '../domain/models/prompt_concept_model.dart';
 import 'widgets/prompt_dialogs.dart';
 
+// ... (Bagian atas file PromptLibraryPage tetap sama) ...
 class PromptLibraryPage extends StatelessWidget {
   const PromptLibraryPage({super.key});
 
@@ -24,13 +26,11 @@ class _PromptLibraryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ... (Kode build tetap sama, tidak berubah) ...
     final provider = Provider.of<PromptProvider>(context);
     final theme = Theme.of(context);
-
-    // Menentukan judul halaman berdasarkan state
     final String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
 
-    // Handle back button behavior manually to clear category selection
     return PopScope(
       canPop: provider.selectedCategory == null,
       onPopInvoked: (didPop) {
@@ -84,8 +84,9 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN GRID KATEGORI
+  // ... (Widget _buildCategoryGrid tetap sama) ...
   Widget _buildCategoryGrid(BuildContext context, PromptProvider provider) {
+    // ... copy paste kode lama ...
     if (provider.categories.isEmpty) {
       return Center(
         child: Column(
@@ -129,8 +130,9 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN LIST PROMPT (DIPERBARUI)
+  // ... (Widget _buildPromptList tetap sama) ...
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
+    // ... copy paste kode lama ...
     if (provider.prompts.isEmpty) {
       return Center(
         child: Column(
@@ -166,10 +168,7 @@ class _PromptLibraryView extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// WIDGETS TAMBAHAN
-// =============================================================================
-
+// ... (_PromptTopicTile tetap sama) ...
 class _PromptTopicTile extends StatelessWidget {
   final String title;
   final Color color;
@@ -183,6 +182,7 @@ class _PromptTopicTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ... copy paste kode lama ...
     final theme = Theme.of(context);
 
     return Card(
@@ -232,7 +232,7 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt Baru (DIPERBARUI)
+// Widget Card Prompt Baru (DIUPDATE UNTUK EDIT & MARKDOWN)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
 
@@ -298,13 +298,21 @@ class _PromptCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // Tombol Edit Kecil di Card
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
+                    onPressed: () {
+                      showEditPromptDialog(context, prompt);
+                    },
+                    tooltip: 'Edit Prompt',
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
               Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
               const SizedBox(height: 12),
 
-              // Preview Isi Prompt (Code block style)
+              // Preview Isi Prompt (Markdown Style)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -317,14 +325,28 @@ class _PromptCard extends StatelessWidget {
                     color: theme.dividerColor.withOpacity(0.2),
                   ),
                 ),
-                child: Text(
-                  prompt.content,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface,
+                // Gunakan MarkdownBody untuk preview singkat
+                child: ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.black, Colors.transparent],
+                      stops: const [0.7, 1.0],
+                    ).createShader(bounds);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: SizedBox(
+                    height: 80, // Batasi tinggi preview
+                    child: MarkdownBody(
+                      data: prompt.content,
+                      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                        p: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -358,35 +380,57 @@ class _PromptCard extends StatelessWidget {
     );
   }
 
-  // Helper untuk melihat detail prompt jika teks terpotong
+  // Detail Dialog (Markdown Full View & Edit Option)
   void _showDetailDialog(BuildContext context, PromptConcept prompt) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(prompt.title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                prompt.description,
-                style: const TextStyle(
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey,
+        title: Row(
+          children: [
+            Expanded(child: Text(prompt.title)),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.pop(ctx); // Tutup detail dulu
+                showEditPromptDialog(context, prompt);
+              },
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  prompt.description,
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Isi Prompt:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              SelectableText(
-                prompt.content,
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text(
+                  'Isi Prompt:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: MarkdownBody(
+                    data: prompt.content,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         actions: [

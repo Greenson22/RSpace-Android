@@ -62,7 +62,7 @@ class PromptLibraryService {
         prompts.add(prompt);
       }
     }
-    // Sorting berdasarkan Title (sebelumnya judulUtama)
+    // Sorting berdasarkan Title
     return prompts..sort((a, b) => a.title.compareTo(b.title));
   }
 
@@ -97,5 +97,22 @@ class PromptLibraryService {
     final file = File(path.join(categoryDir.path, fileName));
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(encoder.convert(prompt.toJson()));
+  }
+
+  // --- TAMBAHKAN METHOD INI UNTUK FITUR UPDATE/DELETE ---
+  Future<void> deletePrompt(String category, String fileName) async {
+    try {
+      final libraryDir = await _getLibraryDirectory();
+      final file = File(path.join(libraryDir.path, category, fileName));
+
+      if (await file.exists()) {
+        await file.delete();
+      } else {
+        // Opsional: throw error atau abaikan jika file memang tidak ada
+        debugPrint('File prompt tidak ditemukan saat ingin dihapus: $fileName');
+      }
+    } catch (e) {
+      throw Exception('Gagal menghapus prompt: $e');
+    }
   }
 }

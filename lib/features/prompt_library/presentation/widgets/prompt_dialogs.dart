@@ -6,8 +6,9 @@ import 'package:uuid/uuid.dart';
 import '../../application/prompt_provider.dart';
 import '../../domain/models/prompt_concept_model.dart';
 
-// Dialog untuk menambah kategori baru (Tidak ada perubahan logika, hanya perapihan)
+// ... (Kode showAddCategoryDialog biarkan tetap sama) ...
 Future<void> showAddCategoryDialog(BuildContext context) {
+  // ... Paste kode lama showAddCategoryDialog di sini ...
   final TextEditingController controller = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
@@ -80,8 +81,9 @@ Future<void> showAddCategoryDialog(BuildContext context) {
   );
 }
 
-// Dialog untuk menambah prompt baru (DIPERBARUI: Struktur Flat)
+// ... (Kode showAddPromptDialog biarkan tetap sama) ...
 Future<void> showAddPromptDialog(BuildContext context) {
+  // ... Paste kode lama showAddPromptDialog di sini ...
   final formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -191,6 +193,129 @@ Future<void> showAddPromptDialog(BuildContext context) {
               }
             },
             child: const Text('Simpan'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// BARU: Dialog untuk Mengedit Prompt
+Future<void> showEditPromptDialog(
+  BuildContext context,
+  PromptConcept existingPrompt,
+) {
+  final formKey = GlobalKey<FormState>();
+  // Isi controller dengan data lama
+  final titleController = TextEditingController(text: existingPrompt.title);
+  final descriptionController = TextEditingController(
+    text: existingPrompt.description,
+  );
+  final contentController = TextEditingController(text: existingPrompt.content);
+
+  return showDialog(
+    context: context,
+    builder: (dialogContext) {
+      final provider = Provider.of<PromptProvider>(context, listen: false);
+
+      return AlertDialog(
+        title: const Text('Edit Prompt'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Judul Prompt',
+                      border: OutlineInputBorder(),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (v) =>
+                        v!.trim().isEmpty ? 'Judul tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi Singkat',
+                      border: OutlineInputBorder(),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (v) => v!.trim().isEmpty
+                        ? 'Deskripsi tidak boleh kosong'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: contentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Isi Prompt (Markdown Supported)',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 10,
+                    minLines: 5,
+                    validator: (v) => v!.trim().isEmpty
+                        ? 'Isi prompt tidak boleh kosong'
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                // Buat object prompt baru
+                final updatedPrompt = PromptConcept(
+                  idPrompt: existingPrompt.idPrompt, // Pertahankan ID lama
+                  title: titleController.text.trim(),
+                  description: descriptionController.text.trim(),
+                  content: contentController.text.trim(),
+                  fileName: existingPrompt
+                      .fileName, // Nama file awal (nanti dihandle provider jika berubah)
+                );
+
+                try {
+                  await provider.updatePrompt(
+                    provider.selectedCategory!,
+                    existingPrompt,
+                    updatedPrompt,
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Prompt berhasil diperbarui.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error update: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Update'),
           ),
         ],
       );
