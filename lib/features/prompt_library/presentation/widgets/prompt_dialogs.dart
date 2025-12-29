@@ -6,9 +6,8 @@ import 'package:uuid/uuid.dart';
 import '../../application/prompt_provider.dart';
 import '../../domain/models/prompt_concept_model.dart';
 
-// ... (Kode showAddCategoryDialog biarkan tetap sama) ...
+// ... (KODE showAddCategoryDialog SAMA SEPERTI SEBELUMNYA) ...
 Future<void> showAddCategoryDialog(BuildContext context) {
-  // ... Paste kode lama showAddCategoryDialog di sini ...
   final TextEditingController controller = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
@@ -81,9 +80,8 @@ Future<void> showAddCategoryDialog(BuildContext context) {
   );
 }
 
-// ... (Kode showAddPromptDialog biarkan tetap sama) ...
+// ... (KODE showAddPromptDialog SAMA SEPERTI SEBELUMNYA) ...
 Future<void> showAddPromptDialog(BuildContext context) {
-  // ... Paste kode lama showAddPromptDialog di sini ...
   final formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -163,7 +161,7 @@ Future<void> showAddPromptDialog(BuildContext context) {
                   title: titleController.text.trim(),
                   description: descriptionController.text.trim(),
                   content: contentController.text.trim(),
-                  fileName: '', // Akan dihandle oleh logic penyimpanan
+                  fileName: '',
                 );
 
                 try {
@@ -200,13 +198,12 @@ Future<void> showAddPromptDialog(BuildContext context) {
   );
 }
 
-// BARU: Dialog untuk Mengedit Prompt
+// ... (KODE showEditPromptDialog SAMA SEPERTI SEBELUMNYA) ...
 Future<void> showEditPromptDialog(
   BuildContext context,
   PromptConcept existingPrompt,
 ) {
   final formKey = GlobalKey<FormState>();
-  // Isi controller dengan data lama
   final titleController = TextEditingController(text: existingPrompt.title);
   final descriptionController = TextEditingController(
     text: existingPrompt.description,
@@ -278,14 +275,12 @@ Future<void> showEditPromptDialog(
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                // Buat object prompt baru
                 final updatedPrompt = PromptConcept(
-                  idPrompt: existingPrompt.idPrompt, // Pertahankan ID lama
+                  idPrompt: existingPrompt.idPrompt,
                   title: titleController.text.trim(),
                   description: descriptionController.text.trim(),
                   content: contentController.text.trim(),
-                  fileName: existingPrompt
-                      .fileName, // Nama file awal (nanti dihandle provider jika berubah)
+                  fileName: existingPrompt.fileName,
                 );
 
                 try {
@@ -316,6 +311,61 @@ Future<void> showEditPromptDialog(
               }
             },
             child: const Text('Update'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// === BARU: Dialog Memilih Topik/Kategori ===
+Future<String?> showSelectTopicDialog(
+  BuildContext context,
+  List<String> categories, {
+  String? currentCategory,
+  String title = 'Pilih Topik',
+}) {
+  return showDialog<String>(
+    context: context,
+    builder: (context) {
+      final availableCategories = categories
+          .where((c) => c != currentCategory)
+          .toList();
+
+      return AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: availableCategories.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "Tidak ada topik lain tersedia.",
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: availableCategories.length,
+                  itemBuilder: (context, index) {
+                    final category = availableCategories[index];
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.folder_open,
+                        color: Colors.amber,
+                      ),
+                      title: Text(category),
+                      onTap: () {
+                        Navigator.pop(context, category);
+                      },
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
           ),
         ],
       );

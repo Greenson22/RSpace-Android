@@ -1,6 +1,7 @@
 // lib/features/prompt_library/application/prompt_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart'; // Tambahkan package uuid
 import '../domain/models/prompt_concept_model.dart';
 import '../infrastructure/prompt_library_service.dart';
 
@@ -119,6 +120,110 @@ class PromptProvider with ChangeNotifier {
     try {
       await _promptService.deletePrompt(category, prompt.fileName);
       await selectCategory(category);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- FITUR BARU: Duplicate ---
+  Future<void> duplicatePrompt(String category, PromptConcept prompt) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final newTitle = '${prompt.title} (Copy)';
+      final newId =
+          '${category.toUpperCase()}-${const Uuid().v4().substring(0, 4)}';
+
+      final newPrompt = PromptConcept(
+        idPrompt: newId,
+        title: newTitle,
+        description: prompt.description,
+        content: prompt.content,
+        fileName: '', // Akan di-generate
+      );
+
+      final fileName = _generateFileName(newTitle);
+      await _promptService.savePromptConcept(category, fileName, newPrompt);
+      await selectCategory(category);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- FITUR BARU: Move ---
+  Future<void> movePrompt(
+    String currentCategory,
+    String targetCategory,
+    PromptConcept prompt,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      // 1. Simpan di kategori baru
+      // Kita generate ID baru agar sesuai dengan format kode kategori (opsional, tapi rapi)
+      final newId =
+          '${targetCategory.toUpperCase()}-${const Uuid().v4().substring(0, 4)}';
+      final fileName = _generateFileName(prompt.title);
+
+      final movedPrompt = PromptConcept(
+        idPrompt: newId,
+        title: prompt.title,
+        content: prompt.content,
+        description: prompt.description,
+        fileName: fileName,
+      );
+
+      await _promptService.savePromptConcept(
+        targetCategory,
+        fileName,
+        movedPrompt,
+      );
+
+      // 2. Hapus dari kategori lama
+      await _promptService.deletePrompt(currentCategory, prompt.fileName);
+
+      // 3. Refresh kategori saat ini
+      await selectCategory(currentCategory);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- FITUR BARU: Copy ---
+  Future<void> copyPromptToCategory(
+    String targetCategory,
+    PromptConcept prompt,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final newId =
+          '${targetCategory.toUpperCase()}-${const Uuid().v4().substring(0, 4)}';
+      final fileName = _generateFileName(prompt.title);
+
+      final copiedPrompt = PromptConcept(
+        idPrompt: newId,
+        title: prompt.title,
+        content: prompt.content,
+        description: prompt.description,
+        fileName: fileName,
+      );
+
+      await _promptService.savePromptConcept(
+        targetCategory,
+        fileName,
+        copiedPrompt,
+      );
+      // Tidak perlu refresh kategori saat ini karena copy ke tempat lain
     } catch (e) {
       rethrow;
     } finally {

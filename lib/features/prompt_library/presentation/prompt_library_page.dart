@@ -1,8 +1,8 @@
 // lib/features/prompt_library/presentation/prompt_library_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import untuk Clipboard
-import 'package:flutter_markdown/flutter_markdown.dart'; // Import Markdown
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
 import '../application/prompt_provider.dart';
 import '../domain/models/prompt_concept_model.dart';
@@ -28,10 +28,8 @@ class _PromptLibraryView extends StatelessWidget {
     final provider = Provider.of<PromptProvider>(context);
     final theme = Theme.of(context);
 
-    // Menentukan judul halaman berdasarkan state
     final String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
 
-    // Handle back button behavior manually to clear category selection
     return PopScope(
       canPop: provider.selectedCategory == null,
       onPopInvoked: (didPop) {
@@ -85,7 +83,6 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN GRID KATEGORI
   Widget _buildCategoryGrid(BuildContext context, PromptProvider provider) {
     if (provider.categories.isEmpty) {
       return Center(
@@ -130,11 +127,9 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN LIST PROMPT (DENGAN SEARCH)
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
     final theme = Theme.of(context);
 
-    // Jika list aslinya kosong (belum ada prompt sama sekali di kategori ini)
     if (provider.prompts.isEmpty) {
       return Center(
         child: Column(
@@ -161,7 +156,6 @@ class _PromptLibraryView extends StatelessWidget {
 
     return Column(
       children: [
-        // --- SEARCH BAR ---
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
@@ -181,25 +175,17 @@ class _PromptLibraryView extends StatelessWidget {
                 vertical: 0,
                 horizontal: 16,
               ),
-              // Tombol clear search
               suffixIcon: provider.searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 20),
                       onPressed: () {
                         provider.setSearchQuery('');
-                        // Note: Ini mereset hasil filter, tapi text di field
-                        // mungkin butuh controller jika ingin dibersihkan secara visual.
-                        // Untuk stateless widget, user cukup hapus manual atau
-                        // kita ubah ke stateful jika ingin controller.
-                        // Namun fungsionalitas search tetap jalan.
                       },
                     )
                   : null,
             ),
           ),
         ),
-
-        // --- LIST RESULT ---
         Expanded(
           child: provider.filteredPrompts.isEmpty
               ? Center(
@@ -227,7 +213,6 @@ class _PromptLibraryView extends StatelessWidget {
                   itemCount: provider.filteredPrompts.length,
                   itemBuilder: (context, index) {
                     final prompt = provider.filteredPrompts[index];
-                    // Kirim index untuk pewarnaan ikon
                     return _PromptCard(prompt: prompt, index: index);
                   },
                 ),
@@ -236,10 +221,6 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// WIDGETS TAMBAHAN
-// =============================================================================
 
 class _PromptTopicTile extends StatelessWidget {
   final String title;
@@ -303,7 +284,7 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt (Ringkas: Icon Warna, Judul, Deskripsi Terpotong, Hapus)
+// Widget Card Prompt yang Diupdate
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
   final int index;
@@ -314,8 +295,6 @@ class _PromptCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final provider = Provider.of<PromptProvider>(context, listen: false);
-
-    // Generate warna berdasarkan index agar bervariasi
     final color = Colors.primaries[index % Colors.primaries.length];
 
     return Card(
@@ -335,7 +314,6 @@ class _PromptCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Berwarna
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -345,8 +323,6 @@ class _PromptCard extends StatelessWidget {
                 child: Icon(Icons.article_rounded, color: color, size: 24),
               ),
               const SizedBox(width: 16),
-
-              // Judul & Deskripsi
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,28 +342,157 @@ class _PromptCard extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
-                      maxLines: 2, // Maksimal 2 baris
-                      overflow: TextOverflow.ellipsis, // Tambahkan ...
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
 
-              // Tombol Hapus (Tanpa Edit di sini, edit ada di dalam detail)
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 20,
-                  color: Colors.grey,
-                ),
-                style: IconButton.styleFrom(
-                  hoverColor: theme.colorScheme.error.withOpacity(0.1),
-                  highlightColor: theme.colorScheme.error.withOpacity(0.2),
-                ),
-                onPressed: () => _showDeleteConfirmation(context, provider),
-                tooltip: 'Hapus Prompt',
+              // === POPUP MENU BUTTON UPDATE ===
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) async {
+                  final currentCategory = provider.selectedCategory;
+                  if (currentCategory == null) return;
+
+                  switch (value) {
+                    case 'duplicate':
+                      try {
+                        await provider.duplicatePrompt(currentCategory, prompt);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Prompt berhasil diduplikasi.'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Gagal duplikasi: $e')),
+                          );
+                        }
+                      }
+                      break;
+
+                    case 'move':
+                      final target = await showSelectTopicDialog(
+                        context,
+                        provider.categories,
+                        currentCategory: currentCategory,
+                        title: 'Pindah ke Topik...',
+                      );
+                      if (target != null && context.mounted) {
+                        try {
+                          await provider.movePrompt(
+                            currentCategory,
+                            target,
+                            prompt,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Prompt dipindahkan ke "$target"',
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Gagal memindahkan: $e')),
+                            );
+                          }
+                        }
+                      }
+                      break;
+
+                    case 'copy':
+                      final target = await showSelectTopicDialog(
+                        context,
+                        provider.categories,
+                        title: 'Salin ke Topik...',
+                        // Untuk copy, boleh copy ke folder yang sama juga, jadi currentCategory tidak dibuang
+                      );
+                      if (target != null && context.mounted) {
+                        try {
+                          await provider.copyPromptToCategory(target, prompt);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Prompt disalin ke "$target"'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Gagal menyalin: $e')),
+                            );
+                          }
+                        }
+                      }
+                      break;
+
+                    case 'delete':
+                      _showDeleteConfirmation(context, provider);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'duplicate',
+                    child: Row(
+                      children: [
+                        Icon(Icons.copy, size: 20, color: Colors.grey),
+                        SizedBox(width: 12),
+                        Text('Duplikat'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'move',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.drive_file_move_outlined,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(width: 12),
+                        Text('Pindah ke...'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'copy',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.file_copy_outlined,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(width: 12),
+                        Text('Salin ke...'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                        SizedBox(width: 12),
+                        Text('Hapus', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -396,7 +501,6 @@ class _PromptCard extends StatelessWidget {
     );
   }
 
-  // Helper untuk konfirmasi hapus
   void _showDeleteConfirmation(BuildContext context, PromptProvider provider) {
     showDialog(
       context: context,
@@ -413,13 +517,11 @@ class _PromptCard extends StatelessWidget {
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(ctx); // Tutup dialog
-
+              Navigator.pop(ctx);
               final currentCategory = provider.selectedCategory;
               if (currentCategory != null) {
                 try {
                   await provider.deletePrompt(currentCategory, prompt);
-
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -447,7 +549,6 @@ class _PromptCard extends StatelessWidget {
     );
   }
 
-  // Helper untuk melihat detail prompt
   void _showDetailDialog(BuildContext context, PromptConcept prompt) {
     showDialog(
       context: context,
@@ -455,7 +556,6 @@ class _PromptCard extends StatelessWidget {
         title: Row(
           children: [
             Expanded(child: Text(prompt.title)),
-            // Tombol Edit ada di sini
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
