@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../application/prompt_provider.dart';
 import '../../domain/models/prompt_concept_model.dart';
 
-// ... (KODE showAddCategoryDialog SAMA SEPERTI SEBELUMNYA) ...
+// ... (KODE showAddCategoryDialog SAMA) ...
 Future<void> showAddCategoryDialog(BuildContext context) {
   final TextEditingController controller = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -80,7 +80,86 @@ Future<void> showAddCategoryDialog(BuildContext context) {
   );
 }
 
-// ... (KODE showAddPromptDialog SAMA SEPERTI SEBELUMNYA) ...
+// BARU: Dialog Ubah Nama Kategori
+Future<void> showRenameCategoryDialog(BuildContext context, String oldName) {
+  // Jika hidden (ada titik di depan), tampilkan nama aslinya saja di editor
+  final displayOldName = oldName.startsWith('.')
+      ? oldName.substring(1)
+      : oldName;
+  final TextEditingController controller = TextEditingController(
+    text: displayOldName,
+  );
+  final formKey = GlobalKey<FormState>();
+
+  return showDialog(
+    context: context,
+    builder: (dialogContext) {
+      final provider = Provider.of<PromptProvider>(context, listen: false);
+
+      return AlertDialog(
+        title: const Text('Ubah Nama Topik'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nama Baru'),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Nama tidak boleh kosong.';
+              }
+              if (RegExp(r'[<>:"/\\|?*]').hasMatch(value)) {
+                return 'Nama mengandung karakter tidak valid.';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                var newName = controller.text.trim();
+                // Jika aslinya hidden, pertahankan status hidden
+                if (oldName.startsWith('.')) {
+                  newName = '.$newName';
+                }
+
+                try {
+                  await provider.renameCategory(oldName, newName);
+                  if (context.mounted) {
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nama topik berhasil diubah.'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// ... (KODE showAddPromptDialog SAMA) ...
 Future<void> showAddPromptDialog(BuildContext context) {
   final formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
@@ -198,7 +277,7 @@ Future<void> showAddPromptDialog(BuildContext context) {
   );
 }
 
-// ... (KODE showEditPromptDialog SAMA SEPERTI SEBELUMNYA) ...
+// ... (KODE showEditPromptDialog SAMA) ...
 Future<void> showEditPromptDialog(
   BuildContext context,
   PromptConcept existingPrompt,
@@ -318,7 +397,7 @@ Future<void> showEditPromptDialog(
   );
 }
 
-// === BARU: Dialog Memilih Topik/Kategori ===
+// ... (KODE showSelectTopicDialog SAMA) ...
 Future<String?> showSelectTopicDialog(
   BuildContext context,
   List<String> categories, {

@@ -33,14 +33,54 @@ class PromptLibraryService {
     }
   }
 
-  Future<List<String>> getCategories() async {
+  // UPDATE: Tambahkan parameter includeHidden
+  Future<List<String>> getCategories({bool includeHidden = false}) async {
     final libraryDir = await _getLibraryDirectory();
     final entities = libraryDir.listSync();
+
     return entities
         .whereType<Directory>()
         .map((dir) => path.basename(dir.path))
+        .where((name) {
+          if (includeHidden) return true;
+          return !name.startsWith('.'); // Filter folder yang diawali titik
+        })
         .toList()
       ..sort();
+  }
+
+  // BARU: Rename Kategori
+  Future<void> renameCategory(String oldName, String newName) async {
+    final libraryDir = await _getLibraryDirectory();
+    final oldDir = Directory(path.join(libraryDir.path, oldName));
+    final newDir = Directory(path.join(libraryDir.path, newName));
+
+    if (!await oldDir.exists()) {
+      throw Exception('Kategori asal tidak ditemukan.');
+    }
+    if (await newDir.exists()) {
+      throw Exception('Kategori dengan nama "$newName" sudah ada.');
+    }
+
+    try {
+      await oldDir.rename(newDir.path);
+    } catch (e) {
+      throw Exception('Gagal mengubah nama kategori: $e');
+    }
+  }
+
+  // BARU: Hapus Kategori
+  Future<void> deleteCategory(String categoryName) async {
+    final libraryDir = await _getLibraryDirectory();
+    final categoryDir = Directory(path.join(libraryDir.path, categoryName));
+
+    if (await categoryDir.exists()) {
+      try {
+        await categoryDir.delete(recursive: true);
+      } catch (e) {
+        throw Exception('Gagal menghapus kategori: $e');
+      }
+    }
   }
 
   Future<List<PromptConcept>> getPromptsInCategory(String category) async {
@@ -99,7 +139,6 @@ class PromptLibraryService {
     await file.writeAsString(encoder.convert(prompt.toJson()));
   }
 
-  // --- TAMBAHKAN METHOD INI UNTUK FITUR UPDATE/DELETE ---
   Future<void> deletePrompt(String category, String fileName) async {
     try {
       final libraryDir = await _getLibraryDirectory();
@@ -108,7 +147,6 @@ class PromptLibraryService {
       if (await file.exists()) {
         await file.delete();
       } else {
-        // Opsional: throw error atau abaikan jika file memang tidak ada
         debugPrint('File prompt tidak ditemukan saat ingin dihapus: $fileName');
       }
     } catch (e) {

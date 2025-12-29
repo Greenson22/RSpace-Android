@@ -28,7 +28,12 @@ class _PromptLibraryView extends StatelessWidget {
     final provider = Provider.of<PromptProvider>(context);
     final theme = Theme.of(context);
 
-    final String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
+    // Judul: Kalau di dalam kategori, tampilkan nama kategori (bersihkan dot jika hidden)
+    String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
+    if (provider.selectedCategory != null &&
+        provider.selectedCategory!.startsWith('.')) {
+      pageTitle = provider.selectedCategory!.substring(1);
+    }
 
     return PopScope(
       canPop: provider.selectedCategory == null,
@@ -48,6 +53,38 @@ class _PromptLibraryView extends StatelessWidget {
                   onPressed: () => provider.clearCategorySelection(),
                 )
               : null,
+          actions: [
+            // BARU: Toggle Show Hidden
+            if (provider.selectedCategory == null)
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'toggle_hidden') {
+                    provider.toggleShowHidden();
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'toggle_hidden',
+                    child: Row(
+                      children: [
+                        Icon(
+                          provider.showHidden
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          provider.showHidden
+                              ? 'Sembunyikan Hidden'
+                              : 'Tampilkan Hidden',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
         body: provider.isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -111,16 +148,21 @@ class _PromptLibraryView extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 1.1,
+        childAspectRatio: 1.0,
       ),
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
+        final isHidden = category.startsWith('.');
+        // Display name tanpa titik
+        final displayName = isHidden ? category.substring(1) : category;
         final colorSeed = Colors.primaries[index % Colors.primaries.length];
 
         return _PromptTopicTile(
-          title: category,
-          color: colorSeed,
+          title: displayName,
+          originalName: category, // Pass original name for actions
+          color: isHidden ? Colors.grey : colorSeed, // Grey jika hidden
+          isHidden: isHidden,
           onTap: () => provider.selectCategory(category),
         );
       },
@@ -144,7 +186,7 @@ class _PromptLibraryView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                'Folder "${provider.selectedCategory}" masih kosong.\nTambahkan prompt baru.',
+                'Folder ini masih kosong.\nTambahkan prompt baru.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.grey),
               ),
@@ -191,7 +233,7 @@ class _PromptLibraryView extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              // Sort Button (Fitur Baru)
+              // Sort Button
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest.withOpacity(
@@ -203,8 +245,7 @@ class _PromptLibraryView extends StatelessWidget {
                   icon: Icon(
                     provider.sortType == PromptSortType.titleAsc
                         ? Icons.sort_by_alpha
-                        : Icons
-                              .sort_by_alpha_outlined, // Atau icon lain jika ada
+                        : Icons.sort_by_alpha_outlined,
                     color: theme.colorScheme.primary,
                   ),
                   tooltip: 'Urutkan berdasarkan...',
@@ -308,69 +349,186 @@ class _PromptLibraryView extends StatelessWidget {
   }
 }
 
+// UPDATE: Tile Topik dengan Menu (Edit, Hapus, Hide)
 class _PromptTopicTile extends StatelessWidget {
   final String title;
+  final String originalName; // Nama asli (termasuk . jika hidden)
   final Color color;
+  final bool isHidden;
   final VoidCallback onTap;
 
   const _PromptTopicTile({
     required this.title,
+    required this.originalName,
     required this.color,
+    required this.isHidden,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final provider = Provider.of<PromptProvider>(context, listen: false);
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color.withOpacity(0.1), color.withOpacity(0.25)],
+    return Stack(
+      children: [
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color.withOpacity(0.1), color.withOpacity(0.25)],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isHidden
+                          ? Icons.visibility_off
+                          : Icons.folder_copy_rounded,
+                      size: 32,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.6),
-                  shape: BoxShape.circle,
+        ),
+        // Positioned Menu Button
+        Positioned(
+          top: 0,
+          right: 0,
+          child: PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            onSelected: (value) {
+              if (value == 'edit') {
+                showRenameCategoryDialog(context, originalName);
+              } else if (value == 'delete') {
+                _showDeleteDialog(context, provider);
+              } else if (value == 'hide') {
+                provider.hideCategory(originalName);
+              } else if (value == 'unhide') {
+                provider.unhideCategory(originalName);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20),
+                    SizedBox(width: 8),
+                    Text('Ubah Nama'),
+                  ],
                 ),
-                child: Icon(Icons.folder_copy_rounded, size: 32, color: color),
               ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              PopupMenuItem(
+                value: isHidden ? 'unhide' : 'hide',
+                child: Row(
+                  children: [
+                    Icon(
+                      isHidden ? Icons.visibility : Icons.visibility_off,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Hapus', style: TextStyle(color: Colors.red)),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, PromptProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Topik'),
+        content: Text(
+          'Hapus topik "$title" dan SEMUA prompt di dalamnya?\nTindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await provider.deleteCategory(originalName);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Topik berhasil dihapus')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal hapus: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
       ),
     );
   }
 }
 
-// Widget Card Prompt yang Diupdate
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
   final int index;
@@ -379,6 +537,12 @@ class _PromptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ... (KODE SAMA SEPERTI SEBELUMNYA) ...
+    // Pastikan seluruh kode _PromptCard ada di sini (seperti file sebelumnya)
+    // Untuk menghemat space di response ini, saya asumsikan kode _PromptCard
+    // sama persis dengan yang ada di PromptLibraryPage sebelumnya.
+
+    // Copy implementation from previous file content provided in context
     final theme = Theme.of(context);
     final provider = Provider.of<PromptProvider>(context, listen: false);
     final color = Colors.primaries[index % Colors.primaries.length];
@@ -436,7 +600,6 @@ class _PromptCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              // === POPUP MENU BUTTON UPDATE ===
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 onSelected: (value) async {
@@ -501,7 +664,6 @@ class _PromptCard extends StatelessWidget {
                         context,
                         provider.categories,
                         title: 'Salin ke Topik...',
-                        // Untuk copy, boleh copy ke folder yang sama juga, jadi currentCategory tidak dibuang
                       );
                       if (target != null && context.mounted) {
                         try {
