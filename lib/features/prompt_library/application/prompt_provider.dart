@@ -59,7 +59,7 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // FITUR BARU: Update Prompt
+  // FITUR UPDATE PROMPT
   Future<void> updatePrompt(
     String category,
     PromptConcept oldPrompt,
@@ -71,22 +71,33 @@ class PromptProvider with ChangeNotifier {
       final oldFileName = oldPrompt.fileName;
       final newFileName = _generateFileName(newPrompt.title);
 
-      // Jika judul berubah, nama file berubah.
-      // Kita hapus file lama jika service mendukung delete, atau setidaknya buat file baru.
-      // Catatan: Pastikan PromptLibraryService memiliki method deletePrompt jika ingin file lama hilang.
       if (oldFileName != newFileName) {
-        // Hapus file lama (Opsional, jika service mendukung)
         try {
           await _promptService.deletePrompt(category, oldFileName);
         } catch (e) {
-          // Abaikan error delete jika file tidak ketemu atau method belum ada
           debugPrint("Gagal menghapus file lama: $e");
         }
       }
 
-      // Simpan file baru/update file
       await _promptService.savePromptConcept(category, newFileName, newPrompt);
+      await selectCategory(category);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
+  // --- FITUR BARU: DELETE PROMPT ---
+  Future<void> deletePrompt(String category, PromptConcept prompt) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      // Hapus file dari penyimpanan
+      await _promptService.deletePrompt(category, prompt.fileName);
+
+      // Refresh daftar prompt di kategori yang sedang dipilih
       await selectCategory(category);
     } catch (e) {
       rethrow;
@@ -111,7 +122,6 @@ class PromptProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Helper untuk generate nama file konsisten
   String _generateFileName(String title) {
     final safeTitle = title
         .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '')

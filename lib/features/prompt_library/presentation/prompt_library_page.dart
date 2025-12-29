@@ -233,7 +233,7 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
-// Widget Card Prompt Baru (Dengan Markdown & Edit)
+// Widget Card Prompt Baru (Dengan Markdown & Edit & Delete)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
 
@@ -242,6 +242,7 @@ class _PromptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final provider = Provider.of<PromptProvider>(context, listen: false);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -260,7 +261,7 @@ class _PromptCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Icon + Judul + Deskripsi + Edit Button
+              // Header: Icon + Judul + Deskripsi + Edit Button + Delete Button
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -299,12 +300,28 @@ class _PromptCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // Tombol Edit
                   IconButton(
                     icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
                     onPressed: () {
                       showEditPromptDialog(context, prompt);
                     },
                     tooltip: 'Edit Prompt',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  // --- TOMBOL HAPUS BARU ---
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                    onPressed: () => _showDeleteConfirmation(context, provider),
+                    tooltip: 'Hapus Prompt',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -380,6 +397,57 @@ class _PromptCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Helper untuk konfirmasi hapus
+  void _showDeleteConfirmation(BuildContext context, PromptProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Prompt'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus prompt "${prompt.title}"?\nTindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx); // Tutup dialog
+
+              final currentCategory = provider.selectedCategory;
+              if (currentCategory != null) {
+                try {
+                  await provider.deletePrompt(currentCategory, prompt);
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Prompt berhasil dihapus.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Gagal menghapus: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
       ),
     );
   }
