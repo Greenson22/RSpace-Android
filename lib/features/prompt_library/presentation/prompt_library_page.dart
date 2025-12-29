@@ -158,32 +158,118 @@ class _PromptLibraryView extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: TextField(
-            onChanged: (value) => provider.setSearchQuery(value),
-            decoration: InputDecoration(
-              hintText: 'Cari prompt...',
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                0.5,
+          child: Row(
+            children: [
+              // Search Bar
+              Expanded(
+                child: TextField(
+                  onChanged: (value) => provider.setSearchQuery(value),
+                  decoration: InputDecoration(
+                    hintText: 'Cari prompt...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: 16,
+                    ),
+                    suffixIcon: provider.searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              provider.setSearchQuery('');
+                            },
+                          )
+                        : null,
+                  ),
+                ),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+              const SizedBox(width: 8),
+
+              // Sort Button (Fitur Baru)
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                    0.5,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: PopupMenuButton<PromptSortType>(
+                  icon: Icon(
+                    provider.sortType == PromptSortType.titleAsc
+                        ? Icons.sort_by_alpha
+                        : Icons
+                              .sort_by_alpha_outlined, // Atau icon lain jika ada
+                    color: theme.colorScheme.primary,
+                  ),
+                  tooltip: 'Urutkan berdasarkan...',
+                  onSelected: (PromptSortType result) {
+                    provider.setSortType(result);
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<PromptSortType>>[
+                        PopupMenuItem<PromptSortType>(
+                          value: PromptSortType.titleAsc,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.arrow_upward,
+                                size: 18,
+                                color:
+                                    provider.sortType == PromptSortType.titleAsc
+                                    ? theme.colorScheme.primary
+                                    : Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Nama (A-Z)',
+                                style: TextStyle(
+                                  fontWeight:
+                                      provider.sortType ==
+                                          PromptSortType.titleAsc
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<PromptSortType>(
+                          value: PromptSortType.titleDesc,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.arrow_downward,
+                                size: 18,
+                                color:
+                                    provider.sortType ==
+                                        PromptSortType.titleDesc
+                                    ? theme.colorScheme.primary
+                                    : Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Nama (Z-A)',
+                                style: TextStyle(
+                                  fontWeight:
+                                      provider.sortType ==
+                                          PromptSortType.titleDesc
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 16,
-              ),
-              suffixIcon: provider.searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
-                      onPressed: () {
-                        provider.setSearchQuery('');
-                      },
-                    )
-                  : null,
-            ),
+            ],
           ),
         ),
         Expanded(

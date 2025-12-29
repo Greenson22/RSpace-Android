@@ -1,9 +1,15 @@
 // lib/features/prompt_library/application/prompt_provider.dart
 
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart'; // Tambahkan package uuid
+import 'package:uuid/uuid.dart';
 import '../domain/models/prompt_concept_model.dart';
 import '../infrastructure/prompt_library_service.dart';
+
+// Enum untuk tipe pengurutan
+enum PromptSortType {
+  titleAsc, // A-Z
+  titleDesc, // Z-A
+}
 
 class PromptProvider with ChangeNotifier {
   final PromptLibraryService _promptService = PromptLibraryService();
@@ -24,17 +30,40 @@ class PromptProvider with ChangeNotifier {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  // Getter untuk list prompt yang sudah difilter
+  // State untuk pengurutan
+  PromptSortType _sortType = PromptSortType.titleAsc;
+  PromptSortType get sortType => _sortType;
+
+  // Getter untuk list prompt yang sudah difilter DAN diurutkan
   List<PromptConcept> get filteredPrompts {
+    // 1. Filter berdasarkan search query
+    List<PromptConcept> result;
     if (_searchQuery.isEmpty) {
-      return _prompts;
-    }
-    return _prompts.where((prompt) {
+      result = List.from(_prompts); // Buat salinan list agar aman saat di-sort
+    } else {
       final query = _searchQuery.toLowerCase();
-      final title = prompt.title.toLowerCase();
-      final desc = prompt.description.toLowerCase();
-      return title.contains(query) || desc.contains(query);
-    }).toList();
+      result = _prompts.where((prompt) {
+        final title = prompt.title.toLowerCase();
+        final desc = prompt.description.toLowerCase();
+        return title.contains(query) || desc.contains(query);
+      }).toList();
+    }
+
+    // 2. Urutkan hasil filter
+    switch (_sortType) {
+      case PromptSortType.titleAsc:
+        result.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
+        break;
+      case PromptSortType.titleDesc:
+        result.sort(
+          (a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()),
+        );
+        break;
+    }
+
+    return result;
   }
 
   PromptProvider() {
@@ -52,6 +81,12 @@ class PromptProvider with ChangeNotifier {
   // Method untuk mengubah query pencarian
   void setSearchQuery(String query) {
     _searchQuery = query;
+    notifyListeners();
+  }
+
+  // Method untuk mengubah tipe pengurutan
+  void setSortType(PromptSortType type) {
+    _sortType = type;
     notifyListeners();
   }
 
@@ -128,7 +163,7 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // --- FITUR BARU: Duplicate ---
+  // --- FITUR: Duplicate ---
   Future<void> duplicatePrompt(String category, PromptConcept prompt) async {
     _isLoading = true;
     notifyListeners();
@@ -156,7 +191,7 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // --- FITUR BARU: Move ---
+  // --- FITUR: Move ---
   Future<void> movePrompt(
     String currentCategory,
     String targetCategory,
@@ -166,7 +201,6 @@ class PromptProvider with ChangeNotifier {
     notifyListeners();
     try {
       // 1. Simpan di kategori baru
-      // Kita generate ID baru agar sesuai dengan format kode kategori (opsional, tapi rapi)
       final newId =
           '${targetCategory.toUpperCase()}-${const Uuid().v4().substring(0, 4)}';
       final fileName = _generateFileName(prompt.title);
@@ -198,7 +232,7 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // --- FITUR BARU: Copy ---
+  // --- FITUR: Copy ---
   Future<void> copyPromptToCategory(
     String targetCategory,
     PromptConcept prompt,
@@ -223,7 +257,6 @@ class PromptProvider with ChangeNotifier {
         fileName,
         copiedPrompt,
       );
-      // Tidak perlu refresh kategori saat ini karena copy ke tempat lain
     } catch (e) {
       rethrow;
     } finally {
