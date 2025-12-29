@@ -1,8 +1,10 @@
 // lib/features/prompt_library/presentation/prompt_library_page.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import untuk Clipboard
 import 'package:provider/provider.dart';
 import '../application/prompt_provider.dart';
-import '../domain/models/prompt_concept_model.dart'; // Pastikan import ini ada untuk akses model
+import '../domain/models/prompt_concept_model.dart';
 import 'widgets/prompt_dialogs.dart';
 
 class PromptLibraryPage extends StatelessWidget {
@@ -28,10 +30,7 @@ class _PromptLibraryView extends StatelessWidget {
     // Menentukan judul halaman berdasarkan state
     final String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
 
-    // Handle back button behavior manually if needed,
-    // but usually AppBar handles leading automatically well.
-    // Here we strictly control it to clear category selection.
-
+    // Handle back button behavior manually to clear category selection
     return PopScope(
       canPop: provider.selectedCategory == null,
       onPopInvoked: (didPop) {
@@ -49,7 +48,7 @@ class _PromptLibraryView extends StatelessWidget {
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => provider.clearCategorySelection(),
                 )
-              : null, // Default back button logic for main page
+              : null,
         ),
         body: provider.isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -85,7 +84,7 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN GRID KATEGORI (Seperti Halaman Progress)
+  // TAMPILAN GRID KATEGORI
   Widget _buildCategoryGrid(BuildContext context, PromptProvider provider) {
     if (provider.categories.isEmpty) {
       return Center(
@@ -111,15 +110,14 @@ class _PromptLibraryView extends StatelessWidget {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // 2 Kolom
+        crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 1.1, // Rasio aspek kartu
+        childAspectRatio: 1.1,
       ),
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
-        // Generate warna pastel unik berdasarkan index/nama
         final colorSeed = Colors.primaries[index % Colors.primaries.length];
 
         return _PromptTopicTile(
@@ -131,7 +129,7 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  // TAMPILAN LIST PROMPT (Card yang lebih rapi)
+  // TAMPILAN LIST PROMPT (DIPERBARUI)
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
     if (provider.prompts.isEmpty) {
       return Center(
@@ -169,7 +167,7 @@ class _PromptLibraryView extends StatelessWidget {
 }
 
 // =============================================================================
-// WIDGETS TAMBAHAN (Bisa dipisah ke file widget sendiri jika ingin lebih rapi)
+// WIDGETS TAMBAHAN
 // =============================================================================
 
 class _PromptTopicTile extends StatelessWidget {
@@ -234,6 +232,7 @@ class _PromptTopicTile extends StatelessWidget {
   }
 }
 
+// Widget Card Prompt Baru (DIPERBARUI)
 class _PromptCard extends StatelessWidget {
   final PromptConcept prompt;
 
@@ -242,40 +241,38 @@ class _PromptCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final variationCount = prompt.variasiPrompt.length;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
+      elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
+        side: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          // TODO: Navigasi ke detail prompt / variasi
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Membuka ${prompt.judulUtama}...")),
-          );
+          _showDetailDialog(context, prompt);
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: Icon + Judul + Deskripsi
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
+                      color: theme.colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.tips_and_updates,
-                      color: theme.colorScheme.onPrimaryContainer,
+                      Icons.article_outlined,
+                      color: theme.colorScheme.primary,
+                      size: 24,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -284,16 +281,16 @@ class _PromptCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          prompt.judulUtama,
+                          prompt.title,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          prompt.deskripsiUtama,
+                          prompt.description,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodySmall?.color,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -304,34 +301,111 @@ class _PromptCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Divider(height: 1, color: theme.dividerColor.withOpacity(0.5)),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.copy_all_rounded,
-                        size: 16,
-                        color: theme.primaryColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$variationCount Variasi',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.primaryColor,
-                        ),
-                      ),
-                    ],
+              Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
+              const SizedBox(height: 12),
+
+              // Preview Isi Prompt (Code block style)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                    0.5,
                   ),
-                  Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-                ],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.dividerColor.withOpacity(0.2),
+                  ),
+                ),
+                child: Text(
+                  prompt.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Action Buttons
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: prompt.content));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Isi prompt berhasil disalin!'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  label: const Text('Salin Prompt'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Helper untuk melihat detail prompt jika teks terpotong
+  void _showDetailDialog(BuildContext context, PromptConcept prompt) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(prompt.title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                prompt.description,
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Isi Prompt:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              SelectableText(
+                prompt.content,
+                style: const TextStyle(fontFamily: 'monospace'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: prompt.content));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Isi prompt disalin!')),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Salin'),
+          ),
+        ],
       ),
     );
   }

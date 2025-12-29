@@ -5,9 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../application/prompt_provider.dart';
 import '../../domain/models/prompt_concept_model.dart';
-import '../../domain/models/prompt_variation_model.dart';
 
-// Dialog untuk menambah kategori baru
+// Dialog untuk menambah kategori baru (Tidak ada perubahan logika, hanya perapihan)
 Future<void> showAddCategoryDialog(BuildContext context) {
   final TextEditingController controller = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -24,7 +23,10 @@ Future<void> showAddCategoryDialog(BuildContext context) {
           child: TextFormField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(labelText: 'Nama Kategori'),
+            decoration: const InputDecoration(
+              labelText: 'Nama Kategori',
+              hintText: 'Contoh: Coding, Writing, Ide Bisnis',
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Nama kategori tidak boleh kosong.';
@@ -78,13 +80,12 @@ Future<void> showAddCategoryDialog(BuildContext context) {
   );
 }
 
-// Dialog untuk menambah konsep prompt baru
+// Dialog untuk menambah prompt baru (DIPERBARUI: Struktur Flat)
 Future<void> showAddPromptDialog(BuildContext context) {
   final formKey = GlobalKey<FormState>();
-  final judulController = TextEditingController();
-  final deskripsiUtamaController = TextEditingController();
-  final namaVariasiController = TextEditingController();
-  final isiPromptController = TextEditingController();
+  final titleController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final contentController = TextEditingController();
 
   return showDialog(
     context: context,
@@ -92,57 +93,57 @@ Future<void> showAddPromptDialog(BuildContext context) {
       final provider = Provider.of<PromptProvider>(context, listen: false);
 
       return AlertDialog(
-        title: const Text('Tambah Konsep Prompt Baru'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: judulController,
-                  decoration: const InputDecoration(
-                    labelText: 'Judul Utama Prompt',
+        title: const Text('Tambah Prompt Baru'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Judul Prompt',
+                      hintText: 'Misal: Asisten Coding Flutter',
+                      border: OutlineInputBorder(),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (v) =>
+                        v!.trim().isEmpty ? 'Judul tidak boleh kosong' : null,
                   ),
-                  validator: (v) =>
-                      v!.trim().isEmpty ? 'Judul tidak boleh kosong' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: deskripsiUtamaController,
-                  decoration: const InputDecoration(
-                    labelText: 'Deskripsi Utama Prompt',
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi Singkat',
+                      hintText: 'Kegunaan prompt ini...',
+                      border: OutlineInputBorder(),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (v) => v!.trim().isEmpty
+                        ? 'Deskripsi tidak boleh kosong'
+                        : null,
                   ),
-                  validator: (v) =>
-                      v!.trim().isEmpty ? 'Deskripsi tidak boleh kosong' : null,
-                ),
-                const Divider(height: 32),
-                Text(
-                  'Variasi Awal',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: namaVariasiController,
-                  decoration: const InputDecoration(labelText: 'Nama Variasi'),
-                  validator: (v) => v!.trim().isEmpty
-                      ? 'Nama variasi tidak boleh kosong'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: isiPromptController,
-                  decoration: const InputDecoration(
-                    labelText: 'Isi Prompt',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: contentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Isi Prompt',
+                      hintText: 'Tulis prompt lengkap di sini...',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 10,
+                    minLines: 5,
+                    validator: (v) => v!.trim().isEmpty
+                        ? 'Isi prompt tidak boleh kosong'
+                        : null,
                   ),
-                  maxLines: 8,
-                  validator: (v) => v!.trim().isEmpty
-                      ? 'Isi prompt tidak boleh kosong'
-                      : null,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -157,18 +158,10 @@ Future<void> showAddPromptDialog(BuildContext context) {
                 final newPrompt = PromptConcept(
                   idPrompt:
                       '${provider.selectedCategory!.toUpperCase()}-${const Uuid().v4().substring(0, 4)}',
-                  judulUtama: judulController.text.trim(),
-                  deskripsiUtama: deskripsiUtamaController.text.trim(),
-                  fileName: '', // Akan dibuat oleh provider
-                  variasiPrompt: [
-                    PromptVariation(
-                      nama: namaVariasiController.text.trim(),
-                      versi: '1.0',
-                      deskripsi: 'Versi awal.',
-                      targetModelAi: ['General'],
-                      isiPrompt: isiPromptController.text.trim(),
-                    ),
-                  ],
+                  title: titleController.text.trim(),
+                  description: descriptionController.text.trim(),
+                  content: contentController.text.trim(),
+                  fileName: '', // Akan dihandle oleh logic penyimpanan
                 );
 
                 try {
@@ -197,7 +190,7 @@ Future<void> showAddPromptDialog(BuildContext context) {
                 }
               }
             },
-            child: const Text('Simpan Prompt'),
+            child: const Text('Simpan'),
           ),
         ],
       );

@@ -48,10 +48,17 @@ class PromptProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Buat nama file dari judul utama
-      final fileName =
-          '${prompt.judulUtama.replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '').replaceAll(' ', '_').toLowerCase()}.json';
+      // Generate nama file yang aman dari Judul (title)
+      final safeTitle = prompt.title
+          .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), '') // Hapus karakter spesial
+          .trim()
+          .replaceAll(RegExp(r'\s+'), '_') // Ganti spasi dengan underscore
+          .toLowerCase();
+
+      final fileName = '$safeTitle.json';
+
       await _promptService.savePromptConcept(category, fileName, prompt);
+
       // Muat ulang prompt untuk kategori yang dipilih
       await selectCategory(category);
     } catch (e) {

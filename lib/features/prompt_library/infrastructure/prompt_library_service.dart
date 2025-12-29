@@ -62,7 +62,8 @@ class PromptLibraryService {
         prompts.add(prompt);
       }
     }
-    return prompts..sort((a, b) => a.judulUtama.compareTo(b.judulUtama));
+    // Sorting berdasarkan Title (sebelumnya judulUtama)
+    return prompts..sort((a, b) => a.title.compareTo(b.title));
   }
 
   Future<PromptConcept?> readPromptConcept(
