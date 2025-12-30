@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
-import '../../../core/widgets/icon_picker_dialog.dart'; // Import Icon Picker
+import '../../../core/widgets/icon_picker_dialog.dart';
 import '../application/prompt_provider.dart';
 import '../domain/models/prompt_concept_model.dart';
 import 'widgets/prompt_dialogs.dart';
@@ -98,8 +98,9 @@ class _PromptLibraryView extends StatelessWidget {
                     ],
                   ),
                 ),
+                // UBAH: Panggil _buildCategoryList, bukan Grid
                 child: provider.selectedCategory == null
-                    ? _buildCategoryGrid(context, provider)
+                    ? _buildCategoryList(context, provider)
                     : _buildPromptList(context, provider),
               ),
         floatingActionButton: FloatingActionButton.extended(
@@ -119,7 +120,8 @@ class _PromptLibraryView extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryGrid(BuildContext context, PromptProvider provider) {
+  // UBAH: Method ini sekarang membangun ListView, bukan GridView
+  Widget _buildCategoryList(BuildContext context, PromptProvider provider) {
     if (provider.categories.isEmpty) {
       return Center(
         child: Column(
@@ -141,14 +143,8 @@ class _PromptLibraryView extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.0,
-      ),
       itemCount: provider.categories.length,
       itemBuilder: (context, index) {
         final category = provider.categories[index];
@@ -156,15 +152,15 @@ class _PromptLibraryView extends StatelessWidget {
         final displayName = isHidden ? category.substring(1) : category;
         final colorSeed = Colors.primaries[index % Colors.primaries.length];
 
-        // Ambil ikon custom dari provider
         final customIcon = provider.getCategoryIcon(category);
 
-        return _PromptTopicTile(
+        // Menggunakan Tile baru yang didesain untuk List
+        return _PromptTopicListTile(
           title: displayName,
           originalName: category,
           color: isHidden ? Colors.grey : colorSeed,
           isHidden: isHidden,
-          customIcon: customIcon, // Pass ikon ke widget
+          customIcon: customIcon,
           onTap: () => provider.selectCategory(category),
         );
       },
@@ -348,16 +344,17 @@ class _PromptLibraryView extends StatelessWidget {
   }
 }
 
-// UPDATE: Tile Topik dengan Menu Ubah Ikon
-class _PromptTopicTile extends StatelessWidget {
+// UBAH: Widget ini menggantikan _PromptTopicTile yang lama
+// Desain diubah menjadi Card horizontal (ListTile)
+class _PromptTopicListTile extends StatelessWidget {
   final String title;
   final String originalName;
   final Color color;
   final bool isHidden;
-  final String? customIcon; // Parameter ikon kustom
+  final String? customIcon;
   final VoidCallback onTap;
 
-  const _PromptTopicTile({
+  const _PromptTopicListTile({
     required this.title,
     required this.originalName,
     required this.color,
@@ -371,143 +368,116 @@ class _PromptTopicTile extends StatelessWidget {
     final theme = Theme.of(context);
     final provider = Provider.of<PromptProvider>(context, listen: false);
 
-    return Stack(
-      children: [
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.dividerColor.withOpacity(0.2)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        onTap: onTap,
+        // Bagian Kiri: Ikon
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [color.withOpacity(0.1), color.withOpacity(0.25)],
+          alignment: Alignment.center,
+          child: customIcon != null
+              ? Text(customIcon!, style: const TextStyle(fontSize: 24))
+              : Icon(
+                  isHidden ? Icons.visibility_off : Icons.folder_copy_rounded,
+                  color: color,
+                  size: 24,
                 ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        // Bagian Tengah: Judul
+        title: Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isHidden ? Colors.grey : theme.colorScheme.onSurface,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        // Bagian Kanan: Menu (Titik Tiga)
+        trailing: PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          onSelected: (value) async {
+            if (value == 'edit') {
+              showRenameCategoryDialog(context, originalName);
+            } else if (value == 'change_icon') {
+              await showIconPickerDialog(
+                context: context,
+                name: title,
+                onIconSelected: (newIcon) {
+                  provider.updateCategoryIcon(originalName, newIcon);
+                },
+              );
+            } else if (value == 'delete') {
+              _showDeleteDialog(context, provider);
+            } else if (value == 'hide') {
+              provider.hideCategory(originalName);
+            } else if (value == 'unhide') {
+              provider.unhideCategory(originalName);
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    // Tampilkan Ikon Custom (Text/Emoji) atau Default Icon
-                    child: customIcon != null
-                        ? Text(
-                            customIcon!,
-                            style: const TextStyle(fontSize: 32),
-                          )
-                        : Icon(
-                            isHidden
-                                ? Icons.visibility_off
-                                : Icons.folder_copy_rounded,
-                            size: 32,
-                            color: color,
-                          ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  Icon(Icons.edit, size: 20),
+                  SizedBox(width: 8),
+                  Text('Ubah Nama'),
                 ],
               ),
             ),
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: PopupMenuButton<String>(
-            icon: Icon(
-              Icons.more_vert,
-              color: theme.colorScheme.onSurfaceVariant,
+            const PopupMenuItem(
+              value: 'change_icon',
+              child: Row(
+                children: [
+                  Icon(Icons.emoji_emotions_outlined, size: 20),
+                  SizedBox(width: 8),
+                  Text('Ubah Ikon'),
+                ],
+              ),
             ),
-            onSelected: (value) async {
-              if (value == 'edit') {
-                showRenameCategoryDialog(context, originalName);
-              } else if (value == 'change_icon') {
-                // Panggil Icon Picker Dialog
-                await showIconPickerDialog(
-                  context: context,
-                  name: title,
-                  onIconSelected: (newIcon) {
-                    provider.updateCategoryIcon(originalName, newIcon);
-                  },
-                );
-              } else if (value == 'delete') {
-                _showDeleteDialog(context, provider);
-              } else if (value == 'hide') {
-                provider.hideCategory(originalName);
-              } else if (value == 'unhide') {
-                provider.unhideCategory(originalName);
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, size: 20),
-                    SizedBox(width: 8),
-                    Text('Ubah Nama'),
-                  ],
-                ),
+            PopupMenuItem(
+              value: isHidden ? 'unhide' : 'hide',
+              child: Row(
+                children: [
+                  Icon(
+                    isHidden ? Icons.visibility : Icons.visibility_off,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                ],
               ),
-              const PopupMenuItem(
-                value: 'change_icon',
-                child: Row(
-                  children: [
-                    Icon(Icons.emoji_emotions_outlined, size: 20),
-                    SizedBox(width: 8),
-                    Text('Ubah Ikon'),
-                  ],
-                ),
+            ),
+            const PopupMenuDivider(),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Hapus', style: TextStyle(color: Colors.red)),
+                ],
               ),
-              PopupMenuItem(
-                value: isHidden ? 'unhide' : 'hide',
-                child: Row(
-                  children: [
-                    Icon(
-                      isHidden ? Icons.visibility : Icons.visibility_off,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Hapus', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
