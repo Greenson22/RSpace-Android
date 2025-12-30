@@ -50,6 +50,7 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
     }
 
     // Tentukan apakah back dibolehkan (untuk menutup search dulu)
+    // Back dibolehkan jika TIDAK sedang search DAN TIDAK sedang membuka kategori
     final canPop = provider.selectedCategory == null && !_isSearching;
 
     return PopScope(
@@ -57,36 +58,48 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
       onPopInvoked: (didPop) {
         if (didPop) return;
 
-        // Jika sedang di dalam folder kategori, kembali ke list kategori
-        if (provider.selectedCategory != null) {
-          provider.clearCategorySelection();
-          return;
-        }
-
-        // Jika sedang mode search di halaman utama, tutup search
+        // Skenario 1: Sedang Searching (baik di halaman utama atau dalam kategori)
         if (_isSearching) {
           setState(() {
             _isSearching = false;
             _searchController.clear();
-            provider.setCategorySearchQuery('');
+            // Reset query berdasarkan halaman aktif
+            if (provider.selectedCategory != null) {
+              provider.setSearchQuery('');
+            } else {
+              provider.setCategorySearchQuery('');
+            }
           });
+          return;
+        }
+
+        // Skenario 2: Sedang di dalam folder kategori (bukan searching)
+        if (provider.selectedCategory != null) {
+          provider.clearCategorySelection();
+          return;
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: _isSearching && provider.selectedCategory == null
+          title: _isSearching
               ? TextField(
                   controller: _searchController,
                   autofocus: true,
-                  decoration: const InputDecoration(
-                    hintText: 'Cari topik...',
+                  decoration: InputDecoration(
+                    hintText: provider.selectedCategory == null
+                        ? 'Cari topik...'
+                        : 'Cari prompt...',
                     border: InputBorder.none,
-                    hintStyle: TextStyle(color: Colors.white70),
+                    hintStyle: const TextStyle(color: Colors.white70),
                   ),
                   style: const TextStyle(color: Colors.white),
                   cursorColor: Colors.white,
                   onChanged: (value) {
-                    provider.setCategorySearchQuery(value);
+                    if (provider.selectedCategory == null) {
+                      provider.setCategorySearchQuery(value);
+                    } else {
+                      provider.setSearchQuery(value);
+                    }
                   },
                 )
               : Text(pageTitle),
@@ -130,21 +143,25 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
   }
 
   Widget? _buildLeading(PromptProvider provider) {
-    // Case 1: Sedang search di halaman utama
-    if (provider.selectedCategory == null && _isSearching) {
+    // Case 1: Sedang search (di manapun) -> Tombol Back menutup Search
+    if (_isSearching) {
       return IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
           setState(() {
             _isSearching = false;
             _searchController.clear();
-            provider.setCategorySearchQuery('');
+            if (provider.selectedCategory == null) {
+              provider.setCategorySearchQuery('');
+            } else {
+              provider.setSearchQuery('');
+            }
           });
         },
       );
     }
 
-    // Case 2: Sedang di dalam kategori (tampilkan tombol back untuk clear selection)
+    // Case 2: Sedang di dalam kategori (tidak search) -> Tombol Back kembali ke list kategori
     if (provider.selectedCategory != null) {
       return IconButton(
         icon: const Icon(Icons.arrow_back),
@@ -161,22 +178,26 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
     PromptProvider provider,
     ThemeData theme,
   ) {
-    // Actions untuk halaman LIST TOPIK (Category)
-    if (provider.selectedCategory == null) {
-      if (_isSearching) {
-        return [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              _searchController.clear();
-              provider.setCategorySearchQuery('');
-            },
-          ),
-        ];
-      }
-
+    // Jika sedang mode search, tampilkan tombol close (X)
+    if (_isSearching) {
       return [
-        // Tombol Search
+        IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            _searchController.clear();
+            if (provider.selectedCategory == null) {
+              provider.setCategorySearchQuery('');
+            } else {
+              provider.setSearchQuery('');
+            }
+          },
+        ),
+      ];
+    }
+
+    // --- ACTIONS SAAT DI HALAMAN LIST TOPIK (CATEGORY) ---
+    if (provider.selectedCategory == null) {
+      return [
         IconButton(
           icon: const Icon(Icons.search),
           tooltip: 'Cari Topik',
@@ -186,7 +207,6 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
             });
           },
         ),
-        // Tombol Sort
         PopupMenuButton<PromptSortType>(
           icon: const Icon(Icons.sort_by_alpha),
           tooltip: 'Urutkan Topik',
@@ -282,10 +302,72 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
       ];
     }
 
-    // Actions untuk halaman LIST PROMPT (Default/Empty jika tidak diperlukan)
+    // --- ACTIONS SAAT DI HALAMAN LIST PROMPT ---
     return [
-      // Jika ada action khusus saat melihat list prompt, tambahkan di sini
-      // Saat ini UI prompt list memiliki search/sort di body, bukan appbar.
+      IconButton(
+        icon: const Icon(Icons.search),
+        tooltip: 'Cari Prompt',
+        onPressed: () {
+          setState(() {
+            _isSearching = true;
+          });
+        },
+      ),
+      PopupMenuButton<PromptSortType>(
+        icon: const Icon(Icons.sort_by_alpha),
+        tooltip: 'Urutkan Prompt',
+        onSelected: (PromptSortType result) {
+          provider.setSortType(result);
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<PromptSortType>>[
+          PopupMenuItem<PromptSortType>(
+            value: PromptSortType.titleAsc,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.arrow_upward,
+                  size: 18,
+                  color: provider.sortType == PromptSortType.titleAsc
+                      ? theme.colorScheme.primary
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Nama (A-Z)',
+                  style: TextStyle(
+                    fontWeight: provider.sortType == PromptSortType.titleAsc
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<PromptSortType>(
+            value: PromptSortType.titleDesc,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.arrow_downward,
+                  size: 18,
+                  color: provider.sortType == PromptSortType.titleDesc
+                      ? theme.colorScheme.primary
+                      : Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Nama (Z-A)',
+                  style: TextStyle(
+                    fontWeight: provider.sortType == PromptSortType.titleDesc
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     ];
   }
 
@@ -294,7 +376,6 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
     final categories = provider.filteredCategories;
 
     if (categories.isEmpty) {
-      // Cek apakah kosong karena search result atau memang kosong
       if (provider.categorySearchQuery.isNotEmpty) {
         return Center(
           child: Column(
@@ -343,8 +424,6 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
         final category = categories[index];
         final isHidden = category.startsWith('.');
         final displayName = isHidden ? category.substring(1) : category;
-        // Gunakan index warna yang konsisten meskipun di-sort/filter mungkin akan berubah
-        // atau gunakan hashcode string agar warna tetap sama per item
         final colorSeed =
             Colors.primaries[category.hashCode % Colors.primaries.length];
 
@@ -372,7 +451,6 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
     );
   }
 
-  // _buildPromptList tetap sama seperti sebelumnya (tidak diubah di snippet ini)
   Widget _buildPromptList(BuildContext context, PromptProvider provider) {
     final theme = Theme.of(context);
 
@@ -400,159 +478,36 @@ class _PromptLibraryViewState extends State<_PromptLibraryView> {
       );
     }
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  onChanged: (value) => provider.setSearchQuery(value),
-                  decoration: InputDecoration(
-                    hintText: 'Cari prompt...',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest
-                        .withOpacity(0.5),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: 16,
-                    ),
-                    suffixIcon: provider.searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            onPressed: () {
-                              provider.setSearchQuery('');
-                            },
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                    0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: PopupMenuButton<PromptSortType>(
-                  icon: Icon(
-                    provider.sortType == PromptSortType.titleAsc
-                        ? Icons.sort_by_alpha
-                        : Icons.sort_by_alpha_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  tooltip: 'Urutkan berdasarkan...',
-                  onSelected: (PromptSortType result) {
-                    provider.setSortType(result);
-                  },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<PromptSortType>>[
-                        PopupMenuItem<PromptSortType>(
-                          value: PromptSortType.titleAsc,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 18,
-                                color:
-                                    provider.sortType == PromptSortType.titleAsc
-                                    ? theme.colorScheme.primary
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Nama (A-Z)',
-                                style: TextStyle(
-                                  fontWeight:
-                                      provider.sortType ==
-                                          PromptSortType.titleAsc
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<PromptSortType>(
-                          value: PromptSortType.titleDesc,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.arrow_downward,
-                                size: 18,
-                                color:
-                                    provider.sortType ==
-                                        PromptSortType.titleDesc
-                                    ? theme.colorScheme.primary
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Nama (Z-A)',
-                                style: TextStyle(
-                                  fontWeight:
-                                      provider.sortType ==
-                                          PromptSortType.titleDesc
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                ),
-              ),
-            ],
-          ),
+    // UBAH: Menghapus Widget Column wrapper yang sebelumnya berisi TextField search & Sort
+    // Sekarang langsung return ListView atau Pesan Kosong (jika hasil filter kosong)
+
+    if (provider.filteredPrompts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 48, color: theme.disabledColor),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ditemukan prompt dengan kata kunci\n"${provider.searchQuery}"',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: theme.disabledColor),
+            ),
+          ],
         ),
-        Expanded(
-          child: provider.filteredPrompts.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.search_off,
-                        size: 48,
-                        color: theme.disabledColor,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Tidak ditemukan prompt dengan kata kunci\n"${provider.searchQuery}"',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: theme.disabledColor),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(
-                    16,
-                  ).copyWith(top: 8, bottom: 80),
-                  itemCount: provider.filteredPrompts.length,
-                  itemBuilder: (context, index) {
-                    final prompt = provider.filteredPrompts[index];
-                    return _PromptCard(prompt: prompt, index: index);
-                  },
-                ),
-        ),
-      ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16).copyWith(bottom: 80),
+      itemCount: provider.filteredPrompts.length,
+      itemBuilder: (context, index) {
+        final prompt = provider.filteredPrompts[index];
+        return _PromptCard(prompt: prompt, index: index);
+      },
     );
   }
 }
-
-// _PromptTopicListTile dan _PromptCard tetap sama (tidak perlu perubahan)
-// ... (Kode _PromptTopicListTile dan _PromptCard di-paste ulang jika diperlukan,
-// tapi dalam implementasi nyata cukup biarkan seperti file asli jika tidak ada perubahan).
 
 class _PromptTopicListTile extends StatelessWidget {
   final String title;
