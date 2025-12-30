@@ -33,7 +33,6 @@ class PromptLibraryService {
     }
   }
 
-  // UPDATE: Tambahkan parameter includeHidden
   Future<List<String>> getCategories({bool includeHidden = false}) async {
     final libraryDir = await _getLibraryDirectory();
     final entities = libraryDir.listSync();
@@ -43,13 +42,12 @@ class PromptLibraryService {
         .map((dir) => path.basename(dir.path))
         .where((name) {
           if (includeHidden) return true;
-          return !name.startsWith('.'); // Filter folder yang diawali titik
+          return !name.startsWith('.');
         })
         .toList()
       ..sort();
   }
 
-  // BARU: Rename Kategori
   Future<void> renameCategory(String oldName, String newName) async {
     final libraryDir = await _getLibraryDirectory();
     final oldDir = Directory(path.join(libraryDir.path, oldName));
@@ -69,7 +67,6 @@ class PromptLibraryService {
     }
   }
 
-  // BARU: Hapus Kategori
   Future<void> deleteCategory(String categoryName) async {
     final libraryDir = await _getLibraryDirectory();
     final categoryDir = Directory(path.join(libraryDir.path, categoryName));
@@ -82,6 +79,50 @@ class PromptLibraryService {
       }
     }
   }
+
+  // --- BARU: Ikon Kategori ---
+
+  Future<String?> getCategoryIcon(String category) async {
+    try {
+      final libraryDir = await _getLibraryDirectory();
+      final metaFile = File(
+        path.join(libraryDir.path, category, 'metadata.json'),
+      );
+      if (await metaFile.exists()) {
+        final content = await metaFile.readAsString();
+        final json = jsonDecode(content) as Map<String, dynamic>;
+        return json['icon'] as String?;
+      }
+    } catch (e) {
+      debugPrint('Error reading category icon: $e');
+    }
+    return null;
+  }
+
+  Future<void> saveCategoryIcon(String category, String icon) async {
+    try {
+      final libraryDir = await _getLibraryDirectory();
+      final metaFile = File(
+        path.join(libraryDir.path, category, 'metadata.json'),
+      );
+
+      Map<String, dynamic> data = {};
+      if (await metaFile.exists()) {
+        try {
+          data = jsonDecode(await metaFile.readAsString());
+        } catch (_) {
+          // Ignore error, start with empty map
+        }
+      }
+
+      data['icon'] = icon;
+      await metaFile.writeAsString(jsonEncode(data));
+    } catch (e) {
+      throw Exception('Gagal menyimpan ikon kategori: $e');
+    }
+  }
+
+  // ---------------------------
 
   Future<List<PromptConcept>> getPromptsInCategory(String category) async {
     final libraryDir = await _getLibraryDirectory();
@@ -102,7 +143,6 @@ class PromptLibraryService {
         prompts.add(prompt);
       }
     }
-    // Sorting berdasarkan Title
     return prompts..sort((a, b) => a.title.compareTo(b.title));
   }
 

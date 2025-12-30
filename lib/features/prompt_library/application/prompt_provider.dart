@@ -16,6 +16,9 @@ class PromptProvider with ChangeNotifier {
   List<String> _categories = [];
   List<String> get categories => _categories;
 
+  // BARU: Map untuk menyimpan ikon kategori
+  final Map<String, String> _categoryIcons = {};
+
   List<PromptConcept> _prompts = [];
   List<PromptConcept> get prompts => _prompts;
 
@@ -28,9 +31,11 @@ class PromptProvider with ChangeNotifier {
   PromptSortType _sortType = PromptSortType.titleAsc;
   PromptSortType get sortType => _sortType;
 
-  // BARU: State untuk menampilkan topik tersembunyi
   bool _showHidden = false;
   bool get showHidden => _showHidden;
+
+  // BARU: Getter untuk ikon
+  String? getCategoryIcon(String category) => _categoryIcons[category];
 
   List<PromptConcept> get filteredPrompts {
     List<PromptConcept> result;
@@ -65,18 +70,28 @@ class PromptProvider with ChangeNotifier {
     loadCategories();
   }
 
-  // UPDATE: Mendukung showHidden
+  // UPDATE: Load categories dan ikonnya
   Future<void> loadCategories() async {
     _isLoading = true;
     notifyListeners();
+
     _categories = await _promptService.getCategories(
       includeHidden: _showHidden,
     );
+
+    // Load icons
+    _categoryIcons.clear();
+    for (final category in _categories) {
+      final icon = await _promptService.getCategoryIcon(category);
+      if (icon != null) {
+        _categoryIcons[category] = icon;
+      }
+    }
+
     _isLoading = false;
     notifyListeners();
   }
 
-  // BARU: Toggle Hidden
   void toggleShowHidden() {
     _showHidden = !_showHidden;
     loadCategories();
@@ -90,6 +105,18 @@ class PromptProvider with ChangeNotifier {
   void setSortType(PromptSortType type) {
     _sortType = type;
     notifyListeners();
+  }
+
+  // BARU: Update Ikon Kategori
+  Future<void> updateCategoryIcon(String category, String icon) async {
+    try {
+      await _promptService.saveCategoryIcon(category, icon);
+      _categoryIcons[category] = icon;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Gagal update ikon: $e');
+      rethrow;
+    }
   }
 
   Future<void> addCategory(String categoryName) async {
@@ -106,7 +133,6 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // BARU: Rename Category
   Future<void> renameCategory(String oldName, String newName) async {
     _isLoading = true;
     notifyListeners();
@@ -121,7 +147,6 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // BARU: Delete Category
   Future<void> deleteCategory(String categoryName) async {
     _isLoading = true;
     notifyListeners();
@@ -136,16 +161,14 @@ class PromptProvider with ChangeNotifier {
     }
   }
 
-  // BARU: Hide Category (Rename dengan prefix .)
   Future<void> hideCategory(String categoryName) async {
-    if (categoryName.startsWith('.')) return; // Sudah hidden
+    if (categoryName.startsWith('.')) return;
     final newName = '.$categoryName';
     await renameCategory(categoryName, newName);
   }
 
-  // BARU: Unhide Category (Hapus prefix .)
   Future<void> unhideCategory(String categoryName) async {
-    if (!categoryName.startsWith('.')) return; // Tidak hidden
+    if (!categoryName.startsWith('.')) return;
     final newName = categoryName.substring(1);
     await renameCategory(categoryName, newName);
   }

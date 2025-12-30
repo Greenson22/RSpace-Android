@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
+import '../../../core/widgets/icon_picker_dialog.dart'; // Import Icon Picker
 import '../application/prompt_provider.dart';
 import '../domain/models/prompt_concept_model.dart';
 import 'widgets/prompt_dialogs.dart';
@@ -28,7 +29,6 @@ class _PromptLibraryView extends StatelessWidget {
     final provider = Provider.of<PromptProvider>(context);
     final theme = Theme.of(context);
 
-    // Judul: Kalau di dalam kategori, tampilkan nama kategori (bersihkan dot jika hidden)
     String pageTitle = provider.selectedCategory ?? 'Pustaka Prompt';
     if (provider.selectedCategory != null &&
         provider.selectedCategory!.startsWith('.')) {
@@ -54,7 +54,6 @@ class _PromptLibraryView extends StatelessWidget {
                 )
               : null,
           actions: [
-            // BARU: Toggle Show Hidden
             if (provider.selectedCategory == null)
               PopupMenuButton<String>(
                 onSelected: (value) {
@@ -154,15 +153,18 @@ class _PromptLibraryView extends StatelessWidget {
       itemBuilder: (context, index) {
         final category = provider.categories[index];
         final isHidden = category.startsWith('.');
-        // Display name tanpa titik
         final displayName = isHidden ? category.substring(1) : category;
         final colorSeed = Colors.primaries[index % Colors.primaries.length];
 
+        // Ambil ikon custom dari provider
+        final customIcon = provider.getCategoryIcon(category);
+
         return _PromptTopicTile(
           title: displayName,
-          originalName: category, // Pass original name for actions
-          color: isHidden ? Colors.grey : colorSeed, // Grey jika hidden
+          originalName: category,
+          color: isHidden ? Colors.grey : colorSeed,
           isHidden: isHidden,
+          customIcon: customIcon, // Pass ikon ke widget
           onTap: () => provider.selectCategory(category),
         );
       },
@@ -202,7 +204,6 @@ class _PromptLibraryView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              // Search Bar
               Expanded(
                 child: TextField(
                   onChanged: (value) => provider.setSearchQuery(value),
@@ -232,8 +233,6 @@ class _PromptLibraryView extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Sort Button
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest.withOpacity(
@@ -349,12 +348,13 @@ class _PromptLibraryView extends StatelessWidget {
   }
 }
 
-// UPDATE: Tile Topik dengan Menu (Edit, Hapus, Hide)
+// UPDATE: Tile Topik dengan Menu Ubah Ikon
 class _PromptTopicTile extends StatelessWidget {
   final String title;
-  final String originalName; // Nama asli (termasuk . jika hidden)
+  final String originalName;
   final Color color;
   final bool isHidden;
+  final String? customIcon; // Parameter ikon kustom
   final VoidCallback onTap;
 
   const _PromptTopicTile({
@@ -362,6 +362,7 @@ class _PromptTopicTile extends StatelessWidget {
     required this.originalName,
     required this.color,
     required this.isHidden,
+    required this.customIcon,
     required this.onTap,
   });
 
@@ -397,13 +398,19 @@ class _PromptTopicTile extends StatelessWidget {
                       color: Colors.white.withOpacity(0.6),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      isHidden
-                          ? Icons.visibility_off
-                          : Icons.folder_copy_rounded,
-                      size: 32,
-                      color: color,
-                    ),
+                    // Tampilkan Ikon Custom (Text/Emoji) atau Default Icon
+                    child: customIcon != null
+                        ? Text(
+                            customIcon!,
+                            style: const TextStyle(fontSize: 32),
+                          )
+                        : Icon(
+                            isHidden
+                                ? Icons.visibility_off
+                                : Icons.folder_copy_rounded,
+                            size: 32,
+                            color: color,
+                          ),
                   ),
                   const SizedBox(height: 12),
                   Padding(
@@ -424,7 +431,6 @@ class _PromptTopicTile extends StatelessWidget {
             ),
           ),
         ),
-        // Positioned Menu Button
         Positioned(
           top: 0,
           right: 0,
@@ -433,9 +439,18 @@ class _PromptTopicTile extends StatelessWidget {
               Icons.more_vert,
               color: theme.colorScheme.onSurfaceVariant,
             ),
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'edit') {
                 showRenameCategoryDialog(context, originalName);
+              } else if (value == 'change_icon') {
+                // Panggil Icon Picker Dialog
+                await showIconPickerDialog(
+                  context: context,
+                  name: title,
+                  onIconSelected: (newIcon) {
+                    provider.updateCategoryIcon(originalName, newIcon);
+                  },
+                );
               } else if (value == 'delete') {
                 _showDeleteDialog(context, provider);
               } else if (value == 'hide') {
@@ -452,6 +467,16 @@ class _PromptTopicTile extends StatelessWidget {
                     Icon(Icons.edit, size: 20),
                     SizedBox(width: 8),
                     Text('Ubah Nama'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'change_icon',
+                child: Row(
+                  children: [
+                    Icon(Icons.emoji_emotions_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('Ubah Ikon'),
                   ],
                 ),
               ),
@@ -537,12 +562,6 @@ class _PromptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ... (KODE SAMA SEPERTI SEBELUMNYA) ...
-    // Pastikan seluruh kode _PromptCard ada di sini (seperti file sebelumnya)
-    // Untuk menghemat space di response ini, saya asumsikan kode _PromptCard
-    // sama persis dengan yang ada di PromptLibraryPage sebelumnya.
-
-    // Copy implementation from previous file content provided in context
     final theme = Theme.of(context);
     final provider = Provider.of<PromptProvider>(context, listen: false);
     final color = Colors.primaries[index % Colors.primaries.length];
