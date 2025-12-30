@@ -36,6 +36,7 @@ class PromptCardItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
+                  // Ini sudah transparan (opacity 0.1), kita biarkan
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -77,8 +78,12 @@ class PromptCardItem extends StatelessWidget {
   }
 
   Widget _buildPopupMenu(BuildContext context, PromptProvider provider) {
+    // Mengambil theme context agar warna mengikuti tema (Hitam di Light Mode)
+    final theme = Theme.of(context);
+    final iconColor = theme.colorScheme.onSurface;
+
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert),
+      icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
       onSelected: (value) async {
         final currentCategory = provider.selectedCategory;
         if (currentCategory == null) return;
@@ -99,37 +104,42 @@ class PromptCardItem extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'duplicate',
           child: Row(
             children: [
-              Icon(Icons.copy, size: 20, color: Colors.grey),
-              SizedBox(width: 12),
-              Text('Duplikat'),
+              // PERBAIKAN: Menggunakan iconColor (onSurface/Hitam) bukan Colors.grey
+              Icon(Icons.copy, size: 20, color: iconColor),
+              const SizedBox(width: 12),
+              const Text('Duplikat'),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'move',
           child: Row(
             children: [
               Icon(
                 Icons.drive_file_move_outlined,
                 size: 20,
-                color: Colors.grey,
+                color: iconColor, // PERBAIKAN
               ),
-              SizedBox(width: 12),
-              Text('Pindah ke...'),
+              const SizedBox(width: 12),
+              const Text('Pindah ke...'),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'copy',
           child: Row(
             children: [
-              Icon(Icons.file_copy_outlined, size: 20, color: Colors.grey),
-              SizedBox(width: 12),
-              Text('Salin ke...'),
+              Icon(
+                Icons.file_copy_outlined,
+                size: 20,
+                color: iconColor,
+              ), // PERBAIKAN
+              const SizedBox(width: 12),
+              const Text('Salin ke...'),
             ],
           ),
         ),
@@ -147,6 +157,8 @@ class PromptCardItem extends StatelessWidget {
       ],
     );
   }
+
+  // ... (Sisa kode _handleDuplicate, _handleMove, _handleCopy, _showDeleteConfirmation, _showDetailDialog tetap sama)
 
   Future<void> _handleDuplicate(
     BuildContext context,

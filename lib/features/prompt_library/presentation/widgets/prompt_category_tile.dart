@@ -41,7 +41,9 @@ class PromptCategoryTile extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            // PERBAIKAN: Menggunakan warna primary dengan transparansi (opacity 0.1)
+            // agar mirip dengan gaya di PromptCardItem (Daftar Prompt).
+            color: theme.colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
@@ -49,7 +51,8 @@ class PromptCategoryTile extends StatelessWidget {
               ? Text(customIcon!, style: const TextStyle(fontSize: 24))
               : Icon(
                   isHidden ? Icons.visibility_off : Icons.folder_copy_rounded,
-                  color: color,
+                  // Menggunakan warna primary solid untuk ikonnya agar kontras
+                  color: theme.colorScheme.primary,
                   size: 24,
                 ),
         ),
@@ -141,6 +144,7 @@ class PromptCategoryTile extends StatelessWidget {
     );
   }
 
+  // ... sisa kode _showDeleteDialog sama seperti sebelumnya
   void _showDeleteDialog(BuildContext context, PromptProvider provider) {
     showDialog(
       context: context,
