@@ -16,7 +16,7 @@ class PromptProvider with ChangeNotifier {
   List<String> _categories = [];
   List<String> get categories => _categories;
 
-  // BARU: Map untuk menyimpan ikon kategori
+  // Map untuk menyimpan ikon kategori
   final Map<String, String> _categoryIcons = {};
 
   List<PromptConcept> _prompts = [];
@@ -25,17 +25,57 @@ class PromptProvider with ChangeNotifier {
   String? _selectedCategory;
   String? get selectedCategory => _selectedCategory;
 
+  // --- Search & Sort untuk Prompt (Item) ---
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
   PromptSortType _sortType = PromptSortType.titleAsc;
   PromptSortType get sortType => _sortType;
 
+  // --- Search & Sort untuk Kategori (Topic) [BARU] ---
+  String _categorySearchQuery = '';
+  String get categorySearchQuery => _categorySearchQuery;
+
+  PromptSortType _categorySortType = PromptSortType.titleAsc;
+  PromptSortType get categorySortType => _categorySortType;
+
   bool _showHidden = false;
   bool get showHidden => _showHidden;
 
-  // BARU: Getter untuk ikon
+  // Getter untuk ikon
   String? getCategoryIcon(String category) => _categoryIcons[category];
+
+  // Getter untuk Categories yang sudah difilter dan diurutkan [BARU]
+  List<String> get filteredCategories {
+    List<String> result;
+
+    // 1. Filter
+    if (_categorySearchQuery.isEmpty) {
+      result = List.from(_categories);
+    } else {
+      final query = _categorySearchQuery.toLowerCase();
+      result = _categories.where((cat) {
+        // Hapus prefix '.' jika ada untuk pencarian
+        final displayName = cat.startsWith('.') ? cat.substring(1) : cat;
+        return displayName.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    // 2. Sort
+    result.sort((a, b) {
+      // Bandingkan berdasarkan nama tampilan (tanpa titik hidden)
+      final nameA = a.startsWith('.') ? a.substring(1) : a;
+      final nameB = b.startsWith('.') ? b.substring(1) : b;
+
+      final comparison = nameA.toLowerCase().compareTo(nameB.toLowerCase());
+
+      return _categorySortType == PromptSortType.titleAsc
+          ? comparison
+          : -comparison;
+    });
+
+    return result;
+  }
 
   List<PromptConcept> get filteredPrompts {
     List<PromptConcept> result;
@@ -70,7 +110,6 @@ class PromptProvider with ChangeNotifier {
     loadCategories();
   }
 
-  // UPDATE: Load categories dan ikonnya
   Future<void> loadCategories() async {
     _isLoading = true;
     notifyListeners();
@@ -97,6 +136,7 @@ class PromptProvider with ChangeNotifier {
     loadCategories();
   }
 
+  // Setters untuk Prompt Search/Sort
   void setSearchQuery(String query) {
     _searchQuery = query;
     notifyListeners();
@@ -107,7 +147,17 @@ class PromptProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // BARU: Update Ikon Kategori
+  // Setters untuk Category Search/Sort [BARU]
+  void setCategorySearchQuery(String query) {
+    _categorySearchQuery = query;
+    notifyListeners();
+  }
+
+  void setCategorySortType(PromptSortType type) {
+    _categorySortType = type;
+    notifyListeners();
+  }
+
   Future<void> updateCategoryIcon(String category, String icon) async {
     try {
       await _promptService.saveCategoryIcon(category, icon);
@@ -328,7 +378,7 @@ class PromptProvider with ChangeNotifier {
 
   Future<void> selectCategory(String category) async {
     _selectedCategory = category;
-    _searchQuery = '';
+    _searchQuery = ''; // Reset prompt search
     _isLoading = true;
     notifyListeners();
     _prompts = await _promptService.getPromptsInCategory(category);
@@ -340,6 +390,8 @@ class PromptProvider with ChangeNotifier {
     _selectedCategory = null;
     _prompts = [];
     _searchQuery = '';
+    // Optional: Reset category search/sort when exiting folder?
+    // _categorySearchQuery = '';
     notifyListeners();
   }
 
