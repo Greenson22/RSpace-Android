@@ -80,7 +80,7 @@ class PromptLibraryService {
     }
   }
 
-  // --- BARU: Ikon Kategori ---
+  // --- Ikon Kategori ---
 
   Future<String?> getCategoryIcon(String category) async {
     try {
@@ -129,9 +129,12 @@ class PromptLibraryService {
     final categoryDir = Directory(path.join(libraryDir.path, category));
     if (!await categoryDir.exists()) return [];
 
-    final files = categoryDir.listSync().whereType<File>().where(
-      (file) => file.path.endsWith('.json'),
-    );
+    // PERBAIKAN UTAMA DI SINI:
+    // Filter file agar tidak mengambil 'metadata.json' yang menyebabkan crash
+    final files = categoryDir.listSync().whereType<File>().where((file) {
+      final filename = path.basename(file.path);
+      return file.path.endsWith('.json') && filename != 'metadata.json';
+    });
 
     final List<PromptConcept> prompts = [];
     for (final file in files) {
@@ -159,7 +162,7 @@ class PromptLibraryService {
         return PromptConcept.fromJson(jsonData, fileName);
       }
     } catch (e) {
-      debugPrint('Error reading prompt concept: $e');
+      debugPrint('Error reading prompt concept ($fileName): $e');
     }
     return null;
   }

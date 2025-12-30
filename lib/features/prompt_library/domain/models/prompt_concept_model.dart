@@ -2,9 +2,9 @@
 
 class PromptConcept {
   final String idPrompt;
-  final String title; // Sebelumnya judulUtama
-  final String content; // Sebelumnya ada di dalam variasi (isiPrompt)
-  final String description; // Sebelumnya deskripsiUtama
+  final String title;
+  final String content;
+  final String description;
   final String fileName;
 
   PromptConcept({
@@ -17,10 +17,12 @@ class PromptConcept {
 
   factory PromptConcept.fromJson(Map<String, dynamic> json, String fileName) {
     return PromptConcept(
-      idPrompt: json['id_prompt'] as String,
-      title: json['title'] as String,
-      content: json['content'] as String,
-      description: json['description'] as String,
+      // Menggunakan '??' untuk memberikan nilai default jika null
+      // Ini mencegah error "Null is not a subtype of String"
+      idPrompt: (json['id_prompt'] as String?) ?? '',
+      title: (json['title'] as String?) ?? 'Tanpa Judul',
+      content: (json['content'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
       fileName: fileName,
     );
   }
