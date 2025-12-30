@@ -27,52 +27,65 @@ List<VoidCallback> buildDashboardActions(
   required bool isPathSet,
 }) {
   final List<VoidCallback?> actions = [
+    // 0. Topics
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TopicsPage()),
     ),
+    // 1. Notes
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const NoteTopicPage()),
     ),
+    // 2. Perpusku
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PerpuskuTopicPage()),
     ),
+    // 3. My Tasks
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const MyTasksPage()),
     ),
+    // 4. Progress
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ProgressPage()),
     ),
+    // 5. Jurnal (TimeLog)
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
+    // 6. Prompt Library (Sekarang di Release Mode, di bawah Jurnal)
     () => Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const StatisticsPage()),
+      MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
+    // 7. Kuis (Setelah Prompt Library)
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const QuizTopicPage()),
     ),
+    // 8. Statistik (Digeser ke bawah)
+    () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const StatisticsPage()),
+    ),
+    // 9. Arsip
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ArchiveHubPage()),
     ),
+    // 10. File Online
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const FileListPage()),
     ),
+    // 11. Kelola Data
     () => showDataManagementDialog(context),
-    if (kDebugMode)
-      () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
-      ),
+
+    // Platform Specific
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
@@ -111,6 +124,7 @@ class DashboardGrid extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final List<Map<String, dynamic>> allItemData = [
+          // --- Quick Access Items (0-4) ---
           {
             'icon': Icons.topic_outlined,
             'label': 'Topics',
@@ -141,23 +155,33 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Lihat progress belajar',
             'colors': AppTheme.gradientColors9,
           },
+
+          // --- List Items (5+) ---
           {
             'icon': Icons.timer_outlined,
             'label': 'Jurnal',
             'subtitle': 'Catat & lihat aktivitas',
             'colors': AppTheme.gradientColors3,
           },
+          // Dipindahkan: Pustaka Prompt (Release Mode)
           {
-            'icon': Icons.pie_chart_outline_rounded,
-            'label': 'Statistik',
-            'subtitle': 'Lihat progres & data',
-            'colors': AppTheme.gradientColors5,
+            'icon': Icons.library_books_outlined,
+            'label': 'Pustaka Prompt',
+            'subtitle': 'Simpan & kelola prompt AI',
+            'colors': AppTheme.gradientColors7,
           },
+          // Dipindahkan: Kuis
           {
             'icon': Icons.school_outlined,
             'label': 'Kuis',
             'subtitle': 'Kuis berbasis materi di Perpusku',
             'colors': const [Color(0xFF00838F), Color(0xFF00ACC1)],
+          },
+          {
+            'icon': Icons.pie_chart_outline_rounded,
+            'label': 'Statistik',
+            'subtitle': 'Lihat progres & data',
+            'colors': AppTheme.gradientColors5,
           },
           {
             'icon': Icons.archive_outlined,
@@ -177,13 +201,8 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Perawatan & manajemen data',
             'colors': const [Color(0xFF78909C), Color(0xFF546E7A)],
           },
-          if (kDebugMode)
-            {
-              'icon': Icons.library_books_outlined,
-              'label': 'Pustaka Prompt (Debug)',
-              'subtitle': 'Simpan & kelola prompt AI',
-              'colors': AppTheme.gradientColors7,
-            },
+
+          // --- Conditional Items ---
           if (Platform.isAndroid)
             {
               'icon': Icons.public,
@@ -215,7 +234,6 @@ class DashboardGrid extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ========== PERUBAHAN UTAMA DI SINI ==========
             Row(
               children: List.generate(quickAccessItems.length, (index) {
                 final item = quickAccessItems[index];
@@ -234,7 +252,6 @@ class DashboardGrid extends StatelessWidget {
                 );
               }),
             ),
-            // ========== AKHIR PERUBAHAN ==========
             const SizedBox(height: 24),
             Text(
               "Fitur Lainnya",
@@ -248,6 +265,7 @@ class DashboardGrid extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = listItems[index];
+                // Offset +5 karena 5 item pertama sudah di Quick Access
                 final overallIndex = index + 5;
                 return DashboardItem(
                   icon: item['icon'],
