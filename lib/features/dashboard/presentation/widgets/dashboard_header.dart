@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 // Imports internal
 import 'package:my_aplication/features/time_management/presentation/pages/time_log_page.dart';
 import '../../../../core/services/path_service.dart';
-import '../../../../core/utils/level_calculator.dart'; // Pastikan file ini sudah dibuat
+import '../../../../core/utils/level_calculator.dart';
 import '../../../content_management/domain/models/discussion_model.dart';
 import '../../../my_tasks/application/my_task_service.dart';
 import '../../../settings/application/services/gemini_service_flutter_gemini.dart';
@@ -25,6 +25,7 @@ import '../../../../core/providers/neuron_provider.dart';
 import '../../../settings/application/services/dashboard_settings_service.dart';
 import '../../../settings/application/theme_provider.dart';
 
+// ... (Bagian _HeaderStats tetap sama)
 class _HeaderStats {
   final int pendingTasks;
   final int totalTasks;
@@ -359,7 +360,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                   // Bagian Kanan: Level & Stats
                   Consumer<NeuronProvider>(
                     builder: (context, neuronProvider, child) {
-                      // Hitung info level dari total neuron
                       final levelInfo = LevelCalculator.calculate(
                         neuronProvider.neuronCount,
                       );
@@ -380,7 +380,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Icon Otak Bulat
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: const BoxDecoration(
@@ -394,11 +393,9 @@ class _DashboardHeaderState extends State<DashboardHeader>
                               ),
                             ),
                             const SizedBox(width: 10),
-                            // Kolom Informasi Level & Progress
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // ==> 1. Total Neurons (Yang diminta) <==
                                 Text(
                                   '${neuronProvider.neuronCount} Neurons',
                                   style: TextStyle(
@@ -407,7 +404,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                                     color: Colors.deepPurple.withOpacity(0.8),
                                   ),
                                 ),
-                                // ==> 2. Nama Level (Misal: Lv. 5 • Iron Scholar) <==
                                 Text(
                                   'Lv. ${levelInfo.level} • ${levelInfo.fullName}',
                                   style: Theme.of(context).textTheme.bodySmall
@@ -417,7 +413,6 @@ class _DashboardHeaderState extends State<DashboardHeader>
                                       ),
                                 ),
                                 const SizedBox(height: 4),
-                                // ==> 3. Bar Progress & Angka <==
                                 Row(
                                   children: [
                                     SizedBox(
@@ -487,6 +482,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                     runSpacing: 16,
                     alignment: WrapAlignment.center,
                     children: [
+                      // TOMBOL WEBVIEW DIHAPUS DARI SINI
                       _StatPill(
                         icon: Icons.list_alt_outlined,
                         label: 'Tugas Harian',

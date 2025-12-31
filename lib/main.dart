@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'dart:io';
+import 'package:desktop_webview_window/desktop_webview_window.dart'; // [IMPORT BARU]
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -24,8 +25,15 @@ import 'core/widgets/underwater_widget.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() async {
+// Ubah signature main untuk menerima args
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // [LOGIKA WEBVIEW] Cek apakah aplikasi dijalankan sebagai instance WebView
+  if (runWebViewTitleBarWidget(args)) {
+    return;
+  }
+
   await initializeDateFormatting('id_ID', null);
 
   if (Platform.isAndroid || Platform.isIOS) {
@@ -65,7 +73,6 @@ class MyApp extends StatelessWidget {
           theme: themeProvider.currentTheme,
           builder: (context, child) {
             final backgroundImagePath = themeProvider.backgroundImagePath;
-            // ==> LOGIKA SKALA YANG DIKEMBALIKAN <==
             final mediaQuery = MediaQuery.of(context);
             final scaledMediaQuery = mediaQuery.copyWith(
               textScaleFactor: themeProvider.uiScaleFactor,
@@ -73,10 +80,8 @@ class MyApp extends StatelessWidget {
 
             return MediaQuery(
               data: scaledMediaQuery,
-              // ==> PERBAIKAN STRUKTUR STACK <==
               child: Stack(
                 children: [
-                  // 1. Latar Belakang (paling bawah)
                   if (backgroundImagePath != null)
                     Positioned.fill(
                       child: Image.file(
@@ -86,11 +91,7 @@ class MyApp extends StatelessWidget {
                         colorBlendMode: BlendMode.darken,
                       ),
                     ),
-
-                  // 2. Konten Aplikasi (di atas latar belakang)
                   child!,
-
-                  // 3. Widget Overlay (paling atas)
                   if (themeProvider.isChristmasTheme) const SnowWidget(),
                   if (themeProvider.isUnderwaterTheme) const UnderwaterWidget(),
                   if (themeProvider.showFloatingCharacter)

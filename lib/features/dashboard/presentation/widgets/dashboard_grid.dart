@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/widgets/dashboard_grid.dart
 import 'dart:io';
+import 'package:desktop_webview_window/desktop_webview_window.dart'; // [IMPORT BARU]
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/archive/presentation/pages/archive_hub_page.dart';
@@ -20,6 +21,39 @@ import '../../../progress/presentation/pages/progress_page.dart';
 import '../../../webview_page/presentation/pages/webview_page.dart';
 import 'package:my_aplication/features/quiz/presentation/pages/quiz_topic_page.dart';
 import 'package:my_aplication/features/notes/presentation/pages/note_topic_page.dart';
+
+// [HELPER BARU] Fungsi untuk membuka WebView Desktop
+Future<void> _launchDesktopWebView(BuildContext context) async {
+  try {
+    final isAvailable = await WebviewWindow.isWebviewAvailable();
+    if (isAvailable) {
+      final webview = await WebviewWindow.create(
+        configuration: const CreateConfiguration(
+          title: "RSpace Browser",
+          titleBarTopPadding: 0,
+          userDataFolderWindows: 'webview_cache',
+        ),
+      );
+      webview.launch("https://google.com");
+    } else {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("WebView tidak tersedia di platform ini."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Gagal membuka WebView: $e"),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
 
 List<VoidCallback> buildDashboardActions(
   BuildContext context, {
@@ -57,17 +91,17 @@ List<VoidCallback> buildDashboardActions(
       context,
       MaterialPageRoute(builder: (_) => const TimeLogPage()),
     ),
-    // 6. Prompt Library (Sekarang di Release Mode, di bawah Jurnal)
+    // 6. Prompt Library
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PromptLibraryPage()),
     ),
-    // 7. Kuis (Setelah Prompt Library)
+    // 7. Kuis
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const QuizTopicPage()),
     ),
-    // 8. Statistik (Digeser ke bawah)
+    // 8. Statistik
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const StatisticsPage()),
@@ -85,7 +119,13 @@ List<VoidCallback> buildDashboardActions(
     // 11. Kelola Data
     () => showDataManagementDialog(context),
 
-    // Platform Specific
+    // Platform Specific Actions
+
+    // [AKSI BARU] Web Browser untuk Desktop (Linux/Windows/Mac)
+    if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS))
+      () => _launchDesktopWebView(context),
+
+    // Web Browser untuk Android (Bawaan Lama)
     if (Platform.isAndroid)
       () => Navigator.push(
         context,
@@ -96,7 +136,11 @@ List<VoidCallback> buildDashboardActions(
           ),
         ),
       ),
+
+    // Storage Settings
     if (!isPathSet) onShowStorageDialog,
+
+    // Backup Management
     () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const BackupManagementPage()),
@@ -163,14 +207,12 @@ class DashboardGrid extends StatelessWidget {
             'subtitle': 'Catat & lihat aktivitas',
             'colors': AppTheme.gradientColors3,
           },
-          // Dipindahkan: Pustaka Prompt (Release Mode)
           {
             'icon': Icons.library_books_outlined,
             'label': 'Pustaka Prompt',
             'subtitle': 'Simpan & kelola prompt AI',
             'colors': AppTheme.gradientColors7,
           },
-          // Dipindahkan: Kuis
           {
             'icon': Icons.school_outlined,
             'label': 'Kuis',
@@ -203,6 +245,18 @@ class DashboardGrid extends StatelessWidget {
           },
 
           // --- Conditional Items ---
+
+          // [ITEM BARU] Web Browser Desktop
+          if (!kIsWeb &&
+              (Platform.isLinux || Platform.isWindows || Platform.isMacOS))
+            {
+              'icon': Icons.public,
+              'label': 'Web Browser',
+              'subtitle': 'Jelajah internet',
+              'colors': const [Color(0xFF1E88E5), Color(0xFF42A5F5)],
+            },
+
+          // Web Browser Android
           if (Platform.isAndroid)
             {
               'icon': Icons.public,
@@ -210,6 +264,7 @@ class DashboardGrid extends StatelessWidget {
               'subtitle': 'Buka halaman web',
               'colors': const [Color(0xFF1E88E5), Color(0xFF42A5F5)],
             },
+
           {
             'icon': Icons.folder_open_rounded,
             'label': 'Penyimpanan',
@@ -224,6 +279,7 @@ class DashboardGrid extends StatelessWidget {
           },
         ];
 
+        // Filter item berdasarkan kondisi (Penyimpanan)
         final List<Map<String, dynamic>> itemData = allItemData
             .where((item) => item['label'] != 'Penyimpanan' || !isPathSet)
             .toList();

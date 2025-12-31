@@ -58,6 +58,7 @@ dependencies:
   google_mobile_ads: ^6.0.0
   numberpicker: ^2.1.2
   webview_flutter: ^4.13.0
+  desktop_webview_window: ^0.2.3
   flutter_highlight: ^0.7.0
   code_text_field: ^1.1.0
   flutter_speed_dial: ^7.0.0
@@ -131,3 +132,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+# plugin untuk linux
+# sudo apt install libwebkit2gtk-4.1-dev
