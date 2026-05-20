@@ -190,7 +190,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
     );
     final controller = TextEditingController();
     final customDelimiterController = TextEditingController();
-    String selectedDelimiter = 'spasi_baris'; // Nilai default
+    String selectedDelimiter = 'baris'; // Nilai default
 
     showDialog(
       context: context,
