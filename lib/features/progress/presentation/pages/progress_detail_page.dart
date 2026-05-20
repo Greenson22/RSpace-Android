@@ -57,6 +57,13 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     });
   }
 
+  int _getCrossAxisCount(double screenWidth) {
+    if (screenWidth > 1200) return 5;
+    if (screenWidth > 900) return 4;
+    if (screenWidth > 600) return 3;
+    return 2;
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(context);
@@ -65,81 +72,66 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
         themeProvider.backgroundImagePath != null ||
         themeProvider.isUnderwaterTheme;
 
-    // Filter subjek yang ditampilkan
-    // Jika mode reorder, selection, atau showHidden aktif -> tampilkan semua
-    // Jika tidak -> tampilkan hanya yang tidak hidden
-    final displaySubjects =
-        (_isReorderMode || provider.showHidden || _isSelectionMode)
-        ? provider.topic.subjects
-        : provider.topic.subjects.where((s) => !s.isHidden).toList();
-
-    int _getCrossAxisCount(double screenWidth) {
-      if (screenWidth > 1200) return 5;
-      if (screenWidth > 900) return 4;
-      if (screenWidth > 600) return 3;
-      return 2;
-    }
-
     return Scaffold(
       backgroundColor: isTransparent ? Colors.transparent : null,
       appBar: _isSelectionMode
           ? _buildSelectionAppBar(context, provider, isTransparent)
           : _buildNormalAppBar(context, provider, isTransparent),
-      body: displaySubjects.isEmpty
-          ? Center(
+      body: provider.topic.subjects.isEmpty
+          ? const Center(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0),
                 child: Text(
-                  provider.topic.subjects.isNotEmpty
-                      ? 'Semua materi disembunyikan.\nTekan ikon mata di atas untuk melihat.'
-                      : 'Belum ada materi di dalam topik ini.',
+                  'Belum ada materi di dalam topik ini.',
                   textAlign: TextAlign.center,
                 ),
               ),
             )
           : LayoutBuilder(
               builder: (context, constraints) {
-                return ReorderableGridView.builder(
-                  padding: const EdgeInsets.all(12.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _getCrossAxisCount(constraints.maxWidth),
-                    crossAxisSpacing: 12.0,
-                    mainAxisSpacing: 12.0,
-                    childAspectRatio: 1.2,
+                int crossAxisCount = _getCrossAxisCount(constraints.maxWidth);
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                    bottom: 80.0,
+                  ), // Ruang untuk FAB
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionGrid(
+                        context: context,
+                        title: '⭐ Fokus Utama',
+                        sectionId: 'focus',
+                        subjects: provider.focusSubjects,
+                        crossAxisCount: crossAxisCount,
+                        provider: provider,
+                      ),
+                      _buildSectionGrid(
+                        context: context,
+                        title: '📥 Antrean Materi',
+                        sectionId: 'queue',
+                        subjects: provider.queueSubjects,
+                        crossAxisCount: crossAxisCount,
+                        provider: provider,
+                      ),
+                      _buildSectionGrid(
+                        context: context,
+                        title: '☕ Materi Tambahan',
+                        sectionId: 'additional',
+                        subjects: provider.additionalSubjects,
+                        crossAxisCount: crossAxisCount,
+                        provider: provider,
+                      ),
+                      _buildSectionGrid(
+                        context: context,
+                        title: '📦 Arsip',
+                        sectionId: 'archive',
+                        subjects: provider.archiveSubjects,
+                        crossAxisCount: crossAxisCount,
+                        provider: provider,
+                      ),
+                    ],
                   ),
-                  itemCount: displaySubjects.length,
-                  // Drag hanya aktif di reorder mode DAN bukan selection mode
-                  dragEnabled: _isReorderMode && !_isSelectionMode,
-                  onReorder: (oldIndex, newIndex) {
-                    provider.reorderSubjects(oldIndex, newIndex);
-                  },
-                  itemBuilder: (context, index) {
-                    final subject = displaySubjects[index];
-                    return ProgressSubjectGridTile(
-                      key: ValueKey(subject.namaMateri),
-                      subject: subject,
-
-                      // Konfigurasi Selection Mode
-                      isSelectionMode: _isSelectionMode,
-                      isSelected: _selectedSubjects.contains(subject),
-                      onSelect: () => _toggleItemSelection(subject),
-                      onLongPress: _isReorderMode
-                          ? null
-                          : () => _enterSelectionMode(subject),
-
-                      onTap: () {
-                        if (!_isReorderMode && !_isSelectionMode) {
-                          showSubMateriDialog(context, subject);
-                        }
-                      },
-                      onEdit: () => _showEditSubjectDialog(context, subject),
-                      onDelete: () =>
-                          _showDeleteConfirmDialog(context, subject),
-                      onColorEdit: () =>
-                          _showAppearanceDialog(context, subject),
-                      onHide: () => provider.toggleSubjectVisibility(subject),
-                    );
-                  },
                 );
               },
             ),
@@ -150,6 +142,86 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
               tooltip: 'Tambah Materi Utama',
               child: const Icon(Icons.add_circle_outline),
             ),
+    );
+  }
+
+  // --- Widget Builder per Bagian (Section) ---
+  Widget _buildSectionGrid({
+    required BuildContext context,
+    required String title,
+    required String sectionId,
+    required List<ProgressSubject> subjects,
+    required int crossAxisCount,
+    required ProgressDetailProvider provider,
+  }) {
+    // Sembunyikan section kosong jika bukan mode reorder/selection
+    if (subjects.isEmpty && !_isReorderMode && !_isSelectionMode) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        if (subjects.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              'Kosong',
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+            ),
+          )
+        else
+          // Menggunakan ReorderableGridView.builder untuk masing-masing bagian
+          ReorderableGridView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 12.0,
+              mainAxisSpacing: 12.0,
+              childAspectRatio: 1.2,
+            ),
+            itemCount: subjects.length,
+            dragEnabled: _isReorderMode && !_isSelectionMode,
+            onReorder: (oldIndex, newIndex) {
+              provider.reorderSubjectInSection(sectionId, oldIndex, newIndex);
+            },
+            itemBuilder: (context, index) {
+              final subject = subjects[index];
+              return ProgressSubjectGridTile(
+                key: ValueKey(subject.namaMateri), // Key wajib untuk reorder
+                subject: subject,
+                isSelectionMode: _isSelectionMode,
+                isSelected: _selectedSubjects.contains(subject),
+                onSelect: () => _toggleItemSelection(subject),
+                onLongPress: _isReorderMode
+                    ? null
+                    : () => _enterSelectionMode(subject),
+                onTap: () {
+                  if (!_isReorderMode && !_isSelectionMode) {
+                    showSubMateriDialog(context, subject);
+                  }
+                },
+                onEdit: () => _showEditSubjectDialog(context, subject),
+                onDelete: () => _showDeleteConfirmDialog(context, subject),
+                onColorEdit: () => _showAppearanceDialog(context, subject),
+                onHide: () => provider.toggleSubjectVisibility(subject),
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -165,7 +237,6 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
       elevation: isTransparent ? 0 : null,
       title: Text(provider.topic.topics),
       actions: [
-        // Tombol Toggle Hidden
         IconButton(
           icon: Icon(
             provider.showHidden ? Icons.visibility : Icons.visibility_off,
@@ -186,7 +257,6 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
           },
           tooltip: _isReorderMode ? 'Selesai Mengurutkan' : 'Urutkan Materi',
         ),
-        // Menu titik tiga untuk opsi tambahan
         PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'select_multiple') {
@@ -226,6 +296,11 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
       actions: [
         if (_selectedSubjects.isNotEmpty) ...[
           IconButton(
+            icon: const Icon(Icons.drive_file_move_outline),
+            tooltip: 'Pindahkan Bagian',
+            onPressed: () => _handleBatchMoveSection(context, provider),
+          ),
+          IconButton(
             icon: const Icon(Icons.visibility_outlined),
             tooltip: 'Ubah Visibilitas',
             onPressed: () => _handleBatchVisibility(context, provider),
@@ -242,6 +317,71 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
 
   // --- Dialog Logics ---
 
+  void _handleBatchMoveSection(
+    BuildContext context,
+    ProgressDetailProvider provider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Pindahkan ${_selectedSubjects.length} Materi Ke...'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.star, color: Colors.orange),
+              title: const Text('Fokus Utama'),
+              onTap: () {
+                provider.moveMultipleSubjectsToSection(
+                  _selectedSubjects.toList(),
+                  'focus',
+                );
+                _exitSelectionMode();
+                Navigator.pop(dialogContext);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.inbox, color: Colors.blue),
+              title: const Text('Antrean Materi'),
+              onTap: () {
+                provider.moveMultipleSubjectsToSection(
+                  _selectedSubjects.toList(),
+                  'queue',
+                );
+                _exitSelectionMode();
+                Navigator.pop(dialogContext);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.low_priority, color: Colors.grey),
+              title: const Text('Materi Tambahan'),
+              onTap: () {
+                provider.moveMultipleSubjectsToSection(
+                  _selectedSubjects.toList(),
+                  'additional',
+                );
+                _exitSelectionMode();
+                Navigator.pop(dialogContext);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.inventory_2, color: Colors.brown),
+              title: const Text('Arsip'),
+              onTap: () {
+                provider.moveMultipleSubjectsToSection(
+                  _selectedSubjects.toList(),
+                  'archive',
+                );
+                _exitSelectionMode();
+                Navigator.pop(dialogContext);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleBatchVisibility(
     BuildContext context,
     ProgressDetailProvider provider,
@@ -254,7 +394,7 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('$actionLabel ${_selectedSubjects.length} Materi?'),
-        content: Text(
+        content: const Text(
           'Aksi ini akan mengubah status visibilitas materi yang dipilih.',
         ),
         actions: [
@@ -331,6 +471,7 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
+                // Secara default materi baru akan masuk ke Antrean Materi (queue)
                 provider.addSubject(controller.text);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(

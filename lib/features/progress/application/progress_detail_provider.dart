@@ -21,7 +21,6 @@ class ProgressDetailProvider with ChangeNotifier {
   List<ColorPalette> _customPalettes = [];
   List<ColorPalette> get customPalettes => _customPalettes;
 
-  // State untuk filter tampilan hidden
   bool _showHidden = false;
   bool get showHidden => _showHidden;
 
@@ -29,7 +28,84 @@ class ProgressDetailProvider with ChangeNotifier {
     _loadCustomPalettes();
   }
 
-  // ==> FUNGSI BARU UNTUK VISIBILITAS & SELEKSI BANYAK <==
+  // ==========================================
+  // BAGIAN BARU: KELOLA SECTION (BAGIAN MATERI)
+  // ==========================================
+
+  List<ProgressSubject> getSubjectsBySection(String section) {
+    return topic.subjects
+        .where((s) => s.section == section && (!s.isHidden || showHidden))
+        .toList();
+  }
+
+  List<ProgressSubject> get focusSubjects => getSubjectsBySection('focus');
+  List<ProgressSubject> get queueSubjects => getSubjectsBySection('queue');
+  List<ProgressSubject> get additionalSubjects =>
+      getSubjectsBySection('additional');
+  List<ProgressSubject> get archiveSubjects => getSubjectsBySection('archive');
+
+  Future<void> moveSubjectToSection(
+    ProgressSubject subject,
+    String newSection,
+  ) async {
+    subject.section = newSection;
+    await save();
+    notifyListeners();
+  }
+
+  Future<void> moveMultipleSubjectsToSection(
+    List<ProgressSubject> subjects,
+    String newSection,
+  ) async {
+    bool changed = false;
+    for (var subject in subjects) {
+      if (subject.section != newSection) {
+        subject.section = newSection;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await save();
+      notifyListeners();
+    }
+  }
+
+  Future<void> reorderSubjectInSection(
+    String section,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final visibleSubjects = getSubjectsBySection(section);
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    final subjectToMove = visibleSubjects[oldIndex];
+    // Masukkan ke urutan baru relatif terhadap list utama
+    final mainOldIndex = topic.subjects.indexOf(subjectToMove);
+
+    // Cari index tujuan di main list
+    int mainNewIndex;
+    if (visibleSubjects.isEmpty || newIndex >= visibleSubjects.length) {
+      mainNewIndex = topic.subjects.length;
+    } else {
+      mainNewIndex = topic.subjects.indexOf(visibleSubjects[newIndex]);
+    }
+
+    final item = topic.subjects.removeAt(mainOldIndex);
+    // Sesuaikan index jika bergeser
+    if (mainOldIndex < mainNewIndex) {
+      mainNewIndex -= 1;
+    }
+    topic.subjects.insert(mainNewIndex, item);
+
+    await save();
+    notifyListeners();
+  }
+
+  // ==========================================
+  // FUNGSI LAMA
+  // ==========================================
 
   void toggleShowHidden() {
     _showHidden = !_showHidden;
@@ -64,8 +140,6 @@ class ProgressDetailProvider with ChangeNotifier {
     await save();
     notifyListeners();
   }
-
-  // ==> END FUNGSI BARU <==
 
   Future<void> _loadCustomPalettes() async {
     _customPalettes = await _paletteService.loadPalettes();
@@ -166,11 +240,12 @@ class ProgressDetailProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addSubject(String name) async {
+  Future<void> addSubject(String name, {String section = 'queue'}) async {
     final newSubject = ProgressSubject(
       namaMateri: name,
       progress: "belum",
       subMateri: [],
+      section: section, // Menyimpan section saat dibuat
     );
     topic.subjects.add(newSubject);
     await save();
@@ -392,7 +467,7 @@ class ProgressDetailProvider with ChangeNotifier {
       (sub) => sub.progress == 'selesai',
     );
     if (anyFinished) {
-      subject.progress = 'sementara'; // Tetap sementara jika ada yg selesai
+      subject.progress = 'sementara';
       return;
     }
 

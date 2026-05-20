@@ -36,7 +36,8 @@ class ProgressSubject {
   int? textColor;
   int? progressBarColor;
   String icon;
-  bool isHidden; // Properti baru
+  bool isHidden;
+  String section; // Properti baru untuk kategori bagian
 
   ProgressSubject({
     required this.namaMateri,
@@ -46,7 +47,8 @@ class ProgressSubject {
     this.textColor,
     this.progressBarColor,
     this.icon = '📚',
-    this.isHidden = false, // Default false
+    this.isHidden = false,
+    this.section = 'queue', // Default masuk ke 'Antrean Materi'
   });
 
   factory ProgressSubject.fromJson(Map<String, dynamic> json) {
@@ -63,7 +65,8 @@ class ProgressSubject {
       textColor: json['textColor'] as int?,
       progressBarColor: json['progressBarColor'] as int?,
       icon: json['icon'] as String? ?? '📚',
-      isHidden: json['isHidden'] as bool? ?? false, // Baca status dari JSON
+      isHidden: json['isHidden'] as bool? ?? false,
+      section: json['section'] as String? ?? 'queue', // Baca dari JSON
     );
   }
 
@@ -76,7 +79,8 @@ class ProgressSubject {
       'textColor': textColor,
       'progressBarColor': progressBarColor,
       'icon': icon,
-      'isHidden': isHidden, // Simpan status ke JSON
+      'isHidden': isHidden,
+      'section': section, // Simpan ke JSON
     };
   }
 }
