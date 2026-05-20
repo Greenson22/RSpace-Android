@@ -12,6 +12,7 @@ import '../../domain/models/progress_subject_model.dart';
 import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
 import '../../../settings/application/theme_provider.dart';
+import '../../domain/models/progress_template_model.dart';
 
 class ProgressDetailPage extends StatefulWidget {
   const ProgressDetailPage({super.key});
@@ -454,35 +455,134 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
       listen: false,
     );
     final controller = TextEditingController();
+    ProgressTemplate? selectedTemplate;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tambah Materi Baru'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Nama Materi'),
-          autofocus: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Tambah Materi Baru'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(labelText: 'Nama Materi'),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+                if (provider.templates.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<ProgressTemplate>(
+                          value: selectedTemplate,
+                          decoration: const InputDecoration(
+                            labelText: 'Gunakan Template (Opsional)',
+                          ),
+                          isExpanded: true,
+                          items: [
+                            const DropdownMenuItem<ProgressTemplate>(
+                              value: null,
+                              child: Text('Tanpa Template'),
+                            ),
+                            ...provider.templates.map(
+                              (t) => DropdownMenuItem(
+                                value: t,
+                                child: Text(t.name),
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            setDialogState(() => selectedTemplate = val);
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.settings),
+                        tooltip: 'Kelola Template',
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                          _showManageTemplatesDialog(context, provider);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.text.isNotEmpty) {
+                    if (selectedTemplate != null) {
+                      provider.addSubjectFromTemplate(
+                        controller.text,
+                        selectedTemplate!,
+                      );
+                    } else {
+                      provider.addSubject(controller.text);
+                    }
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Materi berhasil ditambahkan.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Simpan'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showManageTemplatesDialog(
+    BuildContext context,
+    ProgressDetailProvider provider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Kelola Template'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: provider.templates.isEmpty
+              ? const Text('Belum ada template.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: provider.templates.length,
+                  itemBuilder: (context, index) {
+                    final template = provider.templates[index];
+                    return ListTile(
+                      title: Text(template.name),
+                      subtitle: Text('${template.subMateri.length} item'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          provider.deleteTemplate(template);
+                          Navigator.pop(
+                            dialogContext,
+                          ); // Menutup untuk merefresh
+                        },
+                      ),
+                    );
+                  },
+                ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                // Secara default materi baru akan masuk ke Antrean Materi (queue)
-                provider.addSubject(controller.text);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Materi baru berhasil ditambahkan.'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-            child: const Text('Simpan'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Tutup'),
           ),
         ],
       ),

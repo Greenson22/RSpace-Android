@@ -697,6 +697,17 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                           style: const TextStyle(color: Colors.white),
                         ),
                       ),
+                      // === TAMBAHKAN TOMBOL SIMPAN TEMPLATE DI SINI ===
+                      IconButton(
+                        icon: const Icon(
+                          Icons.bookmark_add_outlined,
+                          color: Colors.white,
+                        ),
+                        onPressed: () =>
+                            _showSaveAsTemplateDialog(context, currentSubject),
+                        tooltip: 'Simpan sbg Template',
+                      ),
+                      // ===============================================
                       IconButton(
                         icon: const Icon(Icons.refresh, color: Colors.white),
                         onPressed: () => _showResetConfirmDialog(context),
@@ -988,6 +999,62 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           ],
         );
       },
+    );
+  }
+
+  void _showSaveAsTemplateDialog(
+    BuildContext context,
+    ProgressSubject subject,
+  ) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    final controller = TextEditingController(
+      text: "Template ${subject.namaMateri}",
+    );
+
+    if (subject.subMateri.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Materi kosong, tidak bisa dibuat template.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Simpan Sebagai Template'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Nama Template'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                provider.saveAsTemplate(subject, controller.text);
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Template berhasil disimpan.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
     );
   }
 }

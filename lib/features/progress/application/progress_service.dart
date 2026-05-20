@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/core/services/path_service.dart';
 import '../domain/models/progress_topic_model.dart';
+import '../domain/models/progress_template_model.dart';
 
 class ProgressService {
   final PathService _pathService = PathService();
@@ -124,5 +125,26 @@ class ProgressService {
     }
     final remainingTopics = await getAllTopics();
     await saveTopicsOrder(remainingTopics);
+  }
+
+  Future<List<ProgressTemplate>> getTemplates() async {
+    final dirPath = await _progressPath;
+    final file = File(path.join(dirPath, 'progress_templates.json'));
+    if (!await file.exists()) return [];
+
+    final content = await file.readAsString();
+    if (content.isEmpty) return [];
+
+    final List<dynamic> data = jsonDecode(content);
+    return data.map((e) => ProgressTemplate.fromJson(e)).toList();
+  }
+
+  Future<void> saveTemplates(List<ProgressTemplate> templates) async {
+    final dirPath = await _progressPath;
+    final file = File(path.join(dirPath, 'progress_templates.json'));
+    const encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(
+      encoder.convert(templates.map((e) => e.toJson()).toList()),
+    );
   }
 }

@@ -8,6 +8,7 @@ import '../domain/models/progress_subject_model.dart';
 import '../domain/models/progress_topic_model.dart';
 import 'palette_service.dart';
 import 'progress_service.dart';
+import '../domain/models/progress_template_model.dart';
 
 enum SubMateriInsertPosition { top, beforeFinished, bottom }
 
@@ -21,11 +22,16 @@ class ProgressDetailProvider with ChangeNotifier {
   List<ColorPalette> _customPalettes = [];
   List<ColorPalette> get customPalettes => _customPalettes;
 
+  // === TAMBAHKAN STATE TEMPLATE ===
+  List<ProgressTemplate> _templates = [];
+  List<ProgressTemplate> get templates => _templates;
+
   bool _showHidden = false;
   bool get showHidden => _showHidden;
 
   ProgressDetailProvider(this.topic) {
     _loadCustomPalettes();
+    _loadTemplates(); // Panggil fungsi load template
   }
 
   // ==========================================
@@ -516,5 +522,56 @@ class ProgressDetailProvider with ChangeNotifier {
 
   Future<void> save() async {
     await _progressService.saveTopic(topic);
+  }
+
+  // ==========================================
+  // BAGIAN TEMPLATE
+  // ==========================================
+
+  Future<void> _loadTemplates() async {
+    _templates = await _progressService.getTemplates();
+    notifyListeners();
+  }
+
+  Future<void> saveAsTemplate(
+    ProgressSubject subject,
+    String templateName,
+  ) async {
+    final newTemplate = ProgressTemplate(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: templateName,
+      subMateri: subject.subMateri.map((e) => e.namaMateri).toList(),
+    );
+    _templates.add(newTemplate);
+    await _progressService.saveTemplates(_templates);
+    notifyListeners();
+  }
+
+  Future<void> deleteTemplate(ProgressTemplate template) async {
+    _templates.removeWhere((t) => t.id == template.id);
+    await _progressService.saveTemplates(_templates);
+    notifyListeners();
+  }
+
+  Future<void> addSubjectFromTemplate(
+    String name,
+    ProgressTemplate template, {
+    String section = 'queue',
+  }) async {
+    final subMateriList = template.subMateri
+        .map((mName) => SubMateri(namaMateri: mName, progress: 'belum'))
+        .toList();
+
+    final newSubject = ProgressSubject(
+      namaMateri: name,
+      progress: "belum",
+      subMateri: subMateriList,
+      section: section,
+    );
+
+    topic.subjects.add(newSubject);
+    _updateParentSubjectProgress(newSubject);
+    await save();
+    notifyListeners();
   }
 }
