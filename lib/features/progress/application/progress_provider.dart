@@ -85,6 +85,21 @@ class ProgressProvider with ChangeNotifier {
     await fetchTopics();
   }
 
+  Future<void> duplicateTopic(ProgressTopic topic) async {
+    _isLoading = true;
+    notifyListeners();
+
+    // Lakukan deep copy menggunakan JSON agar reference terpisah
+    final topicJson = topic.toJson();
+    topicJson['topics'] = '${topic.topics} (Salinan)';
+
+    final newTopic = ProgressTopic.fromJson(topicJson);
+
+    // Simpan topik baru
+    await _progressService.saveTopic(newTopic);
+    await fetchTopics();
+  }
+
   // ==> BARU: Fungsi untuk menghapus banyak topik sekaligus
   Future<void> deleteMultipleTopics(List<ProgressTopic> selectedTopics) async {
     _isLoading = true;

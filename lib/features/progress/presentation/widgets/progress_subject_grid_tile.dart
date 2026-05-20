@@ -9,6 +9,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onColorEdit;
+  final VoidCallback onDuplicate;
   // ==> TAMBAHAN PARAMETER BARU <==
   final VoidCallback? onLongPress;
   final VoidCallback? onHide;
@@ -23,6 +24,7 @@ class ProgressSubjectGridTile extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onColorEdit,
+    required this.onDuplicate,
     this.onLongPress,
     this.onHide,
     this.isSelectionMode = false,
@@ -134,6 +136,8 @@ class ProgressSubjectGridTile extends StatelessWidget {
                             onSelected: (value) {
                               if (value == 'edit') {
                                 onEdit();
+                              } else if (value == 'duplicate') {
+                                onDuplicate();
                               } else if (value == 'delete') {
                                 onDelete();
                               } else if (value == 'color') {
@@ -149,6 +153,14 @@ class ProgressSubjectGridTile extends StatelessWidget {
                                     child: ListTile(
                                       leading: Icon(Icons.edit_outlined),
                                       title: Text('Edit Nama'),
+                                    ),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    // <-- Tambahkan blok menu duplikat
+                                    value: 'duplicate',
+                                    child: ListTile(
+                                      leading: Icon(Icons.copy_outlined),
+                                      title: Text('Duplikat'),
                                     ),
                                   ),
                                   const PopupMenuItem<String>(

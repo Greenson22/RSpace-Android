@@ -151,6 +151,15 @@ class _ProgressViewState extends State<_ProgressView> {
                         }
                       },
                       onEdit: () => _showEditTopicDialog(context, topic),
+                      onDuplicate: () {
+                        // <-- Tambahkan handler ini
+                        provider.duplicateTopic(topic);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Topik berhasil diduplikat'),
+                          ),
+                        );
+                      },
                       onDelete: () => _showDeleteConfirmDialog(context, topic),
                       onIconChange: () => _showEditIconDialog(context, topic),
                       onHide: () => provider.toggleTopicVisibility(topic),

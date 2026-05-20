@@ -313,6 +313,20 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> duplicateSubject(ProgressSubject subject) async {
+    // Lakukan deep copy menggunakan JSON agar list sub-materi terpisah referensinya
+    final subjectJson = subject.toJson();
+    subjectJson['nama_materi'] = '${subject.namaMateri} (Salinan)';
+
+    final newSubject = ProgressSubject.fromJson(subjectJson);
+
+    // Tambahkan materi baru di section yang sama
+    topic.subjects.add(newSubject);
+    _updateParentSubjectProgress(newSubject);
+    await save();
+    notifyListeners();
+  }
+
   Future<void> updateSubjectColors(
     ProgressSubject subject, {
     Color? backgroundColor,

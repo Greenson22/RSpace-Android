@@ -221,6 +221,13 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                   }
                 },
                 onEdit: () => _showEditSubjectDialog(context, subject),
+                onDuplicate: () {
+                  // <-- Tambahkan handler ini
+                  provider.duplicateSubject(subject);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Materi berhasil diduplikat')),
+                  );
+                },
                 onDelete: () => _showDeleteConfirmDialog(context, subject),
                 onColorEdit: () => _showAppearanceDialog(context, subject),
                 onHide: () => provider.toggleSubjectVisibility(subject),

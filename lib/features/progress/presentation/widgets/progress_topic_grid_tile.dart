@@ -11,6 +11,7 @@ class ProgressTopicGridTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onIconChange;
   final VoidCallback onHide;
+  final VoidCallback onDuplicate;
 
   // ==> Properti Baru untuk Multi-select
   final bool isSelectionMode;
@@ -26,6 +27,7 @@ class ProgressTopicGridTile extends StatelessWidget {
     required this.onDelete,
     required this.onIconChange,
     required this.onHide,
+    required this.onDuplicate,
     this.isSelectionMode = false,
     this.isSelected = false,
     this.onSelect,
@@ -96,6 +98,8 @@ class ProgressTopicGridTile extends StatelessWidget {
                     onSelected: (value) {
                       if (value == 'edit') {
                         onEdit();
+                      } else if (value == 'duplicate') {
+                        onDuplicate(); // <-- Tambahkan baris ini
                       } else if (value == 'delete') {
                         onDelete();
                       } else if (value == 'icon') {
@@ -111,6 +115,14 @@ class ProgressTopicGridTile extends StatelessWidget {
                             child: ListTile(
                               leading: Icon(Icons.edit_outlined),
                               title: Text('Edit Nama'),
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            // <-- Tambahkan blok menu duplikat ini
+                            value: 'duplicate',
+                            child: ListTile(
+                              leading: Icon(Icons.copy_outlined),
+                              title: Text('Duplikat'),
                             ),
                           ),
                           const PopupMenuItem<String>(
