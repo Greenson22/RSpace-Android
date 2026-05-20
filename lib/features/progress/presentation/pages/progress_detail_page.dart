@@ -586,41 +586,78 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     );
     final controller = TextEditingController(text: subject.noteContent ?? '');
     String currentProgress = subject.progress;
+    bool isEditing = false;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: Text(subject.namaMateri),
+            // Header dengan warna konsisten (menggunakan primary color)
+            title: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                subject.namaMateri,
+                style: TextStyle(
+                  color: Theme.of(context).primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             content: SizedBox(
               width: double.maxFinite,
+              height: 350,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  DropdownButtonFormField<String>(
-                    value: currentProgress,
-                    decoration: const InputDecoration(
-                      labelText: 'Status Progress',
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'belum',
-                        child: Text('Belum Mulai'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Dropdown dengan lebar terbatas (menggunakan SizedBox)
+                      SizedBox(
+                        width: 180,
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          value: currentProgress,
+                          decoration: const InputDecoration(
+                            labelText: 'Status',
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'belum',
+                              child: Text('Belum Mulai'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'sementara',
+                              child: Text('Proses'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'selesai',
+                              child: Text('Selesai'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null)
+                              setDialogState(() => currentProgress = val);
+                          },
+                        ),
                       ),
-                      DropdownMenuItem(
-                        value: 'sementara',
-                        child: Text('Sedang Berjalan'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'selesai',
-                        child: Text('Selesai'),
+                      IconButton(
+                        icon: Icon(isEditing ? Icons.visibility : Icons.edit),
+                        onPressed: () =>
+                            setDialogState(() => isEditing = !isEditing),
+                        tooltip: isEditing ? 'Mode Lihat' : 'Mode Edit',
                       ),
                     ],
-                    onChanged: (val) {
-                      if (val != null)
-                        setDialogState(() => currentProgress = val);
-                    },
                   ),
                   const SizedBox(height: 16),
                   Expanded(
@@ -628,10 +665,15 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                       controller: controller,
                       maxLines: null,
                       expands: true,
+                      readOnly: !isEditing,
                       textAlignVertical: TextAlignVertical.top,
-                      decoration: const InputDecoration(
-                        hintText: 'Tulis isi catatanmu di sini...',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: 'Tulis catatan...',
+                        border: const OutlineInputBorder(),
+                        filled: !isEditing,
+                        fillColor: !isEditing
+                            ? Colors.grey.withOpacity(0.05)
+                            : null,
                       ),
                     ),
                   ),
