@@ -355,6 +355,42 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Tambahkan fungsi baru ini di bawah addSubMateriInRange
+  Future<void> addSubMateriFromList(
+    ProgressSubject subject,
+    List<String> items, { // Mengubah parameter menjadi List<String>
+    SubMateriInsertPosition position = SubMateriInsertPosition.bottom,
+  }) async {
+    if (items.isEmpty) return;
+
+    final List<SubMateri> newSubMateriList = items
+        .map((name) => SubMateri(namaMateri: name, progress: 'belum'))
+        .toList();
+
+    switch (position) {
+      case SubMateriInsertPosition.top:
+        subject.subMateri.insertAll(0, newSubMateriList);
+        break;
+      case SubMateriInsertPosition.beforeFinished:
+        final firstFinishedIndex = subject.subMateri.indexWhere(
+          (s) => s.progress == 'selesai',
+        );
+        if (firstFinishedIndex != -1) {
+          subject.subMateri.insertAll(firstFinishedIndex, newSubMateriList);
+        } else {
+          subject.subMateri.addAll(newSubMateriList);
+        }
+        break;
+      case SubMateriInsertPosition.bottom:
+        subject.subMateri.addAll(newSubMateriList);
+        break;
+    }
+
+    _updateParentSubjectProgress(subject);
+    await save();
+    notifyListeners();
+  }
+
   Future<void> updateSubMateriProgress(
     ProgressSubject subject,
     SubMateri subMateri,

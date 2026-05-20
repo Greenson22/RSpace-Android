@@ -35,7 +35,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isSelectionMode = false;
   final Set<SubMateri> _selectedSubMateri = {};
 
-  // ... (fungsi _showAddSubMateriDialog, _showAddRangedSubMateriDialog, _showEditSubMateriDialog, _showDeleteConfirmDialog, _deleteSelectedItems, _moveSelectedItems, _moveSelectedItemsToTopic, _getProgressColor, _showResetConfirmDialog tetap sama seperti sebelumnya) ...
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
@@ -123,7 +122,232 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               subtitle: Text('Contoh: Episode 1-10'),
             ),
           ),
+          // Opsi baru untuk menambah dari Clipboard/List Teks
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _showAddFromListSubMateriDialog(context);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.content_paste),
+              title: Text('Tambah dari Teks/Clipboard'),
+              subtitle: Text('Masukkan banyak item dipisah spasi'),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showAddFromListSubMateriDialog(BuildContext context) {
+    showDialog<SubMateriInsertPosition>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Tambah dari Teks di Posisi...'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(dialogContext, SubMateriInsertPosition.top),
+            child: const ListTile(
+              leading: Icon(Icons.vertical_align_top),
+              title: Text('Paling Atas'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              SubMateriInsertPosition.beforeFinished,
+            ),
+            child: const ListTile(
+              leading: Icon(Icons.format_indent_decrease),
+              title: Text('Sebelum Tugas Selesai'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(dialogContext, SubMateriInsertPosition.bottom),
+            child: const ListTile(
+              leading: Icon(Icons.vertical_align_bottom),
+              title: Text('Paling Bawah'),
+            ),
+          ),
+        ],
+      ),
+    ).then((selectedPosition) {
+      if (selectedPosition != null) {
+        _showTextInputForListDialog(context, selectedPosition);
+      }
+    });
+  }
+
+  void _showTextInputForListDialog(
+    BuildContext context,
+    SubMateriInsertPosition position,
+  ) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    final controller = TextEditingController();
+    final customDelimiterController = TextEditingController();
+    String selectedDelimiter = 'spasi_baris'; // Nilai default
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Paste Daftar Sub-Materi'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: controller,
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                      hintText: 'Paste/ketik teks di sini...',
+                      border: OutlineInputBorder(),
+                    ),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Pisahkan teks berdasarkan:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: selectedDelimiter,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'spasi_baris',
+                            child: Text('Spasi / Baris Baru (Otomatis)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'baris',
+                            child: Text('Baris Baru (Enter)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'koma',
+                            child: Text('Koma ( , )'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'titik',
+                            child: Text('Titik ( . )'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'kustom',
+                            child: Text('Lainnya... (Tulis Sendiri)'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              selectedDelimiter = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  // Jika memilih kustom, tampilkan text field tambahan
+                  if (selectedDelimiter == 'kustom') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: customDelimiterController,
+                      decoration: const InputDecoration(
+                        labelText: 'Karakter / Teks Pemisah',
+                        hintText: 'Contoh: - atau |',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.text.trim().isNotEmpty) {
+                    List<String> items = [];
+                    final text = controller.text;
+
+                    // Logika pemisahan (split) teks berdasarkan pilihan dropdown
+                    if (selectedDelimiter == 'spasi_baris') {
+                      items = text.split(RegExp(r'\s+'));
+                    } else if (selectedDelimiter == 'baris') {
+                      items = text.split('\n');
+                    } else if (selectedDelimiter == 'koma') {
+                      items = text.split(',');
+                    } else if (selectedDelimiter == 'titik') {
+                      items = text.split('.');
+                    } else if (selectedDelimiter == 'kustom') {
+                      final customDelim = customDelimiterController.text;
+                      if (customDelim.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Karakter pemisah tidak boleh kosong!',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return; // Berhenti proses jika delimiter kosong
+                      }
+                      items = text.split(customDelim);
+                    }
+
+                    // Bersihkan spasi kosong di awal/akhir tiap item & abaikan item kosong
+                    items = items
+                        .map((s) => s.trim())
+                        .where((s) => s.isNotEmpty)
+                        .toList();
+
+                    if (items.isNotEmpty) {
+                      provider.addSubMateriFromList(
+                        widget.subject,
+                        items, // Kirim list yang sudah matang ke provider
+                        position: position,
+                      );
+                      Navigator.pop(dialogContext);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${items.length} sub-materi ditambahkan.',
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Tidak ada teks valid yang ditemukan.'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Tambahkan'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
