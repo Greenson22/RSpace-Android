@@ -592,70 +592,100 @@ class _ProgressViewState extends State<_ProgressView> {
     BuildContext context,
     ProgressProvider mainProvider,
   ) {
+    // Tambahkan state lokal di dalam dialog untuk mode reorder
+    bool isReordering = false;
+
     showDialog(
       context: context,
       builder: (dialogContext) => ChangeNotifierProvider<ProgressProvider>.value(
-        value:
-            mainProvider, // <-- Solusinya: Kita bawa provider dari luar ke dalam dialog
-        child: AlertDialog(
-          title: const Text('Kelola Bagian (Section)'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Consumer<ProgressProvider>(
-              builder: (context, prov, child) {
-                return ReorderableListView(
-                  shrinkWrap: true,
-                  onReorder: (oldIndex, newIndex) {
-                    prov.reorderSections(oldIndex, newIndex);
+        value: mainProvider,
+        child: StatefulBuilder(
+          // StatefulBuilder diperlukan untuk mengupdate UI dialog
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Kelola Bagian'),
+                  IconButton(
+                    icon: Icon(isReordering ? Icons.check : Icons.sort),
+                    onPressed: () =>
+                        setDialogState(() => isReordering = !isReordering),
+                    tooltip: isReordering
+                        ? 'Selesai Urutkan'
+                        : 'Urutkan Bagian',
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Consumer<ProgressProvider>(
+                  builder: (context, prov, child) {
+                    return ReorderableListView(
+                      shrinkWrap: true,
+                      // Reorder hanya aktif jika tombol di atas ditekan
+                      buildDefaultDragHandles: isReordering,
+                      onReorder: (oldIndex, newIndex) {
+                        prov.reorderSections(oldIndex, newIndex);
+                      },
+                      children: prov.sections
+                          .map(
+                            (sec) => ListTile(
+                              key: ValueKey(sec),
+                              title: Text(sec),
+                              // Saat mode reorder aktif, sembunyikan tombol edit/hapus agar tidak tertekan tidak sengaja
+                              trailing: isReordering
+                                  ? const Icon(Icons.drag_handle)
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            size: 20,
+                                          ),
+                                          onPressed: () =>
+                                              _showEditSectionDialog(
+                                                context,
+                                                prov,
+                                                sec,
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            size: 20,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: prov.sections.length > 1
+                                              ? () => _showDeleteSectionDialog(
+                                                  context,
+                                                  prov,
+                                                  sec,
+                                                )
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          )
+                          .toList(),
+                    );
                   },
-                  children: prov.sections
-                      .map(
-                        (sec) => ListTile(
-                          key: ValueKey(sec),
-                          title: Text(sec),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit,
-                                  color: Colors.blue,
-                                ),
-                                onPressed: () =>
-                                    _showEditSectionDialog(context, prov, sec),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                                onPressed: prov.sections.length > 1
-                                    ? () => _showDeleteSectionDialog(
-                                        context,
-                                        prov,
-                                        sec,
-                                      )
-                                    : null,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => _showAddSectionDialog(context, mainProvider),
-              child: const Text('Tambah Bagian Baru'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Tutup'),
-            ),
-          ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => _showAddSectionDialog(context, mainProvider),
+                  child: const Text('Tambah'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Tutup'),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
