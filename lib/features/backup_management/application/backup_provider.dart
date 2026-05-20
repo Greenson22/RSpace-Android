@@ -248,23 +248,29 @@ class BackupProvider with ChangeNotifier {
     notifyListeners();
     try {
       if (type == 'RSpace') {
-        final topicsPath = await _pathService.topicsPath;
-        final myTasksPath = await _pathService.myTasksPath;
-        final contentsPath = await _pathService.contentsPath;
+        final contentsPath = await _pathService
+            .contentsPath; // Ini adalah RSpace_data/data/contents/
 
-        final topicsDir = Directory(topicsPath);
-        final myTasksFile = File(myTasksPath);
+        // 1. Definisikan direktori contents (RSpace_data/data/contents/)
+        final contentsDir = Directory(contentsPath);
 
-        if (await topicsDir.exists()) await topicsDir.delete(recursive: true);
-        if (await myTasksFile.exists()) await myTasksFile.delete();
+        // ==> HAPUS LANGSUNG SELURUH ISI RSpace_data/data/contents/ SEKALIGUS <==
+        if (await contentsDir.exists()) {
+          await contentsDir.delete(recursive: true);
+        }
 
+        // 3. Ekstrak file zip baru ke dalam folder yang sudah bersih
         await extractFileToDisk(zipFile.path, contentsPath);
       } else if (type == 'PerpusKu') {
         final perpuskuDataPath = await _pathService.perpuskuDataPath;
         final dataDir = Directory(perpuskuDataPath);
 
-        if (await dataDir.exists()) await dataDir.delete(recursive: true);
+        // Menghapus langsung seluruh data PerpusKu (PerpusKu/data/file_contents/topics)
+        if (await dataDir.exists()) {
+          await dataDir.delete(recursive: true);
+        }
 
+        // Ekstrak file zip PerpusKu yang baru
         await extractFileToDisk(zipFile.path, perpuskuDataPath);
       }
     } finally {
