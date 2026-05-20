@@ -13,6 +13,7 @@ import '../dialogs/sub_materi_dialog.dart';
 import '../widgets/progress_subject_grid_tile.dart';
 import '../../../settings/application/theme_provider.dart';
 import '../../domain/models/progress_template_model.dart';
+import '../../application/progress_service.dart';
 
 class ProgressDetailPage extends StatefulWidget {
   const ProgressDetailPage({super.key});
@@ -212,7 +213,11 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                     : () => _enterSelectionMode(subject),
                 onTap: () {
                   if (!_isReorderMode && !_isSelectionMode) {
-                    showSubMateriDialog(context, subject);
+                    if (subject.type == 'note') {
+                      _showNoteDialog(context, subject);
+                    } else {
+                      showSubMateriDialog(context, subject);
+                    }
                   }
                 },
                 onEdit: () => _showEditSubjectDialog(context, subject),
@@ -296,6 +301,12 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
       title: Text('${_selectedSubjects.length} Dipilih'),
       actions: [
         if (_selectedSubjects.isNotEmpty) ...[
+          IconButton(
+            // --- TOMBOL BARU ---
+            icon: const Icon(Icons.topic_outlined),
+            tooltip: 'Pindahkan ke Topik Lain',
+            onPressed: () => _handleBatchMoveTopic(context, provider),
+          ),
           IconButton(
             icon: const Icon(Icons.drive_file_move_outline),
             tooltip: 'Pindahkan Bagian',
@@ -456,6 +467,7 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
     );
     final controller = TextEditingController();
     ProgressTemplate? selectedTemplate;
+    String selectedType = 'list';
 
     showDialog(
       context: context,
@@ -472,7 +484,28 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
-                if (provider.templates.isNotEmpty) ...[
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: const InputDecoration(labelText: 'Tipe Materi'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'list',
+                      child: Text('Daftar Sub-materi'),
+                    ),
+                    DropdownMenuItem(value: 'note', child: Text('Catatan')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() {
+                        selectedType = val;
+                        if (selectedType == 'note') selectedTemplate = null;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (provider.templates.isNotEmpty &&
+                    selectedType == 'list') ...[
                   Row(
                     children: [
                       Expanded(
@@ -520,13 +553,13 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
               ElevatedButton(
                 onPressed: () {
                   if (controller.text.isNotEmpty) {
-                    if (selectedTemplate != null) {
+                    if (selectedTemplate != null && selectedType == 'list') {
                       provider.addSubjectFromTemplate(
                         controller.text,
                         selectedTemplate!,
                       );
                     } else {
-                      provider.addSubject(controller.text);
+                      provider.addSubject(controller.text, type: selectedType);
                     }
                     Navigator.pop(dialogContext);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -542,6 +575,155 @@ class _ProgressDetailPageState extends State<ProgressDetailPage> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showNoteDialog(BuildContext context, ProgressSubject subject) {
+    final provider = Provider.of<ProgressDetailProvider>(
+      context,
+      listen: false,
+    );
+    final controller = TextEditingController(text: subject.noteContent ?? '');
+    String currentProgress = subject.progress;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(subject.namaMateri),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: currentProgress,
+                    decoration: const InputDecoration(
+                      labelText: 'Status Progress',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'belum',
+                        child: Text('Belum Mulai'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'sementara',
+                        child: Text('Sedang Berjalan'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'selesai',
+                        child: Text('Selesai'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null)
+                        setDialogState(() => currentProgress = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      decoration: const InputDecoration(
+                        hintText: 'Tulis isi catatanmu di sini...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  provider.updateSubjectNoteContent(subject, controller.text);
+                  if (subject.progress != currentProgress) {
+                    provider.updateSubjectProgressOnly(
+                      subject,
+                      currentProgress,
+                    );
+                  }
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('Simpan'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _handleBatchMoveTopic(
+    BuildContext context,
+    ProgressDetailProvider provider,
+  ) async {
+    final progressService = ProgressService();
+    final allTopics = await progressService.getAllTopics();
+
+    // Hilangkan topik saat ini dari daftar tujuan
+    final destinationTopics = allTopics
+        .where((t) => t.topics != provider.topic.topics)
+        .toList();
+
+    if (!context.mounted) return;
+
+    if (destinationTopics.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Belum ada topik lain yang dibuat.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Pindah ${_selectedSubjects.length} Materi ke Topik...'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: destinationTopics.length,
+            itemBuilder: (context, index) {
+              final topic = destinationTopics[index];
+              return ListTile(
+                leading: Text(topic.icon, style: const TextStyle(fontSize: 24)),
+                title: Text(topic.topics),
+                onTap: () {
+                  provider.moveMultipleSubjectsToAnotherTopic(
+                    _selectedSubjects.toList(),
+                    topic,
+                  );
+                  _exitSelectionMode();
+                  Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Berhasil dipindah ke topik ${topic.topics}',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+        ],
       ),
     );
   }

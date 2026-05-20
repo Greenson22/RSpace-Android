@@ -28,13 +28,22 @@ class ProgressService {
 
     List<ProgressTopic> topics = [];
     for (final file in files) {
-      if (path.basename(file.path) == 'custom_palettes.json') {
+      final fileName = path.basename(file.path);
+
+      // === TAMBAHKAN progress_templates.json DI SINI ===
+      if (fileName == 'custom_palettes.json' ||
+          fileName == 'progress_templates.json') {
         continue;
       }
 
-      final jsonString = await file.readAsString();
-      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      topics.add(ProgressTopic.fromJson(jsonData));
+      try {
+        final jsonString = await file.readAsString();
+        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        topics.add(ProgressTopic.fromJson(jsonData));
+      } catch (e) {
+        // Logika opsional: tangani jika ada file json lain yang korup/format salah
+        print('Error parsing topic file $fileName: $e');
+      }
     }
 
     final positionedTopics = topics.where((t) => t.position != -1).toList();

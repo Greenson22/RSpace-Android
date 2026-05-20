@@ -246,15 +246,58 @@ class ProgressDetailProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addSubject(String name, {String section = 'queue'}) async {
+  // [DI DALAM ProgressDetailProvider, GANTI addSubject DAN TAMBAHKAN FUNGSI BARU]
+
+  Future<void> addSubject(
+    String name, {
+    String section = 'queue',
+    String type = 'list',
+  }) async {
     final newSubject = ProgressSubject(
       namaMateri: name,
       progress: "belum",
       subMateri: [],
-      section: section, // Menyimpan section saat dibuat
+      section: section,
+      type: type,
+      noteContent: type == 'note' ? '' : null,
     );
     topic.subjects.add(newSubject);
     await save();
+    notifyListeners();
+  }
+
+  // --- FUNGSI UNTUK CATATAN ---
+  Future<void> updateSubjectNoteContent(
+    ProgressSubject subject,
+    String content,
+  ) async {
+    subject.noteContent = content;
+    await save();
+    notifyListeners();
+  }
+
+  Future<void> updateSubjectProgressOnly(
+    ProgressSubject subject,
+    String progress,
+  ) async {
+    subject.progress = progress;
+    await save();
+    notifyListeners();
+  }
+
+  // --- FUNGSI PINDAH KE TOPIK LAIN ---
+  Future<void> moveMultipleSubjectsToAnotherTopic(
+    List<ProgressSubject> subjects,
+    ProgressTopic destinationTopic,
+  ) async {
+    // Hapus materi dari topik saat ini
+    topic.subjects.removeWhere((s) => subjects.contains(s));
+    await save();
+
+    // Tambahkan materi ke topik tujuan
+    destinationTopic.subjects.addAll(subjects);
+    await _progressService.saveTopic(destinationTopic);
+
     notifyListeners();
   }
 

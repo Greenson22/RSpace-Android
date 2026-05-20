@@ -37,7 +37,9 @@ class ProgressSubject {
   int? progressBarColor;
   String icon;
   bool isHidden;
-  String section; // Properti baru untuk kategori bagian
+  String section; // Properti untuk kategori bagian
+  String type; // 'list' atau 'note'
+  String? noteContent;
 
   ProgressSubject({
     required this.namaMateri,
@@ -48,11 +50,13 @@ class ProgressSubject {
     this.progressBarColor,
     this.icon = '📚',
     this.isHidden = false,
-    this.section = 'queue', // Default masuk ke 'Antrean Materi'
+    this.section = 'queue',
+    this.type = 'list', // Default ke daftar sub-materi
+    this.noteContent,
   });
 
   factory ProgressSubject.fromJson(Map<String, dynamic> json) {
-    var subMateriList = json['sub_materi'] as List;
+    var subMateriList = json['sub_materi'] as List? ?? [];
     List<SubMateri> subMateri = subMateriList
         .map((i) => SubMateri.fromJson(i))
         .toList();
@@ -66,7 +70,9 @@ class ProgressSubject {
       progressBarColor: json['progressBarColor'] as int?,
       icon: json['icon'] as String? ?? '📚',
       isHidden: json['isHidden'] as bool? ?? false,
-      section: json['section'] as String? ?? 'queue', // Baca dari JSON
+      section: json['section'] as String? ?? 'queue',
+      type: json['type'] as String? ?? 'list',
+      noteContent: json['noteContent'] as String?,
     );
   }
 
@@ -80,7 +86,9 @@ class ProgressSubject {
       'progressBarColor': progressBarColor,
       'icon': icon,
       'isHidden': isHidden,
-      'section': section, // Simpan ke JSON
+      'section': section,
+      'type': type,
+      'noteContent': noteContent,
     };
   }
 }
