@@ -8,7 +8,8 @@ class ProgressTopic {
   Map<String, dynamic> metadata;
   int position;
   String icon;
-  bool isHidden; // Properti baru untuk status sembunyi
+  bool isHidden; // Properti untuk status sembunyi
+  String section; // BARU: Properti untuk kategori bagian (section)
 
   ProgressTopic({
     required this.topics,
@@ -17,10 +18,11 @@ class ProgressTopic {
     this.position = -1,
     this.icon = '🎓',
     this.isHidden = false, // Default tidak tersembunyi
+    this.section = 'Umum', // BARU: Default bagian
   });
 
   factory ProgressTopic.fromJson(Map<String, dynamic> json) {
-    var subjectsList = json['subjects'] as List;
+    var subjectsList = json['subjects'] as List? ?? [];
     List<ProgressSubject> subjects = subjectsList
         .map((i) => ProgressSubject.fromJson(i))
         .toList();
@@ -33,8 +35,9 @@ class ProgressTopic {
       metadata: metadata,
       position: metadata['position'] as int? ?? -1,
       icon: metadata['icon'] as String? ?? '🎓',
-      isHidden:
-          metadata['isHidden'] as bool? ?? false, // Baca status dari metadata
+      isHidden: metadata['isHidden'] as bool? ?? false,
+      section:
+          metadata['section'] as String? ?? 'Umum', // Baca bagian dari metadata
     );
   }
 
@@ -42,7 +45,8 @@ class ProgressTopic {
     final Map<String, dynamic> mutableMetadata = Map.from(metadata);
     mutableMetadata['position'] = position;
     mutableMetadata['icon'] = icon;
-    mutableMetadata['isHidden'] = isHidden; // Simpan status ke metadata
+    mutableMetadata['isHidden'] = isHidden;
+    mutableMetadata['section'] = section; // Simpan bagian ke metadata
 
     return {
       'topics': topics,

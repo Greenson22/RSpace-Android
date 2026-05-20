@@ -19,6 +19,31 @@ class ProgressService {
     return dirPath;
   }
 
+  // ==> BARU: Membaca daftar section kustom
+  Future<List<String>> getTopicSections() async {
+    final dirPath = await _progressPath;
+    final file = File(path.join(dirPath, 'topic_sections.json'));
+    if (!await file.exists()) return ['Umum'];
+
+    try {
+      final content = await file.readAsString();
+      if (content.isEmpty) return ['Umum'];
+
+      final List<dynamic> data = jsonDecode(content);
+      return data.map((e) => e.toString()).toList();
+    } catch (e) {
+      return ['Umum'];
+    }
+  }
+
+  // ==> BARU: Menyimpan daftar section kustom
+  Future<void> saveTopicSections(List<String> sections) async {
+    final dirPath = await _progressPath;
+    final file = File(path.join(dirPath, 'topic_sections.json'));
+    const encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(sections));
+  }
+
   Future<List<ProgressTopic>> getAllTopics() async {
     final dirPath = await _progressPath;
     final directory = Directory(dirPath);
@@ -30,9 +55,10 @@ class ProgressService {
     for (final file in files) {
       final fileName = path.basename(file.path);
 
-      // === TAMBAHKAN progress_templates.json DI SINI ===
+      // === Abaikan file konfigurasi lainnya ===
       if (fileName == 'custom_palettes.json' ||
-          fileName == 'progress_templates.json') {
+          fileName == 'progress_templates.json' ||
+          fileName == 'topic_sections.json') {
         continue;
       }
 
@@ -41,7 +67,6 @@ class ProgressService {
         final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
         topics.add(ProgressTopic.fromJson(jsonData));
       } catch (e) {
-        // Logika opsional: tangani jika ada file json lain yang korup/format salah
         print('Error parsing topic file $fileName: $e');
       }
     }
@@ -97,17 +122,17 @@ class ProgressService {
     await file.writeAsString(encoder.convert(topic.toJson()));
   }
 
-  Future<void> addTopic(String topicName) async {
+  Future<void> addTopic(String topicName, {String section = 'Umum'}) async {
     final currentTopics = await getAllTopics();
     final newTopic = ProgressTopic(
       topics: topicName,
       subjects: [],
       position: currentTopics.length,
+      section: section,
     );
     await saveTopic(newTopic);
   }
 
-  // Fungsi baru untuk mengubah nama file dan isinya
   Future<void> renameTopic(ProgressTopic oldTopic, String newName) async {
     final dirPath = await _progressPath;
     final oldFileName =
@@ -115,11 +140,9 @@ class ProgressService {
     final oldFile = File(path.join(dirPath, oldFileName));
 
     if (await oldFile.exists()) {
-      oldTopic.topics = newName; // Update nama di dalam objek
-      await saveTopic(
-        oldTopic,
-      ); // Simpan ke file baru (saveTopic akan membuat nama file baru)
-      await oldFile.delete(); // Hapus file lama
+      oldTopic.topics = newName;
+      await saveTopic(oldTopic);
+      await oldFile.delete();
     } else {
       throw Exception("File topik lama tidak ditemukan.");
     }
