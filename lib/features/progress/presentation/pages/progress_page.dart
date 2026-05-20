@@ -74,8 +74,7 @@ class _ProgressViewState extends State<_ProgressView> {
         themeProvider.isUnderwaterTheme;
 
     // Filter display topics
-    final displayTopics =
-        (_isReorderMode || provider.showHidden || _isSelectionMode)
+    final displayTopics = (_isReorderMode || provider.showHidden)
         ? provider.topics
         : provider.topics.where((t) => !t.isHidden).toList();
 
