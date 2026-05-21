@@ -10,7 +10,8 @@ import 'palette_service.dart';
 import 'progress_service.dart';
 import '../domain/models/progress_template_model.dart';
 
-enum SubMateriInsertPosition { top, beforeFinished, bottom }
+// Tambahkan nilai `custom` pada enum
+enum SubMateriInsertPosition { top, beforeFinished, bottom, custom }
 
 class ProgressDetailProvider with ChangeNotifier {
   final ProgressService _progressService = ProgressService();
@@ -246,8 +247,6 @@ class ProgressDetailProvider with ChangeNotifier {
     }
   }
 
-  // [DI DALAM ProgressDetailProvider, GANTI addSubject DAN TAMBAHKAN FUNGSI BARU]
-
   Future<void> addSubject(
     String name, {
     String section = 'queue',
@@ -353,6 +352,7 @@ class ProgressDetailProvider with ChangeNotifier {
     ProgressSubject subject,
     String name, {
     SubMateriInsertPosition position = SubMateriInsertPosition.bottom,
+    int? customIndex,
   }) async {
     final newSubMateri = SubMateri(namaMateri: name, progress: "belum");
 
@@ -373,6 +373,15 @@ class ProgressDetailProvider with ChangeNotifier {
       case SubMateriInsertPosition.bottom:
         subject.subMateri.add(newSubMateri);
         break;
+      case SubMateriInsertPosition.custom:
+        if (customIndex != null &&
+            customIndex >= 0 &&
+            customIndex < subject.subMateri.length) {
+          subject.subMateri.insert(customIndex + 1, newSubMateri);
+        } else {
+          subject.subMateri.add(newSubMateri);
+        }
+        break;
     }
 
     _updateParentSubjectProgress(subject);
@@ -386,6 +395,7 @@ class ProgressDetailProvider with ChangeNotifier {
     int start,
     int end, {
     SubMateriInsertPosition position = SubMateriInsertPosition.bottom,
+    int? customIndex,
   }) async {
     final List<SubMateri> newSubMateriList = [];
     for (int i = start; i <= end; i++) {
@@ -411,6 +421,15 @@ class ProgressDetailProvider with ChangeNotifier {
       case SubMateriInsertPosition.bottom:
         subject.subMateri.addAll(newSubMateriList);
         break;
+      case SubMateriInsertPosition.custom:
+        if (customIndex != null &&
+            customIndex >= 0 &&
+            customIndex < subject.subMateri.length) {
+          subject.subMateri.insertAll(customIndex + 1, newSubMateriList);
+        } else {
+          subject.subMateri.addAll(newSubMateriList);
+        }
+        break;
     }
 
     _updateParentSubjectProgress(subject);
@@ -418,11 +437,11 @@ class ProgressDetailProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Tambahkan fungsi baru ini di bawah addSubMateriInRange
   Future<void> addSubMateriFromList(
     ProgressSubject subject,
-    List<String> items, { // Mengubah parameter menjadi List<String>
+    List<String> items, {
     SubMateriInsertPosition position = SubMateriInsertPosition.bottom,
+    int? customIndex,
   }) async {
     if (items.isEmpty) return;
 
@@ -446,6 +465,15 @@ class ProgressDetailProvider with ChangeNotifier {
         break;
       case SubMateriInsertPosition.bottom:
         subject.subMateri.addAll(newSubMateriList);
+        break;
+      case SubMateriInsertPosition.custom:
+        if (customIndex != null &&
+            customIndex >= 0 &&
+            customIndex < subject.subMateri.length) {
+          subject.subMateri.insertAll(customIndex + 1, newSubMateriList);
+        } else {
+          subject.subMateri.addAll(newSubMateriList);
+        }
         break;
     }
 

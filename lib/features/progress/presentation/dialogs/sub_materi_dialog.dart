@@ -21,6 +21,12 @@ void showSubMateriDialog(BuildContext context, ProgressSubject subject) {
   );
 }
 
+class _InsertPositionResult {
+  final SubMateriInsertPosition position;
+  final int? customIndex;
+  _InsertPositionResult(this.position, {this.customIndex});
+}
+
 class SubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
 
@@ -35,13 +41,65 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   bool _isSelectionMode = false;
   final Set<SubMateri> _selectedSubMateri = {};
 
+  Future<int?> _pickCustomSubMateriIndex(
+    BuildContext context,
+    ProgressSubject subject,
+  ) async {
+    if (subject.subMateri.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Belum ada sub-materi. Silakan pilih opsi posisi lain.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return null;
+    }
+
+    return showDialog<int>(
+      context: context,
+      builder: (pickContext) => AlertDialog(
+        title: const Text('Pilih Target Sub-Materi'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: subject.subMateri.length,
+            itemBuilder: (ctx, idx) {
+              final sub = subject.subMateri[idx];
+              return ListTile(
+                leading: Icon(
+                  Icons.circle,
+                  color: _getProgressColor(sub.progress),
+                  size: 12.0,
+                ),
+                title: Text(sub.namaMateri),
+                onTap: () => Navigator.pop(pickContext, idx),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(pickContext),
+            child: const Text('Batal'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddSubMateriDialog(BuildContext context) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
     );
 
-    void showNameInputDialog(SubMateriInsertPosition position) {
+    void showNameInputDialog(
+      SubMateriInsertPosition position, {
+      int? customIndex,
+    }) {
       final controller = TextEditingController();
       showDialog(
         context: context,
@@ -64,6 +122,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                     widget.subject,
                     controller.text,
                     position: position,
+                    customIndex: customIndex,
                   );
                   Navigator.pop(dialogContext);
                 }
@@ -110,6 +169,25 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               title: Text('Paling Bawah'),
             ),
           ),
+          SimpleDialogOption(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final index = await _pickCustomSubMateriIndex(
+                context,
+                widget.subject,
+              );
+              if (index != null) {
+                showNameInputDialog(
+                  SubMateriInsertPosition.custom,
+                  customIndex: index,
+                );
+              }
+            },
+            child: const ListTile(
+              leading: Icon(Icons.low_priority),
+              title: Text('Di Bawah Sub-Materi Tertentu...'),
+            ),
+          ),
           const Divider(),
           SimpleDialogOption(
             onPressed: () {
@@ -122,7 +200,6 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
               subtitle: Text('Contoh: Episode 1-10'),
             ),
           ),
-          // Opsi baru untuk menambah dari Clipboard/List Teks
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(dialogContext);
@@ -140,14 +217,16 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   }
 
   void _showAddFromListSubMateriDialog(BuildContext context) {
-    showDialog<SubMateriInsertPosition>(
+    showDialog<_InsertPositionResult>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
         title: const Text('Tambah dari Teks di Posisi...'),
         children: [
           SimpleDialogOption(
-            onPressed: () =>
-                Navigator.pop(dialogContext, SubMateriInsertPosition.top),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              _InsertPositionResult(SubMateriInsertPosition.top),
+            ),
             child: const ListTile(
               leading: Icon(Icons.vertical_align_top),
               title: Text('Paling Atas'),
@@ -156,7 +235,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           SimpleDialogOption(
             onPressed: () => Navigator.pop(
               dialogContext,
-              SubMateriInsertPosition.beforeFinished,
+              _InsertPositionResult(SubMateriInsertPosition.beforeFinished),
             ),
             child: const ListTile(
               leading: Icon(Icons.format_indent_decrease),
@@ -164,26 +243,48 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
             ),
           ),
           SimpleDialogOption(
-            onPressed: () =>
-                Navigator.pop(dialogContext, SubMateriInsertPosition.bottom),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              _InsertPositionResult(SubMateriInsertPosition.bottom),
+            ),
             child: const ListTile(
               leading: Icon(Icons.vertical_align_bottom),
               title: Text('Paling Bawah'),
             ),
           ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              _InsertPositionResult(SubMateriInsertPosition.custom),
+            ),
+            child: const ListTile(
+              leading: Icon(Icons.low_priority),
+              title: Text('Di Bawah Sub-Materi Tertentu...'),
+            ),
+          ),
         ],
       ),
-    ).then((selectedPosition) {
-      if (selectedPosition != null) {
-        _showTextInputForListDialog(context, selectedPosition);
+    ).then((selectedResult) async {
+      if (selectedResult != null) {
+        int? finalIndex;
+        if (selectedResult.position == SubMateriInsertPosition.custom) {
+          finalIndex = await _pickCustomSubMateriIndex(context, widget.subject);
+          if (finalIndex == null) return;
+        }
+        _showTextInputForListDialog(
+          context,
+          selectedResult.position,
+          customIndex: finalIndex,
+        );
       }
     });
   }
 
   void _showTextInputForListDialog(
     BuildContext context,
-    SubMateriInsertPosition position,
-  ) {
+    SubMateriInsertPosition position, {
+    int? customIndex,
+  }) {
     final provider = Provider.of<ProgressDetailProvider>(
       context,
       listen: false,
@@ -323,6 +424,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
                         widget.subject,
                         items, // Kirim list yang sudah matang ke provider
                         position: position,
+                        customIndex: customIndex,
                       );
                       Navigator.pop(dialogContext);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -353,14 +455,16 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   }
 
   void _showAddRangedSubMateriDialog(BuildContext context) {
-    showDialog<SubMateriInsertPosition>(
+    showDialog<_InsertPositionResult>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
         title: const Text('Tambah Rentang di Posisi...'),
         children: [
           SimpleDialogOption(
-            onPressed: () =>
-                Navigator.pop(dialogContext, SubMateriInsertPosition.top),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              _InsertPositionResult(SubMateriInsertPosition.top),
+            ),
             child: const ListTile(
               leading: Icon(Icons.vertical_align_top),
               title: Text('Paling Atas'),
@@ -369,7 +473,7 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
           SimpleDialogOption(
             onPressed: () => Navigator.pop(
               dialogContext,
-              SubMateriInsertPosition.beforeFinished,
+              _InsertPositionResult(SubMateriInsertPosition.beforeFinished),
             ),
             child: const ListTile(
               leading: Icon(Icons.format_indent_decrease),
@@ -377,24 +481,43 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
             ),
           ),
           SimpleDialogOption(
-            onPressed: () =>
-                Navigator.pop(dialogContext, SubMateriInsertPosition.bottom),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              _InsertPositionResult(SubMateriInsertPosition.bottom),
+            ),
             child: const ListTile(
               leading: Icon(Icons.vertical_align_bottom),
               title: Text('Paling Bawah'),
             ),
           ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              _InsertPositionResult(SubMateriInsertPosition.custom),
+            ),
+            child: const ListTile(
+              leading: Icon(Icons.low_priority),
+              title: Text('Di Bawah Sub-Materi Tertentu...'),
+            ),
+          ),
         ],
       ),
-    ).then((selectedPosition) {
-      if (selectedPosition != null) {
+    ).then((selectedResult) async {
+      if (selectedResult != null) {
+        int? finalIndex;
+        if (selectedResult.position == SubMateriInsertPosition.custom) {
+          finalIndex = await _pickCustomSubMateriIndex(context, widget.subject);
+          if (finalIndex == null) return;
+        }
+
         showDialog(
           context: context,
           builder: (_) => ChangeNotifierProvider.value(
             value: Provider.of<ProgressDetailProvider>(context, listen: false),
             child: _AddRangedSubMateriDialog(
               subject: widget.subject,
-              position: selectedPosition,
+              position: selectedResult.position,
+              customIndex: finalIndex,
             ),
           ),
         );
@@ -1059,14 +1182,15 @@ class _SubMateriDialogState extends State<SubMateriDialog> {
   }
 }
 
-// Widget _AddRangedSubMateriDialog tetap sama
 class _AddRangedSubMateriDialog extends StatefulWidget {
   final ProgressSubject subject;
   final SubMateriInsertPosition position;
+  final int? customIndex;
 
   const _AddRangedSubMateriDialog({
     required this.subject,
     required this.position,
+    this.customIndex,
   });
 
   @override
@@ -1177,6 +1301,7 @@ class _AddRangedSubMateriDialogState extends State<_AddRangedSubMateriDialog> {
                 start,
                 end,
                 position: widget.position,
+                customIndex: widget.customIndex,
               );
               Navigator.of(context).pop();
             }
