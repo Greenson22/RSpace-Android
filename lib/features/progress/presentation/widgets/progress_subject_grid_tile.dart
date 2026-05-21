@@ -228,30 +228,79 @@ class ProgressSubjectGridTile extends StatelessWidget {
                       ),
                     ),
                   ] else ...[
-                    const Spacer(),
-                    Text(
-                      '${(progressValue * 100).toStringAsFixed(0)}% Selesai',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: textColor.withOpacity(0.8),
+                    // ======= BAGIAN UTAMA YANG DIUBAH =======
+                    if (subject.type == 'note') ...[
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            (subject.noteContent != null &&
+                                    subject.noteContent!.trim().isNotEmpty)
+                                ? subject.noteContent!
+                                : 'Tidak ada catatan...',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: textColor.withOpacity(0.9),
+                              fontStyle: FontStyle.italic,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: progressValue,
-                        backgroundColor: progressBarColor.withOpacity(0.2),
-                        color: progressBarColor,
-                        minHeight: 8,
+                    ] else ...[
+                      // TAMPILAN MATERI BIASA: Kotak dihapus, teks langsung di tengah dengan warna highlight
+                      if (subject.subMateri.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              subject
+                                  .subMateri
+                                  .first
+                                  .namaMateri, // Mengambil sub-materi paling pertama
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color:
+                                    progressBarColor, // Menggunakan warna progres sebagai highlight yang mencolok
+                                fontWeight: FontWeight
+                                    .bold, // Dibuat tebal agar kontras
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        const Spacer(),
+                      ],
+
+                      // Tetap menampilkan progress bar di bagian bawah
+                      Text(
+                        '${(progressValue * 100).toStringAsFixed(0)}% Selesai',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: textColor.withOpacity(0.8),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$selesaiCount dari $totalSubMateri sub-materi',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: textColor.withOpacity(0.7),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: progressValue,
+                          backgroundColor: progressBarColor.withOpacity(0.2),
+                          color: progressBarColor,
+                          minHeight: 8,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$selesaiCount dari $totalSubMateri sub-materi',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: textColor.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                    // =========================================
                   ],
 
                   // ==================================
