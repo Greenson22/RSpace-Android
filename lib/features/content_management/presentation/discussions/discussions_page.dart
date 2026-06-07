@@ -9,13 +9,10 @@ import '../../application/discussion_provider.dart';
 import 'dialogs/discussion_dialogs.dart'; // Import utama untuk dialog
 import 'widgets/discussion_list_item.dart';
 import 'widgets/discussion_stats_header.dart';
-import '../../../../core/widgets/ad_banner_widget.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../domain/models/discussion_model.dart';
 import 'dialogs/add_discussion_from_content_dialog.dart';
-// Import ThemeProvider untuk mendapatkan status latar belakang
-import '../../../settings/application/theme_provider.dart';
 // Import dialog move discussion secara spesifik jika diperlukan
 // import 'dialogs/move_discussion_dialog.dart'; // Sudah termasuk dalam discussion_dialogs.dart
 
@@ -276,11 +273,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
-    // Dapatkan ThemeProvider
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isTransparent =
-        themeProvider.backgroundImagePath != null ||
-        themeProvider.isUnderwaterTheme;
+
+    // Perubahan di sini: Karena ThemeProvider dihapus, transparansi di-disable secara default (false)
+    const bool isTransparent = false;
 
     // Hitung ukuran ikon & jarak AppBar
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
@@ -294,7 +289,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        // Terapkan transparansi Scaffold
         backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: provider.isSelectionMode
             ? _buildSelectionAppBar(
@@ -310,8 +304,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               ),
         body: Column(
           children: [
+            // PERUBAHAN DI SINI: AdBannerWidget() dihapus dari hirarki Column
             Expanded(child: _buildBody(provider)),
-            const AdBannerWidget(),
           ],
         ),
         floatingActionButton:

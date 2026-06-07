@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import 'point_edit_popup_menu.dart';
-import '../../../../../core/widgets/linkify_text.dart'; // Pastikan LinkifyText diimpor
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 import '../../../../../core/providers/neuron_provider.dart';
@@ -141,8 +140,8 @@ class PointTile extends StatelessWidget {
         color: isFinished ? Colors.green : Colors.grey,
         size: scaledLeadingIconSize, // Terapkan ukuran ikon leading
       ),
-      // Gunakan style baru ke title
-      title: LinkifyText(point.pointText, style: pointTitleStyle),
+      // PERUBAHAN DI SINI: LinkifyText diganti menjadi Text biasa
+      title: Text(point.pointText, style: pointTitleStyle),
       subtitle: isFinished
           ? Text(
               'Selesai pada: ${point.finish_date ?? ''}',

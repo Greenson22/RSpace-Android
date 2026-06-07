@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
 
-// Fungsi utama untuk menampilkan dialog
 Future<void> showAddDiscussionFromContentDialog({
   required BuildContext context,
   required String? subjectLinkedPath,
@@ -21,7 +20,6 @@ Future<void> showAddDiscussionFromContentDialog({
 
   return showDialog<void>(
     context: context,
-    // Atur agar dialog tidak bisa ditutup dengan klik di luar
     barrierDismissible: false,
     builder: (dialogContext) {
       return ChangeNotifierProvider.value(
@@ -34,9 +32,6 @@ Future<void> showAddDiscussionFromContentDialog({
   );
 }
 
-// Enum untuk mengelola state tampilan di dalam dialog
-enum _DialogState { input, loading, suggestion }
-
 class AddDiscussionFromContentDialog extends StatefulWidget {
   final String subjectLinkedPath;
   const AddDiscussionFromContentDialog({required this.subjectLinkedPath});
@@ -48,60 +43,39 @@ class AddDiscussionFromContentDialog extends StatefulWidget {
 
 class _AddDiscussionFromContentDialogState
     extends State<AddDiscussionFromContentDialog> {
+  final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-
-  _DialogState _currentState = _DialogState.input;
-  List<String> _suggestedTitles = [];
-  String? _selectedTitle;
+  bool _isLoading = false;
   String? _error;
 
   @override
   void dispose() {
+    _titleController.dispose();
     _contentController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchTitles() async {
+  Future<void> _handleSave() async {
+    if (_titleController.text.trim().isEmpty) {
+      setState(() => _error = 'Judul tidak boleh kosong.');
+      return;
+    }
     if (_contentController.text.trim().isEmpty) {
       setState(() => _error = 'Konten HTML tidak boleh kosong.');
       return;
     }
+
     setState(() {
-      _currentState = _DialogState.loading;
+      _isLoading = true;
       _error = null;
     });
 
     try {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
-      final titles = await provider.getTitlesFromContent(
-        _contentController.text,
-      );
-      if (mounted) {
-        setState(() {
-          _suggestedTitles = titles;
-          _selectedTitle = titles.isNotEmpty ? titles.first : null;
-          _currentState = _DialogState.suggestion;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _currentState = _DialogState.input;
-        });
-      }
-    }
-  }
 
-  Future<void> _handleSave() async {
-    if (_selectedTitle == null) return;
-
-    setState(() => _currentState = _DialogState.loading);
-
-    try {
-      final provider = Provider.of<DiscussionProvider>(context, listen: false);
+      // Menggunakan fungsi addDiscussionWithPredefinedTitle yang sudah ada di provider Anda
       await provider.addDiscussionWithPredefinedTitle(
-        title: _selectedTitle!,
+        title: _titleController.text.trim(),
         htmlContent: _contentController.text,
         subjectLinkedPath: widget.subjectLinkedPath,
       );
@@ -110,7 +84,9 @@ class _AddDiscussionFromContentDialogState
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Diskusi "$_selectedTitle" berhasil dibuat.'),
+            content: Text(
+              'Diskusi "${_titleController.text}" berhasil dibuat.',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -119,7 +95,7 @@ class _AddDiscussionFromContentDialogState
       if (mounted) {
         setState(() {
           _error = e.toString();
-          _currentState = _DialogState.suggestion;
+          _isLoading = false;
         });
       }
     }
@@ -128,139 +104,67 @@ class _AddDiscussionFromContentDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        _currentState == _DialogState.input
-            ? 'Tambah Diskusi dari Konten'
-            : 'Pilih Judul Diskusi',
-      ),
-      content: _buildContent(),
-      actions: _buildActions(),
-    );
-  }
-
-  Widget _buildContent() {
-    switch (_currentState) {
-      case _DialogState.input:
-        return _buildInputView();
-      case _DialogState.loading:
-        return const SizedBox(
-          height: 200,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text("Menganalisis konten..."),
-              ],
+      title: const Text('Tambah Diskusi dari Konten'),
+      content: _isLoading
+          ? const SizedBox(
+              height: 200,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text("Menyimpan diskusi..."),
+                  ],
+                ),
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Judul Diskusi',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _contentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Konten HTML',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 8,
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error: $_error',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-        );
-      case _DialogState.suggestion:
-        return _buildSuggestionView();
-    }
-  }
-
-  List<Widget> _buildActions() {
-    switch (_currentState) {
-      case _DialogState.input:
-        return [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: _fetchTitles,
-            child: const Text('Generate Judul'),
-          ),
-        ];
-      case _DialogState.loading:
-        return [];
-      case _DialogState.suggestion:
-        return [
-          TextButton(
-            onPressed: () => setState(() => _currentState = _DialogState.input),
-            child: const Text('Kembali'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchTitles,
-            tooltip: 'Minta saran baru',
-          ),
-          ElevatedButton(
-            onPressed: _selectedTitle != null ? _handleSave : null,
-            child: const Text('Simpan'),
-          ),
-        ];
-    }
-  }
-
-  Widget _buildInputView() {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tempelkan konten HTML di bawah ini. AI akan membuatkan judul secara otomatis.',
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _contentController,
-            decoration: const InputDecoration(
-              labelText: 'Konten HTML',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-            maxLines: 10,
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Error: $_error',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuggestionView() {
-    return SizedBox(
-      width: double.maxFinite,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('AI menyarankan judul berikut. Pilih salah satu:'),
-          const SizedBox(height: 8),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: _suggestedTitles.map((title) {
-                return RadioListTile<String>(
-                  title: Text(title),
-                  value: title,
-                  groupValue: _selectedTitle,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedTitle = value;
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Error: $_error',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-        ],
-      ),
+      actions: _isLoading
+          ? []
+          : [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: _handleSave,
+                child: const Text('Simpan'),
+              ),
+            ],
     );
   }
 }
