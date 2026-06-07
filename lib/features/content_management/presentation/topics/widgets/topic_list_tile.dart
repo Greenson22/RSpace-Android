@@ -8,7 +8,6 @@ class TopicListTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback onRename;
   final VoidCallback onDelete;
-  final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final bool isReorderActive;
   final bool isFocused;
@@ -20,7 +19,6 @@ class TopicListTile extends StatelessWidget {
     this.onTap,
     required this.onRename,
     required this.onDelete,
-    required this.onIconChange,
     required this.onToggleVisibility,
     this.isReorderActive = false,
     this.isFocused = false,
@@ -92,7 +90,6 @@ class TopicListTile extends StatelessWidget {
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'rename') onRename();
-                    if (value == 'change_icon') onIconChange();
                     if (value == 'toggle_visibility') onToggleVisibility();
                     if (value == 'delete') onDelete();
                   },

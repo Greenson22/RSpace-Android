@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/application/subject_provider.dart';
-import 'package:my_aplication/core/widgets/ad_banner_widget.dart';
 
 // Imports Refactored Components
 import 'widgets/subjects_app_bar.dart';
@@ -148,8 +147,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
                     SubjectActionsHandler.renameSubject(ctx, subject),
                 onDelete: (ctx, subject) =>
                     SubjectActionsHandler.deleteSubject(ctx, subject),
-                onIconChange: (ctx, subject) =>
-                    SubjectActionsHandler.changeIcon(ctx, subject),
                 onToggleVisibility: (ctx, subject) =>
                     SubjectActionsHandler.toggleVisibility(ctx, subject),
                 onLinkPath: (ctx, subject) =>
@@ -171,9 +168,10 @@ class _SubjectsPageState extends State<SubjectsPage> {
                     SubjectActionsHandler.showJsonContent(ctx, subject),
                 onExport: (ctx, subject) =>
                     SubjectActionsHandler.exportSingleSubjectZip(ctx, subject),
+                onIconChange: (BuildContext p1, p2) {},
               ),
             ),
-            const AdBannerWidget(),
+            // PERUBAHAN DI SINI: AdBannerWidget() telah dihapus dari hirarki Column
           ],
         ),
         floatingActionButton: provider.isSelectionMode

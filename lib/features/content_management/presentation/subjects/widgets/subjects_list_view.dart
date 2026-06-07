@@ -72,7 +72,6 @@ class SubjectsListView extends StatelessWidget {
               onTap: () => onTap(context, subject),
               onRename: () => onRename(context, subject),
               onDelete: () => onDelete(context, subject),
-              onIconChange: () => onIconChange(context, subject),
               onToggleVisibility: () => onToggleVisibility(context, subject),
               onLinkPath: () => onLinkPath(context, subject),
               onEditIndexFile: () => onEditIndexFile(context, subject),

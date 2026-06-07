@@ -12,7 +12,6 @@ import '../subjects/subjects_page.dart';
 import 'dialogs/topic_dialogs.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../core/widgets/ad_banner_widget.dart';
 
 class TopicsPage extends StatelessWidget {
   const TopicsPage({super.key});
@@ -184,22 +183,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     }
   }
 
-  Future<void> _changeIcon(BuildContext context, Topic topic) async {
-    final provider = Provider.of<TopicProvider>(context, listen: false);
-    await showIconPickerDialog(
-      context: context,
-      name: topic.name,
-      onIconSelected: (newIcon) async {
-        try {
-          await provider.updateTopicIcon(topic.name, newIcon);
-          showAppSnackBar(context, 'Ikon untuk "${topic.name}" diubah.');
-        } catch (e) {
-          showAppSnackBar(context, e.toString(), isError: true);
-        }
-      },
-    );
-  }
-
   Future<void> _toggleVisibility(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     final newVisibility = !topic.isHidden;
@@ -286,7 +269,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         body: Column(
           children: [
             Expanded(child: _buildListView()),
-            const AdBannerWidget(),
+            // PERUBAHAN DI SINI: AdBannerWidget() telah dihapus dari hirarki Column
           ],
         ),
         floatingActionButton: topicProvider.isReorderModeEnabled
@@ -339,7 +322,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   : () => _navigateToSubjectsPage(context, topic),
               onRename: () => _renameTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
-              onIconChange: () => _changeIcon(context, topic),
               onToggleVisibility: () => _toggleVisibility(context, topic),
               isReorderActive: isReorderActive,
             );

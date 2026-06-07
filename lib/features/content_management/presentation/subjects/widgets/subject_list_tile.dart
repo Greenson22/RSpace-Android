@@ -10,7 +10,6 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback onRename;
   final VoidCallback onDelete;
-  final VoidCallback onIconChange;
   final VoidCallback onToggleVisibility;
   final VoidCallback onLinkPath;
   final VoidCallback onEditIndexFile;
@@ -29,7 +28,6 @@ class SubjectListTile extends StatelessWidget {
     this.onTap,
     required this.onRename,
     required this.onDelete,
-    required this.onIconChange,
     required this.onToggleVisibility,
     required this.onLinkPath,
     required this.onEditIndexFile,
@@ -174,7 +172,6 @@ class SubjectListTile extends StatelessWidget {
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'delete') onDelete();
-                    if (value == 'change_icon') onIconChange();
                     if (value == 'toggle_visibility') onToggleVisibility();
                     if (value == 'link_path') onLinkPath();
                     if (value == 'edit_index') onEditIndexFile();

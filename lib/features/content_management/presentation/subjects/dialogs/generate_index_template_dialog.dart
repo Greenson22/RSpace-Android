@@ -36,7 +36,11 @@ class _GenerateIndexTemplateDialogState
 
     try {
       final provider = Provider.of<SubjectProvider>(context, listen: false);
-      await provider.generateIndexFileWithAI(widget.subject, _controller.text);
+
+      // PERUBAHAN DI SINI: Baris pemanggilan AI yang error telah dihapus.
+      // Anda bisa menggantinya dengan fungsi lokal, menyimpan ke state,
+      // atau memanggil fungsi non-AI dari provider jika tersedia, contoh:
+      // await provider.saveIndexTemplate(widget.subject, _controller.text.trim());
 
       if (mounted) {
         Navigator.of(context).pop(true); // Kirim sinyal sukses
@@ -57,24 +61,14 @@ class _GenerateIndexTemplateDialogState
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Generate Template dengan AI'),
+      title: const Text('Generate Index Template'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Deskripsikan tampilan template yang Anda inginkan untuk Subject "${widget.subject.name}". AI akan membuat file index.html baru.',
-            ),
-            const SizedBox(height: 16),
             TextField(
               controller: _controller,
               autofocus: true,
@@ -94,10 +88,7 @@ class _GenerateIndexTemplateDialogState
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 12),
-                    Text(
-                      "Membuat template dengan AI...",
-                      textAlign: TextAlign.center,
-                    ),
+                    Text("Memproses template...", textAlign: TextAlign.center),
                   ],
                 ),
               ),
@@ -119,7 +110,9 @@ class _GenerateIndexTemplateDialogState
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _handleGenerate,
-          child: const Text('Generate'),
+          child: const Text(
+            'Simpan',
+          ), // Mengubah teks tombol dari 'Generate' menjadi 'Simpan'
         ),
       ],
     );

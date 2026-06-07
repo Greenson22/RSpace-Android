@@ -16,7 +16,6 @@ import 'package:my_aplication/features/content_management/application/discussion
 import 'package:my_aplication/features/content_management/presentation/discussions/discussions_page.dart';
 import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
-import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 
 class SubjectActionsHandler {
   static void showSnackBar(
@@ -348,28 +347,6 @@ class SubjectActionsHandler {
     }
   }
 
-  static Future<void> changeIcon(BuildContext context, Subject subject) async {
-    final provider = Provider.of<SubjectProvider>(context, listen: false);
-    await showIconPickerDialog(
-      context: context,
-      name: subject.name,
-      onIconSelected: (newIcon) async {
-        try {
-          await provider.updateSubjectIcon(subject.name, newIcon);
-          if (context.mounted)
-            showSnackBar(context, 'Ikon untuk "${subject.name}" diubah.');
-        } catch (e) {
-          if (context.mounted)
-            showSnackBar(
-              context,
-              'Gagal mengubah ikon: ${e.toString()}',
-              isError: true,
-            );
-        }
-      },
-    );
-  }
-
   static Future<void> toggleVisibility(
     BuildContext context,
     Subject subject,
@@ -470,9 +447,6 @@ class SubjectActionsHandler {
           SimpleDialogOption(
             onPressed: () async {
               Navigator.pop(context);
-              // ==> PERUBAHAN DI SINI
-              // Karena editorChoice dari ThemeProvider dihapus,
-              // langsung tanyakan ke user via sub-dialog untuk memilih editor.
               final subChoice = await showDialog<String>(
                 context: context,
                 builder: (context) => AlertDialog(
