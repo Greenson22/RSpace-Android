@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_dialogs.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/move_subject_dialog.dart';
-import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_sort_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/generate_index_template_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/generate_index_prompt_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_password_dialog.dart';
@@ -17,7 +16,6 @@ import 'package:my_aplication/features/content_management/application/discussion
 import 'package:my_aplication/features/content_management/presentation/discussions/discussions_page.dart';
 import 'package:my_aplication/features/content_management/presentation/timeline/discussion_timeline_page.dart';
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
-import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/core/widgets/icon_picker_dialog.dart';
 
 class SubjectActionsHandler {
@@ -408,8 +406,6 @@ class SubjectActionsHandler {
     Subject subject,
   ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final editorChoice = themeProvider.defaultHtmlEditor;
 
     Future<void> openInternalEditor() async {
       try {
@@ -474,35 +470,32 @@ class SubjectActionsHandler {
           SimpleDialogOption(
             onPressed: () async {
               Navigator.pop(context);
-              if (editorChoice == 'internal') {
-                await openInternalEditor();
-              } else if (editorChoice == 'external') {
-                await openExternalEditor();
-              } else {
-                final subChoice = await showDialog<String>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Pilih Editor'),
-                    content: const Text(
-                      'Buka dengan editor internal atau aplikasi eksternal?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, 'internal'),
-                        child: const Text('Internal'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, 'external'),
-                        child: const Text('Eksternal'),
-                      ),
-                    ],
+              // ==> PERUBAHAN DI SINI
+              // Karena editorChoice dari ThemeProvider dihapus,
+              // langsung tanyakan ke user via sub-dialog untuk memilih editor.
+              final subChoice = await showDialog<String>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Pilih Editor'),
+                  content: const Text(
+                    'Buka dengan editor internal atau aplikasi eksternal?',
                   ),
-                );
-                if (subChoice == 'internal') {
-                  await openInternalEditor();
-                } else if (subChoice == 'external') {
-                  await openExternalEditor();
-                }
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'internal'),
+                      child: const Text('Internal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'external'),
+                      child: const Text('Eksternal'),
+                    ),
+                  ],
+                ),
+              );
+              if (subChoice == 'internal') {
+                await openInternalEditor();
+              } else if (subChoice == 'external') {
+                await openExternalEditor();
               }
             },
             child: const ListTile(

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/application/subject_provider.dart';
-import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/core/widgets/ad_banner_widget.dart';
 
 // Imports Refactored Components
@@ -97,10 +96,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isTransparent =
-        themeProvider.backgroundImagePath != null ||
-        themeProvider.isUnderwaterTheme;
+    // ==> PERUBAHAN DI SINI
+    // Pengecekan ThemeProvider dihapus karena import sudah tidak ada.
+    const isTransparent = false;
 
     return RawKeyboardListener(
       focusNode: _focusNode,

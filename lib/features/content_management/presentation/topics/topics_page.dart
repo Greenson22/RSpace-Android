@@ -13,7 +13,6 @@ import 'dialogs/topic_dialogs.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
-import '../../../settings/application/theme_provider.dart';
 
 class TopicsPage extends StatelessWidget {
   const TopicsPage({super.key});
@@ -216,10 +215,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isTransparent =
-        themeProvider.backgroundImagePath != null ||
-        themeProvider.isUnderwaterTheme;
+    // ==> PERUBAHAN DI SINI
+    // Pengecekan ThemeProvider dihapus karena import sudah tidak ada.
+    const isTransparent = false;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
@@ -334,7 +332,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             return TopicListTile(
               key: ValueKey(topic.name),
               topic: topic,
-              index: index, // Diperbarui: Mengirimkan index ke list tile
+              index: index,
               isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: isReorderActive
                   ? null

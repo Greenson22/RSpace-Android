@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/subject_provider.dart';
 import '../../../domain/models/subject_model.dart';
-// ==> IMPORT BARU
-import '../../../../settings/application/gemini_settings_service.dart';
-import '../../../../settings/domain/models/gemini_settings_model.dart';
 
 class GenerateIndexTemplateDialog extends StatefulWidget {
   final Subject subject;
@@ -21,7 +18,6 @@ class GenerateIndexTemplateDialog extends StatefulWidget {
 class _GenerateIndexTemplateDialogState
     extends State<GenerateIndexTemplateDialog> {
   final TextEditingController _controller = TextEditingController();
-  final GeminiSettingsService _settingsService = GeminiSettingsService();
   bool _isLoading = false;
   String? _error;
 
@@ -93,32 +89,17 @@ class _GenerateIndexTemplateDialogState
             ),
             if (_isLoading) ...[
               const SizedBox(height: 16),
-              // ==> PERUBAHAN DI SINI
-              FutureBuilder<GeminiSettings>(
-                future: _settingsService.loadSettings(),
-                builder: (context, snapshot) {
-                  String modelName = '...';
-                  if (snapshot.hasData) {
-                    final settings = snapshot.data!;
-                    final model = settings.models.firstWhere(
-                      (m) => m.modelId == settings.contentModelId,
-                      orElse: () => settings.models.first,
-                    );
-                    modelName = model.name;
-                  }
-                  return Center(
-                    child: Column(
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 12),
-                        Text(
-                          "Membuat template dengan:\n$modelName",
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+              const Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text(
+                      "Membuat template dengan AI...",
+                      textAlign: TextAlign.center,
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
             ],
             if (_error != null) ...[
