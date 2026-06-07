@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:markdown/markdown.dart' as md; // Import library markdown
 
 import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
-import '../../../../features/settings/application/theme_provider.dart';
 import '../../../../features/webview_page/presentation/pages/webview_page.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
@@ -419,38 +418,20 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 </html>
 ''';
 
-      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      // Mode Default/External: Simpan sementara sebagai .html agar dibuka browser bawaan OS
+      final tempDir = await getTemporaryDirectory();
+      final safeName = discussion.discussion.replaceAll(
+        RegExp(r'[^\w\s-]'),
+        '',
+      );
+      final tempFile = File(
+        path.join(tempDir.path, '${safeName}_preview.html'),
+      );
+      await tempFile.writeAsString(styledHtmlWrapper);
 
-      if (themeProvider.openInAppBrowser && Platform.isAndroid) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChangeNotifierProvider.value(
-              value: this as DiscussionProvider,
-              child: WebViewPage(
-                title: discussion.discussion,
-                htmlContent: styledHtmlWrapper,
-                discussion: discussion,
-              ),
-            ),
-          ),
-        );
-      } else {
-        // Mode Desktop/External: Simpan sementara sebagai .html agar dibuka browser
-        final tempDir = await getTemporaryDirectory();
-        final safeName = discussion.discussion.replaceAll(
-          RegExp(r'[^\w\s-]'),
-          '',
-        );
-        final tempFile = File(
-          path.join(tempDir.path, '${safeName}_preview.html'),
-        );
-        await tempFile.writeAsString(styledHtmlWrapper);
-
-        final result = await OpenFile.open(tempFile.path);
-        if (result.type != ResultType.done) {
-          throw Exception(result.message);
-        }
+      final result = await OpenFile.open(tempFile.path);
+      if (result.type != ResultType.done) {
+        throw Exception(result.message);
       }
       return;
     }
@@ -511,75 +492,45 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     container.innerHtml = contentDoc.body?.innerHtml ?? '';
 
     final finalHtmlContent = indexDoc.outerHtml;
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
-    if (themeProvider.openInAppBrowser && Platform.isAndroid) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider.value(
-            value: this as DiscussionProvider,
-            child: WebViewPage(
-              title: discussion.discussion,
-              htmlContent: finalHtmlContent,
-              discussion: discussion,
-            ),
-          ),
-        ),
-      );
-    } else {
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File(
-        path.join(
-          tempDir.path,
-          '${DateTime.now().millisecondsSinceEpoch}.html',
-        ),
-      );
-      await tempFile.writeAsString(finalHtmlContent);
-      final result = await OpenFile.open(tempFile.path);
-      if (result.type != ResultType.done) throw Exception(result.message);
-    }
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File(
+      path.join(tempDir.path, '${DateTime.now().millisecondsSinceEpoch}.html'),
+    );
+    await tempFile.writeAsString(finalHtmlContent);
+    final result = await OpenFile.open(tempFile.path);
+    if (result.type != ResultType.done) throw Exception(result.message);
   }
 
   Future<void> editDiscussionFileWithSelection(
     Discussion discussion,
     BuildContext context,
   ) async {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final String? editorChoice = themeProvider.defaultHtmlEditor;
-
-    if (editorChoice != null) {
-      if (editorChoice == 'internal') {
-        await _openWithInternalEditor(discussion, context);
-      } else {
-        await _openFileWithExternalEditor(discussion);
-      }
-    } else {
-      final choice = await showDialog<String?>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Pilih Editor'),
-          content: const Text(
-            'Buka dengan editor internal atau aplikasi eksternal?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'internal'),
-              child: const Text('Internal'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'external'),
-              child: const Text('Eksternal'),
-            ),
-          ],
+    // Karena ThemeProvider dihapus, tampilkan dialog pilihan secara default
+    final choice = await showDialog<String?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Editor'),
+        content: const Text(
+          'Buka dengan editor internal atau aplikasi eksternal?',
         ),
-      );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'internal'),
+            child: const Text('Internal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'external'),
+            child: const Text('Eksternal'),
+          ),
+        ],
+      ),
+    );
 
-      if (choice == 'internal' && context.mounted) {
-        await _openWithInternalEditor(discussion, context);
-      } else if (choice == 'external') {
-        await _openFileWithExternalEditor(discussion);
-      }
+    if (choice == 'internal' && context.mounted) {
+      await _openWithInternalEditor(discussion, context);
+    } else if (choice == 'external') {
+      await _openFileWithExternalEditor(discussion);
     }
   }
 
