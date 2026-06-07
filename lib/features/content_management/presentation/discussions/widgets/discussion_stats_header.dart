@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
-import '../../../../statistics/presentation/widgets/repetition_code_section.dart';
 
 class DiscussionStatsHeader extends StatefulWidget {
   const DiscussionStatsHeader({super.key});
@@ -22,7 +21,6 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
 
     final total = provider.totalDiscussionCount;
     final finished = provider.finishedDiscussionCount;
-    final codeCounts = provider.repetitionCodeCounts;
 
     if (total == 0) {
       return const SizedBox.shrink();
@@ -75,18 +73,10 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
             ),
           ],
         ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              children: [
-                if (codeCounts.isNotEmpty) ...[
-                  const Divider(height: 16),
-                  RepetitionCodeSection(counts: codeCounts),
-                ],
-              ],
-            ),
-          ),
+        children: const [
+          // Bagian children dikosongkan karena RepetitionCodeSection sudah dihapus.
+          // Jika tidak ada konten internal lagi, kamu juga bisa mempertimbangkan
+          // untuk mengganti ExpansionTile dengan ListTile biasa di kemudian hari.
         ],
       ),
     );

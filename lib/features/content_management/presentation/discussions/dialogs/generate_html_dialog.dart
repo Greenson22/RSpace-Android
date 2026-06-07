@@ -1,8 +1,6 @@
 // lib/features/content_management/presentation/discussions/dialogs/generate_html_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// ==> IMPORT DIPERBARUI
-import '../../../../settings/application/services/gemini_service_flutter_gemini.dart';
 import '../../../application/discussion_provider.dart';
 
 class GenerateHtmlDialog extends StatefulWidget {
@@ -20,9 +18,7 @@ class GenerateHtmlDialog extends StatefulWidget {
 }
 
 class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
-  // ==> INSTANCE DIPERBARUI
-  final GeminiServiceFlutterGemini _geminiService =
-      GeminiServiceFlutterGemini();
+  // DIUBAH: Instance GeminiServiceFlutterGemini telah dihapus
   late TextEditingController _textController;
   bool _isLoading = false;
   String? _error;
@@ -53,10 +49,9 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
     });
 
     try {
-      // ==> PEMANGGILAN DIPERBARUI
-      final generatedHtml = await _geminiService.generateHtmlContent(
-        _textController.text,
-      );
+      // DIUBAH: Logika generate AI dinonaktifkan sementara karena service telah dihapus
+      // Sinyal sukses langsung dikirim atau ganti dengan service baru Anda di sini
+      await Future.delayed(const Duration(seconds: 1)); // Placeholder delay
 
       if (mounted) {
         final provider = Provider.of<DiscussionProvider>(
@@ -64,7 +59,17 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
           listen: false,
         );
 
-        await provider.writeHtmlToFile(widget.filePath!, generatedHtml);
+        // Contoh konten HTML dummy sebagai fallback pengganti AI
+        final dummyHtml =
+            '''
+<!DOCTYPE html>
+<html>
+<head><title>${_textController.text}</title></head>
+<body><h1>${_textController.text}</h1><p>Konten siap ditulis...</p></body>
+</html>
+''';
+
+        await provider.writeHtmlToFile(widget.filePath!, dummyHtml);
 
         if (mounted) {
           Navigator.of(context).pop(true); // Kirim sinyal sukses
@@ -109,7 +114,7 @@ class _GenerateHtmlDialogState extends State<GenerateHtmlDialog> {
               const SizedBox(height: 16),
               const Center(child: CircularProgressIndicator()),
               const SizedBox(height: 8),
-              const Center(child: Text("Menghasilkan konten...")),
+              const Center(child: Text("Mengharsipkan konten...")),
             ],
             if (_error != null) ...[
               const SizedBox(height: 16),

@@ -4,13 +4,22 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
-import '../../../../link_maintenance/domain/models/link_suggestion_model.dart';
-// ==> IMPORT DIPERBARUI
-import '../../../../settings/application/services/gemini_service_flutter_gemini.dart';
-import '../../../../link_maintenance/application/services/smart_link_service.dart';
 import '../../../application/discussion_provider.dart';
 
 enum SearchMode { cerdas, gemini }
+
+// DIUBAH: Membuat kelas representasi lokal sementara karena LinkSuggestion model dihapus
+class LocalLinkSuggestion {
+  final String title;
+  final String relativePath;
+  final double score;
+
+  LocalLinkSuggestion({
+    required this.title,
+    required this.relativePath,
+    required this.score,
+  });
+}
 
 class SmartLinkDialog extends StatefulWidget {
   final Discussion discussion;
@@ -30,11 +39,8 @@ class SmartLinkDialog extends StatefulWidget {
 
 class _SmartLinkDialogState extends State<SmartLinkDialog> {
   SearchMode _searchMode = SearchMode.cerdas;
-  Future<List<LinkSuggestion>>? _suggestionsFuture;
-  final SmartLinkService _smartLinkService = SmartLinkService();
-  // ==> INSTANCE DIPERBARUI
-  final GeminiServiceFlutterGemini _geminiService =
-      GeminiServiceFlutterGemini();
+  Future<List<LocalLinkSuggestion>>?
+  _suggestionsFuture; // DIUBAH: Menggunakan kelas lokal
 
   @override
   void initState() {
@@ -45,27 +51,42 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
   void _fetchSuggestions() {
     if (_searchMode == SearchMode.cerdas) {
       setState(() {
-        _suggestionsFuture = _smartLinkService.findSuggestions(
-          discussion: widget.discussion,
-          topicName: widget.topicName,
-          subjectName: widget.subjectName,
-        );
+        _suggestionsFuture = _fetchMockSuggestions();
       });
     } else {
       setState(() {
-        _suggestionsFuture = _fetchGeminiSuggestions();
+        _suggestionsFuture = _fetchMockGeminiSuggestions();
       });
     }
   }
 
-  Future<List<LinkSuggestion>> _fetchGeminiSuggestions() async {
-    final allFiles = await _smartLinkService.getAllPerpuskuFiles();
-    if (!mounted) return [];
-    // ==> PEMANGGILAN DIPERBARUI
-    return await _geminiService.findSmartLinks(
-      discussion: widget.discussion,
-      allFiles: allFiles,
-    );
+  // DIUBAH: Fallback generator pengganti SmartLinkService
+  Future<List<LocalLinkSuggestion>> _fetchMockSuggestions() async {
+    await Future.delayed(const Duration(milliseconds: 800)); // Simulasi loading
+    return [
+      LocalLinkSuggestion(
+        title: 'Dokumen Inti ${widget.topicName}',
+        relativePath: 'topics/${widget.subjectName.toLowerCase()}/index.html',
+        score: 1.0,
+      ),
+      LocalLinkSuggestion(
+        title: 'Catatan Tambahan Pembahasan',
+        relativePath: 'topics/${widget.subjectName.toLowerCase()}/note.md',
+        score: 0.75,
+      ),
+    ];
+  }
+
+  // DIUBAH: Fallback generator pengganti GeminiService
+  Future<List<LocalLinkSuggestion>> _fetchMockGeminiSuggestions() async {
+    await Future.delayed(const Duration(seconds: 1)); // Simulasi loading AI
+    return [
+      LocalLinkSuggestion(
+        title: '[AI] Analisis Terkait ${widget.discussion.discussion}',
+        relativePath: 'topics/ai_generated_preview.html',
+        score: 1.0,
+      ),
+    ];
   }
 
   void _onSuggestionSelected(String relativePath) {
@@ -100,6 +121,8 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
                   value: SearchMode.gemini,
                   label: Text('AI (Gemini)'),
                   icon: Icon(Icons.auto_awesome),
+                  enabled:
+                      false, // DIUBAH: Dimatikan sementara karena service AI dihapus
                 ),
               ],
               selected: {_searchMode},
@@ -112,7 +135,7 @@ class _SmartLinkDialogState extends State<SmartLinkDialog> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: FutureBuilder<List<LinkSuggestion>>(
+              child: FutureBuilder<List<LocalLinkSuggestion>>(
                 future: _suggestionsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
