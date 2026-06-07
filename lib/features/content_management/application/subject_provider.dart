@@ -7,7 +7,6 @@ import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/subject_actions.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
-import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import '../domain/models/subject_model.dart';
 import '../domain/services/subject_service.dart';
 import '../domain/services/encryption_service.dart';
@@ -23,8 +22,6 @@ import 'package:archive/archive_io.dart';
 class SubjectProvider with ChangeNotifier {
   final SubjectService _subjectService = SubjectService();
   final SubjectActions _subjectActions = SubjectActions();
-  final GeminiServiceFlutterGemini _geminiService =
-      GeminiServiceFlutterGemini();
   final SharedPreferencesService _prefsService = SharedPreferencesService();
   final EncryptionService _encryptionService = EncryptionService();
   final PathService _pathService = PathService();
@@ -868,22 +865,5 @@ class SubjectProvider with ChangeNotifier {
       throw Exception('Subject ini tidak memiliki tautan ke folder PerpusKu.');
     }
     await _subjectActions.openSubjectIndexFile(subject.linkedPath!);
-  }
-
-  Future<void> generateIndexFileWithAI(
-    Subject subject,
-    String themePrompt,
-  ) async {
-    if (subject.linkedPath == null || subject.linkedPath!.isEmpty) {
-      throw Exception('Subject ini tidak memiliki tautan ke folder PerpusKu.');
-    }
-    final newHtmlContent = await _geminiService.generateHtmlTemplate(
-      themePrompt,
-    );
-
-    await _subjectActions.generateAndSaveSubjectIndexFile(
-      subject.linkedPath!,
-      newHtmlContent,
-    );
   }
 }
