@@ -7,15 +7,13 @@ import 'features/content_management/application/topic_provider.dart';
 // Import Halaman
 import 'features/content_management/presentation/topics/topics_page.dart';
 import 'features/perpusku/presentation/pages/perpusku_topic_page.dart';
+import 'features/settings/presentation/pages/settings_page.dart'; // Import feature baru Pengaturan
+import 'features/about/presentation/pages/about_page.dart'; // Sesuaikan path ini dengan folder About yang sudah ada
 
 void main() {
-  // Membungkus runApp dengan MultiProvider agar state bisa diakses secara global
   runApp(
     MultiProvider(
-      providers: [
-        // Mendaftarkan TopicProvider ke dalam widget tree
-        ChangeNotifierProvider(create: (context) => TopicProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (context) => TopicProvider())],
       child: const MyApp(),
     ),
   );
@@ -33,13 +31,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      // Menjadikan MainNavigationPage sebagai halaman pertama
       home: const MainNavigationPage(),
     );
   }
 }
 
-// Widget Stateful untuk mengatur Bottom Navigation Bar
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
 
@@ -50,8 +46,13 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
 
-  // Daftar halaman yang akan dirender di dalam navigasi
-  final List<Widget> _pages = const [TopicsPage(), PerpuskuTopicPage()];
+  // Tambahkan halaman baru ke dalam daftar IndexedStack
+  final List<Widget> _pages = const [
+    TopicsPage(),
+    PerpuskuTopicPage(),
+    SettingsPage(),
+    AboutPage(), // Pastikan nama class-nya sesuai dengan file about Anda
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -62,11 +63,12 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack digunakan agar state halaman tidak hilang saat pindah tab
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        // Gunakan tipe fixed agar label/icon tidak menghilang saat item lebih dari 3
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.topic_outlined),
@@ -77,6 +79,16 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             icon: Icon(Icons.local_library_outlined),
             activeIcon: Icon(Icons.local_library),
             label: 'Perpusku',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Pengaturan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.info_outline),
+            activeIcon: Icon(Icons.info),
+            label: 'About',
           ),
         ],
       ),
