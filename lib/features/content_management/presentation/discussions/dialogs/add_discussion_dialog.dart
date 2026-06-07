@@ -1,7 +1,6 @@
 // lib/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
-import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
 
 class AddDiscussionResult {
   final String name;
@@ -55,7 +54,8 @@ class _AddDiscussionDialogContentState
   final _controller = TextEditingController();
   final _urlController = TextEditingController();
   DiscussionLinkType _linkType = DiscussionLinkType.none;
-  QuizPickerResult? _selectedQuiz;
+  dynamic
+  _selectedQuiz; // DIUBAH: Menggunakan dynamic karena tipe QuizPickerResult dihapus
 
   @override
   void dispose() {
@@ -214,7 +214,9 @@ class _AddDiscussionDialogContentState
                   ),
                   subtitle: _selectedQuiz != null
                       ? Text(
-                          '${_selectedQuiz!.quizName}\n(dari: ${_selectedQuiz!.subjectPath})',
+                          _selectedQuiz is String
+                              ? 'Kuis Baru: $_selectedQuiz'
+                              : '${_selectedQuiz.quizName}\n(dari: ${_selectedQuiz.subjectPath})',
                         )
                       : null,
                 ),
@@ -226,10 +228,7 @@ class _AddDiscussionDialogContentState
                       label: const Text('Buat Baru'),
                       onPressed: () {
                         setState(() {
-                          _selectedQuiz = QuizPickerResult(
-                            subjectPath: 'create_new_quiz',
-                            quizName: _controller.text.trim(),
-                          );
+                          _selectedQuiz = _controller.text.trim();
                         });
                       },
                     ),
@@ -237,12 +236,14 @@ class _AddDiscussionDialogContentState
                       icon: const Icon(Icons.link),
                       label: const Text('Tautkan'),
                       onPressed: () async {
-                        final result = await showQuizPickerDialog(context);
-                        if (result != null) {
-                          setState(() {
-                            _selectedQuiz = result;
-                          });
-                        }
+                        // DIUBAH: Menampilkan SnackBar penanda karena fungsi dialog picker eksternal telah dihapus
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Fitur menautkan kuis eksternal sedang dinonaktifkan.',
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -281,7 +282,7 @@ class _AddDiscussionDialogContentState
               } else if (_linkType == DiscussionLinkType.link) {
                 linkData = _urlController.text.trim();
               } else if (_linkType == DiscussionLinkType.perpuskuQuiz) {
-                if (_selectedQuiz!.subjectPath == 'create_new_quiz') {
+                if (_selectedQuiz is String) {
                   linkData = 'create_new_quiz';
                 } else {
                   linkData = _selectedQuiz;
