@@ -2,8 +2,6 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-// ThemeProvider sudah diimpor
-import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
@@ -39,56 +37,35 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   @override
   void initState() {
     super.initState();
-    _provider = Provider.of<PerpuskuProvider>(context, listen: false);
-    _provider.addListener(_filterList);
-    _searchController.addListener(_filterList);
-
-    _filteredFiles = _provider.files;
-  }
-
-  void _filterList() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredFiles = _provider.files;
-      } else {
-        _filteredFiles = _provider.files
-            .where(
-              (f) =>
-                  f.title.toLowerCase().contains(query) ||
-                  f.fileName.toLowerCase().contains(query),
-            )
-            .toList();
-      }
-    });
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_filterList);
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _provider.removeListener(_filterList);
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    if (query.isEmpty) {
+      setState(() {
+        _filteredFiles = [];
+      });
+    } else {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<PerpuskuProvider>(context);
-    // Akses ThemeProvider
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final isTransparent =
-        themeProvider.backgroundImagePath != null ||
-        themeProvider.isUnderwaterTheme;
+    _provider = Provider.of<PerpuskuProvider>(context);
+    final files = _searchController.text.isEmpty
+        ? _provider.files
+        : _provider.searchResults;
+    final isLoading = _provider.isLoading;
 
     return Scaffold(
-      // Terapkan transparansi Scaffold
-      backgroundColor: isTransparent ? Colors.transparent : null,
-      appBar: AppBar(
-        // Terapkan transparansi AppBar
-        backgroundColor: isTransparent ? Colors.transparent : null,
-        elevation: isTransparent ? 0 : null,
-        title: Text(widget.subject.name),
-      ),
+      appBar: AppBar(title: Text(widget.subject.name)),
       body: Column(
         children: [
           Padding(
@@ -96,54 +73,34 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Cari file di dalam subjek ini...',
+                hintText: 'Cari file...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => _searchController.clear(),
-                      )
-                    : null,
               ),
             ),
           ),
           Expanded(
-            child: provider.isLoading
+            child: isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredFiles.isEmpty
-                ? const Center(child: Text('Tidak ada file ditemukan.'))
+                : files.isEmpty
+                ? const Center(child: Text('Tidak ada file ditemukan'))
                 : ListView.builder(
-                    itemCount: _filteredFiles.length,
+                    itemCount: files.length,
                     itemBuilder: (context, index) {
-                      final file = _filteredFiles[index];
+                      final file = files[index];
                       return ListTile(
-                        leading: const Icon(Icons.description_outlined),
+                        leading: const Icon(Icons.html, color: Colors.orange),
                         title: Text(file.title),
                         subtitle: Text(file.fileName),
                         onTap: () async {
                           try {
-                            if (Platform.isAndroid &&
-                                themeProvider.openInAppBrowser) {
-                              final fileContent = await File(
-                                file.path,
-                              ).readAsString();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => WebViewPage(
-                                    title: file.title,
-                                    htmlContent: fileContent,
-                                  ),
-                                ),
-                              );
-                            } else {
-                              final result = await OpenFile.open(file.path);
-                              if (result.type != ResultType.done) {
-                                throw Exception(result.message);
-                              }
+                            // Karena themeProvider dihapus, langsung gunakan open_file sebagai default eksternal.
+                            // Jika Anda ingin selalu membuka di dalam aplikasi, silakan ganti ke blok WebViewPage.
+                            final result = await OpenFile.open(file.path);
+                            if (result.type != ResultType.done) {
+                              throw Exception(result.message);
                             }
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(

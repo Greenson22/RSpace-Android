@@ -3,8 +3,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-// Import ThemeProvider
-import 'package:my_aplication/features/settings/application/theme_provider.dart';
 import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
@@ -53,17 +51,12 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
-    // Akses ThemeProvider
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isTransparent =
-        themeProvider.backgroundImagePath != null ||
-        themeProvider.isUnderwaterTheme;
+    // Logika ThemeProvider dihapus, transparansi diset false secara default
+    const isTransparent = false;
 
     return Scaffold(
-      // Terapkan transparansi Scaffold
       backgroundColor: isTransparent ? Colors.transparent : null,
       appBar: AppBar(
-        // Terapkan transparansi AppBar
         backgroundColor: isTransparent ? Colors.transparent : null,
         elevation: isTransparent ? 0 : null,
         title: const Text('Perpusku - Topik'),
@@ -149,7 +142,6 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
     if (provider.searchResults.isEmpty) {
       return const Center(child: Text('File tidak ditemukan.'));
     }
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     return ListView.builder(
       itemCount: provider.searchResults.length,
@@ -161,22 +153,10 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
           subtitle: Text(file.path),
           onTap: () async {
             try {
-              if (Platform.isAndroid && themeProvider.openInAppBrowser) {
-                final fileContent = await File(file.path).readAsString();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WebViewPage(
-                      title: file.title,
-                      htmlContent: fileContent,
-                    ),
-                  ),
-                );
-              } else {
-                final result = await OpenFile.open(file.path);
-                if (result.type != ResultType.done) {
-                  throw Exception(result.message);
-                }
+              // Langsung membuka file menggunakan open_file secara default
+              final result = await OpenFile.open(file.path);
+              if (result.type != ResultType.done) {
+                throw Exception(result.message);
               }
             } catch (e) {
               ScaffoldMessenger.of(context).showSnackBar(

@@ -4,12 +4,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:path/path.dart' as path;
-import '../../quiz/application/quiz_service.dart';
 import '../domain/models/perpusku_models.dart';
 
 class PerpuskuService {
   final PathService _pathService = PathService();
-  final QuizService _quizService = QuizService();
   static const String _defaultIcon = '📁';
   static const String _defaultSubjectIcon = '📄';
 
@@ -170,20 +168,7 @@ class PerpuskuService {
     for (final dir in entities) {
       final subjectName = path.basename(dir.path);
       String subjectIcon = _defaultSubjectIcon;
-      // ==> LOGIKA PERHITUNGAN DIPERBARUI <==
-      int quizCount = 0;
-
-      try {
-        final pathParts = dir.path.split('/');
-        final relativeSubjectPath = pathParts
-            .sublist(pathParts.length - 2)
-            .join('/');
-        final quizzes = await _quizService.loadQuizzes(relativeSubjectPath);
-        // Hitung jumlah set kuis, bukan total pertanyaan
-        quizCount = quizzes.length;
-      } catch (e) {
-        // Abaikan jika ada error
-      }
+      int quizCount = 0; // Default diatur ke 0 karena QuizService dihapus
 
       try {
         final topicName = path.basename(topicPath);
@@ -201,7 +186,7 @@ class PerpuskuService {
           }
         }
       } catch (e) {
-        // Abaikan
+        // Abaikan jika ada error
       }
 
       subjects.add(
@@ -209,7 +194,6 @@ class PerpuskuService {
           name: subjectName,
           path: dir.path,
           icon: subjectIcon,
-          // ==> KIRIM JUMLAH KUIS <==
           quizCount: quizCount,
         ),
       );

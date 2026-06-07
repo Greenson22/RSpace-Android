@@ -1,11 +1,9 @@
 // lib/features/html_editor/presentation/pages/html_editor_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
 
-import '../../../settings/application/theme_provider.dart';
 import '../themes/editor_themes.dart';
 
 class HtmlEditorPage extends StatefulWidget {
@@ -42,7 +40,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   }
 
   Future<void> _initializeEditor() async {
-    await _loadTheme();
     _controller = CodeController(text: widget.initialContent, language: xml);
     _previousText = _controller!.text;
     _controller!.addListener(_onTextChanged);
@@ -53,27 +50,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     }
   }
 
-  Future<void> _loadTheme() async {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final themeName = themeProvider.htmlEditorTheme;
-
-    if (themeName != null) {
-      final themeIndex = editorThemes.indexWhere((t) => t.name == themeName);
-      if (themeIndex != -1) {
-        setState(() {
-          _selectedTheme = editorThemes[themeIndex];
-        });
-      }
-    }
-  }
-
-  Future<void> _handleThemeChanged(EditorTheme? newTheme) async {
+  void _handleThemeChanged(EditorTheme? newTheme) {
     if (newTheme != null) {
       setState(() {
         _selectedTheme = newTheme;
       });
-      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-      await themeProvider.saveHtmlEditorTheme(newTheme.name);
     }
   }
 
