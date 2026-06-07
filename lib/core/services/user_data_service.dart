@@ -1,7 +1,6 @@
 // lib/core/services/user_data_service.dart
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../features/ai_assistant/domain/models/chat_message_model.dart';
 
 class UserDataService {
   static const String _geminiChatHistory = 'gemini_chat_history';
@@ -78,6 +77,10 @@ class UserDataService {
     };
   }
 
+  /* Catatan: Fungsi Chat History di bawah ini dinonaktifkan sementara 
+  karena ChatMessage model telah dihapus. Jika Anda memindahkannya ke tempat lain,
+  Anda bisa menghapus blok komentar ini atau menghapus fungsinya secara permanen.
+
   Future<void> saveChatHistory(List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
     final String encodedData = encodeChatMessages(messages);
@@ -89,6 +92,7 @@ class UserDataService {
     final String? encodedData = prefs.getString(_geminiChatHistory);
     return decodeChatMessages(encodedData ?? '[]');
   }
+  */
 
   Future<void> saveSortPreferences(String sortType, bool sortAscending) async {
     final prefs = await SharedPreferences.getInstance();

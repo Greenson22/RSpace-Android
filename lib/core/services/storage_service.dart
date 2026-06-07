@@ -1,12 +1,10 @@
 // lib/core/services/storage_service.dart
-import 'package:my_aplication/features/settings/application/services/settings_service.dart';
-import '../../features/ai_assistant/domain/models/chat_message_model.dart';
 import 'path_service.dart';
 import 'user_data_service.dart';
 import 'neuron_service.dart';
 
 class SharedPreferencesService {
-  final SettingsService _settingsService = SettingsService();
+  // _settingsService dihapus karena settings_service.dart tidak lagi di-import
   final PathService _pathService = PathService();
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
@@ -23,20 +21,11 @@ class SharedPreferencesService {
   Future<void> saveNeurons(int count) => _neuronService.setNeurons(count);
   Future<int> loadNeurons() => _neuronService.getNeurons();
 
-  Future<void> saveMyTasksLayoutPreference(bool isGridView) =>
-      _settingsService.saveMyTasksLayoutPreference(isGridView);
-  Future<bool> loadMyTasksLayoutPreference() =>
-      _settingsService.loadMyTasksLayoutPreference();
-
   Future<void> saveCustomStoragePath(String path) =>
       _pathService.saveCustomStoragePath(path);
   Future<String?> loadCustomStoragePath() =>
       _pathService.loadCustomStoragePath();
 
-  Future<void> saveChatHistory(List<ChatMessage> messages) =>
-      _userDataService.saveChatHistory(messages);
-  Future<List<ChatMessage>> loadChatHistory() =>
-      _userDataService.loadChatHistory();
   Future<void> saveSortPreferences(String sortType, bool sortAscending) =>
       _userDataService.saveSortPreferences(sortType, sortAscending);
   Future<Map<String, dynamic>> loadSortPreferences() =>
