@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
-// ==> IMPORT DIPERBARUI
-import 'package:my_aplication/features/settings/application/services/gemini_service_flutter_gemini.dart';
 import 'package:path/path.dart' as path;
 import '../domain/models/discussion_model.dart';
 import '../domain/models/point_preset_model.dart';
@@ -16,8 +14,6 @@ import '../../../core/services/storage_service.dart';
 import 'mixins/discussion_actions_mixin.dart';
 import 'mixins/discussion_filter_sort_mixin.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:my_aplication/features/quiz/application/quiz_service.dart';
-import 'package:my_aplication/features/quiz/presentation/dialogs/quiz_picker_dialog.dart';
 // Import dialog move discussion
 import '../presentation/discussions/dialogs/move_discussion_dialog.dart';
 // Import dialog lain yang mungkin dibutuhkan dari discussion_dialogs
@@ -31,10 +27,6 @@ class DiscussionProvider
   @override
   final DiscussionService discussionService = DiscussionService();
   final PointPresetService _pointPresetService = PointPresetService();
-  final QuizService _quizService = QuizService();
-  // ==> INSTANCE & IMPORT DIPERBARUI
-  final GeminiServiceFlutterGemini _geminiService =
-      GeminiServiceFlutterGemini();
   @override
   final SharedPreferencesService prefsService = SharedPreferencesService();
   @override
@@ -234,7 +226,6 @@ class DiscussionProvider
 
   Future<void> addDiscussion(AddDiscussionResult result) async {
     String? filePathValue;
-    String? quizNameValue;
 
     if (result.linkType == DiscussionLinkType.html) {
       if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
@@ -248,22 +239,6 @@ class DiscussionProvider
         discussionName: result.name,
       );
       filePathValue = path.join(sourceSubjectLinkedPath!, createdFileName);
-    } else if (result.linkType == DiscussionLinkType.perpuskuQuiz) {
-      if (result.linkData is QuizPickerResult) {
-        final quizResult = result.linkData as QuizPickerResult;
-        filePathValue = quizResult.subjectPath;
-        quizNameValue = quizResult.quizName;
-      } else if (result.linkData == 'create_new_quiz') {
-        if (sourceSubjectLinkedPath == null ||
-            sourceSubjectLinkedPath!.isEmpty) {
-          throw Exception(
-            "Tidak dapat membuat kuis karena Subject ini belum ditautkan ke folder PerpusKu.",
-          );
-        }
-        await _quizService.addQuizSet(sourceSubjectLinkedPath!, result.name);
-        filePathValue = sourceSubjectLinkedPath;
-        quizNameValue = result.name;
-      }
     }
 
     final newDiscussion = Discussion(
@@ -276,57 +251,11 @@ class DiscussionProvider
       url: result.linkType == DiscussionLinkType.link
           ? result.linkData as String?
           : null,
-      quizName: quizNameValue,
     );
     _allDiscussions.add(newDiscussion);
 
     filterAndSortDiscussions();
     await saveDiscussions();
-  }
-
-  Future<void> updateQuizLink(
-    Discussion discussion,
-    QuizPickerResult result,
-  ) async {
-    discussion.filePath = result.subjectPath;
-    discussion.quizName = result.quizName;
-    await saveDiscussions();
-    notifyListeners();
-  }
-
-  Future<void> convertToQuiz(
-    Discussion discussion, {
-    QuizPickerResult? linkTo,
-    bool createNew = false,
-  }) async {
-    if (createNew) {
-      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
-        throw Exception(
-          "Tidak dapat membuat kuis karena Subject ini belum ditautkan ke folder PerpusKu.",
-        );
-      }
-      await _quizService.addQuizSet(
-        sourceSubjectLinkedPath!,
-        discussion.discussion,
-      );
-      discussion.linkType = DiscussionLinkType.perpuskuQuiz;
-      discussion.filePath = sourceSubjectLinkedPath;
-      discussion.quizName = discussion.discussion;
-    } else if (linkTo != null) {
-      discussion.linkType = DiscussionLinkType.perpuskuQuiz;
-      discussion.filePath = linkTo.subjectPath;
-      discussion.quizName = linkTo.quizName;
-    } else {
-      throw Exception("Data kuis untuk ditautkan tidak valid.");
-    }
-
-    await saveDiscussions();
-    notifyListeners();
-  }
-
-  // ==> FUNGSI DIPERBARUI
-  Future<List<String>> getTitlesFromContent(String htmlContent) async {
-    return await _geminiService.generateDiscussionTitles(htmlContent);
   }
 
   Future<void> addDiscussionWithPredefinedTitle({
