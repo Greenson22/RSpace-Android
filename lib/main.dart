@@ -11,6 +11,10 @@ import 'features/settings/presentation/pages/settings_page.dart'; // Import feat
 import 'features/about/presentation/pages/about_page.dart'; // Sesuaikan path ini dengan folder About yang sudah ada
 
 void main() {
+  // Tambahkan baris ini untuk memastikan inisialisasi binding Flutter
+  // selesai sebelum WebViewPlatform atau plugin native lainnya dipanggil.
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (context) => TopicProvider())],
