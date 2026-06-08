@@ -297,6 +297,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
 
         return ReorderableListView.builder(
+          // MODIFIKASI: Menambahkan padding atas-bawah yang tipis agar lebih merata di mobile
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
           itemCount: topicsToShow.length,
           buildDefaultDragHandles: false,
           proxyDecorator:

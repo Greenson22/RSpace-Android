@@ -32,23 +32,27 @@ class TopicListTile extends StatelessWidget {
         ? theme.disabledColor.withOpacity(0.1)
         : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
-    final double elevation = isHidden ? 1 : 3;
+    final double elevation = isHidden
+        ? 1
+        : 2; // Dikurangi sedikit agar lebih flat khas mobile
 
-    final double verticalMargin = 8;
-    final double horizontalMargin = 16;
+    // --- DIUBAH AGAR LEBIH KECIL (MOBILE FRIENDLY) ---
+    final double verticalMargin = 4; // Sebelumnya: 8
+    final double horizontalMargin = 8; // Sebelumnya: 16
     final EdgeInsets padding = const EdgeInsets.symmetric(
-      horizontal: 12,
-      vertical: 16,
+      horizontal: 10,
+      vertical: 8, // Sebelumnya: 16
     );
-    final double iconFontSize = 28;
-    final double titleFontSize = 18;
+    final double iconFontSize = 20; // Sebelumnya: 28
+    final double titleFontSize = 14; // Sebelumnya: 18
+    // -------------------------------------------------
 
     final tileContent = Material(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(10), // Diperkecil dari 15
       color: Colors.transparent,
       child: InkWell(
         onTap: isReorderActive ? null : onTap,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(10),
         splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
         highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
         child: Padding(
@@ -56,17 +60,17 @@ class TopicListTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6), // Diperkecil dari 8
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6), // Diperkecil dari 8
                 ),
                 child: Text(
                   topic.icon,
                   style: TextStyle(fontSize: iconFontSize, color: textColor),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10), // Diperkecil dari 12
               Expanded(
                 child: Text(
                   topic.name,
@@ -82,12 +86,20 @@ class TopicListTile extends StatelessWidget {
                 ReorderableDragStartListener(
                   index: index, // Diperbarui: Menggunakan index yang benar
                   child: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.drag_handle),
+                    padding: EdgeInsets.all(6.0), // Diperkecil dari 8.0
+                    child: Icon(
+                      Icons.drag_handle,
+                      size: 20,
+                    ), // Diberi ukuran tetap yang lebih kecil
                   ),
                 )
               else
                 PopupMenuButton<String>(
+                  iconSize: 20, // Memperkecil icon titik tiga menu
+                  padding:
+                      EdgeInsets.zero, // Menghapus padding bawaan popup button
+                  constraints:
+                      const BoxConstraints(), // Mempersempit area klik luar agar hemat ruang
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'toggle_visibility') onToggleVisibility();
@@ -98,9 +110,9 @@ class TopicListTile extends StatelessWidget {
                       value: 'rename',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_outlined),
+                          Icon(Icons.edit_outlined, size: 20),
                           SizedBox(width: 8),
-                          Text('Ubah Nama'),
+                          Text('Ubah Nama', style: TextStyle(fontSize: 14)),
                         ],
                       ),
                     ),
@@ -108,9 +120,9 @@ class TopicListTile extends StatelessWidget {
                       value: 'change_icon',
                       child: Row(
                         children: [
-                          Icon(Icons.emoji_emotions_outlined),
+                          Icon(Icons.emoji_emotions_outlined, size: 20),
                           SizedBox(width: 8),
-                          Text('Ubah Ikon'),
+                          Text('Ubah Ikon', style: TextStyle(fontSize: 14)),
                         ],
                       ),
                     ),
@@ -122,9 +134,13 @@ class TopicListTile extends StatelessWidget {
                             isHidden
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
+                            size: 20,
                           ),
                           const SizedBox(width: 8),
-                          Text(isHidden ? 'Tampilkan' : 'Sembunyikan'),
+                          Text(
+                            isHidden ? 'Tampilkan' : 'Sembunyikan',
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ],
                       ),
                     ),
@@ -133,9 +149,16 @@ class TopicListTile extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
                           SizedBox(width: 8),
-                          Text('Hapus', style: TextStyle(color: Colors.red)),
+                          Text(
+                            'Hapus',
+                            style: TextStyle(color: Colors.red, fontSize: 14),
+                          ),
                         ],
                       ),
                     ),
@@ -155,9 +178,14 @@ class TopicListTile extends StatelessWidget {
         vertical: verticalMargin,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(
+          10,
+        ), // Menyeimbangkan dengan isi content
         side: isFocused
-            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            ? BorderSide(
+                color: theme.primaryColor,
+                width: 2.0,
+              ) // Diturunkan ketebalannya dari 2.5
             : BorderSide.none,
       ),
       child: tileContent,
