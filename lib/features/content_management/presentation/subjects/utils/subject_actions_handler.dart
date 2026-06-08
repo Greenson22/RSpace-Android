@@ -269,9 +269,11 @@ class SubjectActionsHandler {
 
     await showSubjectTextInputDialog(
       context: context,
-      title: 'Tambah Subject Baru (Langkah 1/2)',
+      title:
+          'Tambah Subject Baru', // Mengubah judul agar tidak ada lagi tulisan langkah
       label: 'Nama Subject di RSpace',
       onSave: (name) async {
+        // Melakukan penautan folder PerpusKu secara otomatis di latar belakang
         final newPath = await showLinkOrCreatePerpuskuDialog(
           context: context,
           forSubjectName: name,
@@ -281,14 +283,16 @@ class SubjectActionsHandler {
           try {
             await provider.addSubject(name);
             await provider.updateSubjectLinkedPath(name, newPath);
-            if (context.mounted)
+            if (context.mounted) {
               showSnackBar(
                 context,
                 'Subject "$name" berhasil ditambahkan dan ditautkan.',
               );
+            }
           } catch (e) {
-            if (context.mounted)
+            if (context.mounted) {
               showSnackBar(context, e.toString(), isError: true);
+            }
           }
         }
       },
