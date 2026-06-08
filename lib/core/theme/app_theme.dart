@@ -63,6 +63,18 @@ class AppTheme {
     return _lightTheme(primaryColor);
   }
 
+  static const List<List<Color>> allGradients = [
+    gradientColors1,
+    gradientColors2,
+    gradientColors3,
+    gradientColors4,
+    gradientColors5,
+    gradientColors6,
+    gradientColors7,
+    gradientColors8,
+    gradientColors9,
+  ];
+
   // ==> TEMA SPESIAL NATAL <==
   static ThemeData getChristmasTheme(bool isDark) {
     // Palet Warna Natal
@@ -270,5 +282,23 @@ class AppTheme {
       );
     }
     return MaterialColor(color.value, swatch);
+  }
+
+  // FUNGSI BARU: Mendapatkan gradasi unik yang konsisten berdasarkan teks judul
+  static List<Color> getGradientForTitle(String title) {
+    if (title.isEmpty) return gradientColors1;
+    // Mengubah string menjadi nilai angka unik
+    int hash = title.hashCode;
+    // Memilih index gradasi berdasarkan nilai hash
+    int index = hash.abs() % allGradients.length;
+    return allGradients[index];
+  }
+
+  // FUNGSI BARU: Jika Anda lebih suka warna solid dibanding gradasi
+  static Color getColorForTitle(String title) {
+    if (title.isEmpty) return selectableColors[0];
+    int hash = title.hashCode;
+    int index = hash.abs() % selectableColors.length;
+    return selectableColors[index];
   }
 }
