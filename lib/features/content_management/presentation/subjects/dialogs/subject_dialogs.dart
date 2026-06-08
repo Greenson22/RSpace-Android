@@ -1,9 +1,10 @@
-// lib/presentation/pages/2_subjects_page/dialogs/subject_dialogs.dart
+// lib/features/content_management/presentation/subjects/dialogs/subject_dialogs.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/core/services/path_service.dart';
+import '../subjects_page.dart'; // Digunakan untuk mendeteksi Topic dari halaman aktif
 
 // Dialog untuk menautkan atau membuat folder baru di PerpusKu
 Future<String?> showLinkOrCreatePerpuskuDialog({
@@ -20,16 +21,90 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
       'topics',
     );
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Error: ${e.toString()}"),
-        backgroundColor: Colors.red,
-      ),
-    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
     return null;
   }
 
-  // Opsi 1: Memilih folder yang sudah ada
+  // ==> PERBAIKAN: DETEKSI TOPIK GANDA YANG LEBIH KUAT <==
+  String? currentTopicName;
+
+  // 1. Cek apakah context saat ini secara langsung adalah SubjectsPage
+  if (context.widget is SubjectsPage) {
+    currentTopicName = (context.widget as SubjectsPage).topicName;
+  }
+  // 2. Jika tidak, cek apakah context berada di bawah SubjectsPage (sebagai ancestor)
+  if (currentTopicName == null || currentTopicName.isEmpty) {
+    final subjectsPage = context.findAncestorWidgetOfExactType<SubjectsPage>();
+    currentTopicName = subjectsPage?.topicName;
+  }
+
+  // ==> JIKA TOPIK DITEMUKAN: BUAT FOLDER 100% OTOMATIS TANPA DIALOG <==
+  if (currentTopicName != null && currentTopicName.isNotEmpty) {
+    try {
+      // Sanitasi nama folder agar valid di Windows/Linux/Mac (hilangkan karakter ilegal)
+      final safeFolderName = forSubjectName.trim().replaceAll(
+        RegExp(r'[\\/:*?"<>|]'),
+        '_',
+      );
+      final newSubjectPath = path.join(
+        perpuskuTopicsPath,
+        currentTopicName,
+        safeFolderName,
+      );
+      final newDir = Directory(newSubjectPath);
+
+      // Buat folder jika belum ada (mencegah error jika subject bernama sama)
+      if (!await newDir.exists()) {
+        await newDir.create(recursive: true);
+
+        // Membuat metadata.json
+        final metadataFile = File(path.join(newDir.path, 'metadata.json'));
+        await metadataFile.writeAsString(jsonEncode({"content": []}));
+
+        // Membuat index.html
+        final indexFile = File(path.join(newDir.path, 'index.html'));
+        const htmlTemplate = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+</head>
+<body>
+    <div id="main-container"></div>
+</body>
+</html>''';
+        await indexFile.writeAsString(htmlTemplate);
+      }
+
+      // Langsung kembalikan path-nya secara otomatis tanpa memunculkan UI tambahan
+      return path.join(currentTopicName, safeFolderName);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Gagal membuat folder otomatis: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
+  // ====================================================================
+  // FALLBACK MANUAL: Logika di bawah ini HANYA akan dipanggil jika fungsi
+  // dipanggil dari luar struktur `SubjectsPage` (Topik tidak diketahui).
+  // ====================================================================
+
   Future<String?> pickExistingSubject() async {
     return await showDialog<String>(
       context: context,
@@ -37,7 +112,6 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
     );
   }
 
-  // Opsi 2: Membuat folder baru
   Future<String?> createNewSubject() async {
     return await showDialog<String>(
       context: context,
@@ -52,7 +126,7 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text('Tautkan ke PerpusKu'),
+        title: const Text('Tautkan ke PerpusKu'),
         content: Text(
           'Subject "$forSubjectName" harus ditautkan ke folder di PerpusKu. Pilih folder yang sudah ada atau buat yang baru.',
         ),
@@ -81,7 +155,7 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
   );
 }
 
-// Widget internal untuk membuat folder baru
+// Widget internal untuk membuat folder baru (Fallback Manual)
 class _CreatePerpuskuSubjectDialog extends StatefulWidget {
   final String basePath;
   final String suggestedName;
@@ -123,7 +197,7 @@ class _CreatePerpuskuSubjectDialogState
       final dir = Directory(widget.basePath);
       _topics = dir.listSync().whereType<Directory>().toList();
     } catch (e) {
-      // Handle error
+      // Abaikan jika error saat load
     }
     setState(() => _isLoading = false);
   }
@@ -151,6 +225,7 @@ class _CreatePerpuskuSubjectDialogState
         newFolderName,
       );
       final newDir = Directory(newSubjectPath);
+
       if (await newDir.exists()) {
         throw Exception(
           'Folder dengan nama "$newFolderName" sudah ada di dalam topik "$_selectedTopic".',
@@ -158,11 +233,9 @@ class _CreatePerpuskuSubjectDialogState
       }
       await newDir.create(recursive: true);
 
-      // Membuat metadata.json (tetap ada)
       final metadataFile = File(path.join(newDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode({"content": []}));
 
-      // ==> AWAL PENAMBAHAN: Membuat index.html secara otomatis <==
       final indexFile = File(path.join(newDir.path, 'index.html'));
       const htmlTemplate = '''
 <!DOCTYPE html>
@@ -177,7 +250,6 @@ class _CreatePerpuskuSubjectDialogState
 </body>
 </html>''';
       await indexFile.writeAsString(htmlTemplate);
-      // ==> AKHIR PENAMBAHAN <==
 
       final relativePath = path.join(_selectedTopic, newFolderName);
       if (mounted) Navigator.pop(context, relativePath);
@@ -198,7 +270,10 @@ class _CreatePerpuskuSubjectDialogState
       content: Form(
         key: _formKey,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +329,7 @@ class _CreatePerpuskuSubjectDialogState
   }
 }
 
-// Widget internal untuk memilih path yang sudah ada
+// Widget internal untuk memilih path yang sudah ada (Fallback Manual)
 class _PerpuskuPathPicker extends StatefulWidget {
   final String basePath;
   const _PerpuskuPathPicker({required this.basePath});
@@ -286,13 +361,15 @@ class _PerpuskuPathPickerState extends State<_PerpuskuPathPicker> {
         _items = items;
       });
     } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error memuat folder: ${e.toString()}"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error memuat folder: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -400,7 +477,7 @@ Future<void> showSubjectTextInputDialog({
 Future<Map<String, bool>?> showDeleteConfirmationDialog({
   required BuildContext context,
   required String subjectName,
-  required String? linkedPath, // Tambahkan parameter ini
+  required String? linkedPath,
 }) async {
   bool deleteFolder = false;
   final bool isLinked = linkedPath != null && linkedPath.isNotEmpty;
@@ -408,7 +485,6 @@ Future<Map<String, bool>?> showDeleteConfirmationDialog({
   return await showDialog<Map<String, bool>?>(
     context: context,
     builder: (context) {
-      // Gunakan StatefulBuilder untuk mengelola state checkbox di dalam dialog
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -419,7 +495,6 @@ Future<Map<String, bool>?> showDeleteConfirmationDialog({
               children: [
                 Text('Anda yakin ingin menghapus subject "$subjectName"?'),
                 const SizedBox(height: 16),
-                // Tampilkan checkbox hanya jika subject memiliki folder tertaut
                 if (isLinked)
                   CheckboxListTile(
                     title: const Text(
@@ -443,12 +518,11 @@ Future<Map<String, bool>?> showDeleteConfirmationDialog({
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, null), // Batal
+                onPressed: () => Navigator.pop(context, null),
                 child: const Text('Batal'),
               ),
               TextButton(
                 onPressed: () {
-                  // Kirim hasil konfirmasi dan pilihan checkbox
                   Navigator.pop(context, {
                     'confirmed': true,
                     'deleteFolder': deleteFolder,
