@@ -174,7 +174,6 @@ class DiscussionListItem extends StatelessWidget {
 
       if (useInternalWeb) {
         if (context.mounted) {
-          // ==> INJEKSI PROVIDER DI SINI AGAR TOMBOL DI DALAM WEBVIEW BERFUNGSI <==
           final provider = Provider.of<DiscussionProvider>(
             context,
             listen: false,
@@ -211,8 +210,6 @@ class DiscussionListItem extends StatelessWidget {
       );
     }
   }
-
-  // ... (Sisa fungsi file ini biarkan sama seperti sebelumnya) ...
 
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
@@ -290,11 +287,11 @@ class DiscussionListItem extends StatelessWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => Navigator.pop(context, false),
                 child: const Text('Batal'),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () => Navigator.pop(context, true),
                 child: const Text('Buat & Tautkan'),
               ),
             ],
@@ -504,16 +501,11 @@ class DiscussionListItem extends StatelessWidget {
       elevation: isFinished ? 1 : 2,
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       color: highlightColor?.withOpacity(0.08) ?? cardColor,
-      // === MODIFIKASI BORDER DI SINI ===
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
         side: BorderSide(
-          color: isFocused
-              ? mainThemeColor
-              : mainThemeColor.withOpacity(
-                  0.35,
-                ), // Border halus mengikuti tema subjek
-          width: isFocused ? 2.0 : 1.0, // Menjadi lebih tebal saat aktif/fokus
+          color: isFocused ? mainThemeColor : mainThemeColor.withOpacity(0.35),
+          width: isFocused ? 2.0 : 1.0,
         ),
       ),
       child: ClipRRect(
@@ -692,6 +684,8 @@ class DiscussionListItem extends StatelessWidget {
                               },
                               onHighlight: () =>
                                   _manageHighlight(context, provider),
+                              themeColor:
+                                  mainThemeColor, // ==> PERBAIKAN: Mengirim argumen themeColor di sini
                             ),
                           ),
                         if (!provider.isSelectionMode &&
