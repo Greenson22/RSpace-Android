@@ -53,7 +53,6 @@ class TopicListTile extends StatelessWidget {
 
     // Mendapatkan warna utama berbasis judul satu kali untuk seluruh widget ini
     final Color mainThemeColor = _getThemeColorFromTitle(topic.name);
-
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
         : theme.cardColor;
@@ -124,82 +123,92 @@ class TopicListTile extends StatelessWidget {
                   ),
                 )
               else
-                PopupMenuButton<String>(
-                  iconSize: 20,
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: isHidden
-                        ? textColor
-                        : mainThemeColor.withOpacity(0.7),
+                Theme(
+                  data: theme.copyWith(
+                    // Mengubah teks menu opsi item menjadi warna tema
+                    popupMenuTheme: theme.popupMenuTheme.copyWith(
+                      textStyle: TextStyle(color: mainThemeColor, fontSize: 14),
+                    ),
+                    // Mengubah warna ikon default di dalam menu popup
+                    iconTheme: theme.iconTheme.copyWith(color: mainThemeColor),
                   ),
-                  padding: const EdgeInsets.all(12.0),
-                  onSelected: (value) {
-                    if (value == 'rename') onRename();
-                    if (value == 'toggle_visibility') onToggleVisibility();
-                    if (value == 'delete') onDelete();
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'rename',
-                      height: 40,
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, size: 20),
-                          SizedBox(width: 8),
-                          Text('Ubah Nama', style: TextStyle(fontSize: 14)),
-                        ],
-                      ),
+                  child: PopupMenuButton<String>(
+                    iconSize: 20,
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: isHidden
+                          ? textColor
+                          : mainThemeColor.withOpacity(0.7),
                     ),
-                    const PopupMenuItem(
-                      value: 'change_icon',
-                      height: 40,
-                      child: Row(
-                        children: [
-                          Icon(Icons.emoji_emotions_outlined, size: 20),
-                          SizedBox(width: 8),
-                          Text('Ubah Ikon', style: TextStyle(fontSize: 14)),
-                        ],
+                    padding: const EdgeInsets.all(12.0),
+                    onSelected: (value) {
+                      if (value == 'rename') onRename();
+                      if (value == 'toggle_visibility') onToggleVisibility();
+                      if (value == 'delete') onDelete();
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'rename',
+                        height: 40,
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 20),
+                            SizedBox(width: 8),
+                            Text('Ubah Nama', style: TextStyle(fontSize: 14)),
+                          ],
+                        ),
                       ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'toggle_visibility',
-                      height: 40,
-                      child: Row(
-                        children: [
-                          Icon(
-                            isHidden
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isHidden ? 'Tampilkan' : 'Sembunyikan',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ],
+                      const PopupMenuItem(
+                        value: 'change_icon',
+                        height: 40,
+                        child: Row(
+                          children: [
+                            Icon(Icons.emoji_emotions_outlined, size: 20),
+                            SizedBox(width: 8),
+                            Text('Ubah Ikon', style: TextStyle(fontSize: 14)),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuDivider(height: 8),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      height: 40,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Hapus',
-                            style: TextStyle(color: Colors.red, fontSize: 14),
-                          ),
-                        ],
+                      PopupMenuItem<String>(
+                        value: 'toggle_visibility',
+                        height: 40,
+                        child: Row(
+                          children: [
+                            Icon(
+                              isHidden
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isHidden ? 'Tampilkan' : 'Sembunyikan',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const PopupMenuDivider(height: 8),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        height: 40,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Hapus',
+                              style: TextStyle(color: Colors.red, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
