@@ -109,20 +109,48 @@ Page resource error:
   Widget build(BuildContext context) {
     final bool isFromDiscussion = widget.discussion != null;
 
+    // --- SKALA UKURAN APPBAR UNTUK MOBILE (Disamakan dengan TopicsPage) ---
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseAppBarIconSize = 20.0;
+    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+
+    // Menggunakan warna utama default palet aplikasi (Colors.deepPurple)
+    const Color defaultThemeColor = Colors.deepPurple;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title, overflow: TextOverflow.ellipsis),
+        backgroundColor: defaultThemeColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leadingWidth: 48.0,
+        iconTheme: IconThemeData(
+          size: scaledAppBarIconSize,
+          color: Colors.white,
+        ),
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+            fontSize: 18.0,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: <Widget>[
           // ==> TAMBAHKAN TOMBOL BOOKMARK DI SINI
           if (!isFromDiscussion)
             IconButton(
               icon: const Icon(Icons.bookmarks_outlined),
+              iconSize: scaledAppBarIconSize,
+              color: Colors.white,
               tooltip: 'Bookmark',
               onPressed: () => showBookmarksDialog(context, _controller),
             ),
           if (isFromDiscussion) ...[
             IconButton(
               icon: const Icon(Icons.add_comment_outlined),
+              iconSize: scaledAppBarIconSize,
+              color: Colors.white,
               tooltip: 'Tambah Poin',
               onPressed: () {
                 showAddPointDialogFromWebView(
@@ -136,15 +164,19 @@ Page resource error:
             ),
             IconButton(
               icon: const Icon(Icons.edit_note),
+              iconSize: scaledAppBarIconSize,
+              color: Colors.white,
               tooltip: 'Edit Detail & Poin',
               onPressed: () =>
                   showDiscussionDetailsDialog(context, widget.discussion!),
             ),
           ],
+          // Mengoper scaledAppBarIconSize ke dalam NavigationControls jika dibutuhkan penyesuaian internal ukuran tombol navigasi
           NavigationControls(
             webViewController: _controller,
             isFromDiscussion: isFromDiscussion,
           ),
+          const SizedBox(width: 12.0),
         ],
       ),
       body: WebViewWidget(controller: _controller),
