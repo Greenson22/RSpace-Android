@@ -49,7 +49,6 @@ class SubjectListTile extends StatelessWidget {
     final bool isFrozen = subject.isFrozen;
     final bool isLocked = subject.isLocked;
     final bool isSelected = provider.selectedSubjects.contains(subject);
-
     final Color cardColor = isSelected
         ? theme.primaryColor.withOpacity(0.2)
         : (isHidden
@@ -57,11 +56,9 @@ class SubjectListTile extends StatelessWidget {
               : (isFrozen
                     ? Colors.lightBlue.shade50
                     : (isLocked ? Colors.grey.shade300 : theme.cardColor)));
-
     final Color? textColor = isHidden
         ? theme.disabledColor
         : (isLocked ? Colors.grey.shade700 : null);
-
     final double elevation = isHidden ? 1 : 2;
 
     // --- MODIFIKASI UKURAN MOBILE FRIENDLY ---
@@ -73,7 +70,6 @@ class SubjectListTile extends StatelessWidget {
     ); // Sebelumnya: all(16.0)
     final double iconFontSize = 20; // Sebelumnya: 28
     final double titleFontSize = 14; // Sebelumnya: 18
-
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     const double basePopupIconSize = 18.0; // Sebelumnya: 24.0
     const double baseLinkIconSize = 14.0; // Sebelumnya: 18.0
@@ -175,8 +171,9 @@ class SubjectListTile extends StatelessWidget {
               if (!provider.isSelectionMode)
                 PopupMenuButton<String>(
                   iconSize: scaledPopupIconSize,
-                  padding: EdgeInsets.zero, // Optimalisasi ruang sentuh mobile
-                  constraints: const BoxConstraints(),
+                  // DIUBAH: Ditambahkan padding internal 12.0 dan hapus BoxConstraints() kosong
+                  // guna meningkatkan target jangkauan sentuh jari di mobile (~44-48 dp)
+                  padding: const EdgeInsets.all(12.0),
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'delete') onDelete();
@@ -202,7 +199,7 @@ class SubjectListTile extends StatelessWidget {
                       Icons.archive_outlined,
                       'Export ke ZIP',
                     ),
-                    const PopupMenuDivider(),
+                    const PopupMenuDivider(height: 8),
                     _buildSubMenu(
                       icon: Icons.edit_outlined,
                       label: 'Edit',
@@ -271,7 +268,7 @@ class SubjectListTile extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const PopupMenuDivider(),
+                    const PopupMenuDivider(height: 8),
                     _buildMenuItem(
                       'delete',
                       Icons.delete_outline,
@@ -314,6 +311,8 @@ class SubjectListTile extends StatelessWidget {
   }) {
     return PopupMenuItem<String>(
       value: value,
+      height:
+          40, // DIUBAH: Mengoptimalkan tinggi menu agar lebih ringkas & rapat khas mobile
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
@@ -332,6 +331,8 @@ class SubjectListTile extends StatelessWidget {
     return PopupMenuItem(
       padding: EdgeInsets.zero,
       enabled: false,
+      height:
+          40, // DIUBAH: Menyesuaikan tinggi agar seimbang dengan sub-menu itemnya
       child: SubmenuButton(
         menuChildren: children,
         child: Padding(

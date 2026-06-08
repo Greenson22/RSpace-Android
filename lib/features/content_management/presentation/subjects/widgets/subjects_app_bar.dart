@@ -28,13 +28,10 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
     final theme = Theme.of(context);
-
     // Ambil warna teks default dari tema untuk mengatasi tulisan putih di background putih
     final Color defaultTextColor =
         theme.textTheme.bodyLarge?.color ?? Colors.black87;
-
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-
     // --- SKALA UKURAN APPBAR UNTUK MOBILE ---
     const double baseAppBarIconSize = 20.0; // Diturunkan dari 24.0
     final scaledIconSize = baseAppBarIconSize * textScaleFactor;
@@ -130,46 +127,63 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: onToggleSearch,
         ),
         const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.sort),
-          iconSize: scaledIconSize,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          tooltip: 'Urutkan Subject',
-          onPressed: () => showSubjectSortDialog(context: context),
-        ),
-        const SizedBox(width: 8),
+
+        // --- GABUNGKAN URUTKAN & KONTROL TERSEMBUNYI DALAM "SHOW MENU" (Icons.more_vert) ---
         PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
           iconSize: scaledIconSize,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
-          onSelected: onMenuSelected,
+          onSelected: (value) {
+            if (value == 'sort_subjects') {
+              showSubjectSortDialog(context: context);
+            } else {
+              onMenuSelected(value);
+            }
+          },
           itemBuilder: (context) => [
             const PopupMenuItem(
-              value: 'import_zip',
-              child: ListTile(
-                leading: Icon(Icons.folder_zip, size: 20),
-                title: Text('Import ZIP', style: TextStyle(fontSize: 14)),
-                contentPadding: EdgeInsets.zero,
+              value: 'sort_subjects',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(Icons.sort, size: 20),
+                  SizedBox(width: 10),
+                  Text('Urutkan Subject', style: TextStyle(fontSize: 14)),
+                ],
               ),
             ),
-            const PopupMenuDivider(),
+            const PopupMenuDivider(height: 8),
+            const PopupMenuItem(
+              value: 'import_zip',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(Icons.folder_zip, size: 20),
+                  SizedBox(width: 10),
+                  Text('Import ZIP', style: TextStyle(fontSize: 14)),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'show_hidden',
-              child: ListTile(
-                leading: Icon(
-                  provider.showHiddenSubjects
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  size: 20,
-                ),
-                title: Text(
-                  provider.showHiddenSubjects
-                      ? 'Sembunyikan Tersembunyi'
-                      : 'Tampilkan Tersembunyi',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                contentPadding: EdgeInsets.zero,
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(
+                    provider.showHiddenSubjects
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    provider.showHiddenSubjects
+                        ? 'Sembunyikan Tersembunyi'
+                        : 'Tampilkan Tersembunyi',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
               ),
             ),
           ],
