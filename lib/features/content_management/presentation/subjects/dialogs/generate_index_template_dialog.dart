@@ -1,8 +1,6 @@
 // lib/features/content_management/presentation/subjects/dialogs/generate_index_template_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../application/subject_provider.dart';
 import '../../../domain/models/subject_model.dart';
 
 class GenerateIndexTemplateDialog extends StatefulWidget {
@@ -35,13 +33,6 @@ class _GenerateIndexTemplateDialogState
     });
 
     try {
-      final provider = Provider.of<SubjectProvider>(context, listen: false);
-
-      // PERUBAHAN DI SINI: Baris pemanggilan AI yang error telah dihapus.
-      // Anda bisa menggantinya dengan fungsi lokal, menyimpan ke state,
-      // atau memanggil fungsi non-AI dari provider jika tersedia, contoh:
-      // await provider.saveIndexTemplate(widget.subject, _controller.text.trim());
-
       if (mounted) {
         Navigator.of(context).pop(true); // Kirim sinyal sukses
       }

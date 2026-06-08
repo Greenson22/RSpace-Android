@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
-import 'package:my_aplication/features/webview_page/presentation/pages/dialogs/add_point_dialog_webview.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/confirmation_dialogs.dart';
 import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
 import 'package:my_aplication/core/providers/neuron_provider.dart';

@@ -1,8 +1,6 @@
 // lib/features/perpusku/presentation/pages/perpusku_subject_page.dart
 
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
@@ -54,15 +52,9 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
   Widget build(BuildContext context) {
     final provider = Provider.of<PerpuskuProvider>(context);
     // Logika ThemeProvider dihapus, transparansi diset false secara default
-    const isTransparent = false;
 
     return Scaffold(
-      backgroundColor: isTransparent ? Colors.transparent : null,
-      appBar: AppBar(
-        backgroundColor: isTransparent ? Colors.transparent : null,
-        elevation: isTransparent ? 0 : null,
-        title: Text(widget.topic.name),
-      ),
+      appBar: AppBar(title: Text(widget.topic.name)),
       body: Column(
         children: [
           Padding(

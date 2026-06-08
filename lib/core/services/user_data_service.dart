@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserDataService {
-  static const String _geminiChatHistory = 'gemini_chat_history';
   static const String _sortTypeKey = 'sort_type';
   static const String _sortAscendingKey = 'sort_ascending';
   static const String _filterTypeKey = 'filter_type';

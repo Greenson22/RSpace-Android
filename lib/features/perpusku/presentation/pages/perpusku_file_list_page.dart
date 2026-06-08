@@ -1,8 +1,6 @@
 // lib/features/perpusku/presentation/pages/perpusku_file_list_page.dart
 
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/webview_page/presentation/pages/webview_page.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
@@ -31,7 +29,6 @@ class _PerpuskuFileListView extends StatefulWidget {
 
 class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   final TextEditingController _searchController = TextEditingController();
-  List<PerpuskuFile> _filteredFiles = [];
   late PerpuskuProvider _provider;
 
   @override
@@ -50,9 +47,7 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
   void _onSearchChanged() {
     final query = _searchController.text;
     if (query.isEmpty) {
-      setState(() {
-        _filteredFiles = [];
-      });
+      setState(() {});
     } else {}
   }
 

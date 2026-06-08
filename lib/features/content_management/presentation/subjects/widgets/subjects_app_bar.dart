@@ -26,8 +26,6 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
-    // Jika ingin background transparan, bisa diteruskan via parameter atau cek tema di sini
-    const isTransparent = false;
 
     if (isSelectionMode) {
       return AppBar(
@@ -62,8 +60,6 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return AppBar(
-      backgroundColor: isTransparent ? Colors.transparent : null,
-      elevation: isTransparent ? 0 : null,
       title: isSearching
           ? TextField(
               controller: searchController,

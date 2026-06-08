@@ -21,6 +21,9 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    - unused_element       # Mendeteksi fungsi, kelas, atau variabel private yang tidak digunakan
+    - unused_local_variable # Mendeteksi variabel lokal yang tidak digunakan
+    - unused_import         # Mendeteksi import yang tidak digunakan
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

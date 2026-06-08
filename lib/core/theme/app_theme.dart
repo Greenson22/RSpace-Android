@@ -147,7 +147,6 @@ class AppTheme {
   // ==> TEMA SPESIAL BAWAH AIR <==
   static ThemeData getUnderwaterTheme(bool isDark) {
     // Palet Warna Bawah Air
-    const Color deepBlue = Color(0xFF003973);
     const Color lightBlue = Color(0xFF33A1FD);
     const Color sandColor = Color(0xFFE5DDCB);
 

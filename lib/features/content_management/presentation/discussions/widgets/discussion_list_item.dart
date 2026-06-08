@@ -1,13 +1,11 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_list_item.dart
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
-import '../../../../webview_page/presentation/pages/webview_page.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';
 import '../dialogs/smart_link_dialog.dart';
@@ -15,8 +13,6 @@ import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
 import '../../subjects/subjects_page.dart';
-import '../../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../../core/providers/neuron_provider.dart';
 import '../dialogs/move_discussion_dialog.dart';
 import '../dialogs/html_file_picker_dialog.dart';
 import '../dialogs/edit_dialogs.dart';

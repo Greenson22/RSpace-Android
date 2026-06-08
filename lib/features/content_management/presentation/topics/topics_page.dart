@@ -206,10 +206,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: AppBar(
-          backgroundColor: isTransparent ? Colors.transparent : null,
-          elevation: isTransparent ? 0 : null,
           title: topicProvider.isReorderModeEnabled
               ? const Text('Urutkan Topik')
               : (_isSearching

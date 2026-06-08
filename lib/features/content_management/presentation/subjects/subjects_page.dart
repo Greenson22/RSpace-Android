@@ -95,15 +95,11 @@ class _SubjectsPageState extends State<SubjectsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
-    // ==> PERUBAHAN DI SINI
-    // Pengecekan ThemeProvider dihapus karena import sudah tidak ada.
-    const isTransparent = false;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: SubjectsAppBar(
           topicName: widget.topicName,
           isSelectionMode: provider.isSelectionMode,

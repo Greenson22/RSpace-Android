@@ -7,16 +7,13 @@ import 'package:mime/mime.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:markdown/markdown.dart' as md; // Import library markdown
 
 import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
-import '../../../../features/webview_page/presentation/pages/webview_page.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
 import '../../presentation/discussions/utils/repetition_code_utils.dart';
-import '../discussion_provider.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
   DiscussionService get discussionService;
