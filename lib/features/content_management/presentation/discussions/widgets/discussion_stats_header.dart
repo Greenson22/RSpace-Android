@@ -5,7 +5,9 @@ import '../../../application/discussion_provider.dart';
 import '../../discussions/utils/repetition_code_utils.dart'; // Digunakan untuk mewarnai kode repetisi
 
 class DiscussionStatsHeader extends StatefulWidget {
-  const DiscussionStatsHeader({super.key});
+  final Color themeColor;
+
+  const DiscussionStatsHeader({super.key, required this.themeColor});
 
   @override
   State<DiscussionStatsHeader> createState() => _DiscussionStatsHeaderState();
@@ -26,6 +28,9 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       return const SizedBox.shrink();
     }
 
+    // Menghitung rasio kemajuan penyelesaian subjek
+    final double completionPercentage = total > 0 ? (finished / total) : 0.0;
+
     // ==> HITUNG JUMLAH KODE REPETISI SECARA DINAMIS <==
     final Map<String, int> codeCounts = {};
     for (var discussion in provider.allDiscussions) {
@@ -39,7 +44,7 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       }
     }
 
-    // Mengurutkan kunci agar R0D, R7D, dst tampil rapi (Finish dataruh paling belakang)
+    // Mengurutkan kunci agar R0D, R7D, dst tampil rapi (Finish ditaruh paling belakang)
     final sortedKeys = codeCounts.keys.toList()
       ..sort((a, b) {
         if (a == 'Finish') return 1;
@@ -48,55 +53,83 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       });
 
     return Card(
-      margin: const EdgeInsets.fromLTRB(4, 4, 4, 2),
+      margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
       clipBehavior: Clip.antiAlias,
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: widget.themeColor.withOpacity(0.2), width: 1.5),
+      ),
+      color: widget.themeColor.withOpacity(0.03),
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           key: const PageStorageKey('discussion-stats-header'),
           initiallyExpanded: _isExpanded,
           tilePadding: const EdgeInsets.symmetric(
-            horizontal: 10.0,
-            vertical: 0.0,
+            horizontal: 14.0,
+            vertical: 2.0,
           ),
           onExpansionChanged: (isExpanded) {
             setState(() {
               _isExpanded = isExpanded;
             });
           },
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          iconColor: widget.themeColor,
+          collapsedIconColor: widget.themeColor.withOpacity(0.7),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  'Ringkasan Subject',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.0,
-                  ),
-                ),
-              ),
-              Text.rich(
-                TextSpan(
-                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.0),
-                  children: [
-                    const TextSpan(text: 'Total: '),
-                    TextSpan(
-                      text: '$total',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(text: ' ('),
-                    TextSpan(
-                      text: '$finished ✔',
-                      style: TextStyle(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Ringkasan Subject',
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        fontSize: 14.0,
+                        color: widget.themeColor,
                       ),
                     ),
-                    const TextSpan(text: ')'),
-                  ],
+                  ),
+                  Text.rich(
+                    TextSpan(
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 12.0,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Total: '),
+                        TextSpan(
+                          text: '$total',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const TextSpan(text: ' ('),
+                        TextSpan(
+                          text: '$finished ✔',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                        const TextSpan(text: ')'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: completionPercentage,
+                  backgroundColor: widget.themeColor.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    completionPercentage == 1.0
+                        ? Colors.green.shade600
+                        : widget.themeColor,
+                  ),
+                  minHeight: 6,
                 ),
               ),
             ],
@@ -112,22 +145,35 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
               )
             else
               Padding(
-                padding: const EdgeInsets.fromLTRB(12.0, 4.0, 12.0, 12.0),
+                padding: const EdgeInsets.fromLTRB(14.0, 4.0, 14.0, 14.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Divider(height: 8, color: Colors.black12),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Rincian Status Repetisi:',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade700,
-                      ),
+                    Divider(
+                      height: 12,
+                      color: widget.themeColor.withOpacity(0.15),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.analytics_outlined,
+                          size: 14,
+                          color: widget.themeColor.withOpacity(0.7),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Rincian Status Repetisi:',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     Wrap(
-                      spacing: 12.0,
+                      spacing: 8.0,
                       runSpacing: 8.0,
                       children: sortedKeys.map((code) {
                         final count = codeCounts[code] ?? 0;
@@ -139,22 +185,26 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
 
                         return Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 10,
+                            vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: codeColor.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(6),
+                            color: codeColor.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: codeColor.withOpacity(0.2),
+                              color: codeColor.withOpacity(0.18),
+                              width: 1,
                             ),
                           ),
                           child: Text.rich(
                             TextSpan(
-                              style: const TextStyle(fontSize: 12),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                               children: [
                                 TextSpan(
-                                  text: '$code: ',
+                                  text: '$code ',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: codeColor,
@@ -162,8 +212,10 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
                                 ),
                                 TextSpan(
                                   text: '$count',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    color: theme.textTheme.bodyLarge?.color
+                                        ?.withOpacity(0.8),
                                   ),
                                 ),
                               ],

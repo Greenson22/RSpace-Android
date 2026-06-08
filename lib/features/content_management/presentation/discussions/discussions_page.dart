@@ -513,9 +513,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     DiscussionProvider provider,
     List<dynamic> discussions,
   ) {
+    final Color dynamicColor = _getThemeColorFromTitle(widget.subjectName);
+
     return Column(
       children: [
-        const DiscussionStatsHeader(),
+        DiscussionStatsHeader(themeColor: dynamicColor),
         if (discussions.isEmpty && provider.allDiscussions.isNotEmpty)
           const Expanded(child: Center(child: Text('Diskusi tidak ditemukan.')))
         else
@@ -565,12 +567,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     DiscussionProvider provider,
     List<dynamic> discussions,
   ) {
+    final Color dynamicColor = _getThemeColorFromTitle(widget.subjectName);
     final int middle = (discussions.length / 2).ceil();
     final List<dynamic> firstHalf = discussions.sublist(0, middle);
     final List<dynamic> secondHalf = discussions.sublist(middle);
     return Column(
       children: [
-        const DiscussionStatsHeader(),
+        DiscussionStatsHeader(themeColor: dynamicColor),
         if (discussions.isEmpty && provider.allDiscussions.isNotEmpty)
           const Expanded(child: Center(child: Text('Diskusi tidak ditemukan.')))
         else
