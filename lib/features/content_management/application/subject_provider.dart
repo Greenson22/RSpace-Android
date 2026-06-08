@@ -67,7 +67,7 @@ class SubjectProvider with ChangeNotifier {
     try {
       // 1. Pilih File ZIP
       final isLinux = Platform.isLinux;
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: isLinux ? FileType.any : FileType.custom,
         allowedExtensions: isLinux ? null : ['zip'],
         allowMultiple: false,
@@ -257,7 +257,7 @@ class SubjectProvider with ChangeNotifier {
       String? returnMessage;
       if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
         // Desktop: Pilih folder penyimpanan
-        String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        String? selectedDirectory = await FilePicker.getDirectoryPath(
           dialogTitle: 'Pilih Folder Simpan Zip',
         );
 
@@ -364,7 +364,7 @@ class SubjectProvider with ChangeNotifier {
       String? returnMessage;
       if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
         // Desktop: Pilih folder penyimpanan
-        String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        String? selectedDirectory = await FilePicker.getDirectoryPath(
           dialogTitle: 'Pilih Folder Simpan Zip',
         );
 
