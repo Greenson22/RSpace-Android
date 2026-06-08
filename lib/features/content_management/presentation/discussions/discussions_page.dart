@@ -251,7 +251,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           if (success) {
             await provider.deleteDiscussion(discussion);
             _showSnackBar(
-              'Diskusi "${discussion.discussion}" berhasil dihapus.',
+              'Diskusi "${discussion.discussion}" berhasil deleted.',
             );
             showNeuronPenaltySnackBar(context, 15);
           } else {
@@ -272,17 +272,17 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
-
-    // Perubahan di sini: Karena ThemeProvider dihapus, transparansi di-disable secara default (false)
     const bool isTransparent = false;
 
-    // Hitung ukuran ikon & jarak AppBar
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseAppBarIconSize = 24.0;
-    const double baseAppBarSpacing = 8.0; // Jarak dasar antar ikon AppBar
+
+    // --- MODIFIKASI: DIMENSI ICON & SPACING APPBAR DIPERKECIL UNTUK MOBILE ---
+    const double baseAppBarIconSize = 20.0; // Diturunkan dari 24.0[cite: 7]
+    const double baseAppBarSpacing = 4.0; // Dipersempit dari 8.0[cite: 7]
+    // -------------------------------------------------------------------------
+
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
-    final scaledAppBarSpacing =
-        baseAppBarSpacing * textScaleFactor; // Jarak diskalakan
+    final scaledAppBarSpacing = baseAppBarSpacing * textScaleFactor;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
@@ -301,12 +301,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 scaledAppBarSpacing,
                 isTransparent: isTransparent,
               ),
-        body: Column(
-          children: [
-            // PERUBAHAN DI SINI: AdBannerWidget() dihapus dari hirarki Column
-            Expanded(child: _buildBody(provider)),
-          ],
-        ),
+        body: Column(children: [Expanded(child: _buildBody(provider))]),
         floatingActionButton:
             provider.isSelectionMode || _reorderingDiscussionIndex != null
             ? null
@@ -341,7 +336,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     double scaledSpacing,
   ) {
     return AppBar(
-      title: Text('${provider.selectedDiscussions.length} dipilih'),
+      title: Text(
+        '${provider.selectedDiscussions.length} dipilih',
+        style: const TextStyle(
+          fontSize: 16.0,
+          fontWeight: FontWeight.bold,
+        ), // Judul seleksi mobile diperkecil[cite: 7]
+      ),
       leading: IconButton(
         icon: const Icon(Icons.close),
         iconSize: scaledIconSize,
@@ -351,17 +352,21 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         IconButton(
           icon: const Icon(Icons.select_all),
           iconSize: scaledIconSize,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
           onPressed: () => provider.selectAllFiltered(),
           tooltip: 'Pilih Semua',
         ),
-        SizedBox(width: scaledSpacing),
+        SizedBox(width: scaledSpacing + 4),
         IconButton(
           icon: const Icon(Icons.move_up),
           iconSize: scaledIconSize,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
           onPressed: () => _moveSelectedDiscussions(provider),
           tooltip: 'Pindahkan Pilihan',
         ),
-        SizedBox(width: scaledSpacing),
+        const SizedBox(width: 12.0),
       ],
     );
   }
@@ -372,31 +377,56 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     double scaledSpacing, {
     required bool isTransparent,
   }) {
+    // Ambil warna teks default dari tema untuk mengatasi tulisan putih di background putih
+    final Color defaultTextColor =
+        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
+
     return AppBar(
       backgroundColor: isTransparent ? Colors.transparent : null,
       elevation: isTransparent ? 0 : null,
+      leadingWidth: 48.0, // Mengharmoniskan lebar tombol back bawaan[cite: 7]
+      iconTheme: IconThemeData(
+        size: scaledIconSize,
+      ), // Memaksa back arrow mengikuti skala kecil[cite: 7]
       title: _isSearching
           ? TextField(
               controller: _searchController,
               autofocus: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Cari diskusi...',
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.white70),
+                // PERBAIKAN: Mengubah hint text agar menggunakan warna kontras abu-abu
+                hintStyle: TextStyle(color: defaultTextColor.withOpacity(0.5)),
               ),
-              style: const TextStyle(color: Colors.white),
+              // PERBAIKAN: Mengubah text warna ketikan agar mengikuti kontras tema (gelap/hitam)
+              style: TextStyle(
+                color: defaultTextColor,
+                fontSize: 16.0,
+              ), // Pengecilan teks cari[cite: 7]
             )
-          : Text(widget.subjectName, overflow: TextOverflow.ellipsis),
+          : Text(
+              widget.subjectName,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 18.0,
+                fontWeight: FontWeight.w600,
+              ), // Judul utama diperkecil[cite: 7]
+            ),
       actions: [
         IconButton(
           icon: Icon(_isSearching ? Icons.close : Icons.search),
           iconSize: scaledIconSize,
+          padding: EdgeInsets
+              .zero, // Memaksimalkan area klik di ruang sempit mobile[cite: 7]
+          constraints: const BoxConstraints(),
           onPressed: () => setState(() {
             _isSearching = !_isSearching;
             if (!_isSearching) _searchController.clear();
           }),
         ),
-        SizedBox(width: scaledSpacing),
+        SizedBox(
+          width: scaledSpacing + 4,
+        ), // Penyelarasan sela antar icon[cite: 7]
         if (provider.activeFilterType != 'code')
           IconButton(
             icon: Icon(
@@ -405,22 +435,28 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   : Icons.visibility,
             ),
             iconSize: scaledIconSize,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             tooltip: provider.showFinishedDiscussions
                 ? 'Sembunyikan Selesai'
                 : 'Tampilkan Selesai',
             onPressed: () => provider.toggleShowFinished(),
           ),
-        SizedBox(width: scaledSpacing),
+        SizedBox(width: scaledSpacing + 4),
         IconButton(
           icon: const Icon(Icons.filter_list),
           iconSize: scaledIconSize,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
           tooltip: 'Filter Diskusi',
           onPressed: () => _showFilterDialog(provider),
         ),
-        SizedBox(width: scaledSpacing),
+        SizedBox(width: scaledSpacing + 4),
         IconButton(
           icon: const Icon(Icons.sort),
           iconSize: scaledIconSize,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
           tooltip: 'Urutkan Diskusi & Poin',
           onPressed: () => showSortDialog(
             context: context,
@@ -432,7 +468,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             },
           ),
         ),
-        SizedBox(width: scaledSpacing),
+        const SizedBox(
+          width: 12.0,
+        ), // Memberikan batas aman jarak sisi kanan layar HP[cite: 7]
       ],
     );
   }
@@ -474,7 +512,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         else
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
+              padding: const EdgeInsets.fromLTRB(
+                4,
+                4,
+                4,
+                80,
+              ), // Memadatkan padding luar listview seirama layout card mobile baru
               itemCount: discussions.length,
               itemBuilder: (context, index) {
                 final discussion = discussions[index];
@@ -620,4 +663,4 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       ),
     );
   }
-} // Akhir _DiscussionsPageState
+}
