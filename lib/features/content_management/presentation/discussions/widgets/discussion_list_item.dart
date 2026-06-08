@@ -48,7 +48,7 @@ class DiscussionListItem extends StatelessWidget {
     this.horizontalGap = 10.0,
   });
 
-  // ==> DITAMBAHKAN: Metode untuk menghasilkan warna dinamis berbasis judul
+  // ==> Metode untuk menghasilkan warna dinamis berbasis judul
   Color _getThemeColorFromTitle(String title) {
     if (title.isEmpty) return Colors.deepPurple;
     final List<Color> themePalettes = [
@@ -403,7 +403,7 @@ class DiscussionListItem extends StatelessWidget {
         discussion.filePath != null &&
         discussion.filePath!.isNotEmpty;
 
-    // ==> DITAMBAHKAN: Warna Utama Dinamis <==
+    // ==> Warna Utama Dinamis <==
     final Color mainThemeColor = _getThemeColorFromTitle(discussion.discussion);
     final Color? textColor = isFinished ? theme.disabledColor : null;
 
@@ -427,11 +427,7 @@ class DiscussionListItem extends StatelessWidget {
       iconData = Icons.check_circle_outline;
     }
 
-    final iconColor = isFinished
-        ? Colors.green
-        : (isSelected
-              ? mainThemeColor
-              : mainThemeColor); // diselaraskan dengan tema judul
+    final iconColor = isFinished ? Colors.green : mainThemeColor;
 
     VoidCallback? onPressedAction;
     String? tooltip;
@@ -472,32 +468,22 @@ class DiscussionListItem extends StatelessWidget {
         ? Color(discussion.highlightColor!)
         : null;
 
-    // ==> DITAMBAHKAN: Mengikuti Skema Tema Subject dan Topic List
     final Color cardColor = isSelected
         ? mainThemeColor.withOpacity(0.15)
         : (isFinished ? theme.disabledColor.withOpacity(0.1) : theme.cardColor);
 
     return Card(
       elevation: isFinished ? 1 : 2,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 8.0,
-        vertical: 4.0,
-      ), // Disamakan dengan Topic/Subject List margin
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       color: highlightColor?.withOpacity(0.08) ?? cardColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-          10.0,
-        ), // Diubah ke 10.0 (sebelumnya 8.0)
+        borderRadius: BorderRadius.circular(10.0),
         side: isFocused
-            ? BorderSide(
-                color:
-                    mainThemeColor, // Warna border indikator fokus mengikuti tema judul
-                width: 2.0,
-              )
+            ? BorderSide(color: mainThemeColor, width: 2.0)
             : BorderSide.none,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10.0), // Mengikuti bentuk parent
+        borderRadius: BorderRadius.circular(10.0),
         child: Stack(
           children: [
             // Konten Utama
@@ -529,15 +515,11 @@ class DiscussionListItem extends StatelessWidget {
                       provider.toggleSelection(discussion);
                     },
                     leading: Container(
-                      padding: const EdgeInsets.all(
-                        4,
-                      ), // Memberi ruang padding background icon
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: isFinished
                             ? theme.disabledColor.withOpacity(0.1)
-                            : mainThemeColor.withOpacity(
-                                0.15,
-                              ), // Background aksen senada main theme
+                            : mainThemeColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: IconButton(
@@ -559,9 +541,7 @@ class DiscussionListItem extends StatelessWidget {
                               decoration: isFinished
                                   ? TextDecoration.lineThrough
                                   : null,
-                              color: isFinished
-                                  ? textColor
-                                  : mainThemeColor, // Dinamis Theme TextColor
+                              color: isFinished ? textColor : mainThemeColor,
                               fontSize: titleFontSize != null
                                   ? titleFontSize! * textScaleFactor
                                   : null,
@@ -618,57 +598,70 @@ class DiscussionListItem extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!provider.isSelectionMode)
-                          DiscussionActionMenu(
-                            isFinished: isFinished,
-                            hasFile: hasFile,
-                            canCreateFile: subjectLinkedPath != null,
-                            hasPoints: discussion.points.isNotEmpty,
-                            linkType: discussion.linkType,
-                            onAddPoint: () => _addPoint(context, provider),
-                            onMove: () => _moveDiscussion(context, provider),
-                            onRename: () =>
-                                _renameDiscussion(context, provider),
-                            onDateChange: () =>
-                                _changeDiscussionDate(context, provider),
-                            onCodeChange: () =>
-                                _changeDiscussionCode(context, provider),
-                            onCreateFile: () => _createFileForDiscussion(
-                              context,
-                              provider,
-                              subjectLinkedPath!,
+                          // ==> DITAMBAHKAN: Membungkus Menu Aksi dengan Theme lokal berbasis mainThemeColor
+                          // Ini memaksa PopupMenu / showMenu di dalam widget menggunakan warna icon/teks bertema dinamis.
+                          Theme(
+                            data: theme.copyWith(
+                              iconTheme: theme.iconTheme.copyWith(
+                                color: mainThemeColor,
+                              ),
+                              popupMenuTheme: theme.popupMenuTheme.copyWith(
+                                textStyle: TextStyle(color: mainThemeColor),
+                              ),
                             ),
-                            onSetFilePath: () =>
-                                _setFilePath(context, provider),
-                            onGenerateHtml: () => _generateHtml(context),
-                            onEditFile: () =>
-                                provider.editDiscussionFileWithSelection(
-                                  discussion,
-                                  context,
-                                ),
-                            onRemoveFilePath: () =>
-                                _removeFilePath(context, provider),
-                            onSmartLink: () =>
-                                _findSmartLink(context, provider),
-                            onFinish: () => _markAsFinished(context, provider),
-                            onReactivate: () =>
-                                _reactivateDiscussion(context, provider),
-                            onDelete: onDelete,
-                            onCopy: () =>
-                                _copyDiscussionContent(context, discussion),
-                            onReorderPoints: onToggleReorder,
-                            onAddQuizQuestion: () =>
-                                _navigateAndEditQuiz(context),
-                            onChangeQuizLink: () => _changeQuizLink(context),
-                            onConvertToQuiz: () => _convertToQuiz(context),
-                            onGenerateQuizPrompt: () {
-                              _showSnackBar(
+                            child: DiscussionActionMenu(
+                              isFinished: isFinished,
+                              hasFile: hasFile,
+                              canCreateFile: subjectLinkedPath != null,
+                              hasPoints: discussion.points.isNotEmpty,
+                              linkType: discussion.linkType,
+                              onAddPoint: () => _addPoint(context, provider),
+                              onMove: () => _moveDiscussion(context, provider),
+                              onRename: () =>
+                                  _renameDiscussion(context, provider),
+                              onDateChange: () =>
+                                  _changeDiscussionDate(context, provider),
+                              onCodeChange: () =>
+                                  _changeDiscussionCode(context, provider),
+                              onCreateFile: () => _createFileForDiscussion(
                                 context,
-                                "Fitur pembuat kuis otomatis dari HTML saat ini dinonaktifkan.",
-                                isError: true,
-                              );
-                            },
-                            onHighlight: () =>
-                                _manageHighlight(context, provider),
+                                provider,
+                                subjectLinkedPath!,
+                              ),
+                              onSetFilePath: () =>
+                                  _setFilePath(context, provider),
+                              onGenerateHtml: () => _generateHtml(context),
+                              onEditFile: () =>
+                                  provider.editDiscussionFileWithSelection(
+                                    discussion,
+                                    context,
+                                  ),
+                              onRemoveFilePath: () =>
+                                  _removeFilePath(context, provider),
+                              onSmartLink: () =>
+                                  _findSmartLink(context, provider),
+                              onFinish: () =>
+                                  _markAsFinished(context, provider),
+                              onReactivate: () =>
+                                  _reactivateDiscussion(context, provider),
+                              onDelete: onDelete,
+                              onCopy: () =>
+                                  _copyDiscussionContent(context, discussion),
+                              onReorderPoints: onToggleReorder,
+                              onAddQuizQuestion: () =>
+                                  _navigateAndEditQuiz(context),
+                              onChangeQuizLink: () => _changeQuizLink(context),
+                              onConvertToQuiz: () => _convertToQuiz(context),
+                              onGenerateQuizPrompt: () {
+                                _showSnackBar(
+                                  context,
+                                  "Fitur pembuat kuis otomatis dari HTML saat ini dinonaktifkan.",
+                                  isError: true,
+                                );
+                              },
+                              onHighlight: () =>
+                                  _manageHighlight(context, provider),
+                            ),
                           ),
                         if (!provider.isSelectionMode &&
                             discussion.points.isNotEmpty)
@@ -682,7 +675,6 @@ class DiscussionListItem extends StatelessWidget {
                                         ? Icons.check
                                         : Icons.expand_less)
                                   : Icons.expand_more,
-                              // Indikator panah collapse/expand mengikuti mainThemeColor
                               color: isPointReorderMode
                                   ? mainThemeColor
                                   : (isFinished
