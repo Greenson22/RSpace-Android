@@ -1,5 +1,6 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_list_item.dart
 import 'dart:async';
+import 'dart:io'; // ==> DITAMBAHKAN: Untuk pengecekan Platform (OS)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -162,6 +163,9 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
+  // ========================================================================
+  // LOGIKA YANG DIPERBARUI: Adaptasi Preferensi Tautan Berdasarkan Platform
+  // ========================================================================
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
@@ -170,7 +174,18 @@ class DiscussionListItem extends StatelessWidget {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bool useInternalWeb = prefs.getBool('use_internal_web') ?? true;
+
+      // Sinkronisasi Kunci (Key) berdasarkan jenis platform OS
+      final String webPreferenceKey = Platform.isAndroid
+          ? 'use_internal_web_android'
+          : 'use_internal_web';
+
+      // Sinkronisasi Nilai Default (Android: false/external, Desktop: true/internal)
+      final bool defaultWebValue = Platform.isAndroid ? false : true;
+
+      // Ambil preferensi tersimpan, jika belum disetel pakai defaultWebValue
+      final bool useInternalWeb =
+          prefs.getBool(webPreferenceKey) ?? defaultWebValue;
 
       if (useInternalWeb) {
         if (context.mounted) {
@@ -684,8 +699,7 @@ class DiscussionListItem extends StatelessWidget {
                               },
                               onHighlight: () =>
                                   _manageHighlight(context, provider),
-                              themeColor:
-                                  mainThemeColor, // ==> PERBAIKAN: Mengirim argumen themeColor di sini
+                              themeColor: mainThemeColor,
                             ),
                           ),
                         if (!provider.isSelectionMode &&

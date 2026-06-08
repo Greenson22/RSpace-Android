@@ -19,13 +19,21 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String _currentPath = "Memuat...";
   bool _isLoading = true;
-  bool _useInternalWeb =
-      true; // State baru untuk preferensi web (default: true)
+  bool _useInternalWeb = true;
+
+  // --- KODE BARU: Menggunakan key terpisah berdasarkan Platform ---
+  // Android memakai key khusus, Linux/Windows/lainnya memakai key standar.
+  String get _webPreferenceKey =>
+      Platform.isAndroid ? 'use_internal_web_android' : 'use_internal_web';
+
+  // --- KODE BARU: Mengatur nilai default bawaan berdasarkan Platform ---
+  // Android default-nya FALSE (buka eksternal), Desktop default-nya TRUE (internal).
+  bool get _defaultWebPreferenceValue => Platform.isAndroid ? false : true;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings(); // Mengubah nama fungsi agar mencakup semua pemuatan data
+    _loadSettings();
   }
 
   @override
@@ -34,16 +42,16 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  // Fungsi gabungan untuk memuat custom path dan preferensi web
   Future<void> _loadSettings() async {
     setState(() => _isLoading = true);
 
     // 1. Muat data custom path
     final customPath = await _storageService.loadCustomStoragePath();
 
-    // 2. Muat data preferensi web (jika belum ada, default-nya true)
+    // 2. Muat data preferensi web menggunakan key & default value adaptif platform
     final prefs = await SharedPreferences.getInstance();
-    final useInternal = prefs.getBool('use_internal_web') ?? true;
+    final useInternal =
+        prefs.getBool(_webPreferenceKey) ?? _defaultWebPreferenceValue;
 
     setState(() {
       _currentPath = (customPath != null && customPath.isNotEmpty)
@@ -57,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _saveCustomPath(String path) async {
     await _storageService.saveCustomStoragePath(path);
-    await _loadSettings(); // Segarkan pengaturan setelah menyimpan
+    await _loadSettings();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,7 +172,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const Divider(height: 32),
 
                 // ========================================================
-                // BAGIAN BARU: Pengaturan Tautan & Web
+                // BAGIAN PREFERENSI TAUTAN (SUDAH DIADAPTASI)
                 // ========================================================
                 const Text(
                   'Preferensi Tautan',
@@ -174,15 +182,22 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Buka Web di Dalam Aplikasi'),
-                  subtitle: const Text(
-                    'Aktifkan untuk membuka tautan discussion via web internal (WebView). Matikan jika ingin menggunakan browser eksternal HP Anda.',
+                  title: Text(
+                    Platform.isAndroid
+                        ? 'Buka Web di Dalam Aplikasi (Android)'
+                        : 'Buka Web di Dalam Aplikasi (Desktop)',
+                  ),
+                  subtitle: Text(
+                    Platform.isAndroid
+                        ? 'Aktifkan untuk membuka diskusi via WebView internal Android. (Default: mati/menggunakan browser bawaan HP).'
+                        : 'Aktifkan untuk membuka diskusi via web internal aplikasi.',
                   ),
                   value: _useInternalWeb,
                   activeColor: Colors.blue,
                   onChanged: (bool value) async {
                     final prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('use_internal_web', value);
+                    // Menyimpan ke key yang dinamis berdasarkan platform
+                    await prefs.setBool(_webPreferenceKey, value);
 
                     setState(() {
                       _useInternalWeb = value;
