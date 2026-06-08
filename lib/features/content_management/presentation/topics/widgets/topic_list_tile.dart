@@ -95,11 +95,10 @@ class TopicListTile extends StatelessWidget {
                 )
               else
                 PopupMenuButton<String>(
-                  iconSize: 20, // Memperkecil icon titik tiga menu
-                  padding:
-                      EdgeInsets.zero, // Menghapus padding bawaan popup button
-                  constraints:
-                      const BoxConstraints(), // Mempersempit area klik luar agar hemat ruang
+                  iconSize: 20, // Tetap kecil secara visual
+                  // DIUBAH: Berikan sedikit padding agar area sentuh pas ~44-48 dp (nyaman untuk jari)
+                  padding: const EdgeInsets.all(12.0),
+                  // DIUBAH: Hapus BoxConstraints() kosong agar mengembalikan ruang sentuh standar
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'toggle_visibility') onToggleVisibility();
@@ -108,6 +107,8 @@ class TopicListTile extends StatelessWidget {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'rename',
+                      height:
+                          40, // Ditambahkan: Sedikit lebih padat dari default (48), namun tetap aman disentuh
                       child: Row(
                         children: [
                           Icon(Icons.edit_outlined, size: 20),
@@ -118,6 +119,7 @@ class TopicListTile extends StatelessWidget {
                     ),
                     const PopupMenuItem(
                       value: 'change_icon',
+                      height: 40, // Ditambahkan
                       child: Row(
                         children: [
                           Icon(Icons.emoji_emotions_outlined, size: 20),
@@ -128,6 +130,7 @@ class TopicListTile extends StatelessWidget {
                     ),
                     PopupMenuItem<String>(
                       value: 'toggle_visibility',
+                      height: 40, // Ditambahkan
                       child: Row(
                         children: [
                           Icon(
@@ -144,9 +147,12 @@ class TopicListTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const PopupMenuDivider(),
+                    const PopupMenuDivider(
+                      height: 8,
+                    ), // Disesuaikan tingginya agar rapi
                     const PopupMenuItem(
                       value: 'delete',
+                      height: 40, // Ditambahkan
                       child: Row(
                         children: [
                           Icon(
