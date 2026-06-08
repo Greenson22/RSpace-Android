@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 import '../../application/discussion_provider.dart';
 import 'dialogs/discussion_dialogs.dart'; // Import utama untuk dialog
@@ -11,7 +10,6 @@ import 'widgets/discussion_stats_header.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../domain/models/discussion_model.dart';
-import 'dialogs/add_discussion_from_content_dialog.dart';
 // Import dialog move discussion secara spesifik jika diperlukan
 // import 'dialogs/move_discussion_dialog.dart'; // Sudah termasuk dalam discussion_dialogs.dart
 
@@ -52,7 +50,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).requestFocus(_focusNode);
+      if (mounted) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      }
     });
   }
 
@@ -64,9 +64,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     super.dispose();
   }
 
-  // === FUNGSI INI TELAH DIPERBAIKI ===
   void _moveSelectedDiscussions(DiscussionProvider provider) async {
-    // Kirim nama Subject asal saat memanggil dialog
     final targetInfo = await showMoveDiscussionDialog(
       context,
       widget.subjectName,
@@ -88,15 +86,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           isError: true,
         );
       } finally {
-        // Hapus seleksi setelah selesai (baik berhasil maupun gagal)
         provider.clearSelection();
       }
     } else {
-      // Jika pengguna membatalkan dialog, hapus juga seleksi
       provider.clearSelection();
     }
   }
-  // === AKHIR PERBAIKAN ===
 
   void _showSnackBar(
     String message, {
@@ -277,8 +272,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     // --- MODIFIKASI: DIMENSI ICON & SPACING APPBAR DIPERKECIL UNTUK MOBILE ---
-    const double baseAppBarIconSize = 20.0; // Diturunkan dari 24.0[cite: 7]
-    const double baseAppBarSpacing = 4.0; // Dipersempit dari 8.0[cite: 7]
+    const double baseAppBarIconSize = 20.0;
+    const double baseAppBarSpacing = 4.0;
     // -------------------------------------------------------------------------
 
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
@@ -302,29 +297,16 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 isTransparent: isTransparent,
               ),
         body: Column(children: [Expanded(child: _buildBody(provider))]),
+        // ==> PERBAIKAN: Berubah menjadi FloatingActionButton standar sekali tekan <==
         floatingActionButton:
             provider.isSelectionMode || _reorderingDiscussionIndex != null
             ? null
-            : SpeedDial(
-                icon: Icons.add,
-                activeIcon: Icons.close,
+            : FloatingActionButton(
+                onPressed: () => _addDiscussion(provider),
+                tooltip: 'Tambah Diskusi Baru',
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                children: [
-                  SpeedDialChild(
-                    child: const Icon(Icons.note_add_outlined),
-                    label: 'Tambah Diskusi Manual',
-                    onTap: () => _addDiscussion(provider),
-                  ),
-                  SpeedDialChild(
-                    child: const Icon(Icons.article_outlined),
-                    label: 'Tambah dari Konten (AI)',
-                    onTap: () => showAddDiscussionFromContentDialog(
-                      context: context,
-                      subjectLinkedPath: widget.linkedPath,
-                    ),
-                  ),
-                ],
+                child: const Icon(Icons.add),
               ),
       ),
     );
@@ -338,10 +320,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     return AppBar(
       title: Text(
         '${provider.selectedDiscussions.length} dipilih',
-        style: const TextStyle(
-          fontSize: 16.0,
-          fontWeight: FontWeight.bold,
-        ), // Judul seleksi mobile diperkecil[cite: 7]
+        style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
       ),
       leading: IconButton(
         icon: const Icon(Icons.close),
@@ -377,17 +356,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     double scaledSpacing, {
     required bool isTransparent,
   }) {
-    // Ambil warna teks default dari tema untuk mengatasi tulisan putih di background putih
     final Color defaultTextColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
 
     return AppBar(
       backgroundColor: isTransparent ? Colors.transparent : null,
       elevation: isTransparent ? 0 : null,
-      leadingWidth: 48.0, // Mengharmoniskan lebar tombol back bawaan[cite: 7]
-      iconTheme: IconThemeData(
-        size: scaledIconSize,
-      ), // Memaksa back arrow mengikuti skala kecil[cite: 7]
+      leadingWidth: 48.0,
+      iconTheme: IconThemeData(size: scaledIconSize),
       title: _isSearching
           ? TextField(
               controller: _searchController,
@@ -395,14 +371,9 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               decoration: InputDecoration(
                 hintText: 'Cari diskusi...',
                 border: InputBorder.none,
-                // PERBAIKAN: Mengubah hint text agar menggunakan warna kontras abu-abu
                 hintStyle: TextStyle(color: defaultTextColor.withOpacity(0.5)),
               ),
-              // PERBAIKAN: Mengubah text warna ketikan agar mengikuti kontras tema (gelap/hitam)
-              style: TextStyle(
-                color: defaultTextColor,
-                fontSize: 16.0,
-              ), // Pengecilan teks cari[cite: 7]
+              style: TextStyle(color: defaultTextColor, fontSize: 16.0),
             )
           : Text(
               widget.subjectName,
@@ -410,23 +381,20 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               style: const TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.w600,
-              ), // Judul utama diperkecil[cite: 7]
+              ),
             ),
       actions: [
         IconButton(
           icon: Icon(_isSearching ? Icons.close : Icons.search),
           iconSize: scaledIconSize,
-          padding: EdgeInsets
-              .zero, // Memaksimalkan area klik di ruang sempit mobile[cite: 7]
+          padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           onPressed: () => setState(() {
             _isSearching = !_isSearching;
             if (!_isSearching) _searchController.clear();
           }),
         ),
-        SizedBox(
-          width: scaledSpacing + 4,
-        ), // Penyelarasan sela antar icon[cite: 7]
+        SizedBox(width: scaledSpacing + 4),
         if (provider.activeFilterType != 'code')
           IconButton(
             icon: Icon(
@@ -468,9 +436,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             },
           ),
         ),
-        const SizedBox(
-          width: 12.0,
-        ), // Memberikan batas aman jarak sisi kanan layar HP[cite: 7]
+        const SizedBox(width: 12.0),
       ],
     );
   }
@@ -512,12 +478,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         else
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                4,
-                4,
-                4,
-                80,
-              ), // Memadatkan padding luar listview seirama layout card mobile baru
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 80),
               itemCount: discussions.length,
               itemBuilder: (context, index) {
                 final discussion = discussions[index];
