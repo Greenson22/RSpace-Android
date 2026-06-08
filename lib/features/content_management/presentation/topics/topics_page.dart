@@ -1,5 +1,4 @@
 // lib/features/content_management/presentation/topics/topics_page.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -198,33 +197,69 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   @override
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
-    // ==> PERUBAHAN DI SINI
-    // Pengecekan ThemeProvider dihapus karena import sudah tidak ada.
-    const isTransparent = false;
+    const bool isTransparent = false;
+
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+
+    // --- SKALA UKURAN APPBAR UNTUK MOBILE ---
+    const double baseAppBarIconSize = 20.0; // Diturunkan dari 24.0[cite: 11]
+    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+
+    // Ambil warna teks bawaan tema aktif untuk mengatasi tulisan putih di atas background putih[cite: 11]
+    final Color defaultTextColor =
+        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
+        backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: AppBar(
+          leadingWidth: 48.0, // Mengharmoniskan lebar tombol leading
+          iconTheme: IconThemeData(
+            size: scaledAppBarIconSize,
+          ), // Memaksa tombol menu/back mengikuti skala kecil
           title: topicProvider.isReorderModeEnabled
-              ? const Text('Urutkan Topik')
+              ? const Text(
+                  'Urutkan Topik',
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w600,
+                  ), // Ukuran judul diperkecil[cite: 11]
+                )
               : (_isSearching
                     ? TextField(
                         controller: _searchController,
                         autofocus: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Cari topik...',
                           border: InputBorder.none,
-                          hintStyle: TextStyle(color: Colors.white70),
+                          // PERBAIKAN WARNA: Mengubah hint text menggunakan kontras warna tema[cite: 11]
+                          hintStyle: TextStyle(
+                            color: defaultTextColor.withOpacity(0.5),
+                          ),
                         ),
-                        style: const TextStyle(color: Colors.white),
+                        // PERBAIKAN WARNA: Mengubah warna ketikan mengikuti kontras tema (gelap/hitam)[cite: 11]
+                        style: TextStyle(
+                          color: defaultTextColor,
+                          fontSize: 16.0,
+                        ),
                       )
-                    : const Text('Topics')),
+                    : const Text(
+                        'Topics',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w600,
+                        ), // Ukuran judul diperkecil[cite: 11]
+                      )),
           actions: [
             if (!topicProvider.isReorderModeEnabled) ...[
               IconButton(
                 icon: Icon(_isSearching ? Icons.close : Icons.search),
+                iconSize: scaledAppBarIconSize,
+                padding: EdgeInsets
+                    .zero, // Memaksimalkan area klik di ruang sempit mobile[cite: 11]
+                constraints: const BoxConstraints(),
                 onPressed: () {
                   setState(() {
                     _isSearching = !_isSearching;
@@ -232,22 +267,32 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   });
                 },
               ),
+              const SizedBox(
+                width: 8,
+              ), // Menambahkan sela antar ikon tindakan[cite: 11]
               IconButton(
                 icon: Icon(
                   topicProvider.showHiddenTopics
                       ? Icons.visibility_off
                       : Icons.visibility,
                 ),
+                iconSize: scaledAppBarIconSize,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
                 onPressed: () => topicProvider.toggleShowHidden(),
                 tooltip: topicProvider.showHiddenTopics
                     ? 'Sembunyikan Topik Tersembunyi'
                     : 'Tampilkan Topik Tersembunyi',
               ),
+              const SizedBox(width: 8),
             ],
             IconButton(
               icon: Icon(
                 topicProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
               ),
+              iconSize: scaledAppBarIconSize,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
               onPressed: () {
                 if (!topicProvider.isReorderModeEnabled && _isSearching) {
                   setState(() {
@@ -261,14 +306,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   ? 'Selesai Mengurutkan'
                   : 'Urutkan Topik',
             ),
+            const SizedBox(
+              width: 12.0,
+            ), // Jarak aman ujung kanan AppBar[cite: 11]
           ],
         ),
-        body: Column(
-          children: [
-            Expanded(child: _buildListView()),
-            // PERUBAHAN DI SINI: AdBannerWidget() telah dihapus dari hirarki Column
-          ],
-        ),
+        body: Column(children: [Expanded(child: _buildListView())]),
         floatingActionButton: topicProvider.isReorderModeEnabled
             ? null
             : FloatingActionButton(
@@ -297,8 +340,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
 
         return ReorderableListView.builder(
-          // MODIFIKASI: Menambahkan padding atas-bawah yang tipis agar lebih merata di mobile
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          padding: const EdgeInsets.symmetric(
+            vertical: 4.0,
+          ), // Memadatkan ruang vertikal[cite: 11]
           itemCount: topicsToShow.length,
           buildDefaultDragHandles: false,
           proxyDecorator:
