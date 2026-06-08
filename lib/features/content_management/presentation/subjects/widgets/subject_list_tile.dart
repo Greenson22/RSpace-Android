@@ -39,6 +39,28 @@ class SubjectListTile extends StatelessWidget {
     this.isFocused = false,
   });
 
+  // Metode pembantu untuk menghasilkan warna dinamis yang konsisten berdasarkan judul (hash)
+  Color _getThemeColorFromTitle(String title) {
+    if (title.isEmpty) return Colors.deepPurple;
+
+    // Kumpulan palet warna menarik yang selaras dengan komponen Topic
+    final List<Color> themePalettes = [
+      Colors.deepPurple,
+      Colors.blue,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber.shade900,
+      Colors.green.shade700,
+      Colors.cyan.shade800,
+      Colors.orange.shade800,
+    ];
+
+    final int hash = title.hashCode;
+    final int index = hash.abs() % themePalettes.length;
+    return themePalettes[index];
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
@@ -49,8 +71,14 @@ class SubjectListTile extends StatelessWidget {
     final bool isFrozen = subject.isFrozen;
     final bool isLocked = subject.isLocked;
     final bool isSelected = provider.selectedSubjects.contains(subject);
+
+    // Mendapatkan warna utama berbasis judul satu kali untuk seluruh konfigurasi widget
+    final Color mainThemeColor = _getThemeColorFromTitle(subject.name);
+
     final Color cardColor = isSelected
-        ? theme.primaryColor.withOpacity(0.2)
+        ? mainThemeColor.withOpacity(
+            0.15,
+          ) // Menyesuaikan warna seleksi dengan tema judul
         : (isHidden
               ? theme.disabledColor.withOpacity(0.1)
               : (isFrozen
@@ -62,40 +90,44 @@ class SubjectListTile extends StatelessWidget {
     final double elevation = isHidden ? 1 : 2;
 
     // --- MODIFIKASI UKURAN MOBILE FRIENDLY ---
-    final double verticalMargin = 4; // Sebelumnya: 8
-    final double horizontalMargin = 8; // Sebelumnya: 16
+    final double verticalMargin = 4;
+    final double horizontalMargin = 8;
     final EdgeInsets padding = const EdgeInsets.symmetric(
       horizontal: 10,
       vertical: 8,
-    ); // Sebelumnya: all(16.0)
-    final double iconFontSize = 20; // Sebelumnya: 28
-    final double titleFontSize = 14; // Sebelumnya: 18
+    );
+    final double iconFontSize = 20;
+    final double titleFontSize = 14;
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double basePopupIconSize = 18.0; // Sebelumnya: 24.0
-    const double baseLinkIconSize = 14.0; // Sebelumnya: 18.0
+    const double basePopupIconSize = 18.0;
+    const double baseLinkIconSize = 14.0;
     final scaledPopupIconSize = basePopupIconSize * textScaleFactor;
     final scaledLinkIconSize = baseLinkIconSize * textScaleFactor;
 
     final tileContent = Material(
-      borderRadius: BorderRadius.circular(10), // Sebelumnya: 15
+      borderRadius: BorderRadius.circular(10),
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         onLongPress: () => provider.toggleSubjectSelection(subject),
         borderRadius: BorderRadius.circular(10),
-        splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
-        highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
+        splashColor: mainThemeColor.withOpacity(0.1),
+        highlightColor: mainThemeColor.withOpacity(0.05),
         child: Padding(
           padding: padding,
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6), // Sebelumnya: 8
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: isLocked
                       ? Colors.grey.shade400
-                      : Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6), // Sebelumnya: 8
+                      : isHidden
+                      ? theme.disabledColor.withOpacity(0.1)
+                      : mainThemeColor.withOpacity(
+                          0.12,
+                        ), // Background ikon dinamis mengikuti judul
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
@@ -103,7 +135,8 @@ class SubjectListTile extends StatelessWidget {
                     if (isSelected)
                       Icon(
                         Icons.check_circle,
-                        color: theme.primaryColor,
+                        color:
+                            mainThemeColor, // Warna check mengikuti tema dinamis
                         size: iconFontSize,
                       )
                     else
@@ -121,13 +154,13 @@ class SubjectListTile extends StatelessWidget {
                         child: Icon(
                           Icons.ac_unit,
                           color: Colors.blue.shade700,
-                          size: 12 * textScaleFactor, // Sebelumnya: 16
+                          size: 12 * textScaleFactor,
                         ),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(width: 10), // Sebelumnya: 12
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,12 +170,12 @@ class SubjectListTile extends StatelessWidget {
                       children: [
                         if (subject.linkedPath != null)
                           Padding(
-                            padding: const EdgeInsets.only(
-                              right: 6.0,
-                            ), // Sebelumnya: 8.0
+                            padding: const EdgeInsets.only(right: 6.0),
                             child: Icon(
                               Icons.link,
-                              color: theme.primaryColor,
+                              color: isHidden
+                                  ? textColor
+                                  : mainThemeColor, // Ikon rantai mengikuti tema dinamis
                               size: scaledLinkIconSize,
                             ),
                           ),
@@ -152,7 +185,9 @@ class SubjectListTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: titleFontSize,
                               fontWeight: FontWeight.w600,
-                              color: textColor,
+                              color: isHidden
+                                  ? textColor
+                                  : mainThemeColor, // Teks utama menggunakan warna judul dinamis
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -160,10 +195,10 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                     if (hasSubtitle) ...[
-                      const SizedBox(height: 2), // Sebelumnya: 4
+                      const SizedBox(height: 2),
                       _buildSubtitle(context, textColor, textScaleFactor),
                     ],
-                    const SizedBox(height: 4), // Sebelumnya: 6
+                    const SizedBox(height: 4),
                     _buildStatsRow(context, textColor),
                   ],
                 ),
@@ -171,8 +206,14 @@ class SubjectListTile extends StatelessWidget {
               if (!provider.isSelectionMode)
                 PopupMenuButton<String>(
                   iconSize: scaledPopupIconSize,
-                  // DIUBAH: Ditambahkan padding internal 12.0 dan hapus BoxConstraints() kosong
-                  // guna meningkatkan target jangkauan sentuh jari di mobile (~44-48 dp)
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: isHidden
+                        ? textColor
+                        : mainThemeColor.withOpacity(
+                            0.7,
+                          ), // Titik tiga mengikuti aksen warna judul
+                  ),
                   padding: const EdgeInsets.all(12.0),
                   onSelected: (value) {
                     if (value == 'rename') onRename();
@@ -291,12 +332,13 @@ class SubjectListTile extends StatelessWidget {
         vertical: verticalMargin,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10), // Menyesuaikan ke 10
+        borderRadius: BorderRadius.circular(10),
         side: isFocused
             ? BorderSide(
-                color: theme.primaryColor,
+                color:
+                    mainThemeColor, // Border indikator fokus juga otomatis mengikuti warna judul
                 width: 2.0,
-              ) // Diturunkan dari 2.5
+              )
             : BorderSide.none,
       ),
       child: tileContent,
@@ -311,8 +353,7 @@ class SubjectListTile extends StatelessWidget {
   }) {
     return PopupMenuItem<String>(
       value: value,
-      height:
-          40, // DIUBAH: Mengoptimalkan tinggi menu agar lebih ringkas & rapat khas mobile
+      height: 40,
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
@@ -331,15 +372,11 @@ class SubjectListTile extends StatelessWidget {
     return PopupMenuItem(
       padding: EdgeInsets.zero,
       enabled: false,
-      height:
-          40, // DIUBAH: Menyesuaikan tinggi agar seimbang dengan sub-menu itemnya
+      height: 40,
       child: SubmenuButton(
         menuChildren: children,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 8.0,
-          ), // Mengurangi ukuran vertikal submenu parent
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
               Icon(icon, size: 20),
@@ -353,11 +390,9 @@ class SubjectListTile extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, Color? textColor) {
-    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: textColor,
-      fontSize:
-          11.0, // Diperkecil agar baris statistik muat satu baris layar mobile
-    );
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: textColor, fontSize: 11.0);
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final displayOrder = provider.repetitionCodeDisplayOrder;
     final codeEntries = subject.repetitionCodeCounts.entries.toList()
@@ -425,7 +460,7 @@ class SubjectListTile extends StatelessWidget {
     Color? textColor,
     double textScaleFactor,
   ) {
-    const double baseFontSize = 11.0; // Diturunkan dari 12.0
+    const double baseFontSize = 11.0;
     final scaledFontSize = baseFontSize * textScaleFactor;
     final scaledIconSize = (baseFontSize * 0.95) * textScaleFactor;
     final subtitleStyle = Theme.of(

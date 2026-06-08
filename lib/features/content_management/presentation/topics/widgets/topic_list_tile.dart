@@ -24,81 +24,115 @@ class TopicListTile extends StatelessWidget {
     this.isFocused = false,
   });
 
+  // Metode pembantu untuk menghasilkan warna dinamis yang konsisten berdasarkan judul (hash)
+  Color _getThemeColorFromTitle(String title) {
+    if (title.isEmpty) return Colors.deepPurple;
+
+    // Kumpulan palet warna menarik yang cocok untuk latar belakang/aksen tema
+    final List<Color> themePalettes = [
+      Colors.deepPurple,
+      Colors.blue,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber.shade900,
+      Colors.green.shade700,
+      Colors.cyan.shade800,
+      Colors.orange.shade800,
+    ];
+
+    final int hash = title.hashCode;
+    final int index = hash.abs() % themePalettes.length;
+    return themePalettes[index];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isHidden = topic.isHidden;
+
+    // Mendapatkan warna utama berbasis judul satu kali untuk seluruh widget ini
+    final Color mainThemeColor = _getThemeColorFromTitle(topic.name);
+
     final Color cardColor = isHidden
         ? theme.disabledColor.withOpacity(0.1)
         : theme.cardColor;
     final Color? textColor = isHidden ? theme.disabledColor : null;
-    final double elevation = isHidden
-        ? 1
-        : 2; // Dikurangi sedikit agar lebih flat khas mobile
+    final double elevation = isHidden ? 1 : 2;
 
     // --- DIUBAH AGAR LEBIH KECIL (MOBILE FRIENDLY) ---
-    final double verticalMargin = 4; // Sebelumnya: 8
-    final double horizontalMargin = 8; // Sebelumnya: 16
+    final double verticalMargin = 4;
+    final double horizontalMargin = 8;
     final EdgeInsets padding = const EdgeInsets.symmetric(
       horizontal: 10,
-      vertical: 8, // Sebelumnya: 16
+      vertical: 8,
     );
-    final double iconFontSize = 20; // Sebelumnya: 28
-    final double titleFontSize = 14; // Sebelumnya: 18
+    final double iconFontSize = 20;
+    final double titleFontSize = 14;
     // -------------------------------------------------
 
     final tileContent = Material(
-      borderRadius: BorderRadius.circular(10), // Diperkecil dari 15
+      borderRadius: BorderRadius.circular(10),
       color: Colors.transparent,
       child: InkWell(
         onTap: isReorderActive ? null : onTap,
         borderRadius: BorderRadius.circular(10),
-        splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
-        highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
+        splashColor: mainThemeColor.withOpacity(0.1),
+        highlightColor: mainThemeColor.withOpacity(0.05),
         child: Padding(
           padding: padding,
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6), // Diperkecil dari 8
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6), // Diperkecil dari 8
+                  // Menggunakan warna utama berbasis judul dengan opasitas rendah
+                  color: isHidden
+                      ? theme.disabledColor.withOpacity(0.1)
+                      : mainThemeColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   topic.icon,
                   style: TextStyle(fontSize: iconFontSize, color: textColor),
                 ),
               ),
-              const SizedBox(width: 10), // Diperkecil dari 12
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   topic.name,
                   style: TextStyle(
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w600,
-                    color: textColor,
+                    color: isHidden
+                        ? textColor
+                        : mainThemeColor, // Warna teks mengikuti judul jika aktif
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (isReorderActive)
                 ReorderableDragStartListener(
-                  index: index, // Diperbarui: Menggunakan index yang benar
-                  child: const Padding(
-                    padding: EdgeInsets.all(6.0), // Diperkecil dari 8.0
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
                     child: Icon(
                       Icons.drag_handle,
                       size: 20,
-                    ), // Diberi ukuran tetap yang lebih kecil
+                      color: isHidden ? textColor : mainThemeColor,
+                    ),
                   ),
                 )
               else
                 PopupMenuButton<String>(
-                  iconSize: 20, // Tetap kecil secara visual
-                  // DIUBAH: Berikan sedikit padding agar area sentuh pas ~44-48 dp (nyaman untuk jari)
+                  iconSize: 20,
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: isHidden
+                        ? textColor
+                        : mainThemeColor.withOpacity(0.7),
+                  ),
                   padding: const EdgeInsets.all(12.0),
-                  // DIUBAH: Hapus BoxConstraints() kosong agar mengembalikan ruang sentuh standar
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'toggle_visibility') onToggleVisibility();
@@ -107,8 +141,7 @@ class TopicListTile extends StatelessWidget {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'rename',
-                      height:
-                          40, // Ditambahkan: Sedikit lebih padat dari default (48), namun tetap aman disentuh
+                      height: 40,
                       child: Row(
                         children: [
                           Icon(Icons.edit_outlined, size: 20),
@@ -119,7 +152,7 @@ class TopicListTile extends StatelessWidget {
                     ),
                     const PopupMenuItem(
                       value: 'change_icon',
-                      height: 40, // Ditambahkan
+                      height: 40,
                       child: Row(
                         children: [
                           Icon(Icons.emoji_emotions_outlined, size: 20),
@@ -130,7 +163,7 @@ class TopicListTile extends StatelessWidget {
                     ),
                     PopupMenuItem<String>(
                       value: 'toggle_visibility',
-                      height: 40, // Ditambahkan
+                      height: 40,
                       child: Row(
                         children: [
                           Icon(
@@ -147,12 +180,10 @@ class TopicListTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const PopupMenuDivider(
-                      height: 8,
-                    ), // Disesuaikan tingginya agar rapi
+                    const PopupMenuDivider(height: 8),
                     const PopupMenuItem(
                       value: 'delete',
-                      height: 40, // Ditambahkan
+                      height: 40,
                       child: Row(
                         children: [
                           Icon(
@@ -184,14 +215,13 @@ class TopicListTile extends StatelessWidget {
         vertical: verticalMargin,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-          10,
-        ), // Menyeimbangkan dengan isi content
+        borderRadius: BorderRadius.circular(10),
         side: isFocused
             ? BorderSide(
-                color: theme.primaryColor,
+                color:
+                    mainThemeColor, // Border fokus mengikuti warna judul dinamis
                 width: 2.0,
-              ) // Diturunkan ketebalannya dari 2.5
+              )
             : BorderSide.none,
       ),
       child: tileContent,

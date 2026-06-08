@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
 import '../dialogs/discussion_dialogs.dart';
@@ -43,11 +44,28 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
-    this.titleFontSize =
-        14.0, // MODIFIKASI: Default diturunkan dari 18.0 ke 14.0
-    this.horizontalGap =
-        10.0, // MODIFIKASI: Default diturunkan dari 14.0 ke 10.0
+    this.titleFontSize = 14.0,
+    this.horizontalGap = 10.0,
   });
+
+  // ==> DITAMBAHKAN: Metode untuk menghasilkan warna dinamis berbasis judul
+  Color _getThemeColorFromTitle(String title) {
+    if (title.isEmpty) return Colors.deepPurple;
+    final List<Color> themePalettes = [
+      Colors.deepPurple,
+      Colors.blue,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber.shade900,
+      Colors.green.shade700,
+      Colors.cyan.shade800,
+      Colors.orange.shade800,
+    ];
+    final int hash = title.hashCode;
+    final int index = hash.abs() % themePalettes.length;
+    return themePalettes[index];
+  }
 
   void _moveDiscussion(
     BuildContext context,
@@ -58,6 +76,7 @@ class DiscussionListItem extends StatelessWidget {
     }
     final targetInfo = await showMoveDiscussionDialog(context, subjectName);
     if (!context.mounted) return;
+
     if (targetInfo != null) {
       try {
         final String log = await provider.moveSelectedDiscussions(
@@ -147,6 +166,7 @@ class DiscussionListItem extends StatelessWidget {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
       return;
     }
+
     final uri = Uri.parse(discussion.url!);
     try {
       if (await canLaunchUrl(uri)) {
@@ -228,6 +248,7 @@ class DiscussionListItem extends StatelessWidget {
     final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
     final fileType = isMarkdown ? 'Markdown' : 'HTML';
     final extension = isMarkdown ? '.md' : '.html';
+
     final confirmed =
         await showDialog<bool>(
           context: context,
@@ -249,6 +270,7 @@ class DiscussionListItem extends StatelessWidget {
           ),
         ) ??
         false;
+
     if (confirmed && context.mounted) {
       try {
         if (isMarkdown) {
@@ -275,12 +297,14 @@ class DiscussionListItem extends StatelessWidget {
       final basePath = await provider.getPerpuskuHtmlBasePath();
       final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
       final allowedExtensions = isMarkdown ? ['.md'] : ['.html'];
+
       final newPath = await showHtmlFilePicker(
         context,
         basePath,
         initialPath: subjectLinkedPath,
         allowedExtensions: allowedExtensions,
       );
+
       if (newPath != null) {
         provider.updateDiscussionFilePath(discussion, newPath);
         _showSnackBar(context, 'Path file berhasil disimpan.');
@@ -301,6 +325,7 @@ class DiscussionListItem extends StatelessWidget {
         ),
       ),
     );
+
     if (success == true && context.mounted) {
       _showSnackBar(context, 'Konten HTML berhasil dibuat!');
     }
@@ -320,6 +345,7 @@ class DiscussionListItem extends StatelessWidget {
   void _findSmartLink(BuildContext context, DiscussionProvider provider) async {
     final subjectsPage = context.findAncestorWidgetOfExactType<SubjectsPage>();
     final topicName = subjectsPage?.topicName ?? 'Unknown';
+
     final success = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => ChangeNotifierProvider.value(
@@ -331,6 +357,7 @@ class DiscussionListItem extends StatelessWidget {
         ),
       ),
     );
+
     if (success == true && context.mounted) {
       _showSnackBar(context, 'Diskusi berhasil ditautkan.');
     }
@@ -365,6 +392,7 @@ class DiscussionListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     final theme = Theme.of(context);
+
     final isSelected = provider.selectedDiscussions.contains(discussion);
     final isFinished = discussion.finished;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
@@ -374,10 +402,12 @@ class DiscussionListItem extends StatelessWidget {
         (discussion.linkType == DiscussionLinkType.html || isMarkdown) &&
         discussion.filePath != null &&
         discussion.filePath!.isNotEmpty;
-    final iconColor = isFinished
-        ? Colors.green
-        : (isSelected ? theme.primaryColor : null);
 
+    // ==> DITAMBAHKAN: Warna Utama Dinamis <==
+    final Color mainThemeColor = _getThemeColorFromTitle(discussion.discussion);
+    final Color? textColor = isFinished ? theme.disabledColor : null;
+
+    // Konfigurasi icon dan warnanya
     IconData iconData;
     if (isFinished) {
       iconData = Icons.check_circle;
@@ -396,6 +426,12 @@ class DiscussionListItem extends StatelessWidget {
     if (isSelected) {
       iconData = Icons.check_circle_outline;
     }
+
+    final iconColor = isFinished
+        ? Colors.green
+        : (isSelected
+              ? mainThemeColor
+              : mainThemeColor); // diselaraskan dengan tema judul
 
     VoidCallback? onPressedAction;
     String? tooltip;
@@ -419,41 +455,49 @@ class DiscussionListItem extends StatelessWidget {
     }
 
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    // --- DIUBAH AGAR UKURAN LEBIH COMPACT KHAS MOBILE ---
-    const double baseLeadingIconSize = 18.0; // Sebelumnya: 24.0
-    const double baseTrailingIconSize = 18.0; // Sebelumnya: 24.0
+
+    // --- DIMENSI MOBILE FRIENDLY ---
+    const double baseLeadingIconSize = 18.0;
+    const double baseTrailingIconSize = 18.0;
     const double baseTrailingSpacing = 0.0;
-    const double baseVerticalPadding = 2.0; // Sebelumnya: 4.0
-    // ----------------------------------------------------
+    const double baseVerticalPadding = 2.0;
 
     final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
     final scaledTrailingIconSize = baseTrailingIconSize * textScaleFactor;
     final scaledTrailingSpacing = baseTrailingSpacing * textScaleFactor;
     final scaledVerticalPadding = baseVerticalPadding * textScaleFactor;
     final scaledHorizontalGap = (horizontalGap ?? 10.0) * textScaleFactor;
+
     final Color? highlightColor = discussion.highlightColor != null
         ? Color(discussion.highlightColor!)
         : null;
 
+    // ==> DITAMBAHKAN: Mengikuti Skema Tema Subject dan Topic List
+    final Color cardColor = isSelected
+        ? mainThemeColor.withOpacity(0.15)
+        : (isFinished ? theme.disabledColor.withOpacity(0.1) : theme.cardColor);
+
     return Card(
+      elevation: isFinished ? 1 : 2,
       margin: const EdgeInsets.symmetric(
-        horizontal: 4.0,
-        vertical: 2.0,
-      ), // Mengecilkan margin luar Card
-      color: isSelected
-          ? theme.primaryColor.withOpacity(0.1)
-          : (highlightColor?.withOpacity(0.08)),
+        horizontal: 8.0,
+        vertical: 4.0,
+      ), // Disamakan dengan Topic/Subject List margin
+      color: highlightColor?.withOpacity(0.08) ?? cardColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0), // Sebelumnya: 12.0
+        borderRadius: BorderRadius.circular(
+          10.0,
+        ), // Diubah ke 10.0 (sebelumnya 8.0)
         side: isFocused
             ? BorderSide(
-                color: theme.primaryColor,
+                color:
+                    mainThemeColor, // Warna border indikator fokus mengikuti tema judul
                 width: 2.0,
-              ) // Ketebalan border fokus dikurangi dari 2.5
+              )
             : BorderSide.none,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(10.0), // Mengikuti bentuk parent
         child: Stack(
           children: [
             // Konten Utama
@@ -465,12 +509,11 @@ class DiscussionListItem extends StatelessWidget {
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.symmetric(
-                      horizontal: 10.0, // Dikurangi dari 16.0
+                      horizontal: 10.0,
                       vertical: scaledVerticalPadding,
                     ),
                     horizontalTitleGap: scaledHorizontalGap,
-                    visualDensity: VisualDensity
-                        .compact, // Mengubah ke mode compact bawaan flutter
+                    visualDensity: VisualDensity.compact,
                     onTap: () {
                       if (provider.isSelectionMode) {
                         provider.toggleSelection(discussion);
@@ -485,13 +528,26 @@ class DiscussionListItem extends StatelessWidget {
                     onLongPress: () {
                       provider.toggleSelection(discussion);
                     },
-                    leading: IconButton(
-                      icon: Icon(iconData, color: iconColor),
-                      iconSize: scaledLeadingIconSize,
-                      onPressed: onPressedAction,
-                      tooltip: tooltip,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    leading: Container(
+                      padding: const EdgeInsets.all(
+                        4,
+                      ), // Memberi ruang padding background icon
+                      decoration: BoxDecoration(
+                        color: isFinished
+                            ? theme.disabledColor.withOpacity(0.1)
+                            : mainThemeColor.withOpacity(
+                                0.15,
+                              ), // Background aksen senada main theme
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: IconButton(
+                        icon: Icon(iconData, color: iconColor),
+                        iconSize: scaledLeadingIconSize,
+                        onPressed: onPressedAction,
+                        tooltip: tooltip,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
                     ),
                     title: Row(
                       children: [
@@ -499,10 +555,13 @@ class DiscussionListItem extends StatelessWidget {
                           child: Text(
                             discussion.discussion,
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               decoration: isFinished
                                   ? TextDecoration.lineThrough
                                   : null,
+                              color: isFinished
+                                  ? textColor
+                                  : mainThemeColor, // Dinamis Theme TextColor
                               fontSize: titleFontSize != null
                                   ? titleFontSize! * textScaleFactor
                                   : null,
@@ -519,7 +578,7 @@ class DiscussionListItem extends StatelessWidget {
                               vertical: 1,
                             ),
                             decoration: BoxDecoration(
-                              color: highlightColor ?? theme.primaryColor,
+                              color: highlightColor ?? mainThemeColor,
                               borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(
@@ -548,10 +607,8 @@ class DiscussionListItem extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: theme.primaryColor,
-                                fontSize:
-                                    (11.0 *
-                                    textScaleFactor), // Dikecilkan dari 12.0
+                                color: mainThemeColor,
+                                fontSize: (11.0 * textScaleFactor),
                               ),
                             ),
                           ),
@@ -625,9 +682,12 @@ class DiscussionListItem extends StatelessWidget {
                                         ? Icons.check
                                         : Icons.expand_less)
                                   : Icons.expand_more,
+                              // Indikator panah collapse/expand mengikuti mainThemeColor
                               color: isPointReorderMode
-                                  ? theme.primaryColor
-                                  : null,
+                                  ? mainThemeColor
+                                  : (isFinished
+                                        ? theme.disabledColor
+                                        : mainThemeColor.withOpacity(0.7)),
                             ),
                             iconSize: scaledTrailingIconSize,
                             onPressed: () => onToggleVisibility(index),
@@ -654,13 +714,13 @@ class DiscussionListItem extends StatelessWidget {
                 ],
               ),
             ),
-            // Indikator Warna (Strip)
+            // Indikator Warna (Strip Kiri)
             if (highlightColor != null && !isFinished)
               Positioned(
                 left: 0,
                 top: 0,
                 bottom: 0,
-                width: 4, // Diturunkan dari 5
+                width: 4,
                 child: Container(color: highlightColor),
               ),
           ],
