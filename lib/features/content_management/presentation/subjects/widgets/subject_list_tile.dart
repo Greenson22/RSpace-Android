@@ -204,119 +204,142 @@ class SubjectListTile extends StatelessWidget {
                 ),
               ),
               if (!provider.isSelectionMode)
-                PopupMenuButton<String>(
-                  iconSize: scaledPopupIconSize,
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: isHidden
-                        ? textColor
-                        : mainThemeColor.withOpacity(
-                            0.7,
-                          ), // Titik tiga mengikuti aksen warna judul
+                Theme(
+                  data: theme.copyWith(
+                    // Mengubah warna teks menu opsi item menjadi warna tema
+                    popupMenuTheme: theme.popupMenuTheme.copyWith(
+                      textStyle: TextStyle(color: mainThemeColor, fontSize: 14),
+                    ),
+                    // Mengubah warna ikon utama di dalam widget baris item
+                    iconTheme: theme.iconTheme.copyWith(color: mainThemeColor),
+                    // Mengubah warna ikon expand panah kecil di SubmenuButton kustom
+                    iconButtonTheme: IconButtonThemeData(
+                      style: IconButton.styleFrom(
+                        foregroundColor: mainThemeColor,
+                      ),
+                    ),
                   ),
-                  padding: const EdgeInsets.all(12.0),
-                  onSelected: (value) {
-                    if (value == 'rename') onRename();
-                    if (value == 'delete') onDelete();
-                    if (value == 'toggle_visibility') onToggleVisibility();
-                    if (value == 'link_path') onLinkPath();
-                    if (value == 'edit_index') onEditIndexFile();
-                    if (value == 'move') onMove();
-                    if (value == 'toggle_freeze') onToggleFreeze();
-                    if (value == 'toggle_lock') onToggleLock();
-                    if (value == 'timeline') onTimeline();
-                    if (value == 'view_json') onViewJson();
-                    if (value == 'export_zip') onExport();
-                  },
-                  itemBuilder: (context) => <PopupMenuEntry<String>>[
-                    _buildMenuItem(
-                      'timeline',
-                      Icons.timeline,
-                      'Lihat Linimasa',
+                  child: PopupMenuButton<String>(
+                    iconSize: scaledPopupIconSize,
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: isHidden
+                          ? textColor
+                          : mainThemeColor.withOpacity(
+                              0.7,
+                            ), // Titik tiga mengikuti aksen warna judul
                     ),
-                    _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
-                    _buildMenuItem(
-                      'export_zip',
-                      Icons.archive_outlined,
-                      'Export ke ZIP',
-                    ),
-                    const PopupMenuDivider(height: 8),
-                    _buildSubMenu(
-                      icon: Icons.edit_outlined,
-                      label: 'Edit',
-                      children: [
-                        _buildMenuItem(
-                          'rename',
-                          Icons.drive_file_rename_outline,
-                          'Ubah Nama',
-                        ),
-                        _buildMenuItem(
-                          'change_icon',
-                          Icons.emoji_emotions_outlined,
-                          'Ubah Ikon',
-                        ),
-                      ],
-                    ),
-                    _buildSubMenu(
-                      icon: Icons.link_outlined,
-                      label: 'File & Tautan',
-                      children: [
-                        if (subject.linkedPath != null &&
-                            subject.linkedPath!.isNotEmpty)
+                    padding: const EdgeInsets.all(12.0),
+                    onSelected: (value) {
+                      if (value == 'rename') onRename();
+                      if (value == 'delete') onDelete();
+                      if (value == 'toggle_visibility') onToggleVisibility();
+                      if (value == 'link_path') onLinkPath();
+                      if (value == 'edit_index') onEditIndexFile();
+                      if (value == 'move') onMove();
+                      if (value == 'toggle_freeze') onToggleFreeze();
+                      if (value == 'toggle_lock') onToggleLock();
+                      if (value == 'timeline') onTimeline();
+                      if (value == 'view_json') onViewJson();
+                      if (value == 'export_zip') onExport();
+                    },
+                    itemBuilder: (context) => <PopupMenuEntry<String>>[
+                      _buildMenuItem(
+                        'timeline',
+                        Icons.timeline,
+                        'Lihat Linimasa',
+                      ),
+                      _buildMenuItem(
+                        'move',
+                        Icons.move_up_outlined,
+                        'Pindahkan',
+                      ),
+                      _buildMenuItem(
+                        'export_zip',
+                        Icons.archive_outlined,
+                        'Export ke ZIP',
+                      ),
+                      const PopupMenuDivider(height: 8),
+                      _buildSubMenu(
+                        icon: Icons.edit_outlined,
+                        label: 'Edit',
+                        children: [
                           _buildMenuItem(
-                            'edit_index',
-                            Icons.code_outlined,
-                            'Edit Template Induk',
+                            'rename',
+                            Icons.drive_file_rename_outline,
+                            'Ubah Nama',
                           ),
-                        _buildMenuItem(
-                          'link_path',
-                          subject.linkedPath == null
-                              ? Icons.link_outlined
-                              : Icons.link_off_outlined,
-                          subject.linkedPath == null
-                              ? 'Link ke PerpusKu'
-                              : 'Ubah Link PerpusKu',
-                        ),
-                        _buildMenuItem(
-                          'view_json',
-                          Icons.data_object,
-                          'Lihat JSON Mentah',
-                        ),
-                      ],
-                    ),
-                    _buildSubMenu(
-                      icon: Icons.settings_outlined,
-                      label: 'Status',
-                      children: [
-                        _buildMenuItem(
-                          'toggle_freeze',
-                          isFrozen ? Icons.play_arrow_outlined : Icons.ac_unit,
-                          isFrozen ? 'Unfreeze' : 'Freeze',
-                        ),
-                        _buildMenuItem(
-                          'toggle_visibility',
-                          isHidden
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          isHidden ? 'Tampilkan' : 'Sembunyikan',
-                        ),
-                        _buildMenuItem(
-                          'toggle_lock',
-                          isLocked
-                              ? Icons.lock_open_outlined
-                              : Icons.lock_outline,
-                          isLocked ? 'Buka Kunci' : 'Kunci Subject',
-                        ),
-                      ],
-                    ),
-                    const PopupMenuDivider(height: 8),
-                    _buildMenuItem(
-                      'delete',
-                      Icons.delete_outline,
-                      'Hapus',
-                      color: Colors.red,
-                    ),
-                  ],
+                          _buildMenuItem(
+                            'change_icon',
+                            Icons.emoji_emotions_outlined,
+                            'Ubah Ikon',
+                          ),
+                        ],
+                      ),
+                      _buildSubMenu(
+                        icon: Icons.link_outlined,
+                        label: 'File & Tautan',
+                        children: [
+                          if (subject.linkedPath != null &&
+                              subject.linkedPath!.isNotEmpty)
+                            _buildMenuItem(
+                              'edit_index',
+                              Icons.code_outlined,
+                              'Edit Template Induk',
+                            ),
+                          _buildMenuItem(
+                            'link_path',
+                            subject.linkedPath == null
+                                ? Icons.link_outlined
+                                : Icons.link_off_outlined,
+                            subject.linkedPath == null
+                                ? 'Link ke PerpusKu'
+                                : 'Ubah Link PerpusKu',
+                          ),
+                          _buildMenuItem(
+                            'view_json',
+                            Icons.data_object,
+                            'Lihat JSON Mentah',
+                          ),
+                        ],
+                      ),
+                      _buildSubMenu(
+                        icon: Icons.settings_outlined,
+                        label: 'Status',
+                        children: [
+                          _buildMenuItem(
+                            'toggle_freeze',
+                            isFrozen
+                                ? Icons.play_arrow_outlined
+                                : Icons.ac_unit,
+                            isFrozen ? 'Unfreeze' : 'Freeze',
+                          ),
+                          _buildMenuItem(
+                            'toggle_visibility',
+                            isHidden
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            isHidden ? 'Tampilkan' : 'Sembunyikan',
+                          ),
+                          _buildMenuItem(
+                            'toggle_lock',
+                            isLocked
+                                ? Icons.lock_open_outlined
+                                : Icons.lock_outline,
+                            isLocked ? 'Buka Kunci' : 'Kunci Subject',
+                          ),
+                        ],
+                      ),
+                      const PopupMenuDivider(height: 8),
+                      _buildMenuItem(
+                        'delete',
+                        Icons.delete_outline,
+                        'Hapus',
+                        color: Colors
+                            .red, // Opsi hapus tetap merah sebagai warning penanda bahaya
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
