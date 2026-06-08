@@ -45,11 +45,17 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: isSelectionMode
           ? IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => onMenuSelected(
-                'clear_selection',
-              ), // Sesuaikan dengan logika provider Anda jika ada
+              onPressed: () => onMenuSelected('clear_selection'),
             )
-          : null,
+          : IconButton(
+              // Tombol panah kembali kustom saat tidak dalam mode seleksi
+              iconSize:
+                  18.0, // <-- KONTROL UKURAN PANAH KEMBALI DI SINI (Default: 24.0)
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(
+                context,
+              ).pop(), // Aksi kembali ke halaman sebelumnya
+            ),
       title: isSearching
           ? TextField(
               controller: searchController,
@@ -69,40 +75,53 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-      actions: isSelectionMode
-          ? [
-              IconButton(
-                icon: const Icon(
-                  Icons.share,
-                ), // atau Icons.upload_file untuk export
-                onPressed: onExportSelected,
-                tooltip: 'Export Terpilih',
-              ),
-              const SizedBox(width: 12.0),
-            ]
-          : [
-              IconButton(
-                icon: Icon(isSearching ? Icons.close : Icons.search),
-                onPressed: onToggleSearch,
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                color: Colors
-                    .white, // Latar belakang popup menu tetap putih bersih
-                onSelected: onMenuSelected,
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'import_zip',
-                    child: Text('Import ZIP'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'show_hidden',
-                    child: Text('Tampilkan yang Disembunyikan'),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12.0),
-            ],
+      // === MODIFIKASI UKURAN IKON SEARCH & SHOW MENU DI SINI ===
+      actions: [
+        IconTheme(
+          data: const IconThemeData(
+            size:
+                18.0, // <-- SILAKAN UBAH UKURAN IKON APP BAR DI SINI (Default: 24.0)
+            color: Colors.white,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: isSelectionMode
+                ? [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.share,
+                      ), // atau Icons.upload_file untuk export
+                      onPressed: onExportSelected,
+                      tooltip: 'Export Terpilih',
+                    ),
+                    const SizedBox(width: 12.0),
+                  ]
+                : [
+                    IconButton(
+                      icon: Icon(isSearching ? Icons.close : Icons.search),
+                      onPressed: onToggleSearch,
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      color: Colors
+                          .white, // Latar belakang popup menu tetap putih bersih
+                      onSelected: onMenuSelected,
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'import_zip',
+                          child: Text('Import ZIP'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'show_hidden',
+                          child: Text('Tampilkan yang Disembunyikan'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12.0),
+                  ],
+          ),
+        ),
+      ],
     );
   }
 }
