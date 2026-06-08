@@ -10,8 +10,6 @@ import 'widgets/discussion_stats_header.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
 import '../../domain/models/discussion_model.dart';
-// Import dialog move discussion secara spesifik jika diperlukan
-// import 'dialogs/move_discussion_dialog.dart'; // Sudah termasuk dalam discussion_dialogs.dart
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
@@ -31,13 +29,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   final TextEditingController _searchController = TextEditingController();
   final Map<int, bool> _arePointsVisible = {};
   bool _isSearching = false;
-
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = 0;
-
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
-
   int? _reorderingDiscussionIndex;
 
   @override
@@ -48,7 +43,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           _searchController.text;
       setState(() => _focusedIndex = 0);
     });
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         FocusScope.of(context).requestFocus(_focusNode);
@@ -69,12 +63,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       context,
       widget.subjectName,
     );
-
     if (targetInfo != null && mounted) {
       try {
         final String targetJsonPath = targetInfo['jsonPath']!;
         final String? targetLinkedPath = targetInfo['linkedPath'];
-
         final String logMessage = await provider.moveSelectedDiscussions(
           targetJsonPath,
           targetLinkedPath,
@@ -121,7 +113,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
-
       if (provider.isSelectionMode) {
         if (event.logicalKey == LogicalKeyboardKey.escape ||
             event.logicalKey == LogicalKeyboardKey.backspace) {
@@ -129,7 +120,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         }
         return;
       }
-
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
           event.logicalKey == LogicalKeyboardKey.arrowUp ||
           event.logicalKey == LogicalKeyboardKey.arrowLeft ||
@@ -139,14 +129,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         _focusTimer = Timer(const Duration(milliseconds: 500), () {
           if (mounted) setState(() => _isKeyboardActive = false);
         });
-
         final discussions = provider.filteredDiscussions;
         final totalItems = discussions.length;
         if (totalItems == 0) return;
-
         final isTwoColumn = MediaQuery.of(context).size.width > 800.0;
         final int middle = (totalItems / 2).ceil();
-
         setState(() {
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
             if (isTwoColumn) {
@@ -210,7 +197,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       label: 'Nama Diskusi',
       subjectLinkedPath: widget.linkedPath,
     );
-
     if (result != null && mounted) {
       try {
         await provider.addDiscussion(result);
@@ -238,11 +224,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             context,
             listen: false,
           );
-
           final bool success = await neuronProvider.spendNeurons(15);
-
           if (!mounted) return;
-
           if (success) {
             await provider.deleteDiscussion(discussion);
             _showSnackBar(
@@ -268,36 +251,22 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
     const bool isTransparent = false;
-
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-
-    // --- MODIFIKASI: DIMENSI ICON & SPACING APPBAR DIPERKECIL UNTUK MOBILE ---
     const double baseAppBarIconSize = 20.0;
-    const double baseAppBarSpacing = 4.0;
-    // -------------------------------------------------------------------------
-
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
-    final scaledAppBarSpacing = baseAppBarSpacing * textScaleFactor;
-
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: provider.isSelectionMode
-            ? _buildSelectionAppBar(
-                provider,
-                scaledAppBarIconSize,
-                scaledAppBarSpacing,
-              )
+            ? _buildSelectionAppBar(provider, scaledAppBarIconSize)
             : _buildDefaultAppBar(
                 provider,
                 scaledAppBarIconSize,
-                scaledAppBarSpacing,
                 isTransparent: isTransparent,
               ),
         body: Column(children: [Expanded(child: _buildBody(provider))]),
-        // ==> PERBAIKAN: Berubah menjadi FloatingActionButton standar sekali tekan <==
         floatingActionButton:
             provider.isSelectionMode || _reorderingDiscussionIndex != null
             ? null
@@ -315,7 +284,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   AppBar _buildSelectionAppBar(
     DiscussionProvider provider,
     double scaledIconSize,
-    double scaledSpacing,
   ) {
     return AppBar(
       title: Text(
@@ -336,7 +304,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onPressed: () => provider.selectAllFiltered(),
           tooltip: 'Pilih Semua',
         ),
-        SizedBox(width: scaledSpacing + 4),
+        const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.move_up),
           iconSize: scaledIconSize,
@@ -352,13 +320,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   AppBar _buildDefaultAppBar(
     DiscussionProvider provider,
-    double scaledIconSize,
-    double scaledSpacing, {
+    double scaledIconSize, {
     required bool isTransparent,
   }) {
     final Color defaultTextColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
-
     return AppBar(
       backgroundColor: isTransparent ? Colors.transparent : null,
       elevation: isTransparent ? 0 : null,
@@ -394,47 +360,79 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             if (!_isSearching) _searchController.clear();
           }),
         ),
-        SizedBox(width: scaledSpacing + 4),
-        if (provider.activeFilterType != 'code')
-          IconButton(
-            icon: Icon(
-              provider.showFinishedDiscussions
-                  ? Icons.visibility_off
-                  : Icons.visibility,
+        const SizedBox(width: 8),
+        // ==> PERBAIKAN UTAMA: MENYATUKAN FILTER KONTROL KE DALAM MENU TITIK TIGA <==
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          iconSize: scaledIconSize,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onSelected: (value) {
+            if (value == 'toggle_finished') {
+              provider.toggleShowFinished();
+            } else if (value == 'filter_discussions') {
+              _showFilterDialog(provider);
+            } else if (value == 'sort_discussions') {
+              showSortDialog(
+                context: context,
+                initialSortType: provider.sortType,
+                initialSortAscending: provider.sortAscending,
+                onApplySort: (sortType, sortAscending) {
+                  provider.applySort(sortType, sortAscending);
+                  _showSnackBar('Diskusi dan poin telah diurutkan.');
+                },
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            if (provider.activeFilterType != 'code')
+              PopupMenuItem(
+                value: 'toggle_finished',
+                height: 40,
+                child: Row(
+                  children: [
+                    Icon(
+                      provider.showFinishedDiscussions
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      provider.showFinishedDiscussions
+                          ? 'Sembunyikan Selesai'
+                          : 'Tampilkan Selesai',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            const PopupMenuItem(
+              value: 'filter_discussions',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(Icons.filter_list, size: 20),
+                  SizedBox(width: 10),
+                  Text('Filter Diskusi', style: TextStyle(fontSize: 14)),
+                ],
+              ),
             ),
-            iconSize: scaledIconSize,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            tooltip: provider.showFinishedDiscussions
-                ? 'Sembunyikan Selesai'
-                : 'Tampilkan Selesai',
-            onPressed: () => provider.toggleShowFinished(),
-          ),
-        SizedBox(width: scaledSpacing + 4),
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          iconSize: scaledIconSize,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          tooltip: 'Filter Diskusi',
-          onPressed: () => _showFilterDialog(provider),
-        ),
-        SizedBox(width: scaledSpacing + 4),
-        IconButton(
-          icon: const Icon(Icons.sort),
-          iconSize: scaledIconSize,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          tooltip: 'Urutkan Diskusi & Poin',
-          onPressed: () => showSortDialog(
-            context: context,
-            initialSortType: provider.sortType,
-            initialSortAscending: provider.sortAscending,
-            onApplySort: (sortType, sortAscending) {
-              provider.applySort(sortType, sortAscending);
-              _showSnackBar('Diskusi dan poin telah diurutkan.');
-            },
-          ),
+            const PopupMenuItem(
+              value: 'sort_discussions',
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(Icons.sort, size: 20),
+                  SizedBox(width: 10),
+                  Text(
+                    'Urutkan Diskusi & Poin',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(width: 12.0),
       ],
@@ -445,15 +443,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (provider.allDiscussions.isEmpty) {
       return const Center(
         child: Text('Tidak ada diskusi. Tekan + untuk menambah.'),
       );
     }
-
     final discussionsToShow = provider.filteredDiscussions;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         const double breakpoint = 800.0;
@@ -487,7 +482,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 );
                 final isPointReorderMode =
                     originalIndex == _reorderingDiscussionIndex;
-
                 return DiscussionListItem(
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
@@ -526,7 +520,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     final int middle = (discussions.length / 2).ceil();
     final List<dynamic> firstHalf = discussions.sublist(0, middle);
     final List<dynamic> secondHalf = discussions.sublist(middle);
-
     return Column(
       children: [
         const DiscussionStatsHeader(),
@@ -565,7 +558,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         final originalIndex = provider.allDiscussions.indexOf(discussion);
         final overallIndex = index + indexOffset;
         final isPointReorderMode = originalIndex == _reorderingDiscussionIndex;
-
         return DiscussionListItem(
           key: ValueKey(discussion.hashCode),
           discussion: discussion,
