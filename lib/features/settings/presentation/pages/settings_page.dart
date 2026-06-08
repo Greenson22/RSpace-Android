@@ -38,7 +38,8 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _currentPath = (customPath != null && customPath.isNotEmpty)
           ? customPath
-          : "Default (Penyimpanan Internal/Download)";
+          // Ubah teks fallback default di sini:
+          : "Default (Penyimpanan Aplikasi: Android/data/com...)";
       _pathController.text = customPath ?? '';
       _isLoading = false;
     });
@@ -162,7 +163,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (_currentPath !=
-                          "Default (Penyimpanan Internal/Download)")
+                          "Default (Penyimpanan Aplikasi: Android/data/com...)")
                         IconButton(
                           icon: const Icon(Icons.restore),
                           tooltip: 'Kembalikan ke Default',

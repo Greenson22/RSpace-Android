@@ -30,16 +30,14 @@ class PathService {
 
     Directory? baseDir;
     if (Platform.isAndroid) {
-      Directory? externalDir = await getExternalStorageDirectory();
-      if (externalDir == null) {
+      // getExternalStorageDirectory() langsung mengarah ke:
+      // /storage/emulated/0/Android/data/com.[package_name]/files
+      baseDir = await getExternalStorageDirectory();
+      if (baseDir == null) {
         throw Exception(
-          "Tidak dapat menemukan direktori penyimpanan eksternal.",
+          "Tidak dapat menemukan direktori penyimpanan eksternal aplikasi.",
         );
       }
-      final rootDir = Directory(
-        path.join(externalDir.path, '..', '..', '..', '..'),
-      );
-      baseDir = Directory(path.join(rootDir.path, 'Download'));
     } else {
       baseDir = await getApplicationDocumentsDirectory();
     }
@@ -47,15 +45,17 @@ class PathService {
   }
 
   Future<String> get _baseDataPath async {
-    if (Platform.isAndroid) {
+    String? customPath = await loadCustomStoragePath();
+
+    // Minta izin "Manage External Storage" HANYA jika pengguna memakai custom path
+    // di luar folder com.[package] (misal: mereka memilih folder root / Download).
+    if (Platform.isAndroid && customPath != null && customPath.isNotEmpty) {
       if (!await Permission.manageExternalStorage.request().isGranted) {
         throw Exception(
-          'Izin "Akses semua file" diperlukan untuk menyimpan data di folder pilihan Anda.',
+          'Izin "Akses semua file" diperlukan untuk menyimpan data di folder custom pilihan Anda.',
         );
       }
     }
-
-    String? customPath = await loadCustomStoragePath();
 
     if (customPath != null && customPath.isNotEmpty) {
       final dataDir = Directory(path.join(customPath, 'RSpace_data', 'data'));
@@ -67,16 +67,13 @@ class PathService {
 
     Directory? baseDir;
     if (Platform.isAndroid) {
-      Directory? externalDir = await getExternalStorageDirectory();
-      if (externalDir == null) {
+      // Gunakan langsung folder internal aplikasi (com.xxx)
+      baseDir = await getExternalStorageDirectory();
+      if (baseDir == null) {
         throw Exception(
-          "Tidak dapat menemukan direktori penyimpanan eksternal.",
+          "Tidak dapat menemukan direktori penyimpanan eksternal aplikasi.",
         );
       }
-      final rootDir = Directory(
-        path.join(externalDir.path, '..', '..', '..', '..'),
-      );
-      baseDir = Directory(path.join(rootDir.path, 'Download'));
     } else {
       baseDir = await getApplicationDocumentsDirectory();
     }
