@@ -1,3 +1,4 @@
+// lib/features/content_management/application/mixins/discussion_actions_mixin.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -7,11 +8,14 @@ import 'package:mime/mime.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:markdown/markdown.dart' as md; // Import library markdown
-import 'package:shared_preferences/shared_preferences.dart'; // DITAMBAHKAN
+import 'package:markdown/markdown.dart' as md;
+// ==> DITAMBAHKAN: Import yang dibutuhkan
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../../../features/webview_page/presentation/pages/webview_page.dart';
+import '../discussion_provider.dart';
 
 import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
-import '../../../../features/webview_page/presentation/pages/webview_page.dart'; // DITAMBAHKAN
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
@@ -357,16 +361,12 @@ mixin DiscussionActionsMixin on ChangeNotifier {
         throw Exception('File Markdown tidak ditemukan: $fullPath');
       }
 
-      // 1. Baca konten mentah
       final rawContent = await file.readAsString();
-
-      // 2. Konversi ke HTML menggunakan package markdown
       final htmlBody = md.markdownToHtml(
         rawContent,
         extensionSet: md.ExtensionSet.gitHubFlavored,
       );
 
-      // 3. Bungkus dengan HTML & CSS agar cantik
       final styledHtmlWrapper =
           '''
 <!DOCTYPE html>
@@ -432,14 +432,23 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       await tempFile.writeAsString(styledHtmlWrapper);
 
       if (useInternalWeb && context.mounted) {
+        // ==> INJEKSI PROVIDER DI SINI AGAR TOMBOL BERFUNGSI <==
+        final provider = Provider.of<DiscussionProvider>(
+          context,
+          listen: false,
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => WebViewPage(
-              initialUrl: Uri.file(tempFile.path).toString(),
-              title: discussion.discussion,
-              discussion: discussion,
-            ),
+            builder: (context) =>
+                ChangeNotifierProvider<DiscussionProvider>.value(
+                  value: provider,
+                  child: WebViewPage(
+                    initialUrl: Uri.file(tempFile.path).toString(),
+                    title: discussion.discussion,
+                    discussion: discussion,
+                  ),
+                ),
           ),
         );
       } else {
@@ -466,18 +475,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
 
     if (!await indexFile.exists()) {
-      const defaultIndexContent = '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Index</title>
-</head>
-<body>
-    <div id="main-container"></div>
-</body>
-</html>''';
+      const defaultIndexContent =
+          '''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Index</title></head><body><div id="main-container"></div></body></html>''';
       await indexFile.writeAsString(defaultIndexContent);
     }
 
@@ -507,7 +506,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     container.innerHtml = contentDoc.body?.innerHtml ?? '';
 
     final finalHtmlContent = indexDoc.outerHtml;
-
     final tempDir = await getTemporaryDirectory();
     final tempFile = File(
       path.join(tempDir.path, '${DateTime.now().millisecondsSinceEpoch}.html'),
@@ -515,14 +513,20 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     await tempFile.writeAsString(finalHtmlContent);
 
     if (useInternalWeb && context.mounted) {
+      // ==> INJEKSI PROVIDER DI SINI AGAR TOMBOL BERFUNGSI <==
+      final provider = Provider.of<DiscussionProvider>(context, listen: false);
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => WebViewPage(
-            initialUrl: Uri.file(tempFile.path).toString(),
-            title: discussion.discussion,
-            discussion: discussion,
-          ),
+          builder: (context) =>
+              ChangeNotifierProvider<DiscussionProvider>.value(
+                value: provider,
+                child: WebViewPage(
+                  initialUrl: Uri.file(tempFile.path).toString(),
+                  title: discussion.discussion,
+                  discussion: discussion,
+                ),
+              ),
         ),
       );
     } else {
@@ -530,6 +534,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       if (result.type != ResultType.done) throw Exception(result.message);
     }
   }
+
+  // ... (Sisa fungsi file ini biarkan sama seperti sebelumnya) ...
 
   Future<void> editDiscussionFileWithSelection(
     Discussion discussion,

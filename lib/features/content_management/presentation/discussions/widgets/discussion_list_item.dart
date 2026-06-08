@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // DITAMBAHKAN
+// ==> DITAMBAHKAN: Import untuk Preferensi & WebView
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../webview_page/presentation/pages/webview_page.dart';
 
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
@@ -18,8 +20,6 @@ import '../../subjects/subjects_page.dart';
 import '../dialogs/move_discussion_dialog.dart';
 import '../dialogs/html_file_picker_dialog.dart';
 import '../dialogs/edit_dialogs.dart';
-// ==> DITAMBAHKAN: Import WebViewPage dari fitur webview Anda
-import '../../../../webview_page/presentation/pages/webview_page.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -51,7 +51,6 @@ class DiscussionListItem extends StatelessWidget {
     this.horizontalGap = 10.0,
   });
 
-  // ==> Metode untuk menghasilkan warna dinamis berbasis judul
   Color _getThemeColorFromTitle(String title) {
     if (title.isEmpty) return Colors.deepPurple;
     final List<Color> themePalettes = [
@@ -118,9 +117,8 @@ class DiscussionListItem extends StatelessWidget {
         action: isLong
             ? SnackBarAction(
                 label: 'TUTUP',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
+                onPressed: () =>
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar(),
               )
             : null,
       ),
@@ -164,7 +162,6 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // ==> LOGIKA STRUKTUR PENGECEKAN PREFERENSI WEB DIUBAH DI SINI <==
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
@@ -176,26 +173,34 @@ class DiscussionListItem extends StatelessWidget {
       final bool useInternalWeb = prefs.getBool('use_internal_web') ?? true;
 
       if (useInternalWeb) {
-        // Jika diset internal, buka halaman WebViewPage internal bawaan aplikasi[cite: 1]
         if (context.mounted) {
+          // ==> INJEKSI PROVIDER DI SINI AGAR TOMBOL DI DALAM WEBVIEW BERFUNGSI <==
+          final provider = Provider.of<DiscussionProvider>(
+            context,
+            listen: false,
+          );
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => WebViewPage(
-                initialUrl: discussion.url,
-                title: discussion.discussion,
-                discussion: discussion,
-              ),
+              builder: (context) =>
+                  ChangeNotifierProvider<DiscussionProvider>.value(
+                    value: provider,
+                    child: WebViewPage(
+                      initialUrl: discussion.url,
+                      title: discussion.discussion,
+                      discussion: discussion,
+                    ),
+                  ),
             ),
           );
         }
       } else {
-        // Jika diset eksternal, lempar intent keluar menggunakan paket url_launcher[cite: 3]
         final uri = Uri.parse(discussion.url!);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         } else {
-          throw Exception('Tidak dapat membuka URL eksternal.');
+          throw Exception('Tidak dapat membuka URL');
         }
       }
     } catch (e) {
@@ -206,6 +211,8 @@ class DiscussionListItem extends StatelessWidget {
       );
     }
   }
+
+  // ... (Sisa fungsi file ini biarkan sama seperti sebelumnya) ...
 
   void _addPoint(BuildContext context, DiscussionProvider provider) {
     showAddPointDialog(
@@ -427,11 +434,9 @@ class DiscussionListItem extends StatelessWidget {
         discussion.filePath != null &&
         discussion.filePath!.isNotEmpty;
 
-    // ==> Warna Utama Dinamis <==
     final Color mainThemeColor = _getThemeColorFromTitle(discussion.discussion);
     final Color? textColor = isFinished ? theme.disabledColor : null;
 
-    // Konfigurasi icon dan warnanya
     IconData iconData;
     if (isFinished) {
       iconData = Icons.check_circle;
@@ -476,7 +481,6 @@ class DiscussionListItem extends StatelessWidget {
 
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
-    // --- DIMENSI MOBILE FRIENDLY ---
     const double baseLeadingIconSize = 18.0;
     const double baseTrailingIconSize = 18.0;
     const double baseTrailingSpacing = 0.0;
@@ -510,7 +514,6 @@ class DiscussionListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(10.0),
         child: Stack(
           children: [
-            // Konten Utama
             Padding(
               padding: EdgeInsets.only(
                 left: (highlightColor != null && !isFinished) ? 4.0 : 0.0,
@@ -728,7 +731,6 @@ class DiscussionListItem extends StatelessWidget {
                 ],
               ),
             ),
-            // Indikator Warna (Strip Kiri)
             if (highlightColor != null && !isFinished)
               Positioned(
                 left: 0,
