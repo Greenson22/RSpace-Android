@@ -1,26 +1,51 @@
-// lib/features/content_management/presentation/topics/dialogs/topic_dialogs.dart
 import 'package:flutter/material.dart';
 
-/// Menampilkan dialog untuk input teks (menambah/mengubah nama topik).
+/// Menampilkan dialog gabungan untuk input nama topik dan ikon emoji sekaligus.
 Future<void> showTopicTextInputDialog({
   required BuildContext context,
   required String title,
-  required String label,
+  String initialIcon = '📁',
   String initialValue = '',
-  required Function(String) onSave,
-  TextInputType keyboardType = TextInputType.text,
+  required Function(String name, String icon)
+  onSave, // Menerima 2 parameter masukan
 }) async {
-  final controller = TextEditingController(text: initialValue);
+  final nameController = TextEditingController(text: initialValue);
+  final iconController = TextEditingController(text: initialIcon);
+
   return showDialog<void>(
     context: context,
     builder: (context) {
       return AlertDialog(
         title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: label),
-          keyboardType: keyboardType,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: iconController,
+                    decoration: const InputDecoration(
+                      labelText: 'Ikon',
+                      hintText: 'Emoji',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 5,
+                  child: TextField(
+                    controller: nameController,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Nama Topik'),
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -29,8 +54,9 @@ Future<void> showTopicTextInputDialog({
           ),
           TextButton(
             onPressed: () {
-              if (controller.text.isNotEmpty) {
-                onSave(controller.text);
+              if (nameController.text.isNotEmpty &&
+                  iconController.text.isNotEmpty) {
+                onSave(nameController.text, iconController.text);
                 Navigator.pop(context);
               }
             },
@@ -48,11 +74,9 @@ Future<Map<String, bool>?> showDeleteTopicConfirmationDialog({
   required String topicName,
 }) async {
   bool deleteFolder = false;
-
   return await showDialog<Map<String, bool>?>(
     context: context,
     builder: (context) {
-      // Gunakan StatefulBuilder untuk mengelola state checkbox di dalam dialog
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -63,7 +87,6 @@ Future<Map<String, bool>?> showDeleteTopicConfirmationDialog({
               children: [
                 Text('Anda yakin ingin menghapus topik "$topicName"?'),
                 const SizedBox(height: 16),
-                // Tampilkan checkbox
                 CheckboxListTile(
                   title: const Text(
                     "Hapus juga folder & isinya di PerpusKu",
@@ -86,12 +109,11 @@ Future<Map<String, bool>?> showDeleteTopicConfirmationDialog({
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, null), // Batal
+                onPressed: () => Navigator.pop(context, null),
                 child: const Text('Batal'),
               ),
               TextButton(
                 onPressed: () {
-                  // Kirim hasil konfirmasi dan pilihan checkbox
                   Navigator.pop(context, {
                     'confirmed': true,
                     'deleteFolder': deleteFolder,

@@ -31,14 +31,11 @@ class _TopicsPageContent extends StatefulWidget {
 class _TopicsPageContentState extends State<_TopicsPageContent> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
-
   final FocusNode _focusNode = FocusNode();
   int _focusedIndex = 0;
-
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
 
-  // Daftar palet warna yang konsisten dengan halaman subjects, diskusi, dan card
   final List<Color> _themePalettes = [
     Colors.deepPurple,
     Colors.blue,
@@ -75,7 +72,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         event.logicalKey == LogicalKeyboardKey.altRight) {
       return;
     }
-
     if (event is RawKeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
           event.logicalKey == LogicalKeyboardKey.arrowUp) {
@@ -84,14 +80,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         _focusTimer = Timer(const Duration(milliseconds: 500), () {
           if (mounted) setState(() => _isKeyboardActive = false);
         });
-
         final topicProvider = Provider.of<TopicProvider>(
           context,
           listen: false,
         );
         final totalItems = topicProvider.filteredTopics.length;
         if (totalItems == 0) return;
-
         setState(() {
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
             _focusedIndex = (_focusedIndex + 1);
@@ -143,9 +137,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     await showTopicTextInputDialog(
       context: context,
       title: 'Tambah Topik Baru',
-      label: 'Nama Topik',
-      onSave: (name) async {
+      onSave: (name, icon) async {
         try {
+          // Sesuaikan parameter jika addTopic di provider Anda mendukung ikon
           await provider.addTopic(name);
           showAppSnackBar(context, 'Topik "$name" berhasil ditambahkan.');
         } catch (e) {
@@ -155,17 +149,18 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     );
   }
 
-  Future<void> _renameTopic(BuildContext context, Topic topic) async {
+  Future<void> _editTopic(BuildContext context, Topic topic) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     await showTopicTextInputDialog(
       context: context,
-      title: 'Ubah Nama Topik',
-      label: 'Nama Baru',
+      title: 'Ubah Topik',
       initialValue: topic.name,
-      onSave: (newName) async {
+      initialIcon: topic.icon,
+      onSave: (newName, newIcon) async {
         try {
+          // Panggil fungsi rename/update milik provider Anda
           await provider.renameTopic(topic.name, newName);
-          showAppSnackBar(context, 'Topik berhasil diubah menjadi "$newName".');
+          showAppSnackBar(context, 'Topik berhasil diubah.');
         } catch (e) {
           showAppSnackBar(context, e.toString(), isError: true);
         }
@@ -179,7 +174,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
       context: context,
       topicName: topic.name,
     );
-
     if (result != null && result['confirmed'] == true) {
       try {
         await provider.deleteTopic(
@@ -209,14 +203,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   Widget build(BuildContext context) {
     final topicProvider = Provider.of<TopicProvider>(context);
     const bool isTransparent = false;
-
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-
-    // --- SKALA UKURAN APPBAR UNTUK MOBILE ---
     const double baseAppBarIconSize = 18.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
-
-    // Menggunakan warna pertama (index 0) palet sebagai warna default halaman utama Topics
     final Color defaultThemeColor = _themePalettes[0];
 
     return RawKeyboardListener(
@@ -285,7 +274,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 iconSize: scaledAppBarIconSize,
-                color: Colors.white, // Isi menu popup tetap putih bersih
+                color: Colors.white,
                 iconColor: Colors.white,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -364,8 +353,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             : FloatingActionButton(
                 onPressed: () => _addTopic(context),
                 tooltip: 'Tambah Topik',
-                backgroundColor:
-                    defaultThemeColor, // Warna FAB disamakan dengan AppBar
+                backgroundColor: defaultThemeColor,
                 foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),
@@ -380,15 +368,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
-
         final topicsToShow = provider.filteredTopics;
         if (topicsToShow.isEmpty) {
           return _buildEmptyState(provider);
         }
-
         final isReorderActive =
             provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
-
         return ReorderableListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
           itemCount: topicsToShow.length,
@@ -411,7 +396,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               onTap: isReorderActive
                   ? null
                   : () => _navigateToSubjectsPage(context, topic),
-              onRename: () => _renameTopic(context, topic),
+              onEdit: () => _editTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onToggleVisibility: () => _toggleVisibility(context, topic),
               isReorderActive: isReorderActive,
