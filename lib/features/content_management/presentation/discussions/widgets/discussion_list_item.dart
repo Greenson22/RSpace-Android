@@ -43,8 +43,10 @@ class DiscussionListItem extends StatelessWidget {
     required this.onDelete,
     required this.isPointReorderMode,
     required this.onToggleReorder,
-    this.titleFontSize = 18.0,
-    this.horizontalGap = 14.0,
+    this.titleFontSize =
+        14.0, // MODIFIKASI: Default diturunkan dari 18.0 ke 14.0
+    this.horizontalGap =
+        10.0, // MODIFIKASI: Default diturunkan dari 14.0 ke 10.0
   });
 
   void _moveDiscussion(
@@ -54,11 +56,8 @@ class DiscussionListItem extends StatelessWidget {
     if (!provider.isSelectionMode) {
       provider.toggleSelection(discussion);
     }
-
     final targetInfo = await showMoveDiscussionDialog(context, subjectName);
-
     if (!context.mounted) return;
-
     if (targetInfo != null) {
       try {
         final String log = await provider.moveSelectedDiscussions(
@@ -112,7 +111,6 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   void _navigateAndEditQuiz(BuildContext context) {
-    // DIUBAH: Fitur kuis dinonaktifkan
     _showSnackBar(
       context,
       "Fitur kelola kuis saat ini tidak tersedia.",
@@ -121,7 +119,6 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   Future<void> _startQuiz(BuildContext context) async {
-    // DIUBAH: Fitur kuis dinonaktifkan
     _showSnackBar(
       context,
       "Fitur memulai kuis saat ini tidak tersedia.",
@@ -130,7 +127,6 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   Future<void> _changeQuizLink(BuildContext context) async {
-    // DIUBAH: Fitur kuis dinonaktifkan
     _showSnackBar(
       context,
       "Fitur mengubah tautan kuis tidak tersedia.",
@@ -139,7 +135,6 @@ class DiscussionListItem extends StatelessWidget {
   }
 
   Future<void> _convertToQuiz(BuildContext context) async {
-    // DIUBAH: Fitur kuis dinonaktifkan
     _showSnackBar(
       context,
       "Fitur konversi kuis saat ini tidak tersedia.",
@@ -152,11 +147,8 @@ class DiscussionListItem extends StatelessWidget {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
       return;
     }
-
     final uri = Uri.parse(discussion.url!);
-
     try {
-      // DIUBAH: ThemeProvider dihapus, default menggunakan external application
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
@@ -236,7 +228,6 @@ class DiscussionListItem extends StatelessWidget {
     final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
     final fileType = isMarkdown ? 'Markdown' : 'HTML';
     final extension = isMarkdown ? '.md' : '.html';
-
     final confirmed =
         await showDialog<bool>(
           context: context,
@@ -258,7 +249,6 @@ class DiscussionListItem extends StatelessWidget {
           ),
         ) ??
         false;
-
     if (confirmed && context.mounted) {
       try {
         if (isMarkdown) {
@@ -283,10 +273,8 @@ class DiscussionListItem extends StatelessWidget {
   void _setFilePath(BuildContext context, DiscussionProvider provider) async {
     try {
       final basePath = await provider.getPerpuskuHtmlBasePath();
-
       final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
       final allowedExtensions = isMarkdown ? ['.md'] : ['.html'];
-
       final newPath = await showHtmlFilePicker(
         context,
         basePath,
@@ -381,13 +369,11 @@ class DiscussionListItem extends StatelessWidget {
     final isFinished = discussion.finished;
     final isWebLink = discussion.linkType == DiscussionLinkType.link;
     final isQuiz = discussion.linkType == DiscussionLinkType.perpuskuQuiz;
-
     final isMarkdown = discussion.linkType == DiscussionLinkType.markdown;
     final hasFile =
         (discussion.linkType == DiscussionLinkType.html || isMarkdown) &&
         discussion.filePath != null &&
         discussion.filePath!.isNotEmpty;
-
     final iconColor = isFinished
         ? Colors.green
         : (isSelected ? theme.primaryColor : null);
@@ -413,7 +399,6 @@ class DiscussionListItem extends StatelessWidget {
 
     VoidCallback? onPressedAction;
     String? tooltip;
-
     if (!provider.isSelectionMode) {
       if (isQuiz) {
         onPressedAction = () => _startQuiz(context);
@@ -434,49 +419,58 @@ class DiscussionListItem extends StatelessWidget {
     }
 
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseLeadingIconSize = 24.0;
-    const double baseTrailingIconSize = 24.0;
+    // --- DIUBAH AGAR UKURAN LEBIH COMPACT KHAS MOBILE ---
+    const double baseLeadingIconSize = 18.0; // Sebelumnya: 24.0
+    const double baseTrailingIconSize = 18.0; // Sebelumnya: 24.0
     const double baseTrailingSpacing = 0.0;
-    const double baseVerticalPadding = 4.0;
+    const double baseVerticalPadding = 2.0; // Sebelumnya: 4.0
+    // ----------------------------------------------------
 
     final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
     final scaledTrailingIconSize = baseTrailingIconSize * textScaleFactor;
     final scaledTrailingSpacing = baseTrailingSpacing * textScaleFactor;
     final scaledVerticalPadding = baseVerticalPadding * textScaleFactor;
-    final scaledHorizontalGap = (horizontalGap ?? 14.0) * textScaleFactor;
-
+    final scaledHorizontalGap = (horizontalGap ?? 10.0) * textScaleFactor;
     final Color? highlightColor = discussion.highlightColor != null
         ? Color(discussion.highlightColor!)
         : null;
 
     return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 4.0,
+        vertical: 2.0,
+      ), // Mengecilkan margin luar Card
       color: isSelected
           ? theme.primaryColor.withOpacity(0.1)
           : (highlightColor?.withOpacity(0.08)),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(8.0), // Sebelumnya: 12.0
         side: isFocused
-            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            ? BorderSide(
+                color: theme.primaryColor,
+                width: 2.0,
+              ) // Ketebalan border fokus dikurangi dari 2.5
             : BorderSide.none,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(8.0),
         child: Stack(
           children: [
             // Konten Utama
             Padding(
               padding: EdgeInsets.only(
-                left: (highlightColor != null && !isFinished) ? 5.0 : 0.0,
+                left: (highlightColor != null && !isFinished) ? 4.0 : 0.0,
               ),
               child: Column(
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16.0,
+                      horizontal: 10.0, // Dikurangi dari 16.0
                       vertical: scaledVerticalPadding,
                     ),
                     horizontalTitleGap: scaledHorizontalGap,
-                    visualDensity: VisualDensity.adaptivePlatformDensity,
+                    visualDensity: VisualDensity
+                        .compact, // Mengubah ke mode compact bawaan flutter
                     onTap: () {
                       if (provider.isSelectionMode) {
                         provider.toggleSelection(discussion);
@@ -519,19 +513,19 @@ class DiscussionListItem extends StatelessWidget {
                             discussion.highlightLabel!.isNotEmpty &&
                             !isFinished)
                           Container(
-                            margin: const EdgeInsets.only(left: 8),
+                            margin: const EdgeInsets.only(left: 6),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 4,
+                              vertical: 1,
                             ),
                             decoration: BoxDecoration(
                               color: highlightColor ?? theme.primaryColor,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(
                               discussion.highlightLabel!,
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontSize: 9,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -548,14 +542,16 @@ class DiscussionListItem extends StatelessWidget {
                         ),
                         if (isWebLink)
                           Padding(
-                            padding: const EdgeInsets.only(top: 2.0),
+                            padding: const EdgeInsets.only(top: 1.0),
                             child: Text(
                               discussion.url ?? 'URL tidak valid',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: theme.primaryColor,
-                                fontSize: (12.0 * textScaleFactor),
+                                fontSize:
+                                    (11.0 *
+                                    textScaleFactor), // Dikecilkan dari 12.0
                               ),
                             ),
                           ),
@@ -608,7 +604,6 @@ class DiscussionListItem extends StatelessWidget {
                             onChangeQuizLink: () => _changeQuizLink(context),
                             onConvertToQuiz: () => _convertToQuiz(context),
                             onGenerateQuizPrompt: () {
-                              // DIUBAH: Mengganti pemanggilan dialog pembuat kuis dari HTML dengan indikator snackbar
                               _showSnackBar(
                                 context,
                                 "Fitur pembuat kuis otomatis dari HTML saat ini dinonaktifkan.",
@@ -647,7 +642,7 @@ class DiscussionListItem extends StatelessWidget {
                   ),
                   if (discussion.points.isNotEmpty &&
                       (arePointsVisible[index] ?? false))
-                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    const Divider(height: 1, indent: 12, endIndent: 12),
                   if (discussion.points.isNotEmpty)
                     Visibility(
                       visible: arePointsVisible[index] ?? false,
@@ -665,7 +660,7 @@ class DiscussionListItem extends StatelessWidget {
                 left: 0,
                 top: 0,
                 bottom: 0,
-                width: 5,
+                width: 4, // Diturunkan dari 5
                 child: Container(color: highlightColor),
               ),
           ],

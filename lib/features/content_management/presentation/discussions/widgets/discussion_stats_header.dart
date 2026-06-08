@@ -11,8 +11,7 @@ class DiscussionStatsHeader extends StatefulWidget {
 }
 
 class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
-  // --- PERUBAHAN DI SINI ---
-  bool _isExpanded = false; // Diubah dari true menjadi false
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,57 +26,73 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
     }
 
     return Card(
-      margin: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      // MODIFIKASI: Mengecilkan margin luar Card agar selaras dengan list item
+      margin: const EdgeInsets.fromLTRB(4, 4, 4, 2),
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        key: const PageStorageKey('discussion-stats-header'),
-        initiallyExpanded: _isExpanded,
-        onExpansionChanged: (isExpanded) {
-          setState(() {
-            _isExpanded = isExpanded;
-          });
-        },
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Ringkasan Subject',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+      elevation: 1, // Lebih flat khas mobile
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ), // Menyelaraskan border radius ke 8
+      child: Theme(
+        // Menghilangkan deviasi padding/garis pembatas bawaan ExpansionTile agar lebih rapat
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: const PageStorageKey('discussion-stats-header'),
+          initiallyExpanded: _isExpanded,
+          // MODIFIKASI: Menyesuaikan tile padding internal agar compact
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: 10.0,
+            vertical: 0.0,
+          ),
+          onExpansionChanged: (isExpanded) {
+            setState(() {
+              _isExpanded = isExpanded;
+            });
+          },
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Ringkasan Subject',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize:
+                        14.0, // MODIFIKASI: Diperkecil dari titleLarge bawaan desktop
+                  ),
                 ),
               ),
-            ),
-            // Pindahkan ringkasan total ke sini agar selalu terlihat
-            Text.rich(
-              TextSpan(
-                style: theme.textTheme.bodyLarge,
-                children: [
-                  const TextSpan(text: 'Total: '),
-                  TextSpan(
-                    text: '$total',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+              // Ringkasan total info statistik di sebelah kanan
+              Text.rich(
+                TextSpan(
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize:
+                        12.0, // MODIFIKASI: Diperkecil agar muat sebaris layar HP
                   ),
-                  const TextSpan(text: ' ('),
-                  TextSpan(
-                    text: '$finished ✔',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
+                  children: [
+                    const TextSpan(text: 'Total: '),
+                    TextSpan(
+                      text: '$total',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  const TextSpan(text: ')'),
-                ],
+                    const TextSpan(text: ' ('),
+                    TextSpan(
+                      text: '$finished ✔',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    const TextSpan(text: ')'),
+                  ],
+                ),
               ),
-            ),
+            ],
+          ),
+          children: const [
+            // Bagian children dikosongkan sesuai dengan struktur kode Anda sebelumnya.
           ],
         ),
-        children: const [
-          // Bagian children dikosongkan karena RepetitionCodeSection sudah dihapus.
-          // Jika tidak ada konten internal lagi, kamu juga bisa mempertimbangkan
-          // untuk mengganti ExpansionTile dengan ListTile biasa di kemudian hari.
-        ],
       ),
     );
   }

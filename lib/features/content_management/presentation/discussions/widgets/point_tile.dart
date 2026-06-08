@@ -96,7 +96,6 @@ class PointTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: false);
     final bool isFinished = point.finished;
-
     final Color defaultTextColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
     final Color inactiveColor = Colors.grey;
@@ -104,33 +103,32 @@ class PointTile extends StatelessWidget {
         ? defaultTextColor
         : inactiveColor;
 
-    // === PERBAIKAN UTAMA: Hitung Ukuran Font & Ikon Berdasarkan Skala ===
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    // Tentukan ukuran font dasar (sesuaikan jika perlu)
-    const double baseTitleFontSize = 14.0;
-    const double baseSubtitleFontSize = 10.0;
-    const double baseLeadingIconSize = 16.0;
 
-    // Hitung ukuran yang diskalakan
+    // --- MODIFIKASI DIMENSI PADA PERANGKAT MOBILE ---
+    const double baseTitleFontSize = 12.0; // Diturunkan dari 14.0
+    const double baseSubtitleFontSize = 9.0; // Diturunkan dari 10.0
+    const double baseLeadingIconSize = 14.0; // Diturunkan dari 16.0
+    // ------------------------------------------------
+
     final scaledTitleFontSize = baseTitleFontSize * textScaleFactor;
     final scaledSubtitleFontSize = baseSubtitleFontSize * textScaleFactor;
     final scaledLeadingIconSize = baseLeadingIconSize * textScaleFactor;
 
-    // Buat TextStyle baru dengan ukuran yang sudah diskalakan
     final pointTitleStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: effectiveTextColor,
       decoration: isFinished ? TextDecoration.lineThrough : null,
-      fontSize: scaledTitleFontSize, // Terapkan ukuran judul
+      fontSize: scaledTitleFontSize,
     );
 
     final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
       color: effectiveTextColor,
-      fontSize: scaledSubtitleFontSize, // Terapkan ukuran subtitle
+      fontSize: scaledSubtitleFontSize,
     );
-    // === AKHIR PERBAIKAN UTAMA ===
 
     return ListTile(
       dense: true,
+      visualDensity: VisualDensity.compact, // Kerapatan tinggi bawaan material
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: point.pointText));
         _showSnackBar(context, 'Teks poin disalin ke clipboard.');
@@ -138,25 +136,22 @@ class PointTile extends StatelessWidget {
       leading: Icon(
         isFinished ? Icons.check_circle_outline : Icons.arrow_right,
         color: isFinished ? Colors.green : Colors.grey,
-        size: scaledLeadingIconSize, // Terapkan ukuran ikon leading
+        size: scaledLeadingIconSize,
       ),
-      // PERUBAHAN DI SINI: LinkifyText diganti menjadi Text biasa
       title: Text(point.pointText, style: pointTitleStyle),
       subtitle: isFinished
           ? Text(
               'Selesai pada: ${point.finish_date ?? ''}',
-              style: subtitleStyle, // Terapkan style subtitle
+              style: subtitleStyle,
             )
           : RichText(
               text: TextSpan(
-                style: subtitleStyle, // Terapkan style subtitle
+                style: subtitleStyle,
                 children: [
                   const TextSpan(text: 'Date: '),
                   TextSpan(
                     text: point.date,
                     style: TextStyle(
-                      // Harus TextStyle eksplisit
-                      // fontSize TIDAK perlu diatur di sini
                       color: isActive ? Colors.amber : inactiveColor,
                       fontWeight: FontWeight.bold,
                     ),
@@ -165,8 +160,6 @@ class PointTile extends StatelessWidget {
                   TextSpan(
                     text: point.repetitionCode,
                     style: TextStyle(
-                      // Harus TextStyle eksplisit
-                      // fontSize TIDAK perlu diatur di sini
                       color: isActive
                           ? getColorForRepetitionCode(point.repetitionCode)
                           : inactiveColor,
@@ -179,7 +172,6 @@ class PointTile extends StatelessWidget {
                         final scaffoldMessenger = ScaffoldMessenger.of(
                           currentContext,
                         );
-
                         if (isFinished) return;
                         final currentCode = point.repetitionCode;
                         final currentIndex = getRepetitionCodeIndex(
@@ -189,19 +181,15 @@ class PointTile extends StatelessWidget {
                             provider.repetitionCodes.length - 1) {
                           final nextCode =
                               provider.repetitionCodes[currentIndex + 1];
-
                           final confirmed =
                               await showRepetitionCodeUpdateConfirmationDialog(
                                 context: currentContext,
                                 currentCode: currentCode,
                                 nextCode: nextCode,
                               );
-
                           if (!currentContext.mounted) return;
-
                           if (confirmed) {
                             provider.incrementRepetitionCode(point);
-
                             final reward = getNeuronRewardForCode(nextCode);
                             if (reward > 0) {
                               await Provider.of<NeuronProvider>(
@@ -210,7 +198,6 @@ class PointTile extends StatelessWidget {
                               ).addNeurons(reward);
                               showNeuronRewardSnackBar(currentContext, reward);
                             }
-
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
                                 content: Text(

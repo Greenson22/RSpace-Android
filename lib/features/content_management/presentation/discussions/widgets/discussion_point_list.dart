@@ -18,11 +18,8 @@ class DiscussionPointList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context);
-
     if (isReorderMode) {
-      // Gunakan ReorderableListView saat mode urut aktif
       return ReorderableListView.builder(
-        // === PERBAIKAN: Matikan handle default agar tidak muncul ganda ===
         buildDefaultDragHandles: false,
         primary: false,
         shrinkWrap: true,
@@ -32,18 +29,23 @@ class DiscussionPointList extends StatelessWidget {
           final point = discussion.points[index];
           return Card(
             key: ValueKey(point.hashCode),
-            margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 16.0),
+            margin: const EdgeInsets.symmetric(
+              vertical: 2.0,
+              horizontal: 8.0,
+            ), // Mengecilkan horizontal margin dari 16 ke 8
             child: ListTile(
               dense: true,
               title: Text(
                 point.pointText,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12.0,
+                ), // Disesuaikan ukuran mobile
               ),
-              // Karena buildDefaultDragHandles: false, ikon ini akan menjadi satu-satunya
               trailing: ReorderableDragStartListener(
                 index: index,
-                child: const Icon(Icons.drag_handle),
+                child: const Icon(Icons.drag_handle, size: 20),
               ),
             ),
           );
@@ -54,11 +56,14 @@ class DiscussionPointList extends StatelessWidget {
       );
     }
 
-    // Tampilan normal seperti sebelumnya
     final sortedPoints = provider.getSortedPoints(discussion);
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(30.0, 8.0, 16.0, 8.0),
+      padding: const EdgeInsets.fromLTRB(
+        20.0,
+        4.0,
+        8.0,
+        4.0,
+      ), // MODIFIKASI: Mengecilkan indentasi kiri (dari 30 ke 20) & vertical padding (dari 8 ke 4)
       child: Column(
         children: List.generate(sortedPoints.length, (i) {
           return Column(
@@ -70,8 +75,11 @@ class DiscussionPointList extends StatelessWidget {
               ),
               if (i < sortedPoints.length - 1)
                 Divider(
+                  height: 1, // Memberikan batasan yang lebih tipis
                   color: Theme.of(context).brightness == Brightness.light
-                      ? Theme.of(context).primaryColor.withOpacity(0.3)
+                      ? Theme.of(context).primaryColor.withOpacity(
+                          0.2,
+                        ) // Opacity sedikit diturunkan
                       : null,
                 ),
             ],
