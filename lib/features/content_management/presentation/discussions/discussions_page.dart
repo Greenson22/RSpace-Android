@@ -271,7 +271,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     final provider = Provider.of<DiscussionProvider>(context);
     const bool isTransparent = false;
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseAppBarIconSize = 20.0;
+    const double baseAppBarIconSize = 18.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
 
     // Menghitung warna dinamis berdasarkan nama subjek halaman saat ini
