@@ -3,6 +3,7 @@ import 'dart:io'; // Ditambahkan untuk pengecekan Platform (OS)
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Dibutuhkan untuk kDebugMode
 import 'package:file_picker/file_picker.dart'; // Diaktifkan untuk pemilih folder
+import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini untuk menyimpan preferensi web
 import '../../../../core/services/storage_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -18,11 +19,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String _currentPath = "Memuat...";
   bool _isLoading = true;
+  bool _useInternalWeb =
+      true; // State baru untuk preferensi web (default: true)
 
   @override
   void initState() {
     super.initState();
-    _loadCustomPath();
+    _loadSettings(); // Mengubah nama fungsi agar mencakup semua pemuatan data
   }
 
   @override
@@ -31,23 +34,30 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  Future<void> _loadCustomPath() async {
+  // Fungsi gabungan untuk memuat custom path dan preferensi web
+  Future<void> _loadSettings() async {
     setState(() => _isLoading = true);
+
+    // 1. Muat data custom path
     final customPath = await _storageService.loadCustomStoragePath();
+
+    // 2. Muat data preferensi web (jika belum ada, default-nya true)
+    final prefs = await SharedPreferences.getInstance();
+    final useInternal = prefs.getBool('use_internal_web') ?? true;
 
     setState(() {
       _currentPath = (customPath != null && customPath.isNotEmpty)
           ? customPath
-          // Teks fallback default:
           : "Default (Penyimpanan Aplikasi: Android/data/com...)";
       _pathController.text = customPath ?? '';
+      _useInternalWeb = useInternal;
       _isLoading = false;
     });
   }
 
   Future<void> _saveCustomPath(String path) async {
     await _storageService.saveCustomStoragePath(path);
-    await _loadCustomPath();
+    await _loadSettings(); // Segarkan pengaturan setelah menyimpan
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,11 +73,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _resetPath() async {
     await _storageService.saveCustomStoragePath('');
-    await _loadCustomPath();
+    await _loadSettings();
   }
 
   Future<void> _pickDirectory() async {
-    // Menggunakan package 'file_picker' untuk memilih folder secara langsung lewat dialog OS
     String? selectedDirectory = await FilePicker.getDirectoryPath(
       dialogTitle: 'Pilih Folder Penyimpanan Utama',
     );
@@ -92,7 +101,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 12),
 
-                // Peringatan otomatis muncul apabila aplikasi di-run via mode Debug
                 if (kDebugMode) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -130,8 +138,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ),
-                  // Pengecekan OS: Jika Android, trailing diisi null (tidak ada tombol).
-                  // Jika Desktop, tampilkan tombol reset dan pilih folder.
                   trailing: Platform.isAndroid
                       ? null
                       : Row(
@@ -157,13 +163,46 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const Divider(height: 32),
 
-                // Tempatkan pengaturan lain di bawah sini
-                const Center(
-                  child: Text(
-                    '(Tambahkan opsi pengaturan lain di sini)',
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                // ========================================================
+                // BAGIAN BARU: Pengaturan Tautan & Web
+                // ========================================================
+                const Text(
+                  'Preferensi Tautan',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 12),
+
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Buka Web di Dalam Aplikasi'),
+                  subtitle: const Text(
+                    'Aktifkan untuk membuka tautan discussion via web internal (WebView). Matikan jika ingin menggunakan browser eksternal HP Anda.',
+                  ),
+                  value: _useInternalWeb,
+                  activeColor: Colors.blue,
+                  onChanged: (bool value) async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('use_internal_web', value);
+
+                    setState(() {
+                      _useInternalWeb = value;
+                    });
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            value
+                                ? 'Tautan sekarang akan dibuka via Web Internal.'
+                                : 'Tautan sekarang akan dibuka via Browser Eksternal.',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const Divider(height: 32),
               ],
             ),
     );

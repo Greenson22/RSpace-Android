@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // DITAMBAHKAN
 
 import '../../../domain/models/discussion_model.dart';
 import '../../../application/discussion_provider.dart';
@@ -17,6 +18,8 @@ import '../../subjects/subjects_page.dart';
 import '../dialogs/move_discussion_dialog.dart';
 import '../dialogs/html_file_picker_dialog.dart';
 import '../dialogs/edit_dialogs.dart';
+// ==> DITAMBAHKAN: Import WebViewPage dari fitur webview Anda
+import '../../../../webview_page/presentation/pages/webview_page.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -161,18 +164,39 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
+  // ==> LOGIKA STRUKTUR PENGECEKAN PREFERENSI WEB DIUBAH DI SINI <==
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
       return;
     }
 
-    final uri = Uri.parse(discussion.url!);
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final prefs = await SharedPreferences.getInstance();
+      final bool useInternalWeb = prefs.getBool('use_internal_web') ?? true;
+
+      if (useInternalWeb) {
+        // Jika diset internal, buka halaman WebViewPage internal bawaan aplikasi[cite: 1]
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WebViewPage(
+                initialUrl: discussion.url,
+                title: discussion.discussion,
+                discussion: discussion,
+              ),
+            ),
+          );
+        }
       } else {
-        throw Exception('Tidak dapat membuka URL');
+        // Jika diset eksternal, lempar intent keluar menggunakan paket url_launcher[cite: 3]
+        final uri = Uri.parse(discussion.url!);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          throw Exception('Tidak dapat membuka URL eksternal.');
+        }
       }
     } catch (e) {
       _showSnackBar(
@@ -598,8 +622,6 @@ class DiscussionListItem extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!provider.isSelectionMode)
-                          // ==> DITAMBAHKAN: Membungkus Menu Aksi dengan Theme lokal berbasis mainThemeColor
-                          // Ini memaksa PopupMenu / showMenu di dalam widget menggunakan warna icon/teks bertema dinamis.
                           Theme(
                             data: theme.copyWith(
                               iconTheme: theme.iconTheme.copyWith(
