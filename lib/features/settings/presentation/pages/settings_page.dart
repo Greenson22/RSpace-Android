@@ -1,9 +1,9 @@
 // lib/features/settings/presentation/pages/settings_page.dart
+import 'dart:io'; // Ditambahkan untuk pengecekan Platform (OS)
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Dibutuhkan untuk kDebugMode
-// Sesuaikan path import ini jika letak storage_service.dart berbeda dari halaman ini
+import 'package:file_picker/file_picker.dart'; // Diaktifkan untuk pemilih folder
 import '../../../../core/services/storage_service.dart';
-// import 'package:file_picker/file_picker.dart'; // Hapus komentar ini jika menggunakan package file_picker
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -38,7 +38,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _currentPath = (customPath != null && customPath.isNotEmpty)
           ? customPath
-          // Ubah teks fallback default di sini:
+          // Teks fallback default:
           : "Default (Penyimpanan Aplikasi: Android/data/com...)";
       _pathController.text = customPath ?? '';
       _isLoading = false;
@@ -67,43 +67,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _pickDirectory() async {
-    // OPSI 1: Jika Anda menggunakan package 'file_picker', gunakan kode di bawah ini:
-    /*
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+    // Menggunakan package 'file_picker' untuk memilih folder secara langsung lewat dialog OS
+    String? selectedDirectory = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Pilih Folder Penyimpanan Utama',
+    );
+
     if (selectedDirectory != null) {
       _saveCustomPath(selectedDirectory);
     }
-    */
-
-    // OPSI 2: Alternatif menggunakan dialog input teks manual
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Atur Folder Utama'),
-          content: TextField(
-            controller: _pathController,
-            decoration: const InputDecoration(
-              hintText: 'Misal: /storage/emulated/0/MyRSpace',
-              helperText: 'Masukkan path absolut menuju folder.',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _saveCustomPath(_pathController.text.trim());
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -159,23 +130,30 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_currentPath !=
-                          "Default (Penyimpanan Aplikasi: Android/data/com...)")
-                        IconButton(
-                          icon: const Icon(Icons.restore),
-                          tooltip: 'Kembalikan ke Default',
-                          onPressed: _resetPath,
+                  // Pengecekan OS: Jika Android, trailing diisi null (tidak ada tombol).
+                  // Jika Desktop, tampilkan tombol reset dan pilih folder.
+                  trailing: Platform.isAndroid
+                      ? null
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_currentPath !=
+                                "Default (Penyimpanan Aplikasi: data/com...)")
+                              IconButton(
+                                icon: const Icon(Icons.restore),
+                                tooltip: 'Kembalikan ke Default',
+                                onPressed: _resetPath,
+                              ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.folder_open,
+                                color: Colors.blue,
+                              ),
+                              tooltip: 'Pilih Folder',
+                              onPressed: _pickDirectory,
+                            ),
+                          ],
                         ),
-                      IconButton(
-                        icon: const Icon(Icons.folder_open, color: Colors.blue),
-                        tooltip: 'Pilih Folder',
-                        onPressed: _pickDirectory,
-                      ),
-                    ],
-                  ),
                 ),
                 const Divider(height: 32),
 
