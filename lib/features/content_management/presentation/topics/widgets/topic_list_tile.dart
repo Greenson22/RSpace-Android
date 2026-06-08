@@ -27,7 +27,6 @@ class TopicListTile extends StatelessWidget {
   // Metode pembantu untuk menghasilkan warna dinamis yang konsisten berdasarkan judul (hash)
   Color _getThemeColorFromTitle(String title) {
     if (title.isEmpty) return Colors.deepPurple;
-
     // Kumpulan palet warna menarik yang cocok untuk latar belakang/aksen tema
     final List<Color> themePalettes = [
       Colors.deepPurple,
@@ -40,7 +39,6 @@ class TopicListTile extends StatelessWidget {
       Colors.cyan.shade800,
       Colors.orange.shade800,
     ];
-
     final int hash = title.hashCode;
     final int index = hash.abs() % themePalettes.length;
     return themePalettes[index];
@@ -50,7 +48,6 @@ class TopicListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isHidden = topic.isHidden;
-
     // Mendapatkan warna utama berbasis judul satu kali untuk seluruh widget ini
     final Color mainThemeColor = _getThemeColorFromTitle(topic.name);
     final Color cardColor = isHidden
@@ -223,15 +220,17 @@ class TopicListTile extends StatelessWidget {
         horizontal: horizontalMargin,
         vertical: verticalMargin,
       ),
+      // === MODIFIKASI BORDER DI SINI ===
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: isFocused
-            ? BorderSide(
-                color:
-                    mainThemeColor, // Border fokus mengikuti warna judul dinamis
-                width: 2.0,
-              )
-            : BorderSide.none,
+        side: BorderSide(
+          color: isFocused
+              ? mainThemeColor // Border solid mengikuti warna judul dinamis saat aktif
+              : mainThemeColor.withOpacity(
+                  0.35,
+                ), // Border halus tipis saat tidak aktif
+          width: isFocused ? 2.0 : 1.0,
+        ),
       ),
       child: tileContent,
     );

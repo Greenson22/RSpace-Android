@@ -504,11 +504,17 @@ class DiscussionListItem extends StatelessWidget {
       elevation: isFinished ? 1 : 2,
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       color: highlightColor?.withOpacity(0.08) ?? cardColor,
+      // === MODIFIKASI BORDER DI SINI ===
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
-        side: isFocused
-            ? BorderSide(color: mainThemeColor, width: 2.0)
-            : BorderSide.none,
+        side: BorderSide(
+          color: isFocused
+              ? mainThemeColor
+              : mainThemeColor.withOpacity(
+                  0.35,
+                ), // Border halus mengikuti tema subjek
+          width: isFocused ? 2.0 : 1.0, // Menjadi lebih tebal saat aktif/fokus
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10.0),
