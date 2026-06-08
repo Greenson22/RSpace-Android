@@ -258,7 +258,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                 icon: Icon(_isSearching ? Icons.close : Icons.search),
                 iconSize: scaledAppBarIconSize,
                 padding: EdgeInsets
-                    .zero, // Memaksimalkan area klik di ruang sempit mobile[cite: 11]
+                    .zero, // Memaksimalkan area klik di ruang sempit mobile
                 constraints: const BoxConstraints(),
                 onPressed: () {
                   setState(() {
@@ -267,48 +267,72 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   });
                 },
               ),
-              const SizedBox(
-                width: 8,
-              ), // Menambahkan sela antar ikon tindakan[cite: 11]
-              IconButton(
-                icon: Icon(
-                  topicProvider.showHiddenTopics
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                ),
+              const SizedBox(width: 8), // Menambahkan sela antar ikon tindakan
+              // --- PENGGANTIAN MENU DROP DOWN (SHOW MENU) ---
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
                 iconSize: scaledAppBarIconSize,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                onPressed: () => topicProvider.toggleShowHidden(),
-                tooltip: topicProvider.showHiddenTopics
-                    ? 'Sembunyikan Topik Tersembunyi'
-                    : 'Tampilkan Topik Tersembunyi',
+                onSelected: (value) {
+                  if (value == 'toggle_hidden') {
+                    topicProvider.toggleShowHidden();
+                  } else if (value == 'sort_topics') {
+                    if (_isSearching) {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                      });
+                    }
+                    topicProvider.toggleReorderMode();
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'toggle_hidden',
+                    child: Row(
+                      children: [
+                        Icon(
+                          topicProvider.showHiddenTopics
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          topicProvider.showHiddenTopics
+                              ? 'Sembunyikan Tersembunyi'
+                              : 'Tampilkan Tersembunyi',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'sort_topics',
+                    child: Row(
+                      children: [
+                        Icon(Icons.sort, size: 20),
+                        SizedBox(width: 8),
+                        Text('Urutkan Topik', style: TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 8),
             ],
-            IconButton(
-              icon: Icon(
-                topicProvider.isReorderModeEnabled ? Icons.check : Icons.sort,
+            if (topicProvider.isReorderModeEnabled) ...[
+              IconButton(
+                icon: const Icon(Icons.check),
+                iconSize: scaledAppBarIconSize,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => topicProvider.toggleReorderMode(),
+                tooltip: 'Selesai Mengurutkan',
               ),
-              iconSize: scaledAppBarIconSize,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                if (!topicProvider.isReorderModeEnabled && _isSearching) {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                  });
-                }
-                topicProvider.toggleReorderMode();
-              },
-              tooltip: topicProvider.isReorderModeEnabled
-                  ? 'Selesai Mengurutkan'
-                  : 'Urutkan Topik',
-            ),
-            const SizedBox(
-              width: 12.0,
-            ), // Jarak aman ujung kanan AppBar[cite: 11]
+            ],
+            const SizedBox(width: 12.0), // Jarak aman ujung kanan AppBar
           ],
         ),
         body: Column(children: [Expanded(child: _buildListView())]),
