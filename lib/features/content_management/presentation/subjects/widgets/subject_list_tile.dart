@@ -18,7 +18,6 @@ class SubjectListTile extends StatelessWidget {
   final VoidCallback onToggleLock;
   final VoidCallback onTimeline;
   final VoidCallback onViewJson;
-  // ==> 1. TAMBAHKAN CALLBACK EXPORT
   final VoidCallback onExport;
   final bool isFocused;
 
@@ -36,7 +35,6 @@ class SubjectListTile extends StatelessWidget {
     required this.onToggleLock,
     required this.onTimeline,
     required this.onViewJson,
-    // ==> 2. TAMBAHKAN DI CONSTRUCTOR
     required this.onExport,
     this.isFocused = false,
   });
@@ -59,30 +57,36 @@ class SubjectListTile extends StatelessWidget {
               : (isFrozen
                     ? Colors.lightBlue.shade50
                     : (isLocked ? Colors.grey.shade300 : theme.cardColor)));
+
     final Color? textColor = isHidden
         ? theme.disabledColor
         : (isLocked ? Colors.grey.shade700 : null);
-    final double elevation = isHidden ? 1 : 3;
 
-    final double verticalMargin = 8;
-    final double horizontalMargin = 16;
-    final EdgeInsets padding = const EdgeInsets.all(16.0);
-    final double iconFontSize = 28;
-    final double titleFontSize = 18;
+    final double elevation = isHidden ? 1 : 2;
+
+    // --- MODIFIKASI UKURAN MOBILE FRIENDLY ---
+    final double verticalMargin = 4; // Sebelumnya: 8
+    final double horizontalMargin = 8; // Sebelumnya: 16
+    final EdgeInsets padding = const EdgeInsets.symmetric(
+      horizontal: 10,
+      vertical: 8,
+    ); // Sebelumnya: all(16.0)
+    final double iconFontSize = 20; // Sebelumnya: 28
+    final double titleFontSize = 14; // Sebelumnya: 18
 
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double basePopupIconSize = 24.0;
-    const double baseLinkIconSize = 18.0;
+    const double basePopupIconSize = 18.0; // Sebelumnya: 24.0
+    const double baseLinkIconSize = 14.0; // Sebelumnya: 18.0
     final scaledPopupIconSize = basePopupIconSize * textScaleFactor;
     final scaledLinkIconSize = baseLinkIconSize * textScaleFactor;
 
     final tileContent = Material(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(10), // Sebelumnya: 15
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         onLongPress: () => provider.toggleSubjectSelection(subject),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(10),
         splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
         highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
         child: Padding(
@@ -90,12 +94,12 @@ class SubjectListTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6), // Sebelumnya: 8
                 decoration: BoxDecoration(
                   color: isLocked
                       ? Colors.grey.shade400
                       : Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6), // Sebelumnya: 8
                 ),
                 child: Stack(
                   alignment: Alignment.center,
@@ -108,7 +112,7 @@ class SubjectListTile extends StatelessWidget {
                       )
                     else
                       Text(
-                        isLocked ? '🔒' : subject.icon,
+                        isLocked ? ' ' : subject.icon,
                         style: TextStyle(
                           fontSize: iconFontSize,
                           color: textColor,
@@ -121,13 +125,13 @@ class SubjectListTile extends StatelessWidget {
                         child: Icon(
                           Icons.ac_unit,
                           color: Colors.blue.shade700,
-                          size: 16 * textScaleFactor,
+                          size: 12 * textScaleFactor, // Sebelumnya: 16
                         ),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10), // Sebelumnya: 12
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +141,9 @@ class SubjectListTile extends StatelessWidget {
                       children: [
                         if (subject.linkedPath != null)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
+                            padding: const EdgeInsets.only(
+                              right: 6.0,
+                            ), // Sebelumnya: 8.0
                             child: Icon(
                               Icons.link,
                               color: theme.primaryColor,
@@ -158,10 +164,10 @@ class SubjectListTile extends StatelessWidget {
                       ],
                     ),
                     if (hasSubtitle) ...[
-                      const SizedBox(height: 4),
-                      _buildSubtitle(context, textColor),
+                      const SizedBox(height: 2), // Sebelumnya: 4
+                      _buildSubtitle(context, textColor, textScaleFactor),
                     ],
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4), // Sebelumnya: 6
                     _buildStatsRow(context, textColor),
                   ],
                 ),
@@ -169,6 +175,8 @@ class SubjectListTile extends StatelessWidget {
               if (!provider.isSelectionMode)
                 PopupMenuButton<String>(
                   iconSize: scaledPopupIconSize,
+                  padding: EdgeInsets.zero, // Optimalisasi ruang sentuh mobile
+                  constraints: const BoxConstraints(),
                   onSelected: (value) {
                     if (value == 'rename') onRename();
                     if (value == 'delete') onDelete();
@@ -180,7 +188,6 @@ class SubjectListTile extends StatelessWidget {
                     if (value == 'toggle_lock') onToggleLock();
                     if (value == 'timeline') onTimeline();
                     if (value == 'view_json') onViewJson();
-                    // ==> 3. HANDLER MENU EXPORT
                     if (value == 'export_zip') onExport();
                   },
                   itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -190,7 +197,6 @@ class SubjectListTile extends StatelessWidget {
                       'Lihat Linimasa',
                     ),
                     _buildMenuItem('move', Icons.move_up_outlined, 'Pindahkan'),
-                    // ==> 4. TAMBAHKAN MENU EXPORT ZIP
                     _buildMenuItem(
                       'export_zip',
                       Icons.archive_outlined,
@@ -288,9 +294,12 @@ class SubjectListTile extends StatelessWidget {
         vertical: verticalMargin,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(10), // Menyesuaikan ke 10
         side: isFocused
-            ? BorderSide(color: theme.primaryColor, width: 2.5)
+            ? BorderSide(
+                color: theme.primaryColor,
+                width: 2.0,
+              ) // Diturunkan dari 2.5
             : BorderSide.none,
       ),
       child: tileContent,
@@ -307,9 +316,9 @@ class SubjectListTile extends StatelessWidget {
       value: value,
       child: Row(
         children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Text(text, style: TextStyle(color: color)),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Text(text, style: TextStyle(color: color, fontSize: 14)),
         ],
       ),
     );
@@ -326,9 +335,16 @@ class SubjectListTile extends StatelessWidget {
       child: SubmenuButton(
         menuChildren: children,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16.0,
+            vertical: 8.0,
+          ), // Mengurangi ukuran vertikal submenu parent
           child: Row(
-            children: [Icon(icon), const SizedBox(width: 12), Text(label)],
+            children: [
+              Icon(icon, size: 20),
+              const SizedBox(width: 10),
+              Text(label, style: const TextStyle(fontSize: 14)),
+            ],
           ),
         ),
       ),
@@ -336,12 +352,13 @@ class SubjectListTile extends StatelessWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, Color? textColor) {
-    final textStyle = Theme.of(
-      context,
-    ).textTheme.bodySmall?.copyWith(color: textColor);
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: textColor,
+      fontSize:
+          11.0, // Diperkecil agar baris statistik muat satu baris layar mobile
+    );
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final displayOrder = provider.repetitionCodeDisplayOrder;
-
     final codeEntries = subject.repetitionCodeCounts.entries.toList()
       ..sort((a, b) {
         int indexA = displayOrder.indexOf(a.key);
@@ -350,8 +367,7 @@ class SubjectListTile extends StatelessWidget {
         if (indexB == -1) indexB = 999;
         return indexA.compareTo(indexB);
       });
-
-    final double scaledStatIconSize = (textStyle?.fontSize ?? 12.0);
+    final double scaledStatIconSize = (textStyle?.fontSize ?? 11.0);
 
     return Row(
       children: [
@@ -362,7 +378,7 @@ class SubjectListTile extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          '${subject.discussionCount} (${subject.finishedDiscussionCount} ✔)',
+          '${subject.discussionCount} (${subject.finishedDiscussionCount})',
           style: textStyle,
         ),
         const SizedBox(width: 8),
@@ -403,12 +419,14 @@ class SubjectListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context, Color? textColor) {
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseFontSize = 12.0;
+  Widget _buildSubtitle(
+    BuildContext context,
+    Color? textColor,
+    double textScaleFactor,
+  ) {
+    const double baseFontSize = 11.0; // Diturunkan dari 12.0
     final scaledFontSize = baseFontSize * textScaleFactor;
     final scaledIconSize = (baseFontSize * 0.95) * textScaleFactor;
-
     final subtitleStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(color: textColor, fontSize: scaledFontSize);

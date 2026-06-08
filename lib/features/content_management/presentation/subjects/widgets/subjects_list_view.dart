@@ -1,3 +1,4 @@
+// lib/features/content_management/presentation/subjects/widgets/subjects_list_view.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
@@ -7,7 +8,6 @@ import 'package:my_aplication/features/content_management/presentation/subjects/
 class SubjectsListView extends StatelessWidget {
   final bool isKeyboardActive;
   final int focusedIndex;
-
   // Callbacks
   final Function(BuildContext, Subject) onTap;
   final Function(BuildContext, Subject) onRename;
@@ -61,7 +61,8 @@ class SubjectsListView extends StatelessWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.only(top: 8, bottom: 80),
+          // MODIFIKASI: Padding atas-bawah disesuaikan agar lebih rapat
+          padding: const EdgeInsets.only(top: 4, bottom: 80),
           itemCount: subjectsToShow.length,
           itemBuilder: (context, index) {
             final subject = subjectsToShow[index];
