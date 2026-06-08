@@ -25,7 +25,7 @@ class PointEditPopupMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     // === PERBAIKAN DI SINI: Hitung ukuran ikon berdasarkan skala ===
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseIconSize = 24.0; // Ukuran ikon default
+    const double baseIconSize = 18.0; // Ukuran ikon default
     final scaledIconSize = baseIconSize * textScaleFactor;
     // === AKHIR PERBAIKAN ===
 

@@ -66,7 +66,7 @@ class DiscussionActionMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseIconSize = 24.0;
+    const double baseIconSize = 18.0;
     final scaledIconSize = baseIconSize * textScaleFactor;
 
     return PopupMenuButton<String>(
