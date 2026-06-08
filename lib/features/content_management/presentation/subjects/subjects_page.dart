@@ -26,6 +26,25 @@ class _SubjectsPageState extends State<SubjectsPage> {
   bool _isKeyboardActive = false;
   Timer? _focusTimer;
 
+  // Daftar palet warna yang konsisten dengan halaman diskusi dan card
+  final List<Color> _themePalettes = [
+    Colors.deepPurple,
+    Colors.blue,
+    Colors.teal,
+    Colors.orange,
+    Colors.pink,
+    Colors.indigo,
+    Colors.green,
+  ];
+
+  // Fungsi pembantu untuk menghasilkan warna dinamis dari teks topicName
+  Color _getThemeColorFromTitle(String title) {
+    if (title.isEmpty) return _themePalettes[0];
+    int hash = title.hashCode;
+    int index = hash.abs() % _themePalettes.length;
+    return _themePalettes[index];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -96,15 +115,21 @@ class _SubjectsPageState extends State<SubjectsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
 
+    // 1. Hitung warna dinamis berdasarkan nama topik (topicName) halaman ini
+    final Color dynamicThemeColor = _getThemeColorFromTitle(widget.topicName);
+
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
+        // 2. Oper variabel dynamicThemeColor ke dalam parameter SubjectsAppBar Anda
         appBar: SubjectsAppBar(
           topicName: widget.topicName,
           isSelectionMode: provider.isSelectionMode,
           isSearching: _isSearching,
           searchController: _searchController,
+          backgroundColor:
+              dynamicThemeColor, // <--- Ditambahkan/Disesuaikan di komponen widgetnya nanti
           onToggleSearch: () {
             setState(() {
               _isSearching = !_isSearching;
@@ -167,7 +192,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
                 onIconChange: (BuildContext p1, p2) {},
               ),
             ),
-            // PERUBAHAN DI SINI: AdBannerWidget() telah dihapus dari hirarki Column
           ],
         ),
         floatingActionButton: provider.isSelectionMode
@@ -175,6 +199,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
             : FloatingActionButton(
                 onPressed: () => SubjectActionsHandler.addSubject(context),
                 tooltip: 'Tambah Subject',
+                backgroundColor:
+                    dynamicThemeColor, // 3. Setel warna FAB agar serasi dengan AppBar
+                foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),
       ),

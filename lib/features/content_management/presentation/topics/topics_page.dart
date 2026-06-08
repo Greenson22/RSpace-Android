@@ -38,6 +38,17 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
 
+  // Daftar palet warna yang konsisten dengan halaman subjects, diskusi, dan card
+  final List<Color> _themePalettes = [
+    Colors.deepPurple,
+    Colors.blue,
+    Colors.teal,
+    Colors.orange,
+    Colors.pink,
+    Colors.indigo,
+    Colors.green,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -202,12 +213,11 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     // --- SKALA UKURAN APPBAR UNTUK MOBILE ---
-    const double baseAppBarIconSize = 20.0; // Diturunkan dari 24.0[cite: 11]
+    const double baseAppBarIconSize = 20.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
 
-    // Ambil warna teks bawaan tema aktif untuk mengatasi tulisan putih di atas background putih[cite: 11]
-    final Color defaultTextColor =
-        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
+    // Menggunakan warna pertama (index 0) palet sebagai warna default halaman utama Topics
+    final Color defaultThemeColor = _themePalettes[0];
 
     return RawKeyboardListener(
       focusNode: _focusNode,
@@ -215,33 +225,36 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
       child: Scaffold(
         backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: AppBar(
-          leadingWidth: 48.0, // Mengharmoniskan lebar tombol leading
+          backgroundColor: isTransparent
+              ? Colors.transparent
+              : defaultThemeColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leadingWidth: 48.0,
           iconTheme: IconThemeData(
             size: scaledAppBarIconSize,
-          ), // Memaksa tombol menu/back mengikuti skala kecil
+            color: Colors.white,
+          ),
           title: topicProvider.isReorderModeEnabled
               ? const Text(
                   'Urutkan Topik',
                   style: TextStyle(
                     fontSize: 18.0,
                     fontWeight: FontWeight.w600,
-                  ), // Ukuran judul diperkecil[cite: 11]
+                    color: Colors.white,
+                  ),
                 )
               : (_isSearching
                     ? TextField(
                         controller: _searchController,
                         autofocus: true,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Cari topik...',
                           border: InputBorder.none,
-                          // PERBAIKAN WARNA: Mengubah hint text menggunakan kontras warna tema[cite: 11]
-                          hintStyle: TextStyle(
-                            color: defaultTextColor.withOpacity(0.5),
-                          ),
+                          hintStyle: TextStyle(color: Colors.white70),
                         ),
-                        // PERBAIKAN WARNA: Mengubah warna ketikan mengikuti kontras tema (gelap/hitam)[cite: 11]
-                        style: TextStyle(
-                          color: defaultTextColor,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 16.0,
                         ),
                       )
@@ -250,15 +263,16 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                         style: TextStyle(
                           fontSize: 18.0,
                           fontWeight: FontWeight.w600,
-                        ), // Ukuran judul diperkecil[cite: 11]
+                          color: Colors.white,
+                        ),
                       )),
           actions: [
             if (!topicProvider.isReorderModeEnabled) ...[
               IconButton(
                 icon: Icon(_isSearching ? Icons.close : Icons.search),
                 iconSize: scaledAppBarIconSize,
-                padding: EdgeInsets
-                    .zero, // Memaksimalkan area klik di ruang sempit mobile
+                color: Colors.white,
+                padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () {
                   setState(() {
@@ -267,11 +281,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                   });
                 },
               ),
-              const SizedBox(width: 8), // Menambahkan sela antar ikon tindakan
-              // --- PENGGANTIAN MENU DROP DOWN (SHOW MENU) ---
+              const SizedBox(width: 8),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 iconSize: scaledAppBarIconSize,
+                color: Colors.white, // Isi menu popup tetap putih bersih
+                iconColor: Colors.white,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onSelected: (value) {
@@ -297,13 +312,17 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
                           size: 20,
+                          color: Colors.black87,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           topicProvider.showHiddenTopics
                               ? 'Sembunyikan Tersembunyi'
                               : 'Tampilkan Tersembunyi',
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
                         ),
                       ],
                     ),
@@ -312,9 +331,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                     value: 'sort_topics',
                     child: Row(
                       children: [
-                        Icon(Icons.sort, size: 20),
+                        Icon(Icons.sort, size: 20, color: Colors.black87),
                         SizedBox(width: 8),
-                        Text('Urutkan Topik', style: TextStyle(fontSize: 14)),
+                        Text(
+                          'Urutkan Topik',
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
                       ],
                     ),
                   ),
@@ -326,13 +348,14 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               IconButton(
                 icon: const Icon(Icons.check),
                 iconSize: scaledAppBarIconSize,
+                color: Colors.white,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => topicProvider.toggleReorderMode(),
                 tooltip: 'Selesai Mengurutkan',
               ),
             ],
-            const SizedBox(width: 12.0), // Jarak aman ujung kanan AppBar
+            const SizedBox(width: 12.0),
           ],
         ),
         body: Column(children: [Expanded(child: _buildListView())]),
@@ -341,6 +364,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             : FloatingActionButton(
                 onPressed: () => _addTopic(context),
                 tooltip: 'Tambah Topik',
+                backgroundColor:
+                    defaultThemeColor, // Warna FAB disamakan dengan AppBar
+                foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -364,9 +390,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
             provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
 
         return ReorderableListView.builder(
-          padding: const EdgeInsets.symmetric(
-            vertical: 4.0,
-          ), // Memadatkan ruang vertikal[cite: 11]
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
           itemCount: topicsToShow.length,
           buildDefaultDragHandles: false,
           proxyDecorator:

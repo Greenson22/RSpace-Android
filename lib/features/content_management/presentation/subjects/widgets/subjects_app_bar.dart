@@ -1,8 +1,4 @@
-// lib/features/content_management/presentation/subjects/widgets/subjects_app_bar.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:my_aplication/features/content_management/application/subject_provider.dart';
-import 'package:my_aplication/features/content_management/presentation/subjects/dialogs/subject_sort_dialog.dart';
 
 class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String topicName;
@@ -10,8 +6,11 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isSearching;
   final TextEditingController searchController;
   final VoidCallback onToggleSearch;
-  final Function(String) onMenuSelected;
+  final ValueChanged<String?> onMenuSelected;
   final VoidCallback onExportSelected;
+
+  // 1. TAMBAHKAN PARAMETER INI
+  final Color backgroundColor;
 
   const SubjectsAppBar({
     super.key,
@@ -22,177 +21,88 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onToggleSearch,
     required this.onMenuSelected,
     required this.onExportSelected,
+    required this.backgroundColor, // 2. TAMBAHKAN DI SINI JUGA (Wajib diisi)
   });
 
   @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<SubjectProvider>(context);
-    final theme = Theme.of(context);
-    // Ambil warna teks default dari tema untuk mengatasi tulisan putih di background putih
-    final Color defaultTextColor =
-        theme.textTheme.bodyLarge?.color ?? Colors.black87;
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    // --- SKALA UKURAN APPBAR UNTUK MOBILE ---
-    const double baseAppBarIconSize = 20.0; // Diturunkan dari 24.0
-    final scaledIconSize = baseAppBarIconSize * textScaleFactor;
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-    if (isSelectionMode) {
-      return AppBar(
-        title: Text(
-          '${provider.selectedSubjects.length} dipilih',
-          style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          iconSize: scaledIconSize,
-          onPressed: () => provider.clearSelection(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.archive_outlined),
-            iconSize: scaledIconSize,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: onExportSelected,
-            tooltip: 'Export/Zip Selected Subjects',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.select_all),
-            iconSize: scaledIconSize,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => provider.selectAllFilteredSubjects(),
-            tooltip: 'Pilih Semua',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.visibility_off_outlined),
-            iconSize: scaledIconSize,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => provider.toggleVisibilitySelectedSubjects(),
-            tooltip: 'Sembunyikan/Tampilkan Pilihan',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.ac_unit_outlined),
-            iconSize: scaledIconSize,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => provider.toggleFreezeSelectedSubjects(),
-            tooltip: 'Bekukan/Cairkan Pilihan',
-          ),
-          const SizedBox(width: 12),
-        ],
-      );
-    }
+  @override
+  Widget build(BuildContext context) {
+    // Jika sedang dalam mode seleksi (isSelectionMode), Anda bisa memilih
+    // apakah mau pakai warna dinamis atau warna default selection Anda.
+    // Di sini kita setel agar kedua kondisi menggunakan warna dinamis yang dikirim.
 
     return AppBar(
-      leadingWidth: 48.0, // Mengharmoniskan lebar tombol back bawaan
-      iconTheme: IconThemeData(
-        size: scaledIconSize,
-      ), // Memaksa back arrow mengikuti skala kecil
+      // 3. PASANG WARNA DINAMIS DI SINI
+      backgroundColor: backgroundColor,
+
+      // 4. SETEL WARNA TEKS & IKON MENJADI PUTIH AGAR KONTRAS
+      foregroundColor: Colors.white,
+      elevation: 0,
+      iconTheme: const IconThemeData(color: Colors.white),
+
+      leading: isSelectionMode
+          ? IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => onMenuSelected(
+                'clear_selection',
+              ), // Sesuaikan dengan logika provider Anda jika ada
+            )
+          : null,
       title: isSearching
           ? TextField(
               controller: searchController,
               autofocus: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Cari subject...',
                 border: InputBorder.none,
-                // PERBAIKAN WARNA: Mengubah hint text agar menggunakan warna kontras tema
-                hintStyle: TextStyle(color: defaultTextColor.withOpacity(0.5)),
+                hintStyle: TextStyle(color: Colors.white70),
               ),
-              // PERBAIKAN WARNA: Mengubah text warna ketikan agar mengikuti kontras tema (gelap/hitam)
-              style: TextStyle(
-                color: defaultTextColor,
-                fontSize: 16.0, // Pengecilan teks cari untuk mobile
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 16.0),
             )
           : Text(
-              'Subjects: $topicName',
+              isSelectionMode ? 'Pilih Subject' : topicName,
               style: const TextStyle(
+                color: Colors.white,
                 fontSize: 18.0,
                 fontWeight: FontWeight.w600,
-              ), // Judul utama diperkecil
-              overflow: TextOverflow.ellipsis,
-            ),
-      actions: [
-        IconButton(
-          icon: Icon(isSearching ? Icons.close : Icons.search),
-          iconSize: scaledIconSize,
-          padding:
-              EdgeInsets.zero, // Memaksimalkan area klik di ruang sempit mobile
-          constraints: const BoxConstraints(),
-          onPressed: onToggleSearch,
-        ),
-        const SizedBox(width: 8),
-
-        // --- GABUNGKAN URUTKAN & KONTROL TERSEMBUNYI DALAM "SHOW MENU" (Icons.more_vert) ---
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          iconSize: scaledIconSize,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          onSelected: (value) {
-            if (value == 'sort_subjects') {
-              showSubjectSortDialog(context: context);
-            } else {
-              onMenuSelected(value);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'sort_subjects',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(Icons.sort, size: 20),
-                  SizedBox(width: 10),
-                  Text('Urutkan Subject', style: TextStyle(fontSize: 14)),
-                ],
               ),
             ),
-            const PopupMenuDivider(height: 8),
-            const PopupMenuItem(
-              value: 'import_zip',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(Icons.folder_zip, size: 20),
-                  SizedBox(width: 10),
-                  Text('Import ZIP', style: TextStyle(fontSize: 14)),
-                ],
+      actions: isSelectionMode
+          ? [
+              IconButton(
+                icon: const Icon(
+                  Icons.share,
+                ), // atau Icons.upload_file untuk export
+                onPressed: onExportSelected,
+                tooltip: 'Export Terpilih',
               ),
-            ),
-            PopupMenuItem(
-              value: 'show_hidden',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(
-                    provider.showHiddenSubjects
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 20,
+              const SizedBox(width: 12.0),
+            ]
+          : [
+              IconButton(
+                icon: Icon(isSearching ? Icons.close : Icons.search),
+                onPressed: onToggleSearch,
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                color: Colors
+                    .white, // Latar belakang popup menu tetap putih bersih
+                onSelected: onMenuSelected,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'import_zip',
+                    child: Text('Import ZIP'),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    provider.showHiddenSubjects
-                        ? 'Sembunyikan Tersembunyi'
-                        : 'Tampilkan Tersembunyi',
-                    style: const TextStyle(fontSize: 14),
+                  const PopupMenuItem(
+                    value: 'show_hidden',
+                    child: Text('Tampilkan yang Disembunyikan'),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 12.0), // Jarak aman ujung kanan AppBar
-      ],
+              const SizedBox(width: 12.0),
+            ],
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

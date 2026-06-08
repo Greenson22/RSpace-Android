@@ -35,6 +35,25 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   bool _isKeyboardActive = false;
   int? _reorderingDiscussionIndex;
 
+  // Daftar warna palet untuk menyamakan tampilan tema dengan content card
+  final List<Color> _themePalettes = [
+    Colors.deepPurple,
+    Colors.blue,
+    Colors.teal,
+    Colors.orange,
+    Colors.pink,
+    Colors.indigo,
+    Colors.green,
+  ];
+
+  // Fungsi utilitas untuk menghasilkan warna dinamis yang konsisten berdasarkan judul subjek
+  Color _getThemeColorFromTitle(String title) {
+    if (title.isEmpty) return _themePalettes[0];
+    int hash = title.hashCode;
+    int index = hash.abs() % _themePalettes.length;
+    return _themePalettes[index];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -254,16 +273,27 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     const double baseAppBarIconSize = 20.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+
+    // Menghitung warna dinamis berdasarkan nama subjek halaman saat ini
+    final Color dynamicAppBarColor = _getThemeColorFromTitle(
+      widget.subjectName,
+    );
+
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: isTransparent ? Colors.transparent : null,
         appBar: provider.isSelectionMode
-            ? _buildSelectionAppBar(provider, scaledAppBarIconSize)
+            ? _buildSelectionAppBar(
+                provider,
+                scaledAppBarIconSize,
+                dynamicAppBarColor,
+              )
             : _buildDefaultAppBar(
                 provider,
                 scaledAppBarIconSize,
+                dynamicAppBarColor,
                 isTransparent: isTransparent,
               ),
         body: Column(children: [Expanded(child: _buildBody(provider))]),
@@ -273,7 +303,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             : FloatingActionButton(
                 onPressed: () => _addDiscussion(provider),
                 tooltip: 'Tambah Diskusi Baru',
-                backgroundColor: Theme.of(context).primaryColor,
+                backgroundColor:
+                    dynamicAppBarColor, // Menyesuaikan warna FAB dengan warna AppBar
                 foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),
@@ -284,11 +315,20 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   AppBar _buildSelectionAppBar(
     DiscussionProvider provider,
     double scaledIconSize,
+    Color backgroundColor,
   ) {
     return AppBar(
+      backgroundColor: backgroundColor,
+      foregroundColor: Colors.white,
+      iconTheme: IconThemeData(size: scaledIconSize, color: Colors.white),
+      elevation: 0,
       title: Text(
         '${provider.selectedDiscussions.length} dipilih',
-        style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 16.0,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
       leading: IconButton(
         icon: const Icon(Icons.close),
@@ -320,26 +360,26 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
   AppBar _buildDefaultAppBar(
     DiscussionProvider provider,
-    double scaledIconSize, {
+    double scaledIconSize,
+    Color backgroundColor, {
     required bool isTransparent,
   }) {
-    final Color defaultTextColor =
-        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
     return AppBar(
-      backgroundColor: isTransparent ? Colors.transparent : null,
-      elevation: isTransparent ? 0 : null,
+      backgroundColor: isTransparent ? Colors.transparent : backgroundColor,
+      foregroundColor: Colors.white,
+      elevation: isTransparent ? 0 : 0,
       leadingWidth: 48.0,
-      iconTheme: IconThemeData(size: scaledIconSize),
+      iconTheme: IconThemeData(size: scaledIconSize, color: Colors.white),
       title: _isSearching
           ? TextField(
               controller: _searchController,
               autofocus: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Cari diskusi...',
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: defaultTextColor.withOpacity(0.5)),
+                hintStyle: TextStyle(color: Colors.white70),
               ),
-              style: TextStyle(color: defaultTextColor, fontSize: 16.0),
+              style: const TextStyle(color: Colors.white, fontSize: 16.0),
             )
           : Text(
               widget.subjectName,
@@ -347,6 +387,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               style: const TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
             ),
       actions: [
@@ -361,10 +402,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           }),
         ),
         const SizedBox(width: 8),
-        // ==> PERBAIKAN UTAMA: MENYATUKAN FILTER KONTROL KE DALAM MENU TITIK TIGA <==
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           iconSize: scaledIconSize,
+          color: Colors.white, // Latar belakang menu popup
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           onSelected: (value) {
@@ -396,13 +437,17 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 20,
+                      color: Colors.black87,
                     ),
                     const SizedBox(width: 10),
                     Text(
                       provider.showFinishedDiscussions
                           ? 'Sembunyikan Selesai'
                           : 'Tampilkan Selesai',
-                      style: const TextStyle(fontSize: 14),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -412,9 +457,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               height: 40,
               child: Row(
                 children: [
-                  Icon(Icons.filter_list, size: 20),
+                  Icon(Icons.filter_list, size: 20, color: Colors.black87),
                   SizedBox(width: 10),
-                  Text('Filter Diskusi', style: TextStyle(fontSize: 14)),
+                  Text(
+                    'Filter Diskusi',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
                 ],
               ),
             ),
@@ -423,11 +471,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               height: 40,
               child: Row(
                 children: [
-                  Icon(Icons.sort, size: 20),
+                  Icon(Icons.sort, size: 20, color: Colors.black87),
                   SizedBox(width: 10),
                   Text(
                     'Urutkan Diskusi & Poin',
-                    style: TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                 ],
               ),
