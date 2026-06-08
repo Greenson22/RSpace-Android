@@ -8,8 +8,10 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:markdown/markdown.dart' as md; // Import library markdown
+import 'package:shared_preferences/shared_preferences.dart'; // DITAMBAHKAN
 
 import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
+import '../../../../features/webview_page/presentation/pages/webview_page.dart'; // DITAMBAHKAN
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
@@ -340,6 +342,10 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
 
+    // Load preferensi web internal/eksternal terlebih dahulu
+    final prefs = await SharedPreferences.getInstance();
+    final useInternalWeb = prefs.getBool('use_internal_web') ?? true;
+
     // ==========================================
     // HANDLING MARKDOWN
     // ==========================================
@@ -415,7 +421,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 </html>
 ''';
 
-      // Mode Default/External: Simpan sementara sebagai .html agar dibuka browser bawaan OS
       final tempDir = await getTemporaryDirectory();
       final safeName = discussion.discussion.replaceAll(
         RegExp(r'[^\w\s-]'),
@@ -426,9 +431,22 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       );
       await tempFile.writeAsString(styledHtmlWrapper);
 
-      final result = await OpenFile.open(tempFile.path);
-      if (result.type != ResultType.done) {
-        throw Exception(result.message);
+      if (useInternalWeb && context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebViewPage(
+              initialUrl: Uri.file(tempFile.path).toString(),
+              title: discussion.discussion,
+              discussion: discussion,
+            ),
+          ),
+        );
+      } else {
+        final result = await OpenFile.open(tempFile.path);
+        if (result.type != ResultType.done) {
+          throw Exception(result.message);
+        }
       }
       return;
     }
@@ -495,8 +513,22 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       path.join(tempDir.path, '${DateTime.now().millisecondsSinceEpoch}.html'),
     );
     await tempFile.writeAsString(finalHtmlContent);
-    final result = await OpenFile.open(tempFile.path);
-    if (result.type != ResultType.done) throw Exception(result.message);
+
+    if (useInternalWeb && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WebViewPage(
+            initialUrl: Uri.file(tempFile.path).toString(),
+            title: discussion.discussion,
+            discussion: discussion,
+          ),
+        ),
+      );
+    } else {
+      final result = await OpenFile.open(tempFile.path);
+      if (result.type != ResultType.done) throw Exception(result.message);
+    }
   }
 
   Future<void> editDiscussionFileWithSelection(
