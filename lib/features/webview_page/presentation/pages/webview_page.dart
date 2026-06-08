@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart'; // Tetap dipertahankan
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
 import '../widgets/navigation_controls.dart';
 import '../pages/dialogs/discussion_details_dialog.dart';
@@ -51,26 +51,55 @@ class _WebViewPageState extends State<WebViewPage> {
       ..setBackgroundColor(const Color(0x00000000))
       ..setNavigationDelegate(
         NavigationDelegate(
-          onProgress: (int progress) {},
-          onPageStarted: (String url) {},
-          onPageFinished: (String url) {},
-          onWebResourceError: (WebResourceError error) {},
+          onProgress: (int progress) {
+            debugPrint('WebView is loading (progress : $progress%)');
+          },
+          onPageStarted: (String url) {
+            debugPrint('Page started loading: $url');
+          },
+          onPageFinished: (String url) {
+            debugPrint('Page finished loading: $url');
+          },
+          onWebResourceError: (WebResourceError error) {
+            debugPrint('''
+Page resource error:
+  code: ${error.errorCode}
+  description: ${error.description}
+  errorType: ${error.errorType}
+  isForMainFrame: ${error.isForMainFrame}
+''');
+          },
           onNavigationRequest: (NavigationRequest request) {
+            if (request.url.startsWith('https://www.youtube.com/')) {
+              debugPrint('blocking navigation to ${request.url}');
+              return NavigationDecision.prevent;
+            }
+            debugPrint('allowing navigation to ${request.url}');
             return NavigationDecision.navigate;
           },
         ),
       );
 
-    if (widget.htmlContent != null) {
-      controller.loadHtmlString(widget.htmlContent!);
-    } else if (widget.initialUrl != null) {
-      controller.loadRequest(Uri.parse(widget.initialUrl!));
+    // ========================================================
+    // PERUBAHAN UTAMA: Izinkan Akses File Lokal & Atur Pemuatan
+    // ========================================================
+    if (controller.platform is AndroidWebViewController) {
+      (controller.platform as AndroidWebViewController).setAllowFileAccess(
+        true,
+      );
     }
 
-    if (controller.platform is AndroidWebViewController) {
-      AndroidWebViewController.enableDebugging(true);
-      (controller.platform as AndroidWebViewController)
-          .setMediaPlaybackRequiresUserGesture(false);
+    if (widget.initialUrl != null) {
+      if (widget.initialUrl!.startsWith('file://')) {
+        // Mengonversi format file:// menjadi path berkas sistem biasa untuk loadFile
+        final localPath = Uri.parse(widget.initialUrl!).toFilePath();
+        controller.loadFile(localPath);
+      } else {
+        // Memuat tautan internet standar
+        controller.loadRequest(Uri.parse(widget.initialUrl!));
+      }
+    } else if (widget.htmlContent != null) {
+      controller.loadHtmlString(widget.htmlContent!);
     }
 
     _controller = controller;
