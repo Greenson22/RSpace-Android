@@ -213,7 +213,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     // --- SKALA UKURAN APPBAR UNTUK MOBILE ---
-    const double baseAppBarIconSize = 20.0;
+    const double baseAppBarIconSize = 18.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
 
     // Menggunakan warna pertama (index 0) palet sebagai warna default halaman utama Topics
