@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/core/services/path_service.dart';
-import '../subjects_page.dart'; // Digunakan untuk mendeteksi Topic dari halaman aktif
+import '../subjects_page.dart';
 
 // Dialog untuk menautkan atau membuat folder baru di PerpusKu
 Future<String?> showLinkOrCreatePerpuskuDialog({
@@ -32,23 +32,18 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
     return null;
   }
 
-  // ==> PERBAIKAN: DETEKSI TOPIK GANDA YANG LEBIH KUAT <==
   String? currentTopicName;
-
-  // 1. Cek apakah context saat ini secara langsung adalah SubjectsPage
   if (context.widget is SubjectsPage) {
     currentTopicName = (context.widget as SubjectsPage).topicName;
   }
-  // 2. Jika tidak, cek apakah context berada di bawah SubjectsPage (sebagai ancestor)
+
   if (currentTopicName == null || currentTopicName.isEmpty) {
     final subjectsPage = context.findAncestorWidgetOfExactType<SubjectsPage>();
     currentTopicName = subjectsPage?.topicName;
   }
 
-  // ==> JIKA TOPIK DITEMUKAN: BUAT FOLDER 100% OTOMATIS TANPA DIALOG <==
   if (currentTopicName != null && currentTopicName.isNotEmpty) {
     try {
-      // Sanitasi nama folder agar valid di Windows/Linux/Mac (hilangkan karakter ilegal)
       final safeFolderName = forSubjectName.trim().replaceAll(
         RegExp(r'[\\/:*?"<>|]'),
         '_',
@@ -59,19 +54,12 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
         safeFolderName,
       );
       final newDir = Directory(newSubjectPath);
-
-      // Buat folder jika belum ada (mencegah error jika subject bernama sama)
       if (!await newDir.exists()) {
         await newDir.create(recursive: true);
-
-        // Membuat metadata.json
         final metadataFile = File(path.join(newDir.path, 'metadata.json'));
         await metadataFile.writeAsString(jsonEncode({"content": []}));
-
-        // Membuat index.html
         final indexFile = File(path.join(newDir.path, 'index.html'));
-        const htmlTemplate = '''
-<!DOCTYPE html>
+        const htmlTemplate = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -84,8 +72,6 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
 </html>''';
         await indexFile.writeAsString(htmlTemplate);
       }
-
-      // Langsung kembalikan path-nya secara otomatis tanpa memunculkan UI tambahan
       return path.join(currentTopicName, safeFolderName);
     } catch (e) {
       if (context.mounted) {
@@ -99,11 +85,6 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
       return null;
     }
   }
-
-  // ====================================================================
-  // FALLBACK MANUAL: Logika di bawah ini HANYA akan dipanggil jika fungsi
-  // dipanggil dari luar struktur `SubjectsPage` (Topik tidak diketahui).
-  // ====================================================================
 
   Future<String?> pickExistingSubject() async {
     return await showDialog<String>(
@@ -155,11 +136,9 @@ Future<String?> showLinkOrCreatePerpuskuDialog({
   );
 }
 
-// Widget internal untuk membuat folder baru (Fallback Manual)
 class _CreatePerpuskuSubjectDialog extends StatefulWidget {
   final String basePath;
   final String suggestedName;
-
   const _CreatePerpuskuSubjectDialog({
     required this.basePath,
     required this.suggestedName,
@@ -206,7 +185,6 @@ class _CreatePerpuskuSubjectDialogState
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
     if (_selectedTopic.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -216,7 +194,6 @@ class _CreatePerpuskuSubjectDialogState
       );
       return;
     }
-
     try {
       final newFolderName = _folderNameController.text.trim();
       final newSubjectPath = path.join(
@@ -225,20 +202,16 @@ class _CreatePerpuskuSubjectDialogState
         newFolderName,
       );
       final newDir = Directory(newSubjectPath);
-
       if (await newDir.exists()) {
         throw Exception(
           'Folder dengan nama "$newFolderName" sudah ada di dalam topik "$_selectedTopic".',
         );
       }
       await newDir.create(recursive: true);
-
       final metadataFile = File(path.join(newDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode({"content": []}));
-
       final indexFile = File(path.join(newDir.path, 'index.html'));
-      const htmlTemplate = '''
-<!DOCTYPE html>
+      const htmlTemplate = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -250,7 +223,6 @@ class _CreatePerpuskuSubjectDialogState
 </body>
 </html>''';
       await indexFile.writeAsString(htmlTemplate);
-
       final relativePath = path.join(_selectedTopic, newFolderName);
       if (mounted) Navigator.pop(context, relativePath);
     } catch (e) {
@@ -329,7 +301,6 @@ class _CreatePerpuskuSubjectDialogState
   }
 }
 
-// Widget internal untuk memilih path yang sudah ada (Fallback Manual)
 class _PerpuskuPathPicker extends StatefulWidget {
   final String basePath;
   const _PerpuskuPathPicker({required this.basePath});
@@ -434,24 +405,46 @@ class _PerpuskuPathPickerState extends State<_PerpuskuPathPicker> {
   }
 }
 
-// Dialog untuk input teks
+// DIUBAH: Mendukung dual input Nama Subject dan Ikon Emoji sekaligus
 Future<void> showSubjectTextInputDialog({
   required BuildContext context,
   required String title,
   required String label,
+  String initialIcon = '📚',
   String initialValue = '',
-  required Function(String) onSave,
+  required Function(String name, String icon) onSave,
 }) async {
-  final controller = TextEditingController(text: initialValue);
+  final nameController = TextEditingController(text: initialValue);
+  final iconController = TextEditingController(text: initialIcon);
   return showDialog<void>(
     context: context,
     builder: (context) {
       return AlertDialog(
         title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: label),
+        content: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: TextField(
+                controller: iconController,
+                decoration: const InputDecoration(
+                  labelText: 'Ikon',
+                  hintText: 'Emoji',
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 5,
+              child: TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: InputDecoration(labelText: label),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -460,8 +453,9 @@ Future<void> showSubjectTextInputDialog({
           ),
           TextButton(
             onPressed: () {
-              if (controller.text.isNotEmpty) {
-                onSave(controller.text);
+              if (nameController.text.isNotEmpty &&
+                  iconController.text.isNotEmpty) {
+                onSave(nameController.text, iconController.text);
                 Navigator.pop(context);
               }
             },
@@ -481,7 +475,6 @@ Future<Map<String, bool>?> showDeleteConfirmationDialog({
 }) async {
   bool deleteFolder = false;
   final bool isLinked = linkedPath != null && linkedPath.isNotEmpty;
-
   return await showDialog<Map<String, bool>?>(
     context: context,
     builder: (context) {

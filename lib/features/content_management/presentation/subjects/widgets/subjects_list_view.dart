@@ -10,9 +10,9 @@ class SubjectsListView extends StatelessWidget {
   final int focusedIndex;
   // Callbacks
   final Function(BuildContext, Subject) onTap;
-  final Function(BuildContext, Subject) onRename;
+  final Function(BuildContext, Subject)
+  onEdit; // DIUBAH: Menggabungkan onRename dan onIconChange menjadi onEdit
   final Function(BuildContext, Subject) onDelete;
-  final Function(BuildContext, Subject) onIconChange;
   final Function(BuildContext, Subject) onToggleVisibility;
   final Function(BuildContext, Subject) onLinkPath;
   final Function(BuildContext, Subject) onEditIndexFile;
@@ -28,9 +28,8 @@ class SubjectsListView extends StatelessWidget {
     required this.isKeyboardActive,
     required this.focusedIndex,
     required this.onTap,
-    required this.onRename,
+    required this.onEdit, // DIUBAH
     required this.onDelete,
-    required this.onIconChange,
     required this.onToggleVisibility,
     required this.onLinkPath,
     required this.onEditIndexFile,
@@ -71,7 +70,10 @@ class SubjectsListView extends StatelessWidget {
               subject: subject,
               isFocused: isKeyboardActive && index == focusedIndex,
               onTap: () => onTap(context, subject),
-              onRename: () => onRename(context, subject),
+              onEdit: () => onEdit(
+                context,
+                subject,
+              ), // DIUBAH: Mengikuti parameter baru milik SubjectListTile
               onDelete: () => onDelete(context, subject),
               onToggleVisibility: () => onToggleVisibility(context, subject),
               onLinkPath: () => onLinkPath(context, subject),

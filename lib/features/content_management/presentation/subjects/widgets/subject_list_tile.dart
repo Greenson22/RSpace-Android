@@ -8,7 +8,7 @@ import '../../discussions/utils/repetition_code_utils.dart';
 class SubjectListTile extends StatelessWidget {
   final Subject subject;
   final VoidCallback? onTap;
-  final VoidCallback onRename;
+  final VoidCallback onEdit; // Menggunakan onEdit dari onRename
   final VoidCallback onDelete;
   final VoidCallback onToggleVisibility;
   final VoidCallback onLinkPath;
@@ -25,7 +25,7 @@ class SubjectListTile extends StatelessWidget {
     super.key,
     required this.subject,
     this.onTap,
-    required this.onRename,
+    required this.onEdit,
     required this.onDelete,
     required this.onToggleVisibility,
     required this.onLinkPath,
@@ -42,7 +42,6 @@ class SubjectListTile extends StatelessWidget {
   // Metode pembantu untuk menghasilkan warna dinamis yang konsisten berdasarkan judul (hash)
   Color _getThemeColorFromTitle(String title) {
     if (title.isEmpty) return Colors.deepPurple;
-    // Kumpulan palet warna menarik yang selaras dengan komponen Topic
     final List<Color> themePalettes = [
       Colors.deepPurple,
       Colors.blue,
@@ -70,12 +69,9 @@ class SubjectListTile extends StatelessWidget {
     final bool isLocked = subject.isLocked;
     final bool isSelected = provider.selectedSubjects.contains(subject);
 
-    // Mendapatkan warna utama berbasis judul satu kali untuk seluruh konfigurasi widget
     final Color mainThemeColor = _getThemeColorFromTitle(subject.name);
     final Color cardColor = isSelected
-        ? mainThemeColor.withOpacity(
-            0.15,
-          ) // Menyesuaikan warna seleksi dengan tema judul
+        ? mainThemeColor.withOpacity(0.15)
         : (isHidden
               ? theme.disabledColor.withOpacity(0.1)
               : (isFrozen
@@ -86,7 +82,6 @@ class SubjectListTile extends StatelessWidget {
         : (isLocked ? Colors.grey.shade700 : null);
     final double elevation = isHidden ? 1 : 2;
 
-    // --- MODIFIKASI UKURAN MOBILE FRIENDLY ---
     final double verticalMargin = 4;
     final double horizontalMargin = 8;
     final EdgeInsets padding = const EdgeInsets.symmetric(
@@ -121,9 +116,7 @@ class SubjectListTile extends StatelessWidget {
                       ? Colors.grey.shade400
                       : isHidden
                       ? theme.disabledColor.withOpacity(0.1)
-                      : mainThemeColor.withOpacity(
-                          0.12,
-                        ), // Background ikon dinamis mengikuti judul
+                      : mainThemeColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Stack(
@@ -132,8 +125,7 @@ class SubjectListTile extends StatelessWidget {
                     if (isSelected)
                       Icon(
                         Icons.check_circle,
-                        color:
-                            mainThemeColor, // Warna check mengikuti tema dinamis
+                        color: mainThemeColor,
                         size: iconFontSize,
                       )
                     else
@@ -170,9 +162,7 @@ class SubjectListTile extends StatelessWidget {
                             padding: const EdgeInsets.only(right: 6.0),
                             child: Icon(
                               Icons.link,
-                              color: isHidden
-                                  ? textColor
-                                  : mainThemeColor, // Ikon rantai mengikuti tema dinamis
+                              color: isHidden ? textColor : mainThemeColor,
                               size: scaledLinkIconSize,
                             ),
                           ),
@@ -182,9 +172,7 @@ class SubjectListTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: titleFontSize,
                               fontWeight: FontWeight.w600,
-                              color: isHidden
-                                  ? textColor
-                                  : mainThemeColor, // Teks utama menggunakan warna judul dinamis
+                              color: isHidden ? textColor : mainThemeColor,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -203,13 +191,10 @@ class SubjectListTile extends StatelessWidget {
               if (!provider.isSelectionMode)
                 Theme(
                   data: theme.copyWith(
-                    // Mengubah warna teks menu opsi item menjadi warna tema
                     popupMenuTheme: theme.popupMenuTheme.copyWith(
                       textStyle: TextStyle(color: mainThemeColor, fontSize: 14),
                     ),
-                    // Mengubah warna ikon utama di dalam widget baris item
                     iconTheme: theme.iconTheme.copyWith(color: mainThemeColor),
-                    // Mengubah warna ikon expand panah kecil di SubmenuButton kustom
                     iconButtonTheme: IconButtonThemeData(
                       style: IconButton.styleFrom(
                         foregroundColor: mainThemeColor,
@@ -222,13 +207,11 @@ class SubjectListTile extends StatelessWidget {
                       Icons.more_vert,
                       color: isHidden
                           ? textColor
-                          : mainThemeColor.withOpacity(
-                              0.7,
-                            ), // Titik tiga mengikuti aksen warna judul
+                          : mainThemeColor.withOpacity(0.7),
                     ),
                     padding: const EdgeInsets.all(12.0),
                     onSelected: (value) {
-                      if (value == 'rename') onRename();
+                      if (value == 'edit_subject') onEdit();
                       if (value == 'delete') onDelete();
                       if (value == 'toggle_visibility') onToggleVisibility();
                       if (value == 'link_path') onLinkPath();
@@ -257,21 +240,10 @@ class SubjectListTile extends StatelessWidget {
                         'Export ke ZIP',
                       ),
                       const PopupMenuDivider(height: 8),
-                      _buildSubMenu(
-                        icon: Icons.edit_outlined,
-                        label: 'Edit',
-                        children: [
-                          _buildMenuItem(
-                            'rename',
-                            Icons.drive_file_rename_outline,
-                            'Ubah Nama',
-                          ),
-                          _buildMenuItem(
-                            'change_icon',
-                            Icons.emoji_emotions_outlined,
-                            'Ubah Ikon',
-                          ),
-                        ],
+                      _buildMenuItem(
+                        'edit_subject',
+                        Icons.edit_outlined,
+                        'Ubah Subject',
                       ),
                       _buildSubMenu(
                         icon: Icons.link_outlined,
@@ -332,8 +304,7 @@ class SubjectListTile extends StatelessWidget {
                         'delete',
                         Icons.delete_outline,
                         'Hapus',
-                        color: Colors
-                            .red, // Opsi hapus tetap merah sebagai warning penanda bahaya
+                        color: Colors.red,
                       ),
                     ],
                   ),
@@ -351,15 +322,10 @@ class SubjectListTile extends StatelessWidget {
         horizontal: horizontalMargin,
         vertical: verticalMargin,
       ),
-      // === MODIFIKASI BORDER DI SINI ===
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
-          color: isFocused
-              ? mainThemeColor // Border solid mengikuti tema dinamis saat aktif
-              : mainThemeColor.withOpacity(
-                  0.35,
-                ), // Border halus tipis saat tidak aktif
+          color: isFocused ? mainThemeColor : mainThemeColor.withOpacity(0.35),
           width: isFocused ? 2.0 : 1.0,
         ),
       ),
@@ -426,7 +392,6 @@ class SubjectListTile extends StatelessWidget {
         return indexA.compareTo(indexB);
       });
     final double scaledStatIconSize = (textStyle?.fontSize ?? 11.0);
-
     return Row(
       children: [
         Icon(
@@ -488,7 +453,6 @@ class SubjectListTile extends StatelessWidget {
     final subtitleStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(color: textColor, fontSize: scaledFontSize);
-
     return RichText(
       text: TextSpan(
         style: subtitleStyle,
@@ -500,6 +464,7 @@ class SubjectListTile extends StatelessWidget {
                 child: Icon(
                   Icons.calendar_today_outlined,
                   size: scaledIconSize,
+                  // FIX: Menggunakan 'subject.isHidden' menggantikan 'isHidden' yang tidak terdefinisi
                   color: subject.isHidden ? textColor : Colors.amber[800],
                 ),
               ),
@@ -509,6 +474,7 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.date,
               style: TextStyle(
+                // FIX: Menggunakan 'subject.isHidden'
                 color: subject.isHidden ? textColor : Colors.amber[800],
                 fontWeight: FontWeight.bold,
               ),
@@ -522,6 +488,7 @@ class SubjectListTile extends StatelessWidget {
                 child: Icon(
                   Icons.repeat,
                   size: scaledIconSize,
+                  // FIX: Menggunakan 'subject.isHidden'
                   color: subject.isHidden
                       ? textColor
                       : getColorForRepetitionCode(subject.repetitionCode!),
@@ -533,6 +500,7 @@ class SubjectListTile extends StatelessWidget {
             TextSpan(
               text: subject.repetitionCode,
               style: TextStyle(
+                // FIX: Menggunakan 'subject.isHidden'
                 color: subject.isHidden
                     ? textColor
                     : getColorForRepetitionCode(subject.repetitionCode!),

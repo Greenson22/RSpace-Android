@@ -74,8 +74,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
 
   void _handleKeyEvent(RawKeyEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.altLeft ||
-        event.logicalKey == LogicalKeyboardKey.altRight)
+        event.logicalKey == LogicalKeyboardKey.altRight) {
       return;
+    }
 
     if (event is RawKeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
@@ -164,7 +165,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
                     );
                   }
                 },
-                onRename: (ctx, subject) =>
+                // DIUBAH: Menyatukan onRename dan onIconChange menjadi onEdit tunggal
+                onEdit: (ctx, subject) =>
                     SubjectActionsHandler.renameSubject(ctx, subject),
                 onDelete: (ctx, subject) =>
                     SubjectActionsHandler.deleteSubject(ctx, subject),
@@ -189,7 +191,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
                     SubjectActionsHandler.showJsonContent(ctx, subject),
                 onExport: (ctx, subject) =>
                     SubjectActionsHandler.exportSingleSubjectZip(ctx, subject),
-                onIconChange: (BuildContext p1, p2) {},
               ),
             ),
           ],

@@ -1,3 +1,4 @@
+// lib/features/content_management/presentation/subjects/utils/subject_actions_handler.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -35,7 +36,6 @@ class SubjectActionsHandler {
   static Future<void> importSubjectsZip(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     final message = await provider.importBulkSubjectsZip();
-
     if (message != null && context.mounted) {
       showSnackBar(
         context,
@@ -52,11 +52,9 @@ class SubjectActionsHandler {
     String topicName,
   ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-
     final hasLinkedPath = provider.selectedSubjects.any(
       (s) => s.linkedPath != null && s.linkedPath!.isNotEmpty,
     );
-
     final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => ExportBulkSubjectsDialog(
@@ -65,7 +63,6 @@ class SubjectActionsHandler {
         hasAnyLinkedPath: hasLinkedPath,
       ),
     );
-
     if (result != null && result is Map<String, dynamic> && context.mounted) {
       try {
         final message = await provider.exportBulkSubjectsZip(
@@ -94,7 +91,6 @@ class SubjectActionsHandler {
       context: context,
       builder: (context) => ExportSubjectDialog(subject: subject),
     );
-
     if (result != null && result is Map<String, dynamic> && context.mounted) {
       final provider = Provider.of<SubjectProvider>(context, listen: false);
       try {
@@ -126,7 +122,6 @@ class SubjectActionsHandler {
 
   static Future<void> toggleLock(BuildContext context, Subject subject) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-
     if (subject.isLocked) {
       final choice = await showDialog<String>(
         context: context,
@@ -150,7 +145,6 @@ class SubjectActionsHandler {
           ],
         ),
       );
-
       if (choice == 'unlock' && context.mounted) {
         final password = await showSubjectPasswordDialog(
           context: context,
@@ -213,12 +207,10 @@ class SubjectActionsHandler {
     String currentTopicName,
   ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-
     final destinationTopic = await showMoveSubjectDialog(
       context,
       currentTopicName,
     );
-
     if (destinationTopic != null && context.mounted) {
       try {
         await provider.moveSubject(subject, destinationTopic);
@@ -244,7 +236,6 @@ class SubjectActionsHandler {
       context: context,
       forSubjectName: subject.name,
     );
-
     if (newPath != null) {
       try {
         await provider.updateSubjectLinkedPath(subject.name, newPath);
@@ -266,19 +257,16 @@ class SubjectActionsHandler {
 
   static Future<void> addSubject(BuildContext context) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-
     await showSubjectTextInputDialog(
       context: context,
-      title:
-          'Tambah Subject Baru', // Mengubah judul agar tidak ada lagi tulisan langkah
+      title: 'Tambah Subject Baru',
       label: 'Nama Subject di RSpace',
-      onSave: (name) async {
-        // Melakukan penautan folder PerpusKu secara otomatis di latar belakang
+      onSave: (name, icon) async {
+        // DIUBAH: Mengambil argument name dan icon
         final newPath = await showLinkOrCreatePerpuskuDialog(
           context: context,
           forSubjectName: name,
         );
-
         if (newPath != null) {
           try {
             await provider.addSubject(name);
@@ -299,6 +287,7 @@ class SubjectActionsHandler {
     );
   }
 
+  // DIUBAH: Menyesuaikan callback dialog kombinasi Nama & Ikon yang baru
   static Future<void> renameSubject(
     BuildContext context,
     Subject subject,
@@ -306,17 +295,15 @@ class SubjectActionsHandler {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
     await showSubjectTextInputDialog(
       context: context,
-      title: 'Ubah Nama Subject',
+      title: 'Ubah Subject',
       label: 'Nama Baru',
       initialValue: subject.name,
-      onSave: (newName) async {
+      initialIcon: subject.icon,
+      onSave: (newName, newIcon) async {
         try {
           await provider.renameSubject(subject.name, newName);
           if (context.mounted)
-            showSnackBar(
-              context,
-              'Subject berhasil diubah menjadi "$newName".',
-            );
+            showSnackBar(context, 'Subject berhasil diubah.');
         } catch (e) {
           if (context.mounted)
             showSnackBar(context, e.toString(), isError: true);
@@ -330,13 +317,11 @@ class SubjectActionsHandler {
     Subject subject,
   ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-
     final result = await showDeleteConfirmationDialog(
       context: context,
       subjectName: subject.name,
       linkedPath: subject.linkedPath,
     );
-
     if (result != null && result['confirmed'] == true) {
       try {
         await provider.deleteSubject(
@@ -387,7 +372,6 @@ class SubjectActionsHandler {
     Subject subject,
   ) async {
     final provider = Provider.of<SubjectProvider>(context, listen: false);
-
     Future<void> openInternalEditor() async {
       try {
         final content = await provider.readIndexFileContent(subject);
@@ -510,7 +494,6 @@ class SubjectActionsHandler {
       context,
       listen: false,
     );
-
     if (subject.isLocked && !subjectProvider.isUnlocked(subject.name)) {
       final password = await showSubjectPasswordDialog(
         context: context,
@@ -545,17 +528,13 @@ class SubjectActionsHandler {
       );
       return;
     }
-
     String? currentLinkedPath = subject.linkedPath;
-
     if (currentLinkedPath == null || currentLinkedPath.isEmpty) {
       final newPath = await showLinkOrCreatePerpuskuDialog(
         context: context,
         forSubjectName: subject.name,
       );
-
       if (!context.mounted) return;
-
       if (newPath != null) {
         try {
           await subjectProvider.updateSubjectLinkedPath(subject.name, newPath);
@@ -572,14 +551,11 @@ class SubjectActionsHandler {
         return;
       }
     }
-
     final jsonFilePath = path.join(
       subjectProvider.topicPath,
       '${subject.name}.json',
     );
-
     if (!context.mounted) return;
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -612,7 +588,6 @@ class SubjectActionsHandler {
       );
       return;
     }
-
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
@@ -621,7 +596,6 @@ class SubjectActionsHandler {
       subjectProvider.topicPath,
       '${subject.name}.json',
     );
-
     Navigator.push(
       context,
       MaterialPageRoute(
