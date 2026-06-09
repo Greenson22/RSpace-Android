@@ -2,6 +2,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart'; // DIALOKASIKAN UNTUK PointerScrollEvent
+import 'package:flutter/services.dart'; // DIALOKASIKAN UNTUK HardwareKeyboard
 // ==> 1. HAPUS IMPORT PRINTING, GANTI DENGAN SYNCFUSION PDF VIEWER <==
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
@@ -34,10 +36,19 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   bool _isGenerating = true;
   String? _errorMessage;
 
+  // ==> INTERVENSI CONTROLLER UNTUK KONTROL ZOOM SECARA PROGRAMATIS <==
+  final PdfViewerController _pdfViewerController = PdfViewerController();
+
   @override
   void initState() {
     super.initState();
     _generatePdfFromLinuxNative();
+  }
+
+  @override
+  void dispose() {
+    _pdfViewerController.dispose(); // Bersihkan controller saat page ditutup
+    super.dispose();
   }
 
   Future<void> _generatePdfFromLinuxNative() async {
@@ -180,7 +191,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     );
   }
 
-  // ==> 2. UBAH METODE INI UNTUK MENGGUNAKAN SFPDFVIEWER DENGAN KONFIGURASI ZOOM <==
+  // ==> 2. METODE UTAMA UNTUK MENANGKAP GERAKAN CTRL + SCROLL MOUSE <==
   Widget _buildBody() {
     if (_isGenerating) {
       return const Center(
@@ -218,18 +229,47 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       );
     }
 
-    // Menggunakan SfPdfViewer untuk merender data bytes PDF dari memori
-    return SfPdfViewer.memory(
-      _pdfBytes!,
-      enableDoubleTapZooming:
-          true, // Izinkan double tap zoom di mobile dan desktop
-      enableDocumentLinkAnnotation:
-          true, // Aktifkan navigasi link internal jika ada
-      canShowScrollHead:
-          true, // Menampilkan scroll head indikator posisi halaman
-      // Menggunakan PdfInteractionMode.pan agar gesture interaktif seperti pinch-to-zoom (Android)
-      // dan kombinasi tombol Ctrl + Scroll Mouse (Desktop Linux) dapat mendeteksi perbesaran layar dengan lancar.
-      interactionMode: PdfInteractionMode.pan,
+    // Bungkus SfPdfViewer dengan Listener untuk mendeteksi event roda gulir mouse fisik di desktop
+    return Listener(
+      onPointerSignal: (pointerSignal) {
+        if (pointerSignal is PointerScrollEvent) {
+          // Evaluasi status tombol kontrol keyboard (Ctrl) secara hardware
+          final bool isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
+
+          if (isCtrlPressed) {
+            // Mengatur tingkat sensitivitas kenaikan/penurunan perbesaran
+            const double zoomDelta = 0.25;
+            double currentZoom = _pdfViewerController.zoomLevel;
+
+            // scrollDelta.dy < 0 mendeteksi scroll ke atas (Zoom In)
+            // scrollDelta.dy > 0 mendeteksi scroll ke bawah (Zoom Out)
+            if (pointerSignal.scrollDelta.dy < 0) {
+              currentZoom += zoomDelta;
+            } else {
+              currentZoom -= zoomDelta;
+            }
+
+            // Membatasi jangkauan perbesaran minimum 1.0x dan maksimum 5.0x agar tetap aman
+            if (currentZoom < 1.0) currentZoom = 1.0;
+            if (currentZoom > 5.0) currentZoom = 5.0;
+
+            // Perbarui level zoom penampil PDF secara real-time
+            setState(() {
+              _pdfViewerController.zoomLevel = currentZoom;
+            });
+          }
+        }
+      },
+      child: SfPdfViewer.memory(
+        _pdfBytes!,
+        controller:
+            _pdfViewerController, // Pasang instance controller penampil PDF
+        enableDoubleTapZooming: true, // Ketuk layar 2x otomatis zoom (Mobile)
+        enableDocumentLinkAnnotation:
+            true, // Izinkan navigasi tautan dalam berkas
+        canShowScrollHead: true, // Tampilkan penunjuk letak halaman dokumen
+        interactionMode: PdfInteractionMode.pan, // Atur mode geser bebas
+      ),
     );
   }
 }
