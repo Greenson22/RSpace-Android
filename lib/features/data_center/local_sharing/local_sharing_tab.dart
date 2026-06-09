@@ -152,6 +152,53 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
     }
   }
 
+  // --- DIALOG KONFIRMASI RESTORE (PERBAIKAN) ---
+  Future<bool> _showConfirmRestoreDialog({
+    required String title,
+    required String content,
+  }) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange[800]),
+                const SizedBox(width: 8),
+                Text(title),
+              ],
+            ),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Ya, Restore',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  // --- DIALOG KONFIRMASI HAPUS ---
   Future<bool> _showConfirmDeleteDialog({
     required String title,
     required String content,
@@ -265,7 +312,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
             ),
             const SizedBox(height: 16),
 
-            // === PERBAIKAN: Bagian Header Daftar Berkas & Tombol Kontrol Dinamis ===
+            // === Bagian Header Daftar Berkas & Tombol Kontrol Dinamis ===
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
@@ -435,10 +482,11 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                                     : _selectedServerFiles.add(file);
                               })
                             : () async {
-                                final confirm = await _showConfirmDeleteDialog(
-                                  title: 'Restore Paket Server?',
+                                // PERBAIKAN: Memanggil _showConfirmRestoreDialog yang baru
+                                final confirm = await _showConfirmRestoreDialog(
+                                  title: 'Restore Data Aplikasi?',
                                   content:
-                                      'Yakin ingin restore berkas "$fileName"? Data aktif akan ditimpa.',
+                                      'Apakah Anda yakin ingin memulihkan seluruh data menggunakan file cadangan "$fileName"?\n\n*Peringatan: Folder RSpace_data dan PerpusKu aktif saat ini akan sepenuhnya ditimpa.',
                                 );
                                 if (confirm) _importAllFromZip(file);
                               },
@@ -469,11 +517,11 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                                   color: Colors.red,
                                 ),
                                 onPressed: () async {
-                                  final confirm =
-                                      await _showConfirmDeleteDialog(
-                                        title: 'Hapus',
-                                        content: 'Hapus "$fileName"?',
-                                      );
+                                  final confirm = await _showConfirmDeleteDialog(
+                                    title: 'Hapus Berkas Backup',
+                                    content:
+                                        'Apakah Anda yakin ingin menghapus berkas cadangan "$fileName" secara permanen?',
+                                  );
                                   if (confirm && await file.exists()) {
                                     await file.delete();
                                     _loadServerBackups();
