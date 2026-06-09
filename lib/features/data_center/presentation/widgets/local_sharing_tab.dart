@@ -196,7 +196,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
             try {
               Map<String, dynamic> dateReceived = jsonDecode(pesanMasuk);
               if (dateReceived['tipe_pesan'] == 'data_transfer') {
-                // DIUBAH: Membaca berkas zip tunggal yang dikirim oleh Client
                 String? clientFullZipBase64 = dateReceived['full_backup_zip'];
 
                 if (clientFullZipBase64 != null &&
@@ -295,11 +294,34 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           );
 
           encoder.create(tempZipFile.path);
+
+          // Fungsi pembantu rekursif manual untuk menjamin RSpace_data ikut terkompres mendalam
+          Future<void> gilasFolderKeZip(
+            Directory dir,
+            String folderNameInZip,
+          ) async {
+            if (dir.existsSync()) {
+              await for (var entity in dir.list(
+                recursive: true,
+                followLinks: false,
+              )) {
+                if (entity is File) {
+                  String relativePath = path.relative(
+                    entity.path,
+                    from: dir.path,
+                  );
+                  String archivePath = path.join(folderNameInZip, relativePath);
+                  await encoder.addFile(entity, archivePath);
+                }
+              }
+            }
+          }
+
           if (rspaceDir.existsSync()) {
-            await encoder.addDirectory(rspaceDir, includeDirName: true);
+            await gilasFolderKeZip(rspaceDir, 'RSpace_data');
           }
           if (perpuskuDir.existsSync()) {
-            await encoder.addDirectory(perpuskuDir, includeDirName: true);
+            await gilasFolderKeZip(perpuskuDir, 'PerpusKu');
           }
           encoder.close();
 
@@ -672,11 +694,34 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           );
 
           encoder.create(tempZipFile.path);
+
+          // Fungsi pembantu rekursif manual untuk menjamin RSpace_data ikut terkompres mendalam di sisi Client
+          Future<void> gilasFolderKeZip(
+            Directory dir,
+            String folderNameInZip,
+          ) async {
+            if (dir.existsSync()) {
+              await for (var entity in dir.list(
+                recursive: true,
+                followLinks: false,
+              )) {
+                if (entity is File) {
+                  String relativePath = path.relative(
+                    entity.path,
+                    from: dir.path,
+                  );
+                  String archivePath = path.join(folderNameInZip, relativePath);
+                  await encoder.addFile(entity, archivePath);
+                }
+              }
+            }
+          }
+
           if (rspaceDir.existsSync()) {
-            await encoder.addDirectory(rspaceDir, includeDirName: true);
+            await gilasFolderKeZip(rspaceDir, 'RSpace_data');
           }
           if (perpuskuDir.existsSync()) {
-            await encoder.addDirectory(perpuskuDir, includeDirName: true);
+            await gilasFolderKeZip(perpuskuDir, 'PerpusKu');
           }
           encoder.close();
 
@@ -740,7 +785,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                   debugPrint("Jabat tangan sukses. Pipa data penerima stabil.");
                 }
                 if (dataDiterima['tipe_pesan'] == 'data_transfer') {
-                  // DIUBAH: Membaca berkas zip tunggal yang dikirim oleh Server
                   String? serverFullZipBase64 = dataDiterima['full_backup_zip'];
 
                   if (serverFullZipBase64 != null &&
