@@ -197,18 +197,12 @@ class DiscussionActionMenu extends StatelessWidget {
                   'Tautkan File Manual',
                 ),
 
-              // BERUBAH: Mendukung penampilan tombol edit untuk tipe HTML maupun Markdown (.md)
               if (hasFile) ...[
                 if (linkType == DiscussionLinkType.html) ...[
                   _buildMenuItem(
                     'edit_file',
                     Icons.edit_document,
                     'Edit File HTML',
-                  ),
-                  _buildMenuItem(
-                    'generate_html',
-                    Icons.auto_awesome_outlined,
-                    'Regenerate HTML AI',
                   ),
                 ] else if (linkType == DiscussionLinkType.markdown) ...[
                   _buildMenuItem(
@@ -249,25 +243,6 @@ class DiscussionActionMenu extends StatelessWidget {
                   Icons.edit_road_outlined,
                   'Ubah Link Folder',
                 ),
-              ],
-            )
-          else if (hasFile && linkType == DiscussionLinkType.html)
-            _buildSubMenu(
-              icon: Icons.extension_outlined,
-              label: 'Ekstensi Modul',
-              children: [
-                _buildMenuItem(
-                  'convert_to_quiz',
-                  Icons.transform,
-                  'Konversi ke Kuis',
-                ),
-                if (linkType != DiscussionLinkType.perpuskuQuiz)
-                  _buildMenuItem(
-                    'smart_link',
-                    Icons.auto_awesome_outlined,
-                    'Cari Tautan Cerdas',
-                    color: Colors.amber,
-                  ),
               ],
             ),
 
