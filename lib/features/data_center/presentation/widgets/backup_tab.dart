@@ -153,6 +153,22 @@ class _BackupTabState extends State<BackupTab> {
       }
       final String destinationPath = rootDir.path;
 
+      // 1. PENERAPAN PENGHAPUSAN BERSIH SEBELUM RESTORE (Perbaikan Baru)
+      final Directory activeRSpaceDir = Directory(
+        path.join(destinationPath, 'RSpace_data'),
+      );
+      final Directory activePerpuskuDir = Directory(
+        path.join(destinationPath, 'PerpusKu'),
+      );
+
+      if (activeRSpaceDir.existsSync()) {
+        await activeRSpaceDir.delete(recursive: true);
+      }
+      if (activePerpuskuDir.existsSync()) {
+        await activePerpuskuDir.delete(recursive: true);
+      }
+
+      // 2. PROSES EKSTRAKSI DATA BARU
       List<int> bytes = await zipFile.readAsBytes();
       Archive archive = ZipDecoder().decodeBytes(bytes);
       for (ArchiveFile file in archive) {
