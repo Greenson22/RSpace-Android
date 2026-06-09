@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
 import 'package:my_aplication/features/data_center/presentation/widgets/backup_tab.dart';
 import 'package:my_aplication/features/data_center/presentation/widgets/local_sharing_tab.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/path_service.dart'; // Tambahkan PathService
 import 'package:file_picker/file_picker.dart';
@@ -685,6 +687,17 @@ class _DataCenterScreenState extends State<DataCenterScreen> {
                   );
                   await fileZipTarget.writeAsBytes(finalZipBytes);
 
+                  if (mounted) {
+                    // Panggil TopicProvider secara silent (listen: false) untuk memuat ulang data dari file fisik baru
+                    Provider.of<TopicProvider>(
+                      context,
+                      listen: false,
+                    ).fetchTopics();
+
+                    // Jika Anda memiliki provider untuk PerpusKu, panggil juga di sini, contoh:
+                    // Provider.of<PerpuskuProvider>(context, listen: false).loadAllData();
+                  }
+
                   setState(() {
                     _loadBaseDirectory();
                   });
@@ -1216,6 +1229,12 @@ class _DataCenterScreenState extends State<DataCenterScreen> {
           final outDir = Directory(fullPathTarget);
           await outDir.create(recursive: true);
         }
+      }
+
+      // 3. Pemicu Memuat Ulang Data Ke Memori State Management (Provider)
+      if (mounted) {
+        // Memicu TopicProvider untuk mengambil ulang data topik baru yang baru saja di-restore
+        Provider.of<TopicProvider>(context, listen: false).fetchTopics();
       }
 
       setState(() {
