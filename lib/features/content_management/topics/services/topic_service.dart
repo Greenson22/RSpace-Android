@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
-import '../../topics/models/topic_model.dart';
+import '../models/topic_model.dart';
 import '../../../../core/services/path_service.dart';
 
 class TopicService {

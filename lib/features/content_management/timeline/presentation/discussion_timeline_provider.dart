@@ -6,7 +6,7 @@ import '../../discussions/models/discussion_model.dart';
 import '../models/timeline_models.dart';
 import '../../discussions/presentation/utils/repetition_code_utils.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
-import '../../domain/services/discussion_service.dart';
+import '../../discussions/services/discussion_service.dart';
 import '../../../../core/services/user_data_service.dart';
 
 class DiscussionTimelineProvider with ChangeNotifier {

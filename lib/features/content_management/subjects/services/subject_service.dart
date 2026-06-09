@@ -10,8 +10,8 @@ import 'package:my_aplication/features/content_management/discussions/models/dis
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
 
-import '../../subjects/models/subject_model.dart';
-import 'discussion_service.dart';
+import '../models/subject_model.dart';
+import '../../discussions/services/discussion_service.dart';
 import 'subject_repository.dart';
 import 'encryption_service.dart';
 

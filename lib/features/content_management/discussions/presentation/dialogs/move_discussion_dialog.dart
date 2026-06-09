@@ -4,8 +4,8 @@ import 'package:path/path.dart' as path;
 import '../../../subjects/models/subject_model.dart';
 import '../../../topics/models/topic_model.dart';
 import '../../../../../core/services/path_service.dart';
-import '../../../domain/services/subject_service.dart';
-import '../../../domain/services/topic_service.dart';
+import '../../../subjects/services/subject_service.dart';
+import '../../../topics/services/topic_service.dart';
 
 /// Menampilkan dialog untuk memilih tujuan pemindahan diskusi.
 /// Mengembalikan Map berisi 'jsonPath' dan 'linkedPath' jika berhasil.
