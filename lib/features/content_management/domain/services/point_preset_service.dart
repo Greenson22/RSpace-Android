@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:my_aplication/core/services/path_service.dart';
-import '../../models/point_preset_model.dart';
+import '../../discussions/models/point_preset_model.dart';
 
 class PointPresetService {
   final PathService _pathService = PathService();

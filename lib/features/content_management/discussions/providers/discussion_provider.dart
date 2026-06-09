@@ -6,7 +6,7 @@ import 'package:my_aplication/features/content_management/discussions/presentati
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
 import '../models/discussion_model.dart';
-import '../../models/point_preset_model.dart';
+import '../models/point_preset_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../domain/services/point_preset_service.dart';
 import '../../../../core/services/path_service.dart';
