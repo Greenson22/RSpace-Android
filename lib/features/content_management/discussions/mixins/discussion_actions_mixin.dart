@@ -12,16 +12,17 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
-// === IMPOR BARU: Untuk mendukung fitur Cetak / Konversi HTML ke PDF ===
+// === IMPOR PACKAGE: Mendukung fungsionalitas konversi PDF ===
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../webview_page/presentation/pages/webview_page.dart';
+// === IMPOR BARU: Mengarahkan navigasi ke PDF Viewer internal aplikasi ===
+import '../../../webview_page/presentation/pages/pdf_viewer_page.dart';
 import '../providers/discussion_provider.dart';
 
 import '../../../html_editor/presentation/pages/html_editor_page.dart';
-// === IMPOR BARU: Mengarahkan ke berkas halaman editor Markdown bertema ===
 import '../../../html_editor/presentation/pages/markdown_editor_page.dart';
 import '../models/discussion_model.dart';
 import '../services/discussion_service.dart';
@@ -352,10 +353,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     final useInternalWeb = prefs.getBool('use_internal_web') ?? true;
-    // === BARU: Memuat konfigurasi preferensi Cetak/PDF khusus Linux ===
     final usePdfViewerLinux = prefs.getBool('use_pdf_viewer_linux') ?? false;
 
-    // String penampung final dokumen HTML yang siap dipakai (baik HTML murni atau hasil konversi MD)
     String executableHtmlContent = '';
     String currentSubjectPath = '';
 
@@ -432,23 +431,21 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 ''';
 
       // ==========================================
-      // INTEGRASI BARU: REDIREKSI PDF UNTUK MARKDOWN
+      // MODIFIKASI TERKUNCI: BERKAS MD DIBUKA DI INTERNAL VIEW
       // ==========================================
       if (!useInternalWeb && Platform.isLinux && usePdfViewerLinux) {
-        try {
-          await Printing.layoutPdf(
-            onLayout: (PdfPageFormat format) async =>
-                await Printing.convertHtml(
-                  format: format,
-                  html: executableHtmlContent,
-                  baseUrl: Uri.file(currentSubjectPath).toString(),
-                ),
-            name: '${discussion.discussion}.pdf',
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PdfViewerPage(
+                htmlContent: executableHtmlContent,
+                pageTitle: discussion.discussion,
+                subjectPath: currentSubjectPath,
+              ),
+            ),
           );
-          return;
-        } catch (e) {
-          debugPrint("Gagal mengonversi Markdown ke PDF: $e");
-          // Teruskan ke bawah sebagai fallback otomatis ke sistem file eksternal lama jika konversi PDF gagal
+          return; // Navigasi selesai, cegah alur eksternal
         }
       }
 
@@ -538,22 +535,21 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     executableHtmlContent = indexDoc.outerHtml;
 
     // ==========================================
-    // INTEGRASI BARU: REDIREKSI PDF UNTUK HTML BIASA
+    // MODIFIKASI TERKUNCI: BERKAS HTML DIBUKA DI INTERNAL VIEW
     // ==========================================
     if (!useInternalWeb && Platform.isLinux && usePdfViewerLinux) {
-      try {
-        await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => await Printing.convertHtml(
-            format: format,
-            html: executableHtmlContent,
-            baseUrl: Uri.file(currentSubjectPath).toString(),
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PdfViewerPage(
+              htmlContent: executableHtmlContent,
+              pageTitle: discussion.discussion,
+              subjectPath: currentSubjectPath,
+            ),
           ),
-          name: '${discussion.discussion}.pdf',
         );
-        return;
-      } catch (e) {
-        debugPrint("Gagal mengonversi HTML ke PDF: $e");
-        // Teruskan ke bawah sebagai fallback otomatis ke sistem editor teks jika cetak PDF gagal
+        return; // Navigasi selesai, cegah alur eksternal
       }
     }
 
@@ -642,9 +638,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     );
   }
 
-  // ========================================================================
-  // PENINGKATAN UTAMA: Mengarahkan editor internal .md ke MarkdownEditorPage kustom
-  // ========================================================================
   Future<void> _openWithInternalMarkdownEditor(
     Discussion discussion,
     BuildContext context,
@@ -689,7 +682,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       Navigator.push(
         context,
         MaterialPageRoute(
-          // Dialihkan ke kelas halaman terpisah yang mendukung penuh Syntax Highlighting dan EditorTheme
           builder: (context) => MarkdownEditorPage(
             pageTitle: discussion.discussion,
             initialContent: content,
