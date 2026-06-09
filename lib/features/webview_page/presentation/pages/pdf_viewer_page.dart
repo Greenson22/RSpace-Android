@@ -180,7 +180,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     );
   }
 
-  // ==> 2. UBAH METODE INI UNTUK MENGGUNAKAN SFPDFVIEWER <==
+  // ==> 2. UBAH METODE INI UNTUK MENGGUNAKAN SFPDFVIEWER DENGAN KONFIGURASI ZOOM <==
   Widget _buildBody() {
     if (_isGenerating) {
       return const Center(
@@ -221,8 +221,15 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     // Menggunakan SfPdfViewer untuk merender data bytes PDF dari memori
     return SfPdfViewer.memory(
       _pdfBytes!,
-      enableDoubleTapZooming: true, // Izinkan double tap zoom di mobile
-      interactionMode: PdfInteractionMode.pan, // Mode geser dasar
+      enableDoubleTapZooming:
+          true, // Izinkan double tap zoom di mobile dan desktop
+      enableDocumentLinkAnnotation:
+          true, // Aktifkan navigasi link internal jika ada
+      canShowScrollHead:
+          true, // Menampilkan scroll head indikator posisi halaman
+      // Menggunakan PdfInteractionMode.pan agar gesture interaktif seperti pinch-to-zoom (Android)
+      // dan kombinasi tombol Ctrl + Scroll Mouse (Desktop Linux) dapat mendeteksi perbesaran layar dengan lancar.
+      interactionMode: PdfInteractionMode.pan,
     );
   }
 }
