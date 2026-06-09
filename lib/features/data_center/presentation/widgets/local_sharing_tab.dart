@@ -110,9 +110,16 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       final String destinationPath = rootDir.path;
 
       // 1. PENERAPAN PENGHAPUSAN BERSIH SEBELUM RESTORE
-      final Directory activeRSpaceDir = Directory(
+      // Mencari folder aktif saat ini (bisa langsung di root atau di dalam folder 'data')
+      Directory activeRSpaceDir = Directory(
         path.join(destinationPath, 'RSpace_data'),
       );
+      if (!activeRSpaceDir.existsSync()) {
+        activeRSpaceDir = Directory(
+          path.join(destinationPath, 'data', 'RSpace_data'),
+        );
+      }
+
       final Directory activePerpuskuDir = Directory(
         path.join(destinationPath, 'PerpusKu'),
       );
@@ -130,7 +137,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       for (ArchiveFile file in archive) {
         String targetFolder = destinationPath;
 
-        // PERBAIKAN EXTRAK JALUR: Mengantisipasi letak subfolder data internal bawaan RSpace_data
+        // Jika saat ZIP dibuat foldernya murni berawalan 'RSpace_data', kembalikan ke struktur aslinya
         if (appBasePath.isEmpty && file.name.startsWith('RSpace_data')) {
           targetFolder = path.join(destinationPath, 'data');
         }
@@ -193,7 +200,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       List<dynamic> clientActiveList = [];
       StateSetter? dialogState;
 
-      // PERBAIKAN: Mengembalikan Callback asli agar tidak eror ConnectionCallback
       var handler = webSocketHandler((dynamic webSocket, dynamic protocol) {
         final String clientId =
             "Client_${webSocket.hashCode.toString().substring(0, 4)}";
@@ -303,9 +309,17 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           }
           final String mainFolderPath = rootDir.path;
 
-          final Directory rspaceDir = Directory(
+          // ⚠️ PERBAIKAN UTAMA: Validasi Fallback Multi Jalur untuk RSpace_data
+          Directory rspaceDir = Directory(
             path.join(mainFolderPath, 'RSpace_data'),
           );
+          if (!rspaceDir.existsSync()) {
+            // Jika tidak ditemukan di root folder utama, cek di dalam subfolder 'data'
+            rspaceDir = Directory(
+              path.join(mainFolderPath, 'data', 'RSpace_data'),
+            );
+          }
+
           final Directory perpuskuDir = Directory(
             path.join(mainFolderPath, 'PerpusKu'),
           );
@@ -319,11 +333,21 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
           encoder.create(tempZipFile.path);
 
-          // PERBAIKAN: Variabel diubah dari rSpaceDir menjadi rspaceDir sesuai deklarasi di atas
           if (rspaceDir.existsSync()) {
+            debugPrint(
+              "=== ZIP SERVER: Menambahkan RSpace_data dari ${rspaceDir.path} ===",
+            );
             await encoder.addDirectory(rspaceDir, includeDirName: true);
+          } else {
+            debugPrint(
+              "=== ZIP SERVER: PERINGATAN! RSpace_data tidak ditemukan ===",
+            );
           }
+
           if (perpuskuDir.existsSync()) {
+            debugPrint(
+              "=== ZIP SERVER: Menambahkan PerpusKu dari ${perpuskuDir.path} ===",
+            );
             await encoder.addDirectory(perpuskuDir, includeDirName: true);
           }
           encoder.close();
@@ -682,9 +706,16 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           }
           final String mainFolderPath = rootDir.path;
 
-          final Directory rspaceDir = Directory(
+          // ⚠️ PERBAIKAN UTAMA: Validasi Fallback Multi Jalur untuk RSpace_data di Client
+          Directory rspaceDir = Directory(
             path.join(mainFolderPath, 'RSpace_data'),
           );
+          if (!rspaceDir.existsSync()) {
+            rspaceDir = Directory(
+              path.join(mainFolderPath, 'data', 'RSpace_data'),
+            );
+          }
+
           final Directory perpuskuDir = Directory(
             path.join(mainFolderPath, 'PerpusKu'),
           );
@@ -698,11 +729,21 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
           encoder.create(tempZipFile.path);
 
-          // PERBAIKAN: Variabel diubah dari rSpaceDir menjadi rspaceDir sesuai deklarasi di atas
           if (rspaceDir.existsSync()) {
+            debugPrint(
+              "=== ZIP CLIENT: Menambahkan RSpace_data dari ${rspaceDir.path} ===",
+            );
             await encoder.addDirectory(rspaceDir, includeDirName: true);
+          } else {
+            debugPrint(
+              "=== ZIP CLIENT: PERINGATAN! RSpace_data tidak ditemukan ===",
+            );
           }
+
           if (perpuskuDir.existsSync()) {
+            debugPrint(
+              "=== ZIP CLIENT: Menambahkan PerpusKu dari ${perpuskuDir.path} ===",
+            );
             await encoder.addDirectory(perpuskuDir, includeDirName: true);
           }
           encoder.close();
@@ -1023,7 +1064,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            // === Widget Card Menu Kirim & Terima ===
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1102,8 +1142,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // === Bagian Header Daftar Berkas Server & Tombol Dinamis ===
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1227,8 +1265,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
               ],
             ),
             const SizedBox(height: 8),
-
-            // === Daftar Berkas dari Server ===
             _serverBackupFiles.isEmpty
                 ? const SizedBox(
                     height: 150,
