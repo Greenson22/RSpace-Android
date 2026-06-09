@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'; // Dibutuhkan untuk kDebugMode
 import 'package:file_picker/file_picker.dart'; // Diaktifkan untuk pemilih folder
 import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini untuk menyimpan preferensi web
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/theme/app_theme.dart'; // Import AppTheme untuk mengambil gradasi
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -70,7 +71,6 @@ class _SettingsPageState extends State<SettingsPage> {
         prefs.getBool(_webPreferenceKey) ?? _defaultWebPreferenceValue;
 
     setState(() {
-      // Mengubah teks fallback statis lama dengan fungsi dinamis multi-OS
       _currentPath = (customPath != null && customPath.isNotEmpty)
           ? customPath
           : _getDefaultPathDescription();
@@ -97,7 +97,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _resetPath() async {
-    // Menampilkan dialog konfirmasi sebelum melakukan reset jalur
     final bool confirmed =
         await showDialog<bool>(
           context: context,
@@ -172,6 +171,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
+    // Menentukan warna gradasi secara otomatis berdasarkan teks "Pengaturan"
+    final List<Color> appBarGradient = AppTheme.getGradientForTitle(
+      'Pengaturan',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -179,8 +183,21 @@ class _SettingsPageState extends State<SettingsPage> {
           style: TextStyle(
             fontSize: 18.0 * textScaleFactor,
             fontWeight: FontWeight.w600,
+            color: Colors.white, // Memastikan teks terlihat di atas gradasi
           ),
         ),
+        // === PENERAPAN TEMA GRADASI ===
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: appBarGradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        elevation: 4,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -254,7 +271,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Tombol reset dimunculkan jika teks penunjuk jalan tidak mengandung kata 'Default'
                             if (!_currentPath.startsWith("Default"))
                               IconButton(
                                 icon: Icon(
@@ -267,7 +283,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             IconButton(
                               icon: Icon(
                                 Icons.folder_open,
-                                color: Colors.blue,
+                                color: appBarGradient
+                                    .last, // Menyesuaikan warna dengan tema
                                 size: 20.0 * textScaleFactor,
                               ),
                               tooltip: 'Pilih Folder',
@@ -308,7 +325,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     scale: textScaleFactor,
                     child: Switch(
                       value: _useInternalWeb,
-                      activeColor: Colors.blue,
+                      activeColor: appBarGradient
+                          .first, // Menyesuaikan warna dengan tema
                       onChanged: (bool value) async {
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.setBool(_webPreferenceKey, value);
