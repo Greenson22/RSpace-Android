@@ -25,71 +25,60 @@ class PathService {
   Future<String> get _appBasePath async {
     String? customPath = await loadCustomStoragePath();
     if (customPath != null && customPath.isNotEmpty) {
-      return customPath;
+      // Jika custom path diaktifkan, arahkan folder induk ke customPath/RSpace_App
+      final appDir = Directory(path.join(customPath, 'RSpace_App'));
+      if (!await appDir.exists()) {
+        await appDir.create(recursive: true);
+      }
+      return appDir.path;
     }
 
     Directory? baseDir;
     if (Platform.isAndroid) {
-      // getExternalStorageDirectory() langsung mengarah ke:
-      // /storage/emulated/0/Android/data/com.[package_name]/files
       baseDir = await getExternalStorageDirectory();
       if (baseDir == null) {
-        throw Exception(
-          "Tidak dapat menemukan direktori penyimpanan eksternal aplikasi.",
-        );
+        throw Exception("External storage directory tidak tersedia.");
       }
     } else {
       baseDir = await getApplicationDocumentsDirectory();
     }
+
     return path.join(baseDir.path, 'RSpace_App');
   }
 
   Future<String> get _baseDataPath async {
-    String? customPath = await loadCustomStoragePath();
-
-    // Minta izin "Manage External Storage" HANYA jika pengguna memakai custom path
-    // di luar folder com.[package] (misal: mereka memilih folder root / Download).
-    if (Platform.isAndroid && customPath != null && customPath.isNotEmpty) {
-      if (!await Permission.manageExternalStorage.request().isGranted) {
-        throw Exception(
-          'Izin "Akses semua file" diperlukan untuk menyimpan data di folder custom pilihan Anda.',
-        );
-      }
+    // KONSISTENSI: Mengambil base dari _appBasePath (RSpace_App), lalu buat RSpace_data di dalamnya
+    final basePath = await _appBasePath;
+    final dataDir = Directory(path.join(basePath, 'RSpace_data'));
+    if (!await dataDir.exists()) {
+      await dataDir.create(recursive: true);
     }
-
-    if (customPath != null && customPath.isNotEmpty) {
-      final dataDir = Directory(path.join(customPath, 'RSpace_data', 'data'));
-      if (!await dataDir.exists()) {
-        await dataDir.create(recursive: true);
-      }
-      return dataDir.path;
-    }
-
-    Directory? baseDir;
-    if (Platform.isAndroid) {
-      // Gunakan langsung folder internal aplikasi (com.xxx)
-      baseDir = await getExternalStorageDirectory();
-      if (baseDir == null) {
-        throw Exception(
-          "Tidak dapat menemukan direktori penyimpanan eksternal aplikasi.",
-        );
-      }
-    } else {
-      baseDir = await getApplicationDocumentsDirectory();
-    }
-
-    final defaultAppDir = Directory(
-      path.join(baseDir.path, 'RSpace_App', 'data'),
-    );
-    if (!await defaultAppDir.exists()) {
-      await defaultAppDir.create(recursive: true);
-    }
-    return defaultAppDir.path;
+    return dataDir.path;
   }
+
+  Future<String> get baseDataPathPublic => _baseDataPath;
 
   Future<String> get _baseBackupPath async {
     final appBase = await _appBasePath;
     final backupDir = Directory(path.join(appBase, 'Backup'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir.path;
+  }
+
+  Future<String> get rspaceBackupPath async {
+    final basePath = await _baseBackupPath;
+    final backupDir = Directory(path.join(basePath, 'RSpace_backup'));
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+    return backupDir.path;
+  }
+
+  Future<String> get perpuskuBackupPath async {
+    final basePath = await _baseBackupPath;
+    final backupDir = Directory(path.join(basePath, 'PerpusKu_backup'));
     if (!await backupDir.exists()) {
       await backupDir.create(recursive: true);
     }
@@ -123,28 +112,9 @@ class PathService {
     return exportDir.path;
   }
 
-  Future<String> get rspaceBackupPath async {
-    final basePath = await _baseBackupPath;
-    final backupDir = Directory(path.join(basePath, 'RSpace_backup'));
-    if (!await backupDir.exists()) {
-      await backupDir.create(recursive: true);
-    }
-    return backupDir.path;
-  }
-
-  Future<String> get perpuskuBackupPath async {
-    final basePath = await _baseBackupPath;
-    final backupDir = Directory(path.join(basePath, 'PerpusKu_backup'));
-    if (!await backupDir.exists()) {
-      await backupDir.create(recursive: true);
-    }
-    return backupDir.path;
-  }
-
   Future<String> get contentsPath async =>
       path.join(await _baseDataPath, 'contents');
 
-  // ==> TAMBAHKAN PATH BARU DI SINI <==
   Future<String> get notesPath async => path.join(await contentsPath, 'notes');
 
   Future<String> get assetsPath async {
@@ -176,8 +146,9 @@ class PathService {
       path.join(await contentsPath, 'my_tasks.json');
   Future<String> get timeLogPath async =>
       path.join(await contentsPath, 'time_log.json');
-  Future<String> get logTaskPresetsPath async =>
-      path.join(await contentsPath, 'log_task_presets.json');
+  Future<String> get logTaskPresetsPath async {
+    return path.join(await contentsPath, 'log_task_presets.json');
+  }
 
   Future<String> get pointPresetsPath async =>
       path.join(await contentsPath, 'point_presets.json');

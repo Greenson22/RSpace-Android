@@ -1,15 +1,14 @@
 // lib/core/services/storage_service.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:archive/archive_io.dart'; // <-- TAMBAHKAN IMPORT INI
-import 'package:path/path.dart' as path; // <-- TAMBAHKAN IMPORT INI
+import 'package:archive/archive_io.dart';
+import 'package:path/path.dart' as path;
 import 'path_service.dart';
 import 'user_data_service.dart';
 import 'neuron_service.dart';
 
 /// Kelas Utama SharedPreferences bawaan aplikasi Anda tetap dipertahankan utuh
 class SharedPreferencesService {
-  // ... isi SharedPreferencesService tetap utuh seperti kode Anda ...
   final PathService _pathService = PathService();
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
@@ -158,39 +157,37 @@ class StorageService extends SharedPreferencesService {
   }
 
   // =========================================================================
-  // === LOGIKA BARU: PROSES GENERATE ZIP UTK PENCADANGAN GLOBAL / SHARING ===
+  // === LOGIKA GENERATE ZIP BERBASIS RSPACE_DATA DI DALAM RSPACE_APP     ===
   // =========================================================================
   Future<File> createBackupZip({
-    required String mainFolderPath,
+    required String mainFolderPath, // Mengarah ke root /RSpace_App
     required String baseDir,
     required String fileName,
     bool isServerSharing = false,
   }) async {
-    // Jalur pengecekan utama untuk RSpace_data
-    final Directory rspaceDir = Directory(
+    // DISESUAIKAN: Sekarang mencari folder 'RSpace_data' di dalam mainFolderPath
+    final Directory dataDir = Directory(
       path.join(mainFolderPath, 'RSpace_data'),
     );
     final Directory perpuskuDir = Directory(
       path.join(mainFolderPath, 'PerpusKu'),
     );
 
-    if (!rspaceDir.existsSync() && !perpuskuDir.existsSync()) {
+    if (!dataDir.existsSync() && !perpuskuDir.existsSync()) {
       throw Exception(
-        "Folder RSpace_data atau PerpusKu tidak ditemukan di folder utama.",
+        "Folder RSpace_data atau PerpusKu tidak ditemukan di folder aplikasi.",
       );
     }
 
-    // Mengambil file ZIP target (lokal menggunakan folder rspace, sharing menggunakan perpusku)
     File fileZipTarget = isServerSharing
         ? await getBackupZipFile(baseDir, fileName)
         : await getLocalBackupZipFile(baseDir, fileName);
 
     // --- PROSES PEMBUATAN FILE META.JSON SEMENTARA ---
-    // Jangan lupa untuk menambahkan import 'dart:convert'; di bagian paling atas file jika belum ada
     final Map<String, dynamic> metadata = {
       'mainFolderPath': mainFolderPath,
-      'rspacePath': rspaceDir.path,
-      'rspaceExists': rspaceDir.existsSync(),
+      'rspacePath': dataDir.path,
+      'rspaceExists': dataDir.existsSync(),
       'perpuskuPath': perpuskuDir.path,
       'perpuskuExists': perpuskuDir.existsSync(),
       'createdAt': DateTime.now().toIso8601String(),
@@ -204,20 +201,19 @@ class StorageService extends SharedPreferencesService {
     final encoder = ZipFileEncoder();
     encoder.create(fileZipTarget.path);
 
-    // Tambahkan file meta.json ke dalam root ZIP
     if (metaFile.existsSync()) {
       await encoder.addFile(metaFile);
     }
 
-    if (rspaceDir.existsSync()) {
-      await encoder.addDirectory(rspaceDir, includeDirName: true);
+    // Masukkan folder RSpace_data dan PerpusKu ke dalam file ZIP backup
+    if (dataDir.existsSync()) {
+      await encoder.addDirectory(dataDir, includeDirName: true);
     }
     if (perpuskuDir.existsSync()) {
       await encoder.addDirectory(perpuskuDir, includeDirName: true);
     }
     encoder.close();
 
-    // Hapus file meta.json sementara setelah selesai dimasukkan ke ZIP
     if (metaFile.existsSync()) {
       await metaFile.delete();
     }
