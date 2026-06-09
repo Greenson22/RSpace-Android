@@ -41,11 +41,13 @@ class PerpuskuService {
         };
       }
 
-      final htmlFiles = subjectDir.listSync().whereType<File>().where(
-        (f) => f.path.toLowerCase().endsWith('.html'),
-      );
+      // MODIFIKASI: Mendukung file .html dan .md saat pencarian dalam topik
+      final allowedFiles = subjectDir.listSync().whereType<File>().where((f) {
+        final pathLower = f.path.toLowerCase();
+        return pathLower.endsWith('.html') || pathLower.endsWith('.md');
+      });
 
-      for (final file in htmlFiles) {
+      for (final file in allowedFiles) {
         final fileName = path.basename(file.path);
         final title = currentTitles[fileName] ?? fileName;
 
@@ -85,11 +87,13 @@ class PerpuskuService {
           };
         }
 
-        final htmlFiles = subjectDir.listSync().whereType<File>().where(
-          (f) => f.path.toLowerCase().endsWith('.html'),
-        );
+        // MODIFIKASI: Mendukung file .html dan .md saat pencarian global
+        final allowedFiles = subjectDir.listSync().whereType<File>().where((f) {
+          final pathLower = f.path.toLowerCase();
+          return pathLower.endsWith('.html') || pathLower.endsWith('.md');
+        });
 
-        for (final file in htmlFiles) {
+        for (final file in allowedFiles) {
           final fileName = path.basename(file.path);
           final title = currentTitles[fileName] ?? fileName;
 
@@ -178,6 +182,7 @@ class PerpuskuService {
         );
         final subjectFile = File(subjectJsonPath);
         if (await subjectFile.exists()) {
+          // KODE PERBAIKAN: Membaca file string dengan benar
           final jsonString = await subjectFile.readAsString();
           if (jsonString.isNotEmpty) {
             final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -221,15 +226,17 @@ class PerpuskuService {
       };
     }
 
-    final files = directory
-        .listSync()
-        .whereType<File>()
-        .where(
-          (file) =>
-              file.path.toLowerCase().endsWith('.html') &&
-              path.basename(file.path).toLowerCase() != 'index.html',
-        )
-        .toList();
+    // MODIFIKASI: Menyaring file .html (kecuali index.html) DAN file berkstensi .md
+    final files = directory.listSync().whereType<File>().where((file) {
+      final filePathLower = file.path.toLowerCase();
+      final fileNameLower = path.basename(file.path).toLowerCase();
+
+      final isHtml =
+          filePathLower.endsWith('.html') && fileNameLower != 'index.html';
+      final isMarkdown = filePathLower.endsWith('.md');
+
+      return isHtml || isMarkdown;
+    }).toList();
 
     return files.map((file) {
       final fileName = path.basename(file.path);
