@@ -196,19 +196,29 @@ class DiscussionActionMenu extends StatelessWidget {
                   Icons.file_open_outlined,
                   'Tautkan File Manual',
                 ),
-              // FIX: Mengubah DiscussionLinkType.htmlLocal menjadi DiscussionLinkType.html sesuai model
-              if (hasFile && linkType == DiscussionLinkType.html) ...[
-                _buildMenuItem(
-                  'edit_file',
-                  Icons.edit_document,
-                  'Edit File HTML',
-                ),
-                _buildMenuItem(
-                  'generate_html',
-                  Icons.auto_awesome_outlined,
-                  'Regenerate HTML AI',
-                ),
+
+              // BERUBAH: Mendukung penampilan tombol edit untuk tipe HTML maupun Markdown (.md)
+              if (hasFile) ...[
+                if (linkType == DiscussionLinkType.html) ...[
+                  _buildMenuItem(
+                    'edit_file',
+                    Icons.edit_document,
+                    'Edit File HTML',
+                  ),
+                  _buildMenuItem(
+                    'generate_html',
+                    Icons.auto_awesome_outlined,
+                    'Regenerate HTML AI',
+                  ),
+                ] else if (linkType == DiscussionLinkType.markdown) ...[
+                  _buildMenuItem(
+                    'edit_file',
+                    Icons.edit_document,
+                    'Edit Catatan (.md)',
+                  ),
+                ],
               ],
+
               if (hasFile)
                 _buildMenuItem(
                   'remove_file_path',
@@ -241,7 +251,6 @@ class DiscussionActionMenu extends StatelessWidget {
                 ),
               ],
             )
-          // FIX: Mengubah DiscussionLinkType.htmlLocal menjadi DiscussionLinkType.html sesuai model
           else if (hasFile && linkType == DiscussionLinkType.html)
             _buildSubMenu(
               icon: Icons.extension_outlined,
