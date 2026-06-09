@@ -1,11 +1,14 @@
 // lib/core/services/storage_service.dart
 import 'dart:io';
+import 'package:archive/archive_io.dart'; // <-- TAMBAHKAN IMPORT INI
+import 'package:path/path.dart' as path; // <-- TAMBAHKAN IMPORT INI
 import 'path_service.dart';
 import 'user_data_service.dart';
 import 'neuron_service.dart';
 
 /// Kelas Utama SharedPreferences bawaan aplikasi Anda tetap dipertahankan utuh
 class SharedPreferencesService {
+  // ... isi SharedPreferencesService tetap utuh seperti kode Anda ...
   final PathService _pathService = PathService();
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
@@ -151,5 +154,51 @@ class StorageService extends SharedPreferencesService {
 
     // Membaca seluruh file data internal Perpusku secara rekursif
     return dir.listSync(recursive: true).whereType<File>().toList();
+  }
+
+  // =========================================================================
+  // === LOGIKA BARU: PROSES GENERATE ZIP UTK PENCADANGAN GLOBAL / SHARING ===
+  // =========================================================================
+  Future<File> createBackupZip({
+    required String mainFolderPath,
+    required String baseDir,
+    required String fileName,
+    bool isServerSharing = false,
+  }) async {
+    // Jalur pengecekan utama untuk RSpace_data
+    Directory rspaceDir = Directory(path.join(mainFolderPath, 'RSpace_data'));
+
+    // Jalur fallback multi-arah jika dipanggil oleh LocalSharing / Client
+    if (!rspaceDir.existsSync()) {
+      rspaceDir = Directory(path.join(mainFolderPath, 'data', 'RSpace_data'));
+    }
+
+    final Directory perpuskuDir = Directory(
+      path.join(mainFolderPath, 'PerpusKu'),
+    );
+
+    if (!rspaceDir.existsSync() && !perpuskuDir.existsSync()) {
+      throw Exception(
+        "Folder RSpace_data atau PerpusKu tidak ditemukan di folder utama.",
+      );
+    }
+
+    // Mengambil file ZIP target (lokal menggunakan folder rspace, sharing menggunakan perpusku)
+    File fileZipTarget = isServerSharing
+        ? await getBackupZipFile(baseDir, fileName)
+        : await getLocalBackupZipFile(baseDir, fileName);
+
+    final encoder = ZipFileEncoder();
+    encoder.create(fileZipTarget.path);
+
+    if (rspaceDir.existsSync()) {
+      await encoder.addDirectory(rspaceDir, includeDirName: true);
+    }
+    if (perpuskuDir.existsSync()) {
+      await encoder.addDirectory(perpuskuDir, includeDirName: true);
+    }
+    encoder.close();
+
+    return fileZipTarget;
   }
 }

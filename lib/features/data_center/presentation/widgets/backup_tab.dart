@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:archive/archive_io.dart';
+import 'package:archive/archive_io.dart'; // Tetap dipertahankan jika _importAllFromZip (Restore) belum dipindahkan
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
 import '../../../../core/services/storage_service.dart';
@@ -72,7 +72,7 @@ class _BackupTabState extends State<BackupTab> {
     return "${prefix}_${tanggal}_${namaHari}_$waktu.$extension";
   }
 
-  // --- LOGIKA UTAMA: PENCADANGAN GLOBAL (ZIP) ---
+  // --- LOGIKA UTAMA: PENCADANGAN GLOBAL (ZIP) VIA STORAGE SERVICE ---
   void _backupAllFeature() async {
     setState(() => _isLoading = true);
     try {
@@ -87,34 +87,15 @@ class _BackupTabState extends State<BackupTab> {
       }
       final String mainFolderPath = rootDir.path;
 
-      final Directory rspaceDir = Directory(
-        path.join(mainFolderPath, 'RSpace_data'),
-      );
-      final Directory perpuskuDir = Directory(
-        path.join(mainFolderPath, 'PerpusKu'),
-      );
-
-      if (!rspaceDir.existsSync() && !perpuskuDir.existsSync()) {
-        throw Exception(
-          "Folder RSpace_data atau PerpusKu tidak ditemukan di folder utama.",
-        );
-      }
-
-      final encoder = ZipFileEncoder();
       String namaZipDinamis = _getFormattedFileName('local_backup', 'zip');
-      File fileZipTarget = await _storageService.getLocalBackupZipFile(
-        _baseDir,
-        namaZipDinamis,
-      );
-      encoder.create(fileZipTarget.path);
 
-      if (rspaceDir.existsSync()) {
-        await encoder.addDirectory(rspaceDir, includeDirName: true);
-      }
-      if (perpuskuDir.existsSync()) {
-        await encoder.addDirectory(perpuskuDir, includeDirName: true);
-      }
-      encoder.close();
+      // ⚠️ MEMANGGIL LOGIKA YANG SUDAH DIPISAHKAN KE STORAGE SERVICE
+      await _storageService.createBackupZip(
+        mainFolderPath: mainFolderPath,
+        baseDir: _baseDir,
+        fileName: namaZipDinamis,
+        isServerSharing: false,
+      );
 
       _loadLocalBackups();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,7 +134,7 @@ class _BackupTabState extends State<BackupTab> {
       }
       final String destinationPath = rootDir.path;
 
-      // 1. PENERAPAN PENGHAPUSAN BERSIH SEBELUM RESTORE (Perbaikan Baru)
+      // 1. PENERAPAN PENGHAPUSAN BERSIH SEBELUM RESTORE
       final Directory activeRSpaceDir = Directory(
         path.join(destinationPath, 'RSpace_data'),
       );
@@ -423,7 +404,6 @@ class _BackupTabState extends State<BackupTab> {
                     'Daftar Berkas',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  // Menerapkan FittedBox agar elemen mengecil secara proporsional jika ruang sempit
                   FittedBox(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -539,11 +519,9 @@ class _BackupTabState extends State<BackupTab> {
                             ),
                           ),
                         ] else ...[
-                          // Menggunakan Wrap untuk mencegah tombol bertabrakan di layar HP (Mobile)
                           Wrap(
-                            spacing: 8, // Jarak horizontal antar tombol
-                            runSpacing:
-                                6, // Jarak vertikal jika tombol turun ke baris baru di mobile
+                            spacing: 8,
+                            runSpacing: 6,
                             alignment: WrapAlignment.end,
                             children: [
                               // === TOMBOL IMPORT ZIP ===

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:archive/archive_io.dart';
+import 'package:archive/archive_io.dart'; // Dipertahankan karena masih dipakai di _importAllFromZip untuk ZipDecoder
 import 'package:path/path.dart' as path;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -110,7 +110,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       final String destinationPath = rootDir.path;
 
       // 1. PENERAPAN PENGHAPUSAN BERSIH SEBELUM RESTORE
-      // Mencari folder aktif saat ini (bisa langsung di root atau di dalam folder 'data')
       Directory activeRSpaceDir = Directory(
         path.join(destinationPath, 'RSpace_data'),
       );
@@ -137,7 +136,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       for (ArchiveFile file in archive) {
         String targetFolder = destinationPath;
 
-        // Jika saat ZIP dibuat foldernya murni berawalan 'RSpace_data', kembalikan ke struktur aslinya
         if (appBasePath.isEmpty && file.name.startsWith('RSpace_data')) {
           targetFolder = path.join(destinationPath, 'data');
         }
@@ -309,48 +307,15 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           }
           final String mainFolderPath = rootDir.path;
 
-          // ⚠️ PERBAIKAN UTAMA: Validasi Fallback Multi Jalur untuk RSpace_data
-          Directory rspaceDir = Directory(
-            path.join(mainFolderPath, 'RSpace_data'),
-          );
-          if (!rspaceDir.existsSync()) {
-            // Jika tidak ditemukan di root folder utama, cek di dalam subfolder 'data'
-            rspaceDir = Directory(
-              path.join(mainFolderPath, 'data', 'RSpace_data'),
-            );
-          }
-
-          final Directory perpuskuDir = Directory(
-            path.join(mainFolderPath, 'PerpusKu'),
-          );
-
-          final encoder = ZipFileEncoder();
           String tempZipName = _getFormattedFileName('temp_server_send', 'zip');
-          File tempZipFile = await _storageService.getBackupZipFile(
-            _baseDir,
-            tempZipName,
+
+          // ⚠️ IMPLEMENTASI BARU SISI SERVER: Menggunakan delegasi StorageService
+          File tempZipFile = await _storageService.createBackupZip(
+            mainFolderPath: mainFolderPath,
+            baseDir: _baseDir,
+            fileName: tempZipName,
+            isServerSharing: true,
           );
-
-          encoder.create(tempZipFile.path);
-
-          if (rspaceDir.existsSync()) {
-            debugPrint(
-              "=== ZIP SERVER: Menambahkan RSpace_data dari ${rspaceDir.path} ===",
-            );
-            await encoder.addDirectory(rspaceDir, includeDirName: true);
-          } else {
-            debugPrint(
-              "=== ZIP SERVER: PERINGATAN! RSpace_data tidak ditemukan ===",
-            );
-          }
-
-          if (perpuskuDir.existsSync()) {
-            debugPrint(
-              "=== ZIP SERVER: Menambahkan PerpusKu dari ${perpuskuDir.path} ===",
-            );
-            await encoder.addDirectory(perpuskuDir, includeDirName: true);
-          }
-          encoder.close();
 
           List<int> zipBytes = await tempZipFile.readAsBytes();
           String fullZipBase64 = base64Encode(zipBytes);
@@ -706,47 +671,15 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           }
           final String mainFolderPath = rootDir.path;
 
-          // ⚠️ PERBAIKAN UTAMA: Validasi Fallback Multi Jalur untuk RSpace_data di Client
-          Directory rspaceDir = Directory(
-            path.join(mainFolderPath, 'RSpace_data'),
-          );
-          if (!rspaceDir.existsSync()) {
-            rspaceDir = Directory(
-              path.join(mainFolderPath, 'data', 'RSpace_data'),
-            );
-          }
-
-          final Directory perpuskuDir = Directory(
-            path.join(mainFolderPath, 'PerpusKu'),
-          );
-
-          final encoder = ZipFileEncoder();
           String tempZipName = _getFormattedFileName('temp_client_send', 'zip');
-          File tempZipFile = await _storageService.getBackupZipFile(
-            _baseDir,
-            tempZipName,
+
+          // ⚠️ IMPLEMENTASI BARU SISI CLIENT: Menggunakan delegasi StorageService
+          File tempZipFile = await _storageService.createBackupZip(
+            mainFolderPath: mainFolderPath,
+            baseDir: _baseDir,
+            fileName: tempZipName,
+            isServerSharing: true,
           );
-
-          encoder.create(tempZipFile.path);
-
-          if (rspaceDir.existsSync()) {
-            debugPrint(
-              "=== ZIP CLIENT: Menambahkan RSpace_data dari ${rspaceDir.path} ===",
-            );
-            await encoder.addDirectory(rspaceDir, includeDirName: true);
-          } else {
-            debugPrint(
-              "=== ZIP CLIENT: PERINGATAN! RSpace_data tidak ditemukan ===",
-            );
-          }
-
-          if (perpuskuDir.existsSync()) {
-            debugPrint(
-              "=== ZIP CLIENT: Menambahkan PerpusKu dari ${perpuskuDir.path} ===",
-            );
-            await encoder.addDirectory(perpuskuDir, includeDirName: true);
-          }
-          encoder.close();
 
           List<int> zipBytes = await tempZipFile.readAsBytes();
           String fullZipBase64 = base64Encode(zipBytes);
