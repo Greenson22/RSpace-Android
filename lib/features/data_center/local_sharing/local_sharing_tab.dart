@@ -10,8 +10,8 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
-import '../../../../core/services/storage_service.dart';
-import '../../../../core/services/path_service.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/services/path_service.dart';
 
 class LocalSharingTab extends StatefulWidget {
   const LocalSharingTab({super.key});

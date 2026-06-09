@@ -1,8 +1,8 @@
 // lib/features/data_center/presentation/screens/data_center_screen.dart
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/data_center/presentation/widgets/backup_tab.dart';
-import 'package:my_aplication/features/data_center/presentation/widgets/local_sharing_tab.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:my_aplication/features/data_center/backup/backup_tab.dart';
+import 'package:my_aplication/features/data_center/local_sharing/local_sharing_tab.dart';
+import '../../core/theme/app_theme.dart';
 
 class DataCenterScreen extends StatelessWidget {
   const DataCenterScreen({super.key});
