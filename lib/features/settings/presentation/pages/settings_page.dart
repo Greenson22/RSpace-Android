@@ -23,9 +23,14 @@ class _SettingsPageState extends State<SettingsPage> {
   String _currentPath = "Memuat...";
   bool _isLoading = true;
   bool _useInternalWeb = true;
+  // === BARU: Variabel status untuk fitur Cetak/PDF khusus Linux ===
+  bool _usePdfViewerLinux = false;
 
   String get _webPreferenceKey =>
       Platform.isAndroid ? 'use_internal_web_android' : 'use_internal_web';
+
+  // === BARU: Kunci penyimpanan preferensi PDF Linux ===
+  String get _pdfPreferenceKey => 'use_pdf_viewer_linux';
 
   bool get _defaultWebPreferenceValue => Platform.isAndroid ? false : true;
 
@@ -65,6 +70,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final prefs = await SharedPreferences.getInstance();
     final useInternal =
         prefs.getBool(_webPreferenceKey) ?? _defaultWebPreferenceValue;
+    // === BARU: Memuat preferensi PDF khusus Linux ===
+    final usePdfLinux = prefs.getBool(_pdfPreferenceKey) ?? false;
 
     setState(() {
       _currentPath = (customPath != null && customPath.isNotEmpty)
@@ -72,6 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
           : _getDefaultPathDescription();
       _pathController.text = customPath ?? '';
       _useInternalWeb = useInternal;
+      _usePdfViewerLinux = usePdfLinux;
       _isLoading = false;
     });
   }
@@ -278,7 +286,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Mode Debug Aktif: Perubahan folder yang dilakukan di sini menggunakan kunci terpisah dan tidak akan memengaruhi versi Release.',
+                            'Mode Debug Aktif: Perubahan folder yang dilakukan di sini menggunakan kunci terpisah and tidak akan memengaruhi versi Release.',
                             style: TextStyle(
                               color: Colors.deepOrange,
                               fontSize: 13.0 * textScaleFactor,
@@ -397,6 +405,58 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 const Divider(height: 32, thickness: 1.0),
+
+                // === BARU: OPSI CETAK/PRATINJAU PDF DITAMPILKAN SECARA DINAMIS ===
+                if (Platform.isLinux && !_useInternalWeb) ...[
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 2.0 * textScaleFactor,
+                    ),
+                    leading: Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: appBarGradient.first,
+                      size: 22.0 * textScaleFactor,
+                    ),
+                    title: Text(
+                      'Gunakan Cetak/Pratinjau PDF',
+                      style: TextStyle(fontSize: 14.0 * textScaleFactor),
+                    ),
+                    subtitle: Text(
+                      'Alih-alih membuka berkas via aplikasi teks eksternal Linux, konversi dokumen otomatis ke PDF untuk dicetak atau disimpan via Dialog Cetak Sistem.',
+                      style: TextStyle(fontSize: 11.0 * textScaleFactor),
+                    ),
+                    trailing: Transform.scale(
+                      scale: textScaleFactor,
+                      child: Switch(
+                        value: _usePdfViewerLinux,
+                        activeColor: appBarGradient.first,
+                        onChanged: (bool value) async {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool(_pdfPreferenceKey, value);
+
+                          setState(() {
+                            _usePdfViewerLinux = value;
+                          });
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  value
+                                      ? 'Fitur PDF aktif. Berkas luar akan dibuka via Dialog Cetak Sistem.'
+                                      : 'Fitur PDF nonaktif. Berkas luar kembali dibuka via Aplikasi Teks Eksternal.',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 32, thickness: 1.0),
+                ],
               ],
             ),
     );

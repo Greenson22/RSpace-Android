@@ -12,6 +12,11 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
+// === IMPOR BARU: Untuk mendukung fitur Cetak / Konversi HTML ke PDF ===
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
 import '../../../webview_page/presentation/pages/webview_page.dart';
 import '../providers/discussion_provider.dart';
 
@@ -347,6 +352,12 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     final useInternalWeb = prefs.getBool('use_internal_web') ?? true;
+    // === BARU: Memuat konfigurasi preferensi Cetak/PDF khusus Linux ===
+    final usePdfViewerLinux = prefs.getBool('use_pdf_viewer_linux') ?? false;
+
+    // String penampung final dokumen HTML yang siap dipakai (baik HTML murni atau hasil konversi MD)
+    String executableHtmlContent = '';
+    String currentSubjectPath = '';
 
     // ==========================================
     // HANDLING MARKDOWN PREVIEW
@@ -359,13 +370,14 @@ mixin DiscussionActionsMixin on ChangeNotifier {
         throw Exception('File Markdown tidak ditemukan: $fullPath');
       }
 
+      currentSubjectPath = path.dirname(fullPath);
       final rawContent = await file.readAsString();
       final htmlBody = md.markdownToHtml(
         rawContent,
         extensionSet: md.ExtensionSet.gitHubFlavored,
       );
 
-      final styledHtmlWrapper =
+      executableHtmlContent =
           '''
 <!DOCTYPE html>
 <html lang="en">
@@ -419,6 +431,27 @@ mixin DiscussionActionsMixin on ChangeNotifier {
 </html>
 ''';
 
+      // ==========================================
+      // INTEGRASI BARU: REDIREKSI PDF UNTUK MARKDOWN
+      // ==========================================
+      if (!useInternalWeb && Platform.isLinux && usePdfViewerLinux) {
+        try {
+          await Printing.layoutPdf(
+            onLayout: (PdfPageFormat format) async =>
+                await Printing.convertHtml(
+                  format: format,
+                  html: executableHtmlContent,
+                  baseUrl: Uri.file(currentSubjectPath).toString(),
+                ),
+            name: '${discussion.discussion}.pdf',
+          );
+          return;
+        } catch (e) {
+          debugPrint("Gagal mengonversi Markdown ke PDF: $e");
+          // Teruskan ke bawah sebagai fallback otomatis ke sistem file eksternal lama jika konversi PDF gagal
+        }
+      }
+
       final tempDir = await getTemporaryDirectory();
       final safeName = discussion.discussion.replaceAll(
         RegExp(r'[^\w\s-]'),
@@ -427,7 +460,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       final tempFile = File(
         path.join(tempDir.path, '${safeName}_preview.html'),
       );
-      await tempFile.writeAsString(styledHtmlWrapper);
+      await tempFile.writeAsString(executableHtmlContent);
 
       if (useInternalWeb && context.mounted) {
         final provider = Provider.of<DiscussionProvider>(
@@ -461,8 +494,8 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     // HANDLING HTML BIASA
     // ==========================================
     final contentPath = path.join(basePath, finalRelativePath);
-    final subjectPath = path.dirname(contentPath);
-    final indexPath = path.join(subjectPath, 'index.html');
+    currentSubjectPath = path.dirname(contentPath);
+    final indexPath = path.join(currentSubjectPath, 'index.html');
 
     final contentFile = File(contentPath);
     final indexFile = File(indexPath);
@@ -492,7 +525,7 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     for (var img in images) {
       final src = img.attributes['src'];
       if (src != null && !src.startsWith('http')) {
-        final imgPath = path.join(subjectPath, src);
+        final imgPath = path.join(currentSubjectPath, src);
         if (await File(imgPath).exists()) {
           final bytes = await File(imgPath).readAsBytes();
           final mime = lookupMimeType(imgPath) ?? 'image/png';
@@ -502,12 +535,33 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
     container.innerHtml = contentDoc.body?.innerHtml ?? '';
 
-    final finalHtmlContent = indexDoc.outerHtml;
+    executableHtmlContent = indexDoc.outerHtml;
+
+    // ==========================================
+    // INTEGRASI BARU: REDIREKSI PDF UNTUK HTML BIASA
+    // ==========================================
+    if (!useInternalWeb && Platform.isLinux && usePdfViewerLinux) {
+      try {
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => await Printing.convertHtml(
+            format: format,
+            html: executableHtmlContent,
+            baseUrl: Uri.file(currentSubjectPath).toString(),
+          ),
+          name: '${discussion.discussion}.pdf',
+        );
+        return;
+      } catch (e) {
+        debugPrint("Gagal mengonversi HTML ke PDF: $e");
+        // Teruskan ke bawah sebagai fallback otomatis ke sistem editor teks jika cetak PDF gagal
+      }
+    }
+
     final tempDir = await getTemporaryDirectory();
     final tempFile = File(
       path.join(tempDir.path, '${DateTime.now().millisecondsSinceEpoch}.html'),
     );
-    await tempFile.writeAsString(finalHtmlContent);
+    await tempFile.writeAsString(executableHtmlContent);
 
     if (useInternalWeb && context.mounted) {
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
