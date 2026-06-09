@@ -143,10 +143,22 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
                           ),
                         ),
                         child: ListTile(
-                          leading: const Icon(
-                            Icons.html,
-                            color: Colors.orange,
-                            size: 20,
+                          // MODIFIKASI: Membedakan icon dan warnanya secara dinamis berdasarkan ekstensi file (.md atau .html)
+                          leading: Builder(
+                            builder: (context) {
+                              final isMarkdown = file.path
+                                  .toLowerCase()
+                                  .endsWith('.md');
+                              return Icon(
+                                isMarkdown
+                                    ? Icons.article_outlined
+                                    : Icons.html,
+                                color: isMarkdown
+                                    ? Colors.blue.shade700
+                                    : Colors.orange.shade800,
+                                size: 20,
+                              );
+                            },
                           ),
                           title: Text(
                             file.title,
