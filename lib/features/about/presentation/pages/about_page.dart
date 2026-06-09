@@ -109,6 +109,13 @@ class _AboutPageState extends State<AboutPage>
             'Akses cepat ke materi referensi lokal Anda secara terstruktur berdasarkan Topik, Subjek, dan File Konten.',
       },
       {
+        'icon': Icons
+            .storage_outlined, // Anda juga bisa menggunakan Icons.dns_outlined atau Icons.vanguard_view_outlined sesuai selera
+        'title': 'Data Center (Backup & Share)',
+        'subtitle':
+            'Amankan data Anda dengan fitur kompresi ZIP otomatis atau distribusikan data antar perangkat secara wireless melalui local sharing server.',
+      },
+      {
         'icon': Icons.code,
         'title': 'Editor HTML & Markdown',
         'subtitle':
