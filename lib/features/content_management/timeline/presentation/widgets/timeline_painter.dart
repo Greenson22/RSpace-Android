@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/timeline_models.dart';
-import '../../discussions/utils/repetition_code_utils.dart';
+import '../../../discussions/presentation/utils/repetition_code_utils.dart';
 
 class TimelinePainter extends CustomPainter {
   final TimelineData timelineData;

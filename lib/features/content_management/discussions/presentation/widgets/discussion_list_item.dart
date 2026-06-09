@@ -17,7 +17,7 @@ import '../dialogs/smart_link_dialog.dart';
 import 'discussion_action_menu.dart';
 import 'discussion_point_list.dart';
 import 'discussion_subtitle.dart';
-import '../../subjects/subjects_page.dart';
+import '../../../subjects/presentation/subjects_page.dart';
 import '../dialogs/move_discussion_dialog.dart';
 import '../dialogs/html_file_picker_dialog.dart';
 import '../dialogs/edit_dialogs.dart';

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/core/services/storage_service.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
+import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
 
 import '../models/subject_model.dart';

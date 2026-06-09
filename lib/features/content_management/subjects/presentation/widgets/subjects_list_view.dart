@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/application/subject_provider.dart';
-import 'package:my_aplication/features/content_management/presentation/subjects/widgets/subject_list_tile.dart';
+import 'package:my_aplication/features/content_management/subjects/presentation/widgets/subject_list_tile.dart';
 
 class SubjectsListView extends StatelessWidget {
   final bool isKeyboardActive;

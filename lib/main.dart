@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'features/content_management/application/topic_provider.dart';
 
 // Import Halaman
-import 'features/content_management/presentation/topics/topics_page.dart';
+import 'features/content_management/topics/presentation/topics_page.dart';
 import 'features/perpusku/presentation/pages/perpusku_topic_page.dart';
 import 'features/settings/presentation/pages/settings_page.dart'; // Import feature baru Pengaturan
 import 'features/about/presentation/pages/about_page.dart'; // Sesuaikan path ini dengan folder About yang sudah ada

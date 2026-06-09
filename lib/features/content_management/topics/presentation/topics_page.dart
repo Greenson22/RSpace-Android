@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../domain/models/topic_model.dart';
 import '../../application/subject_provider.dart';
 import '../../application/topic_provider.dart';
-import '../subjects/subjects_page.dart';
+import '../../subjects/presentation/subjects_page.dart';
 import 'dialogs/topic_dialogs.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';

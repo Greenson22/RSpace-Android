@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/discussion_provider.dart';
-import '../../discussions/utils/repetition_code_utils.dart'; // Mengimpor fungsi utilitas repetisi yang benar
+import '../utils/repetition_code_utils.dart'; // Mengimpor fungsi utilitas repetisi yang benar
 
 class DiscussionStatsHeader extends StatefulWidget {
   final Color themeColor;

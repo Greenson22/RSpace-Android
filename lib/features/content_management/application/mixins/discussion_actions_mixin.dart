@@ -19,7 +19,7 @@ import '../../../../features/html_editor/presentation/pages/html_editor_page.dar
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
-import '../../presentation/discussions/utils/repetition_code_utils.dart';
+import '../../discussions/presentation/utils/repetition_code_utils.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
   DiscussionService get discussionService;

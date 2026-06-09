@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/add_discussion_dialog.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
+import 'package:my_aplication/features/content_management/discussions/presentation/dialogs/add_discussion_dialog.dart';
+import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
 import '../domain/models/discussion_model.dart';
 import '../domain/models/point_preset_model.dart';

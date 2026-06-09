@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../application/subject_provider.dart';
 // ==> IMPORT DIALOG YANG SUDAH DIREFAKTOR <==
-import '../../discussions/dialogs/repetition_code_order_dialog.dart';
+import '../../../discussions/presentation/dialogs/repetition_code_order_dialog.dart';
 
 Future<void> showSubjectSortDialog({required BuildContext context}) async {
   final provider = Provider.of<SubjectProvider>(context, listen: false);

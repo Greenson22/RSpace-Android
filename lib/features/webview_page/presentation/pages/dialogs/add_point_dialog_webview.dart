@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
-import 'package:my_aplication/features/content_management/presentation/discussions/utils/repetition_code_utils.dart';
+import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 // ==> IMPORT DIALOG MANAJEMEN PRESET <==
-import 'package:my_aplication/features/content_management/presentation/discussions/dialogs/manage_point_presets_dialog.dart';
+import 'package:my_aplication/features/content_management/discussions/presentation/dialogs/manage_point_presets_dialog.dart';
 
 // Nilai khusus untuk menandakan 'pilih otomatis'
 const String _autoSelectCode = 'AUTO_SELECT';

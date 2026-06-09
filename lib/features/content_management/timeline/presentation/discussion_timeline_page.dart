@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../../domain/models/discussion_model.dart';
 import 'discussion_timeline_provider.dart';
 import 'widgets/timeline_painter.dart';
-import '../../presentation/discussions/utils/repetition_code_utils.dart';
+import '../../discussions/presentation/utils/repetition_code_utils.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
 import 'dialogs/timeline_settings_dialog.dart';
 

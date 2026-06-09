@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/models/timeline_models.dart';
-import '../../presentation/discussions/utils/repetition_code_utils.dart';
+import '../../discussions/presentation/utils/repetition_code_utils.dart';
 import 'dialogs/reschedule_discussions_dialog.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/user_data_service.dart';
