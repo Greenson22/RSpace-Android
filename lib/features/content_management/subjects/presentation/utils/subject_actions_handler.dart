@@ -262,7 +262,6 @@ class SubjectActionsHandler {
       title: 'Tambah Subject Baru',
       label: 'Nama Subject di RSpace',
       onSave: (name, icon) async {
-        // DIUBAH: Mengambil argument name dan icon
         final newPath = await showLinkOrCreatePerpuskuDialog(
           context: context,
           forSubjectName: name,
@@ -287,7 +286,6 @@ class SubjectActionsHandler {
     );
   }
 
-  // DIUBAH: Menyesuaikan callback dialog kombinasi Nama & Ikon yang baru
   static Future<void> renameSubject(
     BuildContext context,
     Subject subject,
@@ -417,14 +415,6 @@ class SubjectActionsHandler {
         title: const Text('Pilih Metode Edit Template'),
         children: [
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'ai_direct'),
-            child: const ListTile(
-              leading: Icon(Icons.auto_awesome),
-              title: Text('Generate dengan AI (Otomatis)'),
-              subtitle: Text('Buat & simpan template baru berdasarkan tema.'),
-            ),
-          ),
-          SimpleDialogOption(
             onPressed: () => Navigator.pop(context, 'ai_prompt'),
             child: const ListTile(
               leading: Icon(Icons.copy_all_outlined),
@@ -470,18 +460,7 @@ class SubjectActionsHandler {
       ),
     );
 
-    if (choice == 'ai_direct' && context.mounted) {
-      final success = await showDialog<bool>(
-        context: context,
-        builder: (_) => ChangeNotifierProvider.value(
-          value: provider,
-          child: GenerateIndexTemplateDialog(subject: subject),
-        ),
-      );
-      if (success == true && context.mounted) {
-        showSnackBar(context, 'Template baru berhasil dibuat oleh AI!');
-      }
-    } else if (choice == 'ai_prompt' && context.mounted) {
+    if (choice == 'ai_prompt' && context.mounted) {
       await showGenerateIndexPromptDialog(context, subject);
     }
   }
