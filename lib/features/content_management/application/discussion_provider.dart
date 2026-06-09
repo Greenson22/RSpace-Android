@@ -216,9 +216,11 @@ class DiscussionProvider
     await _savePointPresets();
   }
 
-  Future<void> addDiscussion(AddDiscussionResult result) async {
+  // UBAH: Dari Future<void> menjadi Future<Discussion>
+  Future<Discussion> addDiscussion(AddDiscussionResult result) async {
     String? filePathValue;
 
+    // 1. Logika untuk otomatisasi File HTML
     if (result.linkType == DiscussionLinkType.html) {
       if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
         throw Exception(
@@ -232,7 +234,24 @@ class DiscussionProvider
       );
       filePathValue = path.join(sourceSubjectLinkedPath!, createdFileName);
     }
+    // ==> TAMBAHAN BARU: Logika untuk otomatisasi File Markdown (.md) <==
+    else if (result.linkType == DiscussionLinkType.markdown) {
+      if (sourceSubjectLinkedPath == null || sourceSubjectLinkedPath!.isEmpty) {
+        throw Exception(
+          "Tidak dapat membuat file karena Subject ini belum ditautkan ke folder PerpusKu.",
+        );
+      }
+      // Memanggil service untuk membuat file .md fisik di local storage
+      final createdFileName = await discussionService.createDiscussionMarkdownFile(
+        perpuskuBasePath:
+            await getPerpuskuHtmlBasePath(), // Menggunakan base path yang sama atau disesuaikan
+        subjectLinkedPath: sourceSubjectLinkedPath!,
+        discussionName: result.name,
+      );
+      filePathValue = path.join(sourceSubjectLinkedPath!, createdFileName);
+    }
 
+    // 2. Inisialisasi model objek Discussion baru
     final newDiscussion = Discussion(
       discussion: result.name,
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -244,10 +263,14 @@ class DiscussionProvider
           ? result.linkData as String?
           : null,
     );
-    _allDiscussions.add(newDiscussion);
 
+    // 3. Masukkan ke dalam list dan simpan state data
+    _allDiscussions.add(newDiscussion);
     filterAndSortDiscussions();
     await saveDiscussions();
+
+    // 4. KEMBALIKAN OBJEK: Agar bisa dipakai oleh UI di discussions_page.dart
+    return newDiscussion;
   }
 
   Future<void> addDiscussionWithPredefinedTitle({

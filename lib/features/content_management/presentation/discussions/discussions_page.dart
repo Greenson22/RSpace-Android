@@ -218,7 +218,26 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     );
     if (result != null && mounted) {
       try {
-        await provider.addDiscussion(result);
+        // 1. Simpan entri data diskusi ke provider dan tangkap objek barunya
+        final newDiscussion = await provider.addDiscussion(result);
+
+        // 2. Jika user memilih opsi buat file baru dan path subjek tersedia, langsung buat filenya
+        if (result.linkData == 'create_new' && widget.linkedPath != null) {
+          if (result.linkType == DiscussionLinkType.markdown) {
+            // Otomatis membuat file .md fisik secara realtime
+            await provider.createAndLinkMarkdownFile(
+              newDiscussion,
+              widget.linkedPath!,
+            );
+          } else if (result.linkType == DiscussionLinkType.html) {
+            // Otomatis membuat file .html fisik secara realtime
+            await provider.createAndLinkHtmlFile(
+              newDiscussion,
+              widget.linkedPath!,
+            );
+          }
+        }
+
         _showSnackBar('Diskusi "${result.name}" berhasil ditambahkan.');
         await Provider.of<NeuronProvider>(
           context,

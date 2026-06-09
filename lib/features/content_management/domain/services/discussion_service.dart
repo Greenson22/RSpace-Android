@@ -49,6 +49,48 @@ class DiscussionService {
     return fileName;
   }
 
+  // ==> TAMBAHAN BARU: Fungsi untuk membuat file fisik .md secara otomatis <==
+  Future<String> createDiscussionMarkdownFile({
+    required String perpuskuBasePath,
+    required String subjectLinkedPath,
+    required String discussionName,
+  }) async {
+    // Format nama file agar aman (menghapus karakter aneh, spasi menjadi underscore)
+    String fileName = discussionName
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(' ', '_')
+        .toLowerCase();
+    fileName = '$fileName.md';
+
+    final directoryPath = path.join(perpuskuBasePath, subjectLinkedPath);
+    final directory = Directory(directoryPath);
+    if (!await directory.exists()) {
+      throw Exception("Direktori tertaut tidak ditemukan: $directoryPath");
+    }
+
+    final filePath = path.join(directoryPath, fileName);
+    final file = File(filePath);
+
+    // Antispasi jika nama file sudah ada di folder agar tidak menimpa file lama
+    if (await file.exists()) {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      fileName = '${path.basenameWithoutExtension(fileName)}_$timestamp.md';
+    }
+
+    final finalFile = File(path.join(directoryPath, fileName));
+
+    // Template struktur dokumen Markdown awal
+    final markdownTemplate =
+        '''
+# $discussionName
+
+*Catatan diskusi baru siap ditulis di sini...*
+''';
+
+    await finalFile.writeAsString(markdownTemplate);
+    return fileName;
+  }
+
   Future<String?> moveDiscussionFile({
     required String perpuskuBasePath,
     required String sourceRelativePath,
@@ -101,7 +143,6 @@ class DiscussionService {
     }
   }
 
-  // ==> PERUBAIKAN UTAMA DI FUNGSI INI <==
   Future<List<Discussion>> loadDiscussions(String jsonFilePath) async {
     final file = File(jsonFilePath);
     if (!await file.exists()) {
@@ -119,8 +160,6 @@ class DiscussionService {
       final metadata = jsonData['metadata'] as Map<String, dynamic>? ?? {};
       final isLocked = metadata['isLocked'] as bool? ?? false;
 
-      // Jika terkunci atau kontennya adalah String (bukan List),
-      // kembalikan list kosong untuk mencegah error.
       if (isLocked || content is String) {
         return [];
       }
