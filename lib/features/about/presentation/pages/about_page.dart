@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/theme/app_theme.dart'; // Import AppTheme
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -42,12 +43,40 @@ class _AboutPageState extends State<AboutPage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+
+    // Mengambil gradasi secara otomatis berdasarkan judul "Tentang RSpace"
+    final List<Color> appBarGradient = AppTheme.getGradientForTitle(
+      'Tentang RSpace',
+    );
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tentang RSpace'),
+        title: Text(
+          'Tentang RSpace',
+          style: TextStyle(
+            fontSize: 18.0 * textScaleFactor,
+            fontWeight: FontWeight.w600,
+            color: Colors.white, // Agar kontras dengan gradasi
+          ),
+        ),
+        // === PENERAPAN TEMA GRADASI PADA APPBAR ===
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: appBarGradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 4,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Fitur Aplikasi'),
             Tab(text: 'Pengembang'),
@@ -64,6 +93,7 @@ class _AboutPageState extends State<AboutPage>
     );
   }
 
+  // ... (Sisa kode _buildFeaturesTab, _buildDeveloperTab, dan _AnimatedFeatureListItem tetap sama)
   Widget _buildFeaturesTab(BuildContext context) {
     final features = [
       {
