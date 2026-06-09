@@ -6,8 +6,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_theme.dart';
-// Import halaman Perpusku yang dipindahkan ke sini
 import '../../../perpusku/presentation/pages/perpusku_topic_page.dart';
+// Import halaman DataCenterScreen agar bisa diarahkan lewat navigasi menu
+import '../../../data_center/presentation/screens/data_center_screen.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -17,19 +18,18 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final SharedPreferencesService _storageService = SharedPreferencesService();
+  final StorageService _storageService =
+      StorageService(); // Menggunakan nama kelas pembungkus StorageService yang valid
   final TextEditingController _pathController = TextEditingController();
 
   String _currentPath = "Memuat...";
   bool _isLoading = true;
   bool _useInternalWeb = true;
-  // === BARU: Variabel status untuk fitur Cetak/PDF khusus Linux ===
   bool _usePdfViewerLinux = false;
 
   String get _webPreferenceKey =>
       Platform.isAndroid ? 'use_internal_web_android' : 'use_internal_web';
 
-  // === BARU: Kunci penyimpanan preferensi PDF Linux ===
   String get _pdfPreferenceKey => 'use_pdf_viewer_linux';
 
   bool get _defaultWebPreferenceValue => Platform.isAndroid ? false : true;
@@ -70,7 +70,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final prefs = await SharedPreferences.getInstance();
     final useInternal =
         prefs.getBool(_webPreferenceKey) ?? _defaultWebPreferenceValue;
-    // === BARU: Memuat preferensi PDF khusus Linux ===
     final usePdfLinux = prefs.getBool(_pdfPreferenceKey) ?? false;
 
     setState(() {
@@ -209,7 +208,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               children: [
                 // ========================================================
-                // SEKSI MODUL & KONTEN (BARU)
+                // SEKSI MODUL & KONTEN
                 // ========================================================
                 Text(
                   'Modul Aplikasi',
@@ -250,6 +249,46 @@ class _SettingsPageState extends State<SettingsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const PerpuskuTopicPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                // --------------------------------------------------------
+                // ==> TAMBAHAN BARU: Opsi Menu Navigasi Menuju Data Center <==
+                // --------------------------------------------------------
+                const Divider(height: 16, thickness: 0.5),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 2.0 * textScaleFactor,
+                  ),
+                  leading: Icon(
+                    Icons.storage_rounded,
+                    color: appBarGradient.first,
+                    size: 22.0 * textScaleFactor,
+                  ),
+                  title: Text(
+                    'Data Center',
+                    style: TextStyle(
+                      fontSize: 14.0 * textScaleFactor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Manajemen pencadangan data lokal, impor file ZIP, dan sinkronisasi nirkabel RSpace & Perpusku.',
+                    style: TextStyle(fontSize: 11.0 * textScaleFactor),
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14.0 * textScaleFactor,
+                    color: Colors.grey,
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DataCenterScreen(),
                       ),
                     );
                   },
@@ -406,7 +445,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const Divider(height: 32, thickness: 1.0),
 
-                // === BARU: OPSI CETAK/PRATINJAU PDF DITAMPILKAN SECARA DINAMIS ===
                 if (Platform.isLinux && !_useInternalWeb) ...[
                   ListTile(
                     contentPadding: EdgeInsets.symmetric(
