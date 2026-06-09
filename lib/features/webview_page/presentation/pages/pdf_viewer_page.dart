@@ -3,17 +3,24 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
+// Import dependencies yang diperlukan untuk dialog diskusi dan snackbar
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
+import 'dialogs/discussion_details_dialog.dart';
+import 'dialogs/add_point_dialog_webview.dart';
+import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final String htmlContent;
   final String pageTitle;
   final String subjectPath;
+  final Discussion? discussion; // Tambahkan parameter discussion
 
   const PdfViewerPage({
     super.key,
     required this.htmlContent,
     required this.pageTitle,
     required this.subjectPath,
+    this.discussion, // Inisialisasi di konstruktor
   });
 
   @override
@@ -108,13 +115,64 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isFromDiscussion = widget.discussion != null;
+
+    // --- SKALA UKURAN APPBAR UNTUK MOBILE (Disamakan dengan WebViewPage & TopicsPage) ---
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseAppBarIconSize = 20.0;
+    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+
+    // --- INTEGRASI TEMA DINAMIS ---
+    final theme = Theme.of(context);
+    final Color appBarForegroundColor =
+        theme.appBarTheme.foregroundColor ??
+        (theme.brightness == Brightness.dark ? Colors.white : Colors.black87);
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? theme.primaryColor,
+        foregroundColor: appBarForegroundColor,
+        elevation: theme.appBarTheme.elevation ?? 0,
+        iconTheme: IconThemeData(
+          size: scaledAppBarIconSize,
+          color: appBarForegroundColor,
+        ),
         title: Text(
           widget.pageTitle,
           style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w600),
+          overflow: TextOverflow.ellipsis,
         ),
-        elevation: 2,
+        actions: <Widget>[
+          // Tampilkan tombol Tambah Poin & Edit Detail jika berasal dari diskusi
+          if (isFromDiscussion) ...[
+            IconButton(
+              icon: const Icon(Icons.add_comment_outlined),
+              iconSize: scaledAppBarIconSize,
+              color: appBarForegroundColor,
+              tooltip: 'Tambah Poin',
+              onPressed: () {
+                showAddPointDialogFromWebView(
+                  context: context,
+                  discussion: widget.discussion!,
+                  onPointAdded: () {
+                    showAppSnackBar(context, 'Poin berhasil ditambahkan.');
+                  },
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_note),
+              iconSize: scaledAppBarIconSize,
+              color: appBarForegroundColor,
+              tooltip: 'Edit Detail & Poin',
+              onPressed: () =>
+                  showDiscussionDetailsDialog(context, widget.discussion!),
+            ),
+          ],
+          const SizedBox(width: 12.0),
+        ],
       ),
       body: _buildBody(),
     );
@@ -157,13 +215,11 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       );
     }
 
-    // Dokumen PDF yang terkunci byte datanya ditampilkan interaktif langsung di dalam aplikasi
     return PdfPreview(
       build: (format) async => _pdfBytes!,
       allowPrinting: true,
       allowSharing: true,
-      canChangePageFormat:
-          false, // Dikunci karena kalkulasi dimensi dilakukan di awal oleh biner Linux
+      canChangePageFormat: false,
       previewPageMargin: const EdgeInsets.all(16),
     );
   }

@@ -435,14 +435,24 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       // ==========================================
       if (!useInternalWeb && Platform.isLinux && usePdfViewerLinux) {
         if (context.mounted) {
+          final provider = Provider.of<DiscussionProvider>(
+            context,
+            listen: false,
+          );
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PdfViewerPage(
-                htmlContent: executableHtmlContent,
-                pageTitle: discussion.discussion,
-                subjectPath: currentSubjectPath,
-              ),
+              builder: (context) =>
+                  ChangeNotifierProvider<DiscussionProvider>.value(
+                    value: provider,
+                    child: PdfViewerPage(
+                      htmlContent: executableHtmlContent,
+                      pageTitle: discussion.discussion,
+                      subjectPath: currentSubjectPath,
+                      discussion:
+                          discussion, // Mengoper parameter agar tombol aksi tampil
+                    ),
+                  ),
             ),
           );
           return; // Navigasi selesai, cegah alur eksternal
@@ -539,14 +549,24 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     // ==========================================
     if (!useInternalWeb && Platform.isLinux && usePdfViewerLinux) {
       if (context.mounted) {
+        final provider = Provider.of<DiscussionProvider>(
+          context,
+          listen: false,
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PdfViewerPage(
-              htmlContent: executableHtmlContent,
-              pageTitle: discussion.discussion,
-              subjectPath: currentSubjectPath,
-            ),
+            builder: (context) =>
+                ChangeNotifierProvider<DiscussionProvider>.value(
+                  value: provider,
+                  child: PdfViewerPage(
+                    htmlContent: executableHtmlContent,
+                    pageTitle: discussion.discussion,
+                    subjectPath: currentSubjectPath,
+                    discussion:
+                        discussion, // Mengoper parameter agar tombol aksi tampil
+                  ),
+                ),
           ),
         );
         return; // Navigasi selesai, cegah alur eksternal
