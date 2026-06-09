@@ -133,7 +133,6 @@ class ClientSharingHandler {
 
     try {
       final channel = WebSocketChannel.connect(Uri.parse(url));
-      bool isDialogOpened = false;
       bool isConnected = true;
       StateSetter? clientDialogState;
 
@@ -166,9 +165,61 @@ class ClientSharingHandler {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Data sukses dikirim!')));
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengirim data: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
         } finally {
           setLoading(false);
         }
+      }
+
+      // --- PERBAIKAN UTAMA: Buka dialog langsung saat mencoba menghubungkan ke server ---
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => StatefulBuilder(
+            builder: (context, setDialogState) {
+              clientDialogState = setDialogState;
+              return AlertDialog(
+                title: Text(
+                  isConnected ? 'Terhubung Ke Server' : 'Terputus dari Server',
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('IP Server: $ipAddress'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: isConnected ? sendDataToServer : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Kirim Data Saya Ke Server'),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      channel.sink.close();
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text(
+                      'Tutup',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
       }
 
       channel.stream.listen(
@@ -176,6 +227,15 @@ class ClientSharingHandler {
           setLoading(false);
           try {
             Map<String, dynamic> data = jsonDecode(pesan);
+
+            // Tangani konfirmasi koneksi awal dari server untuk memperbarui UI Dialog jika diperlukan
+            if (data['tipe_pesan'] == 'koneksi_terkonfirmasi') {
+              isConnected = true;
+              if (clientDialogState != null) clientDialogState!(() {});
+              return;
+            }
+
+            // Tangani proses transfer data berkas masuk
             if (data['tipe_pesan'] == 'data_transfer' &&
                 data['full_backup_zip'] != null) {
               List<int> zipBytes = base64Decode(data['full_backup_zip']);
@@ -186,75 +246,49 @@ class ClientSharingHandler {
               );
               await targetFile.writeAsBytes(zipBytes);
 
-              if (context.mounted)
+              if (context.mounted) {
                 Provider.of<TopicProvider>(
                   context,
                   listen: false,
                 ).fetchTopics();
+              }
               onRefresh();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Berkas diterima dari Server!')),
+                const SnackBar(
+                  content: Text('Berkas diterima dari Server!'),
+                  backgroundColor: Colors.teal,
+                ),
               );
             }
           } catch (e) {
             debugPrint("Client error parsing data: $e");
           }
-
-          if (!isDialogOpened && context.mounted) {
-            isDialogOpened = true;
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (ctx) => StatefulBuilder(
-                builder: (context, setDialogState) {
-                  clientDialogState = setDialogState;
-                  return AlertDialog(
-                    title: Text(isConnected ? 'Terhubung' : 'Terputus'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('IP: $ipAddress'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: isConnected ? sendDataToServer : null,
-                          child: const Text('Kirim Data Saya Ke Server'),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          channel.sink.close();
-                          Navigator.pop(ctx);
-                        },
-                        child: const Text(
-                          'Tutup',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ).then((_) => isDialogOpened = false);
-          }
         },
         onDone: () {
           setLoading(false);
           isConnected = false;
-          clientDialogState?.call(() {});
+          if (clientDialogState != null)
+            clientDialogState!(
+              () {},
+            ); // Memperbarui status tombol & judul dialog menjadi 'Terputus'
         },
         onError: (_) {
           setLoading(false);
           isConnected = false;
-          clientDialogState?.call(() {});
+          if (clientDialogState != null)
+            clientDialogState!(
+              () {},
+            ); // Memperbarui status tombol & judul dialog menjadi 'Terputus'
         },
       );
     } catch (e) {
       setLoading(false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal koneksi!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal koneksi!'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }
