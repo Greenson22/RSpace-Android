@@ -9,13 +9,15 @@ import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:markdown/markdown.dart' as md;
-// ==> DITAMBAHKAN: Import yang dibutuhkan
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+
 import '../../../webview_page/presentation/pages/webview_page.dart';
 import '../providers/discussion_provider.dart';
 
 import '../../../html_editor/presentation/pages/html_editor_page.dart';
+// === IMPOR BARU: Mengarahkan ke berkas halaman editor Markdown bertema ===
+import '../../../html_editor/presentation/pages/markdown_editor_page.dart';
 import '../models/discussion_model.dart';
 import '../services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
@@ -190,7 +192,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     String newRelativePath,
   ) async {
     discussion.filePath = newRelativePath;
-    // Deteksi tipe file berdasarkan ekstensi
     if (newRelativePath.toLowerCase().endsWith('.md')) {
       discussion.linkType = DiscussionLinkType.markdown;
     } else {
@@ -278,7 +279,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     String subjectLinkedPath,
   ) async {
     final perpuskuBasePath = await getPerpuskuHtmlBasePath();
-    // Sanitasi nama file
     final safeName = discussion.discussion.replaceAll(RegExp(r'[^\w\s-]'), '');
     final fileName = '$safeName.md';
     final fullPath = path.join(perpuskuBasePath, subjectLinkedPath, fileName);
@@ -329,7 +329,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    // 1. Auto-Create untuk Markdown jika file belum ada
     if (discussion.linkType == DiscussionLinkType.markdown) {
       if (discussion.filePath == null || discussion.filePath!.isEmpty) {
         if (sourceSubjectLinkedPath != null) {
@@ -346,12 +345,11 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     final perpuskuPath = await pathService.perpuskuDataPath;
     final basePath = path.join(perpuskuPath, 'file_contents', 'topics');
 
-    // Load preferensi web internal/eksternal terlebih dahulu
     final prefs = await SharedPreferences.getInstance();
     final useInternalWeb = prefs.getBool('use_internal_web') ?? true;
 
     // ==========================================
-    // HANDLING MARKDOWN
+    // HANDLING MARKDOWN PREVIEW
     // ==========================================
     if (discussion.linkType == DiscussionLinkType.markdown) {
       final fullPath = path.join(basePath, finalRelativePath);
@@ -432,7 +430,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       await tempFile.writeAsString(styledHtmlWrapper);
 
       if (useInternalWeb && context.mounted) {
-        // ==> INJEKSI PROVIDER DI SINI AGAR TOMBOL BERFUNGSI <==
         final provider = Provider.of<DiscussionProvider>(
           context,
           listen: false,
@@ -513,7 +510,6 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     await tempFile.writeAsString(finalHtmlContent);
 
     if (useInternalWeb && context.mounted) {
-      // ==> INJEKSI PROVIDER DI SINI AGAR TOMBOL BERFUNGSI <==
       final provider = Provider.of<DiscussionProvider>(context, listen: false);
       Navigator.push(
         context,
@@ -535,13 +531,10 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     }
   }
 
-  // ... (Sisa fungsi file ini biarkan sama seperti sebelumnya) ...
-
   Future<void> editDiscussionFileWithSelection(
     Discussion discussion,
     BuildContext context,
   ) async {
-    // Karena ThemeProvider dihapus, tampilkan dialog pilihan secara default
     final choice = await showDialog<String?>(
       context: context,
       builder: (context) => AlertDialog(
@@ -573,13 +566,11 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     Discussion discussion,
     BuildContext context,
   ) async {
-    // Handling Editor Markdown
     if (discussion.linkType == DiscussionLinkType.markdown) {
       await _openWithInternalMarkdownEditor(discussion, context);
       return;
     }
 
-    // Default HTML Editor
     final content = await readHtmlFromFile(discussion);
     final correctPath = getCorrectRelativePath(discussion);
 
@@ -597,11 +588,13 @@ mixin DiscussionActionsMixin on ChangeNotifier {
     );
   }
 
+  // ========================================================================
+  // PENINGKATAN UTAMA: Mengarahkan editor internal .md ke MarkdownEditorPage kustom
+  // ========================================================================
   Future<void> _openWithInternalMarkdownEditor(
     Discussion discussion,
     BuildContext context,
   ) async {
-    // 1. Cek apakah path file kosong. Jika ya, coba buat file baru.
     if (discussion.filePath == null || discussion.filePath!.isEmpty) {
       if (sourceSubjectLinkedPath != null &&
           sourceSubjectLinkedPath!.isNotEmpty) {
@@ -642,8 +635,9 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => _SimpleMarkdownEditor(
-            title: discussion.discussion,
+          // Dialihkan ke kelas halaman terpisah yang mendukung penuh Syntax Highlighting dan EditorTheme
+          builder: (context) => MarkdownEditorPage(
+            pageTitle: discussion.discussion,
             initialContent: content,
             onSave: (newContent) async {
               await file.writeAsString(newContent);
@@ -679,72 +673,5 @@ mixin DiscussionActionsMixin on ChangeNotifier {
       final result = await OpenFile.open(contentPath);
       if (result.type != ResultType.done) throw Exception(result.message);
     }
-  }
-}
-
-// Widget Editor Sederhana untuk Markdown
-class _SimpleMarkdownEditor extends StatefulWidget {
-  final String title;
-  final String initialContent;
-  final Function(String) onSave;
-
-  const _SimpleMarkdownEditor({
-    required this.title,
-    required this.initialContent,
-    required this.onSave,
-  });
-
-  @override
-  State<_SimpleMarkdownEditor> createState() => _SimpleMarkdownEditorState();
-}
-
-class _SimpleMarkdownEditorState extends State<_SimpleMarkdownEditor> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialContent);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Edit: ${widget.title}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            tooltip: 'Simpan',
-            onPressed: () {
-              widget.onSave(_controller.text);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Disimpan!')));
-            },
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          controller: _controller,
-          maxLines: null,
-          expands: true,
-          textAlignVertical: TextAlignVertical.top,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Tulis markdown di sini...',
-          ),
-        ),
-      ),
-    );
   }
 }
