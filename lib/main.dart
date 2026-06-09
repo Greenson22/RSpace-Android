@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Aplikasi Anda',
+      title: 'RSpace Next',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -90,7 +90,7 @@ class CustomWindowFrame extends StatelessWidget {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Aplikasi Anda',
+                          'RSpace Next',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
