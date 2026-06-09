@@ -404,11 +404,13 @@ class _BackupTabState extends State<BackupTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Daftar Berkas Backup',
+                    'Daftar Berkas',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
+                  // Menerapkan FittedBox agar elemen mengecil secara proporsional jika ruang sempit
                   FittedBox(
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (_isSelectionMode) ...[
                           IconButton(
@@ -521,41 +523,72 @@ class _BackupTabState extends State<BackupTab> {
                             ),
                           ),
                         ] else ...[
-                          ElevatedButton.icon(
-                            onPressed: () => _importZipLokal(),
-                            icon: const Icon(Icons.unarchive, size: 14),
-                            label: const Text(
-                              'Import ZIP',
-                              style: TextStyle(fontSize: 11),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.indigo,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
+                          // Menggunakan Wrap untuk mencegah tombol bertabrakan di layar HP (Mobile)
+                          Wrap(
+                            spacing: 8, // Jarak horizontal antar tombol
+                            runSpacing:
+                                6, // Jarak vertikal jika tombol turun ke baris baru di mobile
+                            alignment: WrapAlignment.end,
+                            children: [
+                              // === TOMBOL IMPORT ZIP ===
+                              ElevatedButton.icon(
+                                onPressed: () => _importZipLokal(),
+                                icon: const Icon(
+                                  Icons.unarchive,
+                                  size: 15,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Import ZIP',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 2,
+                                ),
                               ),
-                              minimumSize: Size.zero,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          ElevatedButton.icon(
-                            onPressed: () => _backupAllFeature(),
-                            icon: const Icon(
-                              Icons.folder_zip_outlined,
-                              size: 14,
-                            ),
-                            label: const Text(
-                              'Buat Backup',
-                              style: TextStyle(fontSize: 11),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
+                              // === TOMBOL BUAT BACKUP ===
+                              ElevatedButton.icon(
+                                onPressed: () => _backupAllFeature(),
+                                icon: const Icon(
+                                  Icons.folder_zip_outlined,
+                                  size: 15,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Buat Backup',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.teal.shade700,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 2,
+                                ),
                               ),
-                              minimumSize: Size.zero,
-                            ),
+                            ],
                           ),
                         ],
                       ],
