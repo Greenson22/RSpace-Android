@@ -39,8 +39,12 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     _initializeEditor();
   }
 
+  // === PERBAIKAN DI SINI: MENYARING DATA SAAT EDITOR DIKREASI ===
   Future<void> _initializeEditor() async {
-    _controller = CodeController(text: widget.initialContent, language: xml);
+    // Menyaring isi konten awal menggunakan fungsi sanitasi sebelum diserahkan ke CodeController
+    final sanitizedContent = _sanitizeUtf16(widget.initialContent);
+
+    _controller = CodeController(text: sanitizedContent, language: xml);
     _previousText = _controller!.text;
     _controller!.addListener(_onTextChanged);
     if (mounted) {
@@ -65,6 +69,29 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     super.dispose();
   }
 
+  // === DIOPTIMALKAN: FUNGSI UTAS SANITASI UNTUK MENCEGAH EROR INVALID UTF-16 ===
+  String _sanitizeUtf16(String input) {
+    if (input.isEmpty) return input;
+    try {
+      // 1. Bersihkan karakter surrogate UTF-16 yang berdiri sendiri/cacat menggunakan Regular Expression
+      final cleanRegex = input.replaceAll(
+        RegExp(
+          r'[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]',
+        ),
+        '',
+      );
+
+      // 2. Validasi ulang ke bentuk kumpulan code points (Runes) resmi Flutter
+      return String.fromCharCodes(cleanRegex.runes);
+    } catch (_) {
+      // Fallback pamungkas: Memisahkan karakter non-standar yang berpotensi merusak kanvas render teks
+      return input.replaceAll(
+        RegExp(r'[^\x00-\x7F\x80-\xFF\u0100-\uFFFF]'),
+        '',
+      );
+    }
+  }
+
   void _onTextChanged() {
     if (_isAutoEditing) return;
 
@@ -73,21 +100,30 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
     if (currentText.length < _previousText.length) {
       final start = currentSelection.start;
-      final deletedText = _previousText.substring(
-        start,
-        start + (_previousText.length - currentText.length),
-      );
 
-      final openingTagRegex = RegExp(r'^<([a-zA-Z0-9]+)\s*.*?>$');
-      final selfClosingTags = {'br', 'hr', 'img', 'input', 'meta', 'link'};
+      if (start < 0 || start > _previousText.length) return;
 
-      final match = openingTagRegex.firstMatch(deletedText.trim());
-      if (match != null) {
-        final tagName = match.group(1);
-        if (tagName != null &&
-            !selfClosingTags.contains(tagName.toLowerCase())) {
-          _findAndRemoveMatchingTag(tagName, start);
+      try {
+        final deletedLength = _previousText.length - currentText.length;
+        final endLocation = start + deletedLength;
+
+        if (endLocation <= _previousText.length) {
+          final deletedText = _previousText.substring(start, endLocation);
+
+          final openingTagRegex = RegExp(r'^<([a-zA-Z0-9]+)\s*.*?>$');
+          final selfClosingTags = {'br', 'hr', 'img', 'input', 'meta', 'link'};
+
+          final match = openingTagRegex.firstMatch(deletedText.trim());
+          if (match != null) {
+            final tagName = match.group(1);
+            if (tagName != null &&
+                !selfClosingTags.contains(tagName.toLowerCase())) {
+              _findAndRemoveMatchingTag(tagName, start);
+            }
+          }
         }
+      } catch (e) {
+        // Mencegah crash akibat kegagalan substring acak saat mengetik sangat cepat
       }
     }
 
@@ -116,9 +152,12 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
         if (balance == 0) {
           _isAutoEditing = true;
-          final newText =
+          final newTextRaw =
               text.substring(0, nextClosingTag) +
               text.substring(nextClosingTag + tagName.length + 3);
+
+          // MENERAPKAN SANITASI SEBELUM TEKS DI-RENDER FLUTTER
+          final newText = _sanitizeUtf16(newTextRaw);
 
           final selection = TextSelection.fromPosition(
             TextPosition(offset: deletionStartOffset),
@@ -154,7 +193,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     } else if (start > 0 && text[start - 1] == '\n') {
       start--;
     }
-    final newText = text.substring(0, start) + text.substring(end);
+    final newTextRaw = text.substring(0, start) + text.substring(end);
+
+    // MENERAPKAN SANITASI PADA MODE HAPUS BARIS
+    final newText = _sanitizeUtf16(newTextRaw);
+
     _controller!.text = newText;
     _controller!.selection = TextSelection.fromPosition(
       TextPosition(offset: start),
@@ -164,8 +207,9 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   void _stripAllHtmlTags() {
     if (_controller == null) return;
     final currentText = _controller!.text;
-    final newText = currentText.replaceAll(RegExp(r'<[^>]*>'), '');
-    _controller!.text = newText;
+    final newTextRaw = currentText.replaceAll(RegExp(r'<[^>]*>'), '');
+
+    _controller!.text = _sanitizeUtf16(newTextRaw);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Semua tag HTML telah dihapus.')),
     );
@@ -181,7 +225,8 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     );
     final match = bodyContentRegex.firstMatch(currentText);
     if (match != null && match.group(1) != null) {
-      _controller!.text = match.group(1)!.trim();
+      final newTextRaw = match.group(1)!.trim();
+      _controller!.text = _sanitizeUtf16(newTextRaw);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hanya konten <body> yang dipertahankan.'),
@@ -208,8 +253,11 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     final match = bodyContentRegex.firstMatch(currentText);
     if (match != null && match.group(1) != null) {
       final bodyContent = match.group(1)!;
-      final newText = currentText.replaceFirst(bodyContentRegex, bodyContent);
-      _controller!.text = newText;
+      final newTextRaw = currentText.replaceFirst(
+        bodyContentRegex,
+        bodyContent,
+      );
+      _controller!.text = _sanitizeUtf16(newTextRaw);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tag <body> telah dihapus.')),
       );
@@ -226,7 +274,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   void _stripHead() {
     if (_controller == null) return;
     final currentText = _controller!.text;
-    final newText = currentText.replaceAll(
+    final newTextRaw = currentText.replaceAll(
       RegExp(
         r'<head[^>]*>[\s\S]*?<\/head>',
         caseSensitive: false,
@@ -234,7 +282,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       ),
       '',
     );
-    _controller!.text = newText;
+    _controller!.text = _sanitizeUtf16(newTextRaw);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Bagian <head> telah dihapus.')),
     );
@@ -267,103 +315,146 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Edit: ${widget.pageTitle}',
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.delete_sweep_outlined,
-              color: _isLineDeletionMode ? Colors.amber : null,
-            ),
-            onPressed: () {
-              setState(() {
-                _isLineDeletionMode = !_isLineDeletionMode;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    _isLineDeletionMode
-                        ? 'Mode Hapus Baris Aktif'
-                        : 'Mode Hapus Baris Nonaktif',
-                  ),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-            tooltip: 'Aktifkan/Nonaktifkan Mode Hapus Baris',
-          ),
-          PopupMenuButton<VoidCallback>(
-            icon: const Icon(Icons.text_format),
-            tooltip: 'Olah Teks',
-            onSelected: (action) => action(),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: _extractBodyContent,
-                child: const Text('Ekstrak Konten Body'),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: _stripAllHtmlTags,
-                child: const Text('Hapus Semua Tag HTML'),
-              ),
-              PopupMenuItem(
-                value: _stripBodyTags,
-                child: const Text('Hapus Tag Body (Kecuali Isi)'),
-              ),
-              PopupMenuItem(
-                value: _stripHead,
-                child: const Text('Hapus Head & Isinya'),
-              ),
-            ],
-          ),
-          DropdownButton<EditorTheme>(
-            value: _selectedTheme,
-            onChanged: _handleThemeChanged,
-            items: editorThemes.map<DropdownMenuItem<EditorTheme>>((
-              EditorTheme theme,
-            ) {
-              return DropdownMenuItem<EditorTheme>(
-                value: theme,
-                child: Text(
-                  theme.name,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              );
-            }).toList(),
-            dropdownColor: Colors.grey[800],
-            underline: Container(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isLoading || _controller == null
-                ? null
-                : _saveFileContent,
-            tooltip: 'Simpan Perubahan',
-          ),
-        ],
+    // MENGEKSTRAK WARNA UTAMA DARI TEMA EDITOR YANG DIPILIH
+    final Color editorBackgroundColor =
+        _selectedTheme.theme['root']?.backgroundColor ??
+        (_selectedTheme.name.toLowerCase().contains('light')
+            ? Colors.white
+            : const Color(0xFF1E1E1E));
+
+    final Color editorTextColor =
+        _selectedTheme.theme['root']?.color ??
+        (_selectedTheme.name.toLowerCase().contains('light')
+            ? Colors.black87
+            : Colors.white70);
+
+    // Menentukan apakah tema yang dipilih adalah tipe Light/Terang untuk penyesuaian kontras AppBar & Dropdown
+    final bool isLightTheme =
+        _selectedTheme.name.toLowerCase().contains('light') ||
+        _selectedTheme.name == 'GitHub' ||
+        _selectedTheme.name == 'Xcode';
+
+    final Color appBarColor = isLightTheme
+        ? Colors.grey[200]!
+        : Colors.grey[900]!;
+    final Color foregroundColor = isLightTheme ? Colors.black87 : Colors.white;
+
+    return Theme(
+      // Membungkus dengan Theme lokal agar popup menu, dialog, dan elemen dropdown mengikuti brightness tema editor
+      data: ThemeData(
+        brightness: isLightTheme ? Brightness.light : Brightness.dark,
+        scaffoldBackgroundColor: editorBackgroundColor,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Text(_error!, style: const TextStyle(color: Colors.red)),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CodeTheme(
-                data: CodeThemeData(styles: _selectedTheme.theme),
-                child: CodeField(
-                  controller: _controller!,
-                  expands: true,
-                  textStyle: const TextStyle(fontFamily: 'monospace'),
-                  onTap: _handleLineDeletion,
+      child: Scaffold(
+        backgroundColor:
+            editorBackgroundColor, // Menerapkan warna tema ke background scaffold
+        appBar: AppBar(
+          backgroundColor: appBarColor,
+          foregroundColor: foregroundColor,
+          title: Text(
+            'Edit: ${widget.pageTitle}',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: foregroundColor),
+          ),
+          iconTheme: IconThemeData(color: foregroundColor),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.delete_sweep_outlined,
+                color: _isLineDeletionMode ? Colors.amber : foregroundColor,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isLineDeletionMode = !_isLineDeletionMode;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      _isLineDeletionMode
+                          ? 'Mode Hapus Baris Aktif'
+                          : 'Mode Hapus Baris Nonaktif',
+                    ),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              tooltip: 'Aktifkan/Nonaktifkan Mode Hapus Baris',
+            ),
+            PopupMenuButton<VoidCallback>(
+              icon: Icon(Icons.text_format, color: foregroundColor),
+              tooltip: 'Olah Teks',
+              onSelected: (action) => action(),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _extractBodyContent,
+                  child: const Text('Ekstrak Konten Body'),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: _stripAllHtmlTags,
+                  child: const Text('Hapus Semua Tag HTML'),
+                ),
+                PopupMenuItem(
+                  value: _stripBodyTags,
+                  child: const Text('Hapus Tag Body (Kecuali Isi)'),
+                ),
+                PopupMenuItem(
+                  value: _stripHead,
+                  child: const Text('Hapus Head & Isinya'),
+                ),
+              ],
+            ),
+            DropdownButton<EditorTheme>(
+              value: _selectedTheme,
+              onChanged: _handleThemeChanged,
+              items: editorThemes.map<DropdownMenuItem<EditorTheme>>((
+                EditorTheme theme,
+              ) {
+                return DropdownMenuItem<EditorTheme>(
+                  value: theme,
+                  child: Text(
+                    theme.name,
+                    style: TextStyle(color: foregroundColor),
+                  ),
+                );
+              }).toList(),
+              dropdownColor: appBarColor,
+              underline: Container(),
+              iconEnabledColor: foregroundColor,
+            ),
+            IconButton(
+              icon: Icon(Icons.save, color: foregroundColor),
+              onPressed: _isLoading || _controller == null
+                  ? null
+                  : _saveFileContent,
+              tooltip: 'Simpan Perubahan',
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: CodeTheme(
+                  data: CodeThemeData(styles: _selectedTheme.theme),
+                  child: CodeField(
+                    controller: _controller!,
+                    expands: true,
+                    textStyle: TextStyle(
+                      fontFamily: 'monospace',
+                      color: editorTextColor,
+                    ),
+                    onTap: _handleLineDeletion,
+                    background:
+                        editorBackgroundColor, // Menyelaraskan background CodeField
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
