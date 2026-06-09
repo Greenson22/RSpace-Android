@@ -167,13 +167,9 @@ class StorageService extends SharedPreferencesService {
     bool isServerSharing = false,
   }) async {
     // Jalur pengecekan utama untuk RSpace_data
-    Directory rspaceDir = Directory(path.join(mainFolderPath, 'RSpace_data'));
-
-    // Jalur fallback multi-arah jika dipanggil oleh LocalSharing / Client
-    if (!rspaceDir.existsSync()) {
-      rspaceDir = Directory(path.join(mainFolderPath, 'data', 'RSpace_data'));
-    }
-
+    final Directory rspaceDir = Directory(
+      path.join(mainFolderPath, 'RSpace_data'),
+    );
     final Directory perpuskuDir = Directory(
       path.join(mainFolderPath, 'PerpusKu'),
     );
