@@ -84,23 +84,23 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
     try {
       final String appBasePath =
           await _pathService.loadCustomStoragePath() ?? "";
+
+      // Ambil root direktori sesuai perubahan baru (tanpa RSpace_App)
       Directory rootDir = appBasePath.isNotEmpty
           ? Directory(appBasePath)
           : Directory(await _pathService.profilePicturesPath).parent;
+
       final String destinationPath = rootDir.path;
 
+      // PERBAIKAN: Target RSpace_data & PerpusKu langsung berada di pusat root destinationPath
       Directory activeRSpaceDir = Directory(
         path.join(destinationPath, 'RSpace_data'),
       );
-      if (!activeRSpaceDir.existsSync()) {
-        activeRSpaceDir = Directory(
-          path.join(destinationPath, 'data', 'RSpace_data'),
-        );
-      }
       final Directory activePerpuskuDir = Directory(
         path.join(destinationPath, 'PerpusKu'),
       );
 
+      // Hapus data aktif lama di folder pusat jika ada sebelum menimpa
       if (activeRSpaceDir.existsSync()) {
         await activeRSpaceDir.delete(recursive: true);
       }
@@ -110,12 +110,13 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
       List<int> bytes = await zipFile.readAsBytes();
       Archive archive = ZipDecoder().decodeBytes(bytes);
+
       for (ArchiveFile file in archive) {
+        // PERBAIKAN UTAMA: Hilangkan kondisi pencabangan 'data' lama.
+        // Seluruh isi zip langsung diekstrak relatif terhadap destinationPath pusat.
         String targetFolder = destinationPath;
-        if (appBasePath.isEmpty && file.name.startsWith('RSpace_data')) {
-          targetFolder = path.join(destinationPath, 'data');
-        }
         String fullPathTarget = path.join(targetFolder, file.name);
+
         if (file.isFile) {
           final data = file.content as List<int>;
           final outFile = File(fullPathTarget);
@@ -131,7 +132,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         Provider.of<TopicProvider>(context, listen: false).fetchTopics();
       }
       _loadServerBackups();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
