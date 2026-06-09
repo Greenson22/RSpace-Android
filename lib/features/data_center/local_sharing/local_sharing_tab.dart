@@ -101,10 +101,12 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         path.join(destinationPath, 'PerpusKu'),
       );
 
-      if (activeRSpaceDir.existsSync())
+      if (activeRSpaceDir.existsSync()) {
         await activeRSpaceDir.delete(recursive: true);
-      if (activePerpuskuDir.existsSync())
+      }
+      if (activePerpuskuDir.existsSync()) {
         await activePerpuskuDir.delete(recursive: true);
+      }
 
       List<int> bytes = await zipFile.readAsBytes();
       Archive archive = ZipDecoder().decodeBytes(bytes);
@@ -197,6 +199,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+            // === Card Koneksi Jaringan ===
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -261,13 +264,147 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
               ),
             ),
             const SizedBox(height: 16),
-            // ... (Bagian UI ListView file backup tetap sama persis seperti file asli Anda)
-            // Di bawah ini disingkat demi fokus pada logika pemecahan file.
-            const Text(
-              'Berkas Diterima dari Server',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+
+            // === PERBAIKAN: Bagian Header Daftar Berkas & Tombol Kontrol Dinamis ===
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Berkas Diterima dari Server',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  FittedBox(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (_isServerSelectionMode) ...[
+                          // Tombol Pilih / Batal Pilih Semua
+                          IconButton(
+                            icon: Icon(
+                              _selectedServerFiles.length ==
+                                      _serverBackupFiles.length
+                                  ? Icons.deselect
+                                  : Icons.select_all,
+                              size: 18,
+                              color: Colors.teal[700],
+                            ),
+                            tooltip:
+                                _selectedServerFiles.length ==
+                                    _serverBackupFiles.length
+                                ? 'Batal Semua'
+                                : 'Pilih Semua',
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(6),
+                            onPressed: () {
+                              setState(() {
+                                if (_selectedServerFiles.length ==
+                                    _serverBackupFiles.length) {
+                                  _selectedServerFiles.clear();
+                                } else {
+                                  _selectedServerFiles.clear();
+                                  _selectedServerFiles.addAll(
+                                    _serverBackupFiles,
+                                  );
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${_selectedServerFiles.length} Terpilih',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Tombol Hapus Masal
+                          InkWell(
+                            onTap: _selectedServerFiles.isEmpty
+                                ? null
+                                : () async {
+                                    final bool
+                                    confirm = await _showConfirmDeleteDialog(
+                                      title: 'Hapus Masal Berkas',
+                                      content:
+                                          'Apakah Anda yakin ingin menghapus ${_selectedServerFiles.length} berkas cadangan terpilih secara permanen?',
+                                    );
+                                    if (confirm) {
+                                      for (var file in _selectedServerFiles) {
+                                        if (await file.exists()) {
+                                          await file.delete();
+                                        }
+                                      }
+                                      setState(() {
+                                        _selectedServerFiles.clear();
+                                        _isServerSelectionMode = false;
+                                      });
+                                      _loadServerBackups();
+                                    }
+                                  },
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _selectedServerFiles.isEmpty
+                                    ? Colors.grey[200]
+                                    : Colors.red.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _selectedServerFiles.isEmpty
+                                      ? Colors.grey[300]!
+                                      : Colors.red.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.delete_sweep,
+                                size: 18,
+                                color: _selectedServerFiles.isEmpty
+                                    ? Colors.grey[400]
+                                    : Colors.red,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          // Tombol Batalkan Seluruh Mode Pilihan
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _selectedServerFiles.clear();
+                                _isServerSelectionMode = false;
+                              });
+                            },
+                            child: const Text(
+                              'Batal',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
+
+            // === Daftar Berkas Backup ZIP ===
             _serverBackupFiles.isEmpty
                 ? const SizedBox(
                     height: 150,
@@ -308,11 +445,16 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                         leading: _isServerSelectionMode
                             ? Checkbox(
                                 value: isSelected,
-                                onChanged: (v) => setState(
-                                  () => v!
-                                      ? _selectedServerFiles.add(file)
-                                      : _selectedServerFiles.remove(file),
-                                ),
+                                activeColor: Colors.red,
+                                onChanged: (bool? checked) {
+                                  setState(() {
+                                    if (checked == true) {
+                                      _selectedServerFiles.add(file);
+                                    } else {
+                                      _selectedServerFiles.remove(file);
+                                    }
+                                  });
+                                },
                               )
                             : const Icon(
                                 Icons.cloud_download,
