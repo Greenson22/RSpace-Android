@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart'; // Ditambahkan untuk fallback path default direktori di mode debug
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../perpusku/presentation/pages/perpusku_topic_page.dart';
 // Import halaman DataCenterScreen agar bisa diarahkan lewat navigasi menu
 import '../../../data_center/data_center_screen.dart';
+// Import halaman debug Folder Management baru
+import '../../../file_manager/presentation/pages/file_manager_screen.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -255,7 +258,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
 
                 // --------------------------------------------------------
-                // ==> TAMBAHAN BARU: Opsi Menu Navigasi Menuju Data Center <==
+                // ==> Opsi Menu Navigasi Menuju Data Center <==
                 // --------------------------------------------------------
                 const Divider(height: 16, thickness: 0.5),
                 ListTile(
@@ -293,6 +296,82 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
+
+                // --------------------------------------------------------
+                // ==> TAMBAHAN BARU: Folder Management (HANYA MODE DEBUG) <==
+                // --------------------------------------------------------
+                if (kDebugMode) ...[
+                  const Divider(height: 16, thickness: 0.5),
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 2.0 * textScaleFactor,
+                    ),
+                    leading: Icon(
+                      Icons.folder_special_rounded,
+                      color: Colors.orange.shade700,
+                      size: 22.0 * textScaleFactor,
+                    ),
+                    title: Text(
+                      'Folder Management (Debug)',
+                      style: TextStyle(
+                        fontSize: 14.0 * textScaleFactor,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Halaman direktori internal untuk melihat dan mengelola semua isi di dalam Lokasi Folder utama.',
+                      style: TextStyle(fontSize: 11.0 * textScaleFactor),
+                    ),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14.0 * textScaleFactor,
+                      color: Colors.grey,
+                    ),
+                    onTap: () async {
+                      String actualPath = '';
+                      final customPath = await _storageService
+                          .loadCustomStoragePath();
+
+                      // Cek jika ada custom path terkonfigurasi
+                      if (customPath != null && customPath.isNotEmpty) {
+                        actualPath = customPath;
+                      } else {
+                        // Jika menggunakan folder default, cari path absolut real dari system OS
+                        try {
+                          if (Platform.isAndroid) {
+                            final dir = await getExternalStorageDirectory();
+                            actualPath = dir?.path ?? '';
+                          } else {
+                            final dir =
+                                await getApplicationDocumentsDirectory();
+                            actualPath = dir.path;
+                          }
+                        } catch (_) {}
+                      }
+
+                      if (mounted && actualPath.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                FileManagerScreen(initialDirectory: actualPath),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Gagal memuat atau menemukan lokasi folder utama.',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
                 const Divider(height: 32, thickness: 1.0),
 
                 // ========================================================
