@@ -2,7 +2,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
+// ==> 1. HAPUS IMPORT PRINTING, GANTI DENGAN SYNCFUSION PDF VIEWER <==
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+
 // Import dependencies yang diperlukan untuk dialog diskusi dan snackbar
 import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 import 'dialogs/discussion_details_dialog.dart';
@@ -178,6 +180,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     );
   }
 
+  // ==> 2. UBAH METODE INI UNTUK MENGGUNAKAN SFPDFVIEWER <==
   Widget _buildBody() {
     if (_isGenerating) {
       return const Center(
@@ -215,12 +218,11 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       );
     }
 
-    return PdfPreview(
-      build: (format) async => _pdfBytes!,
-      allowPrinting: true,
-      allowSharing: true,
-      canChangePageFormat: false,
-      previewPageMargin: const EdgeInsets.all(16),
+    // Menggunakan SfPdfViewer untuk merender data bytes PDF dari memori
+    return SfPdfViewer.memory(
+      _pdfBytes!,
+      enableDoubleTapZooming: true, // Izinkan double tap zoom di mobile
+      interactionMode: PdfInteractionMode.pan, // Mode geser dasar
     );
   }
 }
