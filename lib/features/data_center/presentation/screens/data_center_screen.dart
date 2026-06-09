@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:my_aplication/features/data_center/presentation/widgets/backup_tab.dart';
 import 'package:my_aplication/features/data_center/presentation/widgets/local_sharing_tab.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/path_service.dart'; // Tambahkan PathService
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:archive/archive_io.dart';
+import 'package:path/path.dart' as path; // Tambahkan package path
 
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -21,6 +23,7 @@ class DataCenterScreen extends StatefulWidget {
 
 class _DataCenterScreenState extends State<DataCenterScreen> {
   final StorageService _storageService = StorageService();
+  final PathService _pathService = PathService(); // Inisialisasi PathService
   String _baseDir = 'Documents';
   HttpServer? _serverEksternal;
 
@@ -886,59 +889,78 @@ class _DataCenterScreenState extends State<DataCenterScreen> {
     });
   }
 
-  // === DISESUAIKAN: Fungsi Pencadangan Global Utama untuk RSpace & Perpusku ===
+  // === DIUBAH: Fungsi Pencadangan Global Langsung Terkompresi ZIP dari Folder Utama ===
   void _backupAllFeature() async {
+    setState(() => _isLoading = true);
     try {
-      File fileRSpace = await _storageService.getRSpaceJsonFile(_baseDir);
-      String kontenRSpace = await fileRSpace.exists()
-          ? await fileRSpace.readAsString()
-          : "{}";
+      // 1. Dapatkan folder utama/root tempat RSpace_data & PerpusKu berada
+      final String appBasePath =
+          await _pathService.loadCustomStoragePath() ?? "";
+      Directory rootDir;
+      if (appBasePath.isNotEmpty) {
+        rootDir = Directory(appBasePath);
+      } else {
+        final String profilePath = await _pathService.profilePicturesPath;
+        rootDir = Directory(
+          profilePath,
+        ).parent; // Naik satu tingkat ke folder utama (RSpace_App)
+      }
 
-      List<File> perpusFiles = await _storageService.getAllPerpuskuGroups(
-        _baseDir,
+      final String mainFolderPath = rootDir.path;
+
+      // 2. Tentukan letak folder target
+      final Directory rspaceDir = Directory(
+        path.join(mainFolderPath, 'RSpace_data'),
+      );
+      final Directory perpuskuDir = Directory(
+        path.join(mainFolderPath, 'PerpusKu'),
       );
 
-      final Archive backupArchive = Archive();
-
-      // Memasukkan data RSpace
-      backupArchive.addFile(
-        ArchiveFile(
-          'rspace_data.json',
-          utf8.encode(kontenRSpace).length,
-          utf8.encode(kontenRSpace),
-        ),
-      );
-
-      // Memasukkan berkas Perpusku ke dalam sub-folder ZIP
-      for (var file in perpusFiles) {
-        final String namaFile = file.path.split('/').last;
-        final List<int> bytes = await file.readAsBytes();
-        backupArchive.addFile(
-          ArchiveFile('perpusku/$namaFile', bytes.length, bytes),
+      if (!rspaceDir.existsSync() && !perpuskuDir.existsSync()) {
+        throw Exception(
+          "Folder RSpace_data atau PerpusKu tidak ditemukan di folder utama.",
         );
       }
 
-      final List<int>? finalZipBytes = ZipEncoder().encode(backupArchive);
-      if (finalZipBytes == null) return;
-
+      // 3. Inisialisasi encoder zip
+      final encoder = ZipFileEncoder();
       String namaZipDinamis = _getFormattedFileName('local_backup', 'zip');
       File fileZipTarget = await _storageService.getLocalBackupZipFile(
         _baseDir,
         namaZipDinamis,
       );
-      await fileZipTarget.writeAsBytes(finalZipBytes);
 
+      encoder.create(fileZipTarget.path);
+
+      // 4. Masukkan seluruh folder secara utuh beserta nama foldernya
+      if (rspaceDir.existsSync()) {
+        await encoder.addDirectory(rspaceDir, includeDirName: true);
+      }
+      if (perpuskuDir.existsSync()) {
+        await encoder.addDirectory(perpuskuDir, includeDirName: true);
+      }
+
+      encoder.close();
       _loadLocalBackups();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Backup seluruh data berhasil disimpan: $namaZipDinamis',
+            'Backup seluruh folder utama berhasil disimpan: $namaZipDinamis',
           ),
           backgroundColor: Colors.teal,
         ),
       );
     } catch (e) {
-      debugPrint("Gagal membuat backup lokal: $e");
+      debugPrint("Gagal membuat backup folder utama ke ZIP: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuat backup: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -1160,35 +1182,39 @@ class _DataCenterScreenState extends State<DataCenterScreen> {
   }
 
   // =========================================================================
-  // === DISESUAIKAN: Fungsi Mengimpor dan Melakukan OVERWRITE Total Seluruh ZIP ===
+  // === DIUBAH: Fungsi Pemulihan Total Langsung Mengekstrak ZIP ke Folder Utama ===
   // =========================================================================
   void _importAllFromZip(File zipFile) async {
+    setState(() => _isLoading = true);
     try {
+      // 1. Dapatkan folder utama aplikasi sebagai tujuan ekstraksi
+      final String appBasePath =
+          await _pathService.loadCustomStoragePath() ?? "";
+      Directory rootDir;
+      if (appBasePath.isNotEmpty) {
+        rootDir = Directory(appBasePath);
+      } else {
+        final String profilePath = await _pathService.profilePicturesPath;
+        rootDir = Directory(profilePath).parent;
+      }
+
+      final String destinationPath = rootDir.path;
+
+      // 2. Ekstrak data ZIP langsung secara utuh ke folder utama
       List<int> bytes = await zipFile.readAsBytes();
       Archive archive = ZipDecoder().decodeBytes(bytes);
 
-      // 1. WIPE TOTAL folder perpusku hanya jika ada
-      String folderPerpusku = await _storageService.getPerpuskuDirPath(
-        _baseDir,
-      );
-      Directory perpuskuDir = Directory(folderPerpusku);
-      if (perpuskuDir.existsSync()) perpuskuDir.deleteSync(recursive: true);
-      perpuskuDir.createSync(recursive: true);
-
-      // 2. Ekstraksi dan Distribusi seluruh isi berkas ZIP secara bersih
       for (ArchiveFile file in archive) {
+        String fullPathTarget = path.join(destinationPath, file.name);
+
         if (file.isFile) {
-          if (file.name == 'rspace_data.json') {
-            File target = await _storageService.getRSpaceJsonFile(_baseDir);
-            await target.writeAsBytes(file.content);
-          } else if (file.name.startsWith('perpusku/')) {
-            String namaFilePerpus = file.name.split('/').last;
-            if (namaFilePerpus.isNotEmpty) {
-              await File(
-                '$folderPerpusku/$namaFilePerpus',
-              ).writeAsBytes(file.content);
-            }
-          }
+          final data = file.content as List<int>;
+          final outFile = File(fullPathTarget);
+          await outFile.create(recursive: true);
+          await outFile.writeAsBytes(data);
+        } else {
+          final outDir = Directory(fullPathTarget);
+          await outDir.create(recursive: true);
         }
       }
 
@@ -1199,13 +1225,21 @@ class _DataCenterScreenState extends State<DataCenterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Restore Berhasil! Seluruh data disinkronkan dari "${zipFile.path.split('/').last}".',
+            'Restore Berhasil! Seluruh folder disinkronkan dari "${zipFile.path.split('/').last}".',
           ),
           backgroundColor: Colors.teal,
         ),
       );
     } catch (e) {
-      debugPrint("Gagal mengimpor file ZIP global: $e");
+      debugPrint("Gagal mengimpor file ZIP global ke folder utama: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal melakukan restore: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -1357,7 +1391,7 @@ class _DataCenterScreenState extends State<DataCenterScreen> {
                   },
                   onRestoreAllZip: (file) => _importAllFromZip(file),
 
-                  // Callback terarah RSpace dan Perpusku (Notes & Prompts Dihapus Total)
+                  // Callback terarah RSpace dan Perpusku
                   onBackupRSpace: () => _exportRSpace(),
                   onRestoreRSpace: () => _importRSpace(),
                   onBackupPerpusku: () => _exportPerpusku(),

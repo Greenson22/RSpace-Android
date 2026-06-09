@@ -6,7 +6,7 @@ class BackupTab extends StatefulWidget {
   final VoidCallback onCreateBackup;
   final Function(File) onDeleteBackup;
 
-  // === DISESUAIKAN: Callback baru khusus RSpace & Perpusku ===
+  // Callback khusus untuk RSpace & Perpusku diarahkan ke fungsi gabungan
   final VoidCallback onBackupRSpace;
   final VoidCallback onRestoreRSpace;
   final VoidCallback onBackupPerpusku;
@@ -23,12 +23,10 @@ class BackupTab extends StatefulWidget {
     required this.localBackupFiles,
     required this.onCreateBackup,
     required this.onDeleteBackup,
-    // === DISESUAIKAN: Konstruktor Parameter Baru ===
     required this.onBackupRSpace,
     required this.onRestoreRSpace,
     required this.onBackupPerpusku,
     required this.onRestorePerpusku,
-
     required this.onRestoreAllZip,
     required this.serverBackupFiles,
     required this.onDeleteServerBackup,
@@ -89,31 +87,49 @@ class _BackupTabState extends State<BackupTab> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        // === DISESUAIKAN: Baris Tombol Ringkas Hanya Untuk RSpace & Perpusku ===
+        // === DISESUAIKAN: Menampilkan Informasi Modul Utama ===
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.indigo.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.indigo.shade100),
+            ),
             child: Row(
               children: [
-                _buildCompactButton(
-                  'RSpace',
-                  Icons.folder_shared_rounded,
-                  widget.onBackupRSpace,
-                  widget.onRestoreRSpace,
+                Icon(
+                  Icons.folder_copy_rounded,
+                  color: Colors.indigo[700],
+                  size: 28,
                 ),
-                const SizedBox(width: 24),
-                _buildCompactButton(
-                  'Perpusku',
-                  Icons.local_library_rounded,
-                  widget.onBackupPerpusku,
-                  widget.onRestorePerpusku,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pencadangan Folder Utama',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Mengompresi folder RSpace_data dan PerpusKu secara utuh ke dalam satu file ZIP.',
+                        style: TextStyle(fontSize: 11, color: Colors.black54),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        const Divider(thickness: 2),
+        const Divider(thickness: 1),
         // Bagian Header Daftar Berkas & Tombol Dinamis
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -235,7 +251,7 @@ class _BackupTabState extends State<BackupTab> {
                         onPressed: widget.onImportZip,
                         icon: const Icon(Icons.unarchive, size: 14),
                         label: const Text(
-                          'Import',
+                          'Import ZIP',
                           style: TextStyle(fontSize: 11),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -250,9 +266,9 @@ class _BackupTabState extends State<BackupTab> {
                       const SizedBox(width: 6),
                       ElevatedButton.icon(
                         onPressed: widget.onCreateBackup,
-                        icon: const Icon(Icons.add, size: 14),
+                        icon: const Icon(Icons.folder_zip_outlined, size: 14),
                         label: const Text(
-                          'Backup',
+                          'Buat Backup',
                           style: TextStyle(fontSize: 11),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -318,7 +334,7 @@ class _BackupTabState extends State<BackupTab> {
                                       ],
                                     ),
                                     content: Text(
-                                      'Apakah Anda yakin ingin memulihkan seluruh data menggunakan file cadangan "$fileName"?\n\n*Peringatan: Data aktif Anda saat ini akan sepenuhnya ditimpa.',
+                                      'Apakah Anda yakin ingin memulihkan seluruh data menggunakan file cadangan "$fileName"?\n\n*Peringatan: Folder RSpace_data dan PerpusKu aktif saat ini akan sepenuhnya ditimpa.',
                                     ),
                                     actions: [
                                       TextButton(
@@ -428,53 +444,6 @@ class _BackupTabState extends State<BackupTab> {
                   );
                 },
               ),
-      ],
-    );
-  }
-
-  Widget _buildCompactButton(
-    String label,
-    IconData icon,
-    VoidCallback onUp,
-    VoidCallback onDown,
-  ) {
-    return Column(
-      children: [
-        CircleAvatar(
-          backgroundColor: Colors.indigo.shade600,
-          child: Icon(icon, color: Colors.white),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(
-                Icons.cloud_upload_outlined,
-                color: Colors.blue,
-                size: 20,
-              ),
-              onPressed: onUp,
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(
-                Icons.cloud_download_outlined,
-                color: Colors.green,
-                size: 20,
-              ),
-              onPressed: onDown,
-            ),
-          ],
-        ),
       ],
     );
   }

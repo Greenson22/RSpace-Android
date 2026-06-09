@@ -28,6 +28,51 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
   bool _isServerSelectionMode = false;
   final List<File> _selectedServerFiles = [];
 
+  // === DIPERBAIKI: Menggunakan parameter variabel dinamis tanpa hardcode const ===
+  Future<bool> _showConfirmDeleteDialog({
+    required String title,
+    required String content,
+  }) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                // Hapus 'const' dari Row agar bisa memasukkan variabel judul dinamis
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.redAccent,
+                ),
+                const SizedBox(width: 8),
+                Text(title), // Menggunakan variabel title
+              ],
+            ),
+            content: Text(content), // Menggunakan variabel content
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text(
+                  'Hapus',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -46,226 +91,206 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                   'Kirim & Terima Data Lokal',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const Divider(),
-
-                // Pilihan Operasi 1: Mode Server / Pengirim
-                ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.cloud_upload)),
-                  title: const Text('Mode Pengirim (Server)'),
-                  trailing: ElevatedButton(
-                    onPressed: widget
-                        .onSendFile, // Menggunakan widget. untuk mengakses parameter parent
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                    ),
-                    child: const Text('Kirim File'),
-                  ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Gunakan fitur ini untuk mentransfer seluruh isi folder utama (RSpace_data & PerpusKu) secara wireless antar perangkat yang terhubung dalam satu jaringan Wi-Fi yang sama.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-
-                const Divider(),
-
-                // Pilihan Operasi 2: Mode Client / Penerima
-                ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.cloud_download),
-                  ),
-                  title: const Text('Mode Penerima (Client)'),
-                  trailing: ElevatedButton(
-                    onPressed: widget
-                        .onReceiveFile, // Menggunakan widget. untuk mengakses parameter parent
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                    ),
-                    child: const Text('Terima File'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const Divider(thickness: 2),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            'Daftar Berkas Backup (Dari Server)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ),
-
-        // === TOMBOL KONTROL MASAL ===
-        if (_isServerSelectionMode) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 4.0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    _selectedServerFiles.length ==
-                            widget.serverBackupFiles.length
-                        ? Icons.deselect
-                        : Icons.select_all,
-                    size: 18,
-                    color: Colors.teal[700],
-                  ),
-                  tooltip:
-                      _selectedServerFiles.length ==
-                          widget.serverBackupFiles.length
-                      ? 'Batal Semua'
-                      : 'Pilih Semua',
-                  constraints: const BoxConstraints(),
-                  padding: const EdgeInsets.all(6),
-                  onPressed: () {
-                    setState(() {
-                      if (_selectedServerFiles.length ==
-                          widget.serverBackupFiles.length) {
-                        _selectedServerFiles.clear();
-                      } else {
-                        _selectedServerFiles.clear();
-                        _selectedServerFiles.addAll(widget.serverBackupFiles);
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${_selectedServerFiles.length} Terpilih',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // === PERBAIKAN DI SINI: MENAMBAHKAN DIALOG KONFIRMASI HAPUS MASSAL SERVER ===
-                InkWell(
-                  onTap: _selectedServerFiles.isEmpty
-                      ? null
-                      : () async {
-                          // 1. Tampilkan dialog konfirmasi pop-up terlebih dahulu
-                          final bool confirm =
-                              await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  title: Row(
-                                    children: const [
-                                      Icon(
-                                        Icons.warning_amber_rounded,
-                                        color: Colors.redAccent,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Konfirmasi Hapus Masal'),
-                                    ],
-                                  ),
-                                  content: Text(
-                                    'Apakah Anda yakin ingin menghapus ${_selectedServerFiles.length} berkas cadangan dari server terpilih secara permanen?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(ctx, false),
-                                      child: const Text(
-                                        'Batal',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                      ),
-                                      child: const Text(
-                                        'Hapus',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ) ??
-                              false;
-
-                          // 2. Jika ditekan 'Hapus' (confirm == true), jalankan penghapusan fisik
-                          if (confirm) {
-                            for (var file in _selectedServerFiles) {
-                              if (await file.exists()) {
-                                await file.delete();
-                              }
-                            }
-
-                            // 3. Bersihkan penampung state
-                            setState(() {
-                              _selectedServerFiles.clear();
-                              _isServerSelectionMode = false;
-                            });
-
-                            // 4. Picu pembaruan data di parent screen
-                            widget.onDeleteServerBackup(
-                              File('trigger_refresh_after_bulk_delete'),
-                            );
-                          }
-                        },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _selectedServerFiles.isEmpty
-                          ? Colors.grey[200]
-                          : Colors.red.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: _selectedServerFiles.isEmpty
-                            ? Colors.grey[300]!
-                            : Colors.red.withOpacity(0.2),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: widget.onSendFile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.wifi_tethering,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Aktifkan Server',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Icon(
-                      Icons.delete_sweep,
-                      size: 18,
-                      color: _selectedServerFiles.isEmpty
-                          ? Colors.grey[400]
-                          : Colors.red,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: widget.onReceiveFile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.add_to_home_screen,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Hubungkan ke Server',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-
-                const SizedBox(width: 4),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _selectedServerFiles.clear();
-                      _isServerSelectionMode = false;
-                    });
-                  },
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
-        ],
-        // Menampilkan daftar berkas dari server
+        ),
+        const SizedBox(height: 16),
+        // Bagian Header Daftar Berkas Server & Tombol Dinamis
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Berkas Diterima dari Server',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            FittedBox(
+              child: Row(
+                children: [
+                  if (_isServerSelectionMode) ...[
+                    IconButton(
+                      icon: Icon(
+                        _selectedServerFiles.length ==
+                                widget.serverBackupFiles.length
+                            ? Icons.deselect
+                            : Icons.select_all,
+                        size: 18,
+                        color: Colors.teal[700],
+                      ),
+                      tooltip:
+                          _selectedServerFiles.length ==
+                              widget.serverBackupFiles.length
+                          ? 'Batal Semua'
+                          : 'Pilih Semua',
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6),
+                      onPressed: () {
+                        setState(() {
+                          if (_selectedServerFiles.length ==
+                              widget.serverBackupFiles.length) {
+                            _selectedServerFiles.clear();
+                          } else {
+                            _selectedServerFiles.clear();
+                            _selectedServerFiles.addAll(
+                              widget.serverBackupFiles,
+                            );
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_selectedServerFiles.length} Terpilih',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: _selectedServerFiles.isEmpty
+                          ? null
+                          : () async {
+                              final bool
+                              confirm = await _showConfirmDeleteDialog(
+                                title: 'Hapus Masal Berkas Server',
+                                content:
+                                    'Apakah Anda yakin ingin menghapus ${_selectedServerFiles.length} berkas yang diterima dari server terpilih secara permanen?',
+                              );
+                              if (confirm) {
+                                for (var file in _selectedServerFiles) {
+                                  if (await file.exists()) {
+                                    await file.delete();
+                                  }
+                                }
+                                setState(() {
+                                  _selectedServerFiles.clear();
+                                  _isServerSelectionMode = false;
+                                });
+                                widget.onDeleteServerBackup(
+                                  File('trigger_refresh_after_bulk_delete'),
+                                );
+                              }
+                            },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _selectedServerFiles.isEmpty
+                              ? Colors.grey[200]
+                              : Colors.red.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _selectedServerFiles.isEmpty
+                                ? Colors.grey[300]!
+                                : Colors.red.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.delete_sweep,
+                          size: 18,
+                          color: _selectedServerFiles.isEmpty
+                              ? Colors.grey[400]
+                              : Colors.red,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedServerFiles.clear();
+                          _isServerSelectionMode = false;
+                        });
+                      },
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Daftar Berkas yang Diterima dari Server
         widget.serverBackupFiles.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Belum ada file backup dari server.'),
+            ? const SizedBox(
+                height: 150,
+                child: Center(
+                  child: Text(
+                    'Belum ada berkas data yang diterima dari server sharing.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               )
             : ListView.builder(
@@ -275,16 +300,14 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                 itemBuilder: (context, index) {
                   final file = widget.serverBackupFiles[index];
                   final isSelected = _selectedServerFiles.contains(file);
-
+                  final String fileName = file.path.split('/').last;
                   return ListTile(
-                    // Jika ditahan lama, aktifkan mode pemilihan massal dan otomatis centang file ini
                     onLongPress: () {
                       setState(() {
                         _isServerSelectionMode = true;
                         if (!isSelected) _selectedServerFiles.add(file);
                       });
                     },
-                    // Ketukan biasa: Jika dalam mode edit maka lakukan centang, jika mode normal jalankan fungsi Restore
                     onTap: _isServerSelectionMode
                         ? () {
                             setState(() {
@@ -296,7 +319,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                             });
                           }
                         : () async {
-                            // --- DIALOG KONFIRMASI RESTORE DARI SERVER ---
                             final bool confirm =
                                 await showDialog<bool>(
                                   context: context,
@@ -311,11 +333,11 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                                           color: Colors.orange[800],
                                         ),
                                         const SizedBox(width: 8),
-                                        const Text('Restore Data Aplikasi?'),
+                                        const Text('Restore Paket Server?'),
                                       ],
                                     ),
                                     content: Text(
-                                      'Apakah Anda yakin ingin memulihkan seluruh data menggunakan file cadangan server "${file.path.split('/').last}"?\n\n*Peringatan: Data aktif Anda saat ini akan sepenuhnya ditimpa.',
+                                      'Apakah Anda yakin ingin melakukan sinkronisasi pemulihan total menggunakan berkas jaringan "$fileName"?\n\n*Peringatan: Seluruh data aktif folder RSpace_data and PerpusKu saat ini akan dihapus bersih lalu ditimpa.',
                                     ),
                                     actions: [
                                       TextButton(
@@ -338,7 +360,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                                           ),
                                         ),
                                         child: const Text(
-                                          'Ya, Restore',
+                                          'Ya, Restore All',
                                           style: TextStyle(color: Colors.white),
                                         ),
                                       ),
@@ -346,13 +368,10 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                                   ),
                                 ) ??
                                 false;
-
-                            // Jika dikonfirmasi, panggil fungsi restore
                             if (confirm) {
                               widget.onRestoreAllZip(file);
                             }
                           },
-                    // Ikon kiri berubah menjadi Checkbox apabila mode pemilihan masal sedang aktif
                     leading: _isServerSelectionMode
                         ? Checkbox(
                             value: isSelected,
@@ -368,8 +387,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                             },
                           )
                         : const Icon(Icons.cloud_download, color: Colors.teal),
-                    title: Text(file.path.split('/').last),
-                    // Sembunyikan tombol hapus satuan saat sedang memilih banyak file
+                    title: Text(fileName),
                     trailing: _isServerSelectionMode
                         ? null
                         : IconButton(
