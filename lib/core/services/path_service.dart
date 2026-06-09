@@ -25,8 +25,8 @@ class PathService {
   Future<String> get _appBasePath async {
     String? customPath = await loadCustomStoragePath();
     if (customPath != null && customPath.isNotEmpty) {
-      // Jika custom path diaktifkan, arahkan folder induk ke customPath/RSpace_App
-      final appDir = Directory(path.join(customPath, 'RSpace_App'));
+      // PERUBAHAN: Menghapus 'RSpace_App', langsung memakai customPath pilihan user
+      final appDir = Directory(customPath);
       if (!await appDir.exists()) {
         await appDir.create(recursive: true);
       }
@@ -43,11 +43,12 @@ class PathService {
       baseDir = await getApplicationDocumentsDirectory();
     }
 
-    return path.join(baseDir.path, 'RSpace_App');
+    // PERUBAHAN: Menghapus 'RSpace_App', langsung mengembalikan root baseDir sistem
+    return baseDir.path;
   }
 
   Future<String> get _baseDataPath async {
-    // KONSISTENSI: Mengambil base dari _appBasePath (RSpace_App), lalu buat RSpace_data di dalamnya
+    // KONSISTENSI: RSpace_data akan langsung dibuat sejajar di dalam root _appBasePath
     final basePath = await _appBasePath;
     final dataDir = Directory(path.join(basePath, 'RSpace_data'));
     if (!await dataDir.exists()) {
@@ -59,6 +60,7 @@ class PathService {
   Future<String> get baseDataPathPublic => _baseDataPath;
 
   Future<String> get _baseBackupPath async {
+    // KONSISTENSI: Backup langsung dibuat di dalam root _appBasePath
     final appBase = await _appBasePath;
     final backupDir = Directory(path.join(appBase, 'Backup'));
     if (!await backupDir.exists()) {
@@ -86,6 +88,7 @@ class PathService {
   }
 
   Future<String> get profilePicturesPath async {
+    // KONSISTENSI: Profile_Pictures langsung dibuat di dalam root _appBasePath
     final appBase = await _appBasePath;
     final profilePicDir = Directory(path.join(appBase, 'Profile_Pictures'));
     if (!await profilePicDir.exists()) {
@@ -95,6 +98,7 @@ class PathService {
   }
 
   Future<String> get downloadsPath async {
+    // KONSISTENSI: Downloads langsung dibuat di dalam root _appBasePath
     final appBase = await _appBasePath;
     final downloadsDir = Directory(path.join(appBase, 'Downloads'));
     if (!await downloadsDir.exists()) {
@@ -104,6 +108,7 @@ class PathService {
   }
 
   Future<String> get finishedDiscussionsExportPath async {
+    // KONSISTENSI: finish_discussions langsung dibuat di dalam root _appBasePath
     final basePath = await _appBasePath;
     final exportDir = Directory(path.join(basePath, 'finish_discussions'));
     if (!await exportDir.exists()) {
@@ -181,6 +186,7 @@ class PathService {
       path.join(await contentsPath, 'dashboard_settings.json');
 
   Future<String> get perpuskuDataPath async {
+    // KONSISTENSI: Folder PerpusKu langsung dibuat di dalam root _appBasePath
     final basePath = await _appBasePath;
     final perpuskuDir = Directory(path.join(basePath, 'PerpusKu', 'data'));
     if (!await perpuskuDir.exists()) {

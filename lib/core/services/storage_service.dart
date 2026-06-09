@@ -160,12 +160,13 @@ class StorageService extends SharedPreferencesService {
   // === LOGIKA GENERATE ZIP BERBASIS RSPACE_DATA DI DALAM RSPACE_APP     ===
   // =========================================================================
   Future<File> createBackupZip({
-    required String mainFolderPath, // Mengarah ke root /RSpace_App
+    required String
+    mainFolderPath, // Sekarang mengarah langsung ke root storage (bukan /RSpace_App lagi)
     required String baseDir,
     required String fileName,
     bool isServerSharing = false,
   }) async {
-    // DISESUAIKAN: Sekarang mencari folder 'RSpace_data' di dalam mainFolderPath
+    // DISESUAIKAN: Mencari folder 'RSpace_data' langsung di dalam mainFolderPath
     final Directory dataDir = Directory(
       path.join(mainFolderPath, 'RSpace_data'),
     );
