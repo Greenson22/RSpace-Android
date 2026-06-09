@@ -1,35 +1,37 @@
 // main.dart
+import 'dart:io'; // Tambahan: Import ini diperlukan untuk menggunakan class Platform
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:window_manager/window_manager.dart'; // 1. Import package window_manager
+import 'package:window_manager/window_manager.dart';
 
 import 'features/content_management/topics/providers/topic_provider.dart';
 import 'features/content_management/topics/presentation/topics_page.dart';
-import 'features/settings/presentation/pages/settings_page.dart'; // Mengembalikan import ke SettingsPage
+import 'features/settings/presentation/pages/settings_page.dart';
 import 'features/about/presentation/pages/about_page.dart';
 
 void main() async {
-  // 2. Ubah menjadi async
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. Inisialisasi window_manager jika berjalan di Desktop (Windows)
-  await windowManager.ensureInitialized();
+  // Memastikan pengaturan window_manager hanya berjalan di OS Desktop (Windows, Linux, macOS)
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    await windowManager.ensureInitialized();
 
-  // Pengaturan awal jendela (bisa disesuaikan ukurannya)
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(1280, 720),
-    minimumSize: Size(600, 600),
-    center: true,
-    backgroundColor: Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle:
-        TitleBarStyle.hidden, // Menyembunyikan title bar bawaan Windows asli
-  );
+    // Pengaturan awal jendela (bisa disesuaikan ukurannya)
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(1280, 720),
+      minimumSize: Size(600, 600),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle:
+          TitleBarStyle.hidden, // Menyembunyikan title bar bawaan desktop asli
+    );
 
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   runApp(
     MultiProvider(
@@ -45,142 +47,62 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Aplikasi Anda',
       debugShowCheckedModeBanner: false,
-      title: 'My App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      // 4. Gunakan builder untuk menyisipkan Custom Window Title Bar di atas semua halaman
+      home: const MainNavigationPage(),
+      // Jika Anda menggunakan custom builder untuk window manager di Windows/Linux:
       builder: (context, child) {
-        final platform = Theme.of(context).platform;
-
-        // Tampilkan custom window title bar hanya pada platform Desktop
-        if (platform == TargetPlatform.windows ||
-            platform == TargetPlatform.macOS ||
-            platform == TargetPlatform.linux) {
-          return WindowControlWrapper(child: child!);
+        // Kita juga pastikan kustomisasi layout window hanya aktif di desktop
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+          return CustomWindowFrame(child: child!);
         }
-
         return child!;
       },
-      home: const MainNavigationPage(),
     );
   }
 }
 
-// 5. Widget Wrapper untuk membuat struktur Custom Window Title Bar
-class WindowControlWrapper extends StatelessWidget {
+// Widget pembungkus untuk dekorasi title bar kustom di Desktop
+class CustomWindowFrame extends StatelessWidget {
   final Widget child;
-
-  const WindowControlWrapper({super.key, required this.child});
+  const CustomWindowFrame({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    // Mengambil warna dasar tema (deepPurple) agar bar menyatu secara visual
-    final Color barColor = Colors.black87;
-
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          // Bar Kontrol Jendela Kustom (Paling Atas)
+          // Bar kontrol jendela kustom untuk Windows/Linux
           Container(
-            height: 32, // Tinggi standar bar title yang nyaman diklik
-            color: barColor,
+            height: 32,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Row(
               children: [
-                // Area Judul / Area Kosong yang bisa digunakan untuk menggeser (drag) jendela aplikasi
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onPanStart: (details) {
-                      windowManager
-                          .startDragging(); // Memungkinkan window digeser lewat area ini
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          Icon(Icons.apps, size: 16, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(
-                            'My App',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
+                const Expanded(
+                  child: MoveWindowDetector(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 12),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Aplikasi Anda',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-                // Wadah Tombol Minimize, Maximize, dan Close
-                SizedBox(
-                  height: 32,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Tombol Minimize
-                      SizedBox(
-                        width: 45,
-                        height: 32,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.minimize,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                          hoverColor: Colors.white.withOpacity(0.1),
-                          onPressed: () async {
-                            await windowManager.minimize();
-                          },
-                        ),
-                      ),
-                      // Tombol Maximize / Restore
-                      SizedBox(
-                        width: 45,
-                        height: 32,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.crop_square,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          hoverColor: Colors.white.withOpacity(0.1),
-                          onPressed: () async {
-                            if (await windowManager.isMaximized()) {
-                              await windowManager.unmaximize();
-                            } else {
-                              await windowManager.maximize();
-                            }
-                          },
-                        ),
-                      ),
-                      // Tombol Close
-                      SizedBox(
-                        width: 45,
-                        height: 32,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                          hoverColor:
-                              Colors.redAccent, // Berubah merah saat di-hover
-                          onPressed: () async {
-                            await windowManager.close();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                MinimizeWindowButton(),
+                MaximizeWindowButton(),
+                CloseWindowButton(),
               ],
             ),
           ),
@@ -236,6 +158,69 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// === WIDGET TOMBOL KONTROL WINDOW DESKTOP ===
+class MoveWindowDetector extends StatelessWidget {
+  final Widget child;
+  const MoveWindowDetector({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onPanStart: (details) {
+        windowManager.startDragging();
+      },
+      child: child,
+    );
+  }
+}
+
+class MinimizeWindowButton extends StatelessWidget {
+  const MinimizeWindowButton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      iconSize: 16,
+      constraints: const BoxConstraints(minWidth: 46, minHeight: 32),
+      icon: const Icon(Icons.minimize),
+      onPressed: () async => await windowManager.minimize(),
+    );
+  }
+}
+
+class MaximizeWindowButton extends StatelessWidget {
+  const MaximizeWindowButton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      iconSize: 16,
+      constraints: const BoxConstraints(minWidth: 46, minHeight: 32),
+      icon: const Icon(Icons.crop_square),
+      onPressed: () async {
+        if (await windowManager.isMaximized()) {
+          await windowManager.unmaximize();
+        } else {
+          await windowManager.maximize();
+        }
+      },
+    );
+  }
+}
+
+class CloseWindowButton extends StatelessWidget {
+  const CloseWindowButton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      iconSize: 16,
+      constraints: const BoxConstraints(minWidth: 46, minHeight: 32),
+      icon: const Icon(Icons.close),
+      hoverColor: Colors.red.withOpacity(0.8),
+      onPressed: () async => await windowManager.close(),
     );
   }
 }
