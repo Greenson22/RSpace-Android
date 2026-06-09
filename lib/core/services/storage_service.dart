@@ -1,4 +1,5 @@
 // lib/core/services/storage_service.dart
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive_io.dart'; // <-- TAMBAHKAN IMPORT INI
 import 'package:path/path.dart' as path; // <-- TAMBAHKAN IMPORT INI
@@ -188,8 +189,29 @@ class StorageService extends SharedPreferencesService {
         ? await getBackupZipFile(baseDir, fileName)
         : await getLocalBackupZipFile(baseDir, fileName);
 
+    // --- PROSES PEMBUATAN FILE META.JSON SEMENTARA ---
+    // Jangan lupa untuk menambahkan import 'dart:convert'; di bagian paling atas file jika belum ada
+    final Map<String, dynamic> metadata = {
+      'mainFolderPath': mainFolderPath,
+      'rspacePath': rspaceDir.path,
+      'rspaceExists': rspaceDir.existsSync(),
+      'perpuskuPath': perpuskuDir.path,
+      'perpuskuExists': perpuskuDir.existsSync(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'isServerSharing': isServerSharing,
+    };
+
+    final File metaFile = File(path.join(mainFolderPath, 'meta.json'));
+    await metaFile.writeAsString(jsonEncode(metadata));
+    // -------------------------------------------------
+
     final encoder = ZipFileEncoder();
     encoder.create(fileZipTarget.path);
+
+    // Tambahkan file meta.json ke dalam root ZIP
+    if (metaFile.existsSync()) {
+      await encoder.addFile(metaFile);
+    }
 
     if (rspaceDir.existsSync()) {
       await encoder.addDirectory(rspaceDir, includeDirName: true);
@@ -198,6 +220,11 @@ class StorageService extends SharedPreferencesService {
       await encoder.addDirectory(perpuskuDir, includeDirName: true);
     }
     encoder.close();
+
+    // Hapus file meta.json sementara setelah selesai dimasukkan ke ZIP
+    if (metaFile.existsSync()) {
+      await metaFile.delete();
+    }
 
     return fileZipTarget;
   }
