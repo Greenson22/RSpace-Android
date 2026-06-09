@@ -319,7 +319,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
           encoder.create(tempZipFile.path);
 
-          // PERBAIKAN: Menggunakan addDirectory standar agar struktur root ZIP rapi & lengkap
+          // PERBAIKAN: Variabel diubah dari rSpaceDir menjadi rspaceDir sesuai deklarasi di atas
           if (rspaceDir.existsSync()) {
             await encoder.addDirectory(rspaceDir, includeDirName: true);
           }
@@ -698,7 +698,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
           encoder.create(tempZipFile.path);
 
-          // PERBAIKAN: Menggunakan addDirectory standar untuk kompresi data Client
+          // PERBAIKAN: Variabel diubah dari rSpaceDir menjadi rspaceDir sesuai deklarasi di atas
           if (rspaceDir.existsSync()) {
             await encoder.addDirectory(rspaceDir, includeDirName: true);
           }
