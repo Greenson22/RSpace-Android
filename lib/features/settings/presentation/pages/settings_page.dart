@@ -8,7 +8,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../perpusku/presentation/pages/perpusku_topic_page.dart';
 // Import halaman DataCenterScreen agar bisa diarahkan lewat navigasi menu
-import '../../../data_center/presentation/screens/data_center_screen.dart';
+import '../../../data_center/data_center_screen.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
