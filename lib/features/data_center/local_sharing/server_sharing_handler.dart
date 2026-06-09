@@ -80,18 +80,10 @@ class ServerSharingHandler {
       List<dynamic> clientActiveList = [];
       StateSetter? dialogState;
 
+      // PERBAIKAN: Parameter disesuaikan kembali dengan dynamic webSocket & protocol asli shelf_web_socket
       var handler = webSocketHandler((dynamic webSocket, dynamic protocol) {
-        final String clientId =
-            "Client_${webSocket.hashCode.toString().substring(0, 4)}";
         clientActiveList.add(webSocket);
         if (dialogState != null) dialogState!(() {});
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('[$clientId] Terhubung!'),
-            backgroundColor: Colors.green[800],
-          ),
-        );
 
         webSocket.sink.add(jsonEncode({'tipe_pesan': 'koneksi_terkonfirmasi'}));
 
@@ -138,6 +130,7 @@ class ServerSharingHandler {
         8090,
       );
 
+      // PERBAIKAN: Mengembalikan fungsi pembubusan ZIP bawaan proyek awal Anda yang valid
       Future<void> sendDataToServer() async {
         if (clientActiveList.isEmpty) return;
         setLoading(true);
@@ -179,7 +172,8 @@ class ServerSharingHandler {
       }
 
       if (!context.mounted) return;
-      // Tampilkan UI Dialog Server
+
+      // Tampilkan UI Dialog Server Modern Penuh Animasi
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -187,44 +181,215 @@ class ServerSharingHandler {
           builder: (context, setDialogState) {
             dialogState = setDialogState;
             bool adaClient = clientActiveList.isNotEmpty;
-            return AlertDialog(
-              title: const Text('Server Active'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'IP Server: $localIp',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.indigo.withOpacity(0.15),
+                      blurRadius: 25,
+                      spreadRadius: 5,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    adaClient
-                        ? 'Client Terhubung: ${clientActiveList.length}'
-                        : 'Menunggu Perangkat...',
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: adaClient ? () => sendDataToServer() : null,
-                    child: const Text('Kirim Data Ke Client'),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    await _serverEksternal?.close(force: true);
-                    _serverEksternal = null;
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  child: const Text(
-                    'Matikan Server',
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  ],
                 ),
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Animasi Status Header Radar / Sukses
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      transitionBuilder: (child, animation) =>
+                          ScaleTransition(scale: animation, child: child),
+                      child: adaClient
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.green,
+                              size: 72,
+                              key: ValueKey('connected'),
+                            )
+                          : SizedBox(
+                              key: const ValueKey('waiting'),
+                              height: 72,
+                              width: 72,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    height: 64,
+                                    width: 64,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      color: Colors.indigo.withOpacity(0.4),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.wifi_tethering_rounded,
+                                    color: Colors.indigo,
+                                    size: 36,
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Server Berbagi Aktif',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.indigo[800],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Masukkan Alamat IP ini ke perangkat tujuan untuk menghubungkan kedua perangkat:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Box Informasi IP Server yang Bold dan Menarik
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.indigo.shade100),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.lan_rounded,
+                            color: Colors.indigo,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            localIp,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                              color: Colors.indigo,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Indikator Real-time Jumlah Perangkat Terhubung
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: adaClient
+                            ? Colors.green.shade50
+                            : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: adaClient
+                              ? Colors.green.shade200
+                              : Colors.orange.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            adaClient
+                                ? Icons.devices_rounded
+                                : Icons.hourglass_empty_rounded,
+                            color: adaClient ? Colors.green : Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            adaClient
+                                ? '${clientActiveList.length} Perangkat Terhubung'
+                                : 'Menunggu Koneksi Perangkat...',
+                            style: TextStyle(
+                              color: adaClient
+                                  ? Colors.green.shade800
+                                  : Colors.orange.shade800,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Baris Tombol Kontrol Aksi
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(color: Colors.red.shade200),
+                            ),
+                            onPressed: () async {
+                              await _serverEksternal?.close(force: true);
+                              _serverEksternal = null;
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            },
+                            child: const Text(
+                              'Matikan Server',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: adaClient ? 3 : 0,
+                            ),
+                            onPressed: adaClient
+                                ? () => sendDataToServer()
+                                : null,
+                            icon: const Icon(Icons.send_rounded, size: 16),
+                            label: const Text(
+                              'Kirim Data',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         ),

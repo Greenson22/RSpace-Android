@@ -54,67 +54,232 @@ class ClientSharingHandler {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Hubungkan ke Server'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: ipController,
-                  decoration: const InputDecoration(labelText: 'IP Server'),
-                ),
-                if (ipHistory.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 100,
-                    width: double.maxFinite,
-                    child: ListView.builder(
-                      itemCount: ipHistory.length,
-                      itemBuilder: (c, index) {
-                        return ListTile(
-                          title: Text(ipHistory[index]),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () async {
-                              await storageService.deleteIpFromHistory(
-                                ipHistory[index],
-                              );
-                              setDialogState(() => ipHistory.removeAt(index));
-                            },
-                          ),
-                          onTap: () => setDialogState(
-                            () => ipController.text = ipHistory[index],
-                          ),
-                        );
-                      },
-                    ),
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    spreadRadius: 5,
                   ),
                 ],
-              ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Dialog yang Modern
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add_to_home_screen_rounded,
+                          color: Colors.indigo,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Text(
+                          'Hubungkan ke Server',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Masukkan alamat IP Server dari perangkat utama yang mengaktifkan server berbagi data.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Input Field Bergaya Outline Modern
+                  TextField(
+                    controller: ipController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'IP Server Target',
+                      hintText: 'Contoh: 192.168.1.5',
+                      prefixIcon: const Icon(
+                        Icons.wifi_tethering_rounded,
+                        size: 22,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: Colors.indigo,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Riwayat IP dengan Card List modern
+                  if (ipHistory.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.history_rounded,
+                          size: 16,
+                          color: Colors.indigo.shade400,
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Riwayat Alamat IP',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: ipHistory.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (c, index) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 0,
+                              ),
+                              leading: const Icon(
+                                Icons.lan_outlined,
+                                color: Colors.grey,
+                                size: 18,
+                              ),
+                              title: Text(
+                                ipHistory[index],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.redAccent,
+                                  size: 18,
+                                ),
+                                constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                                onPressed: () async {
+                                  await storageService.deleteIpFromHistory(
+                                    ipHistory[index],
+                                  );
+                                  setDialogState(
+                                    () => ipHistory.removeAt(index),
+                                  );
+                                },
+                              ),
+                              onTap: () => setDialogState(
+                                () => ipController.text = ipHistory[index],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 28),
+
+                  // Baris Tombol Aksi Kustom
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        onPressed: () async {
+                          String targetIp = ipController.text.trim();
+                          if (targetIp.isNotEmpty) {
+                            await storageService.saveIpToHistory(targetIp);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            _connectAndReceiveData(
+                              context,
+                              targetIp,
+                              baseDir,
+                              setLoading,
+                              onRefresh,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.link_rounded, size: 18),
+                        label: const Text(
+                          'Hubungkan',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  String targetIp = ipController.text.trim();
-                  if (targetIp.isNotEmpty) {
-                    await storageService.saveIpToHistory(targetIp);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    _connectAndReceiveData(
-                      context,
-                      targetIp,
-                      baseDir,
-                      setLoading,
-                      onRefresh,
-                    );
-                  }
-                },
-                child: const Text('Hubungkan'),
-              ),
-            ],
           );
         },
       ),
@@ -177,7 +342,7 @@ class ClientSharingHandler {
         }
       }
 
-      // --- PERBAIKAN UTAMA: Buka dialog langsung saat mencoba menghubungkan ke server ---
+      // --- PERBAIKAN DIALOG KONEKSI: Tampilan Klien Beranimasi dan Responsif ---
       if (context.mounted) {
         showDialog(
           context: context,
@@ -185,37 +350,137 @@ class ClientSharingHandler {
           builder: (ctx) => StatefulBuilder(
             builder: (context, setDialogState) {
               clientDialogState = setDialogState;
-              return AlertDialog(
-                title: Text(
-                  isConnected ? 'Terhubung Ke Server' : 'Terputus dari Server',
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('IP Server: $ipAddress'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: isConnected ? sendDataToServer : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        foregroundColor: Colors.white,
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isConnected
+                            ? Colors.teal.withOpacity(0.15)
+                            : Colors.red.withOpacity(0.15),
+                        blurRadius: 25,
+                        spreadRadius: 5,
                       ),
-                      child: const Text('Kirim Data Saya Ke Server'),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      channel.sink.close();
-                      Navigator.pop(ctx);
-                    },
-                    child: const Text(
-                      'Tutup',
-                      style: TextStyle(color: Colors.red),
-                    ),
+                    ],
                   ),
-                ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Animasi Rotasi & Skala Status Sinkronisasi Koneksi
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(scale: animation, child: child),
+                        child: isConnected
+                            ? const Icon(
+                                Icons.cloud_sync_rounded,
+                                color: Colors.teal,
+                                size: 76,
+                                key: ValueKey('connected_client'),
+                              )
+                            : const Icon(
+                                Icons.cloud_off_rounded,
+                                color: Colors.redAccent,
+                                size: 76,
+                                key: ValueKey('disconnected_client'),
+                              ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        isConnected
+                            ? 'Terhubung Ke Server'
+                            : 'Terputus dari Server',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isConnected
+                              ? Colors.teal[800]
+                              : Colors.red[800],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Badge IP Alamat Server
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.dns_rounded,
+                              color: isConnected ? Colors.teal : Colors.red,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              ipAddress,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Tombol Unggah Utama secara Full-Width
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: isConnected ? sendDataToServer : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: isConnected ? 3 : 0,
+                          ),
+                          icon: const Icon(Icons.upload_file_rounded, size: 18),
+                          label: const Text(
+                            'Kirim Data Saya Ke Server',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Tombol Putuskan Sesi
+                      TextButton(
+                        onPressed: () {
+                          channel.sink.close();
+                          Navigator.pop(ctx);
+                        },
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 44),
+                        ),
+                        child: const Text(
+                          'Putuskan & Tutup Dialog',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           ),
@@ -228,14 +493,12 @@ class ClientSharingHandler {
           try {
             Map<String, dynamic> data = jsonDecode(pesan);
 
-            // Tangani konfirmasi koneksi awal dari server untuk memperbarui UI Dialog jika diperlukan
             if (data['tipe_pesan'] == 'koneksi_terkonfirmasi') {
               isConnected = true;
               if (clientDialogState != null) clientDialogState!(() {});
               return;
             }
 
-            // Tangani proses transfer data berkas masuk
             if (data['tipe_pesan'] == 'data_transfer' &&
                 data['full_backup_zip'] != null) {
               List<int> zipBytes = base64Decode(data['full_backup_zip']);
@@ -267,18 +530,16 @@ class ClientSharingHandler {
         onDone: () {
           setLoading(false);
           isConnected = false;
-          if (clientDialogState != null)
-            clientDialogState!(
-              () {},
-            ); // Memperbarui status tombol & judul dialog menjadi 'Terputus'
+          if (clientDialogState != null) {
+            clientDialogState!(() {});
+          }
         },
         onError: (_) {
           setLoading(false);
           isConnected = false;
-          if (clientDialogState != null)
-            clientDialogState!(
-              () {},
-            ); // Memperbarui status tombol & judul dialog menjadi 'Terputus'
+          if (clientDialogState != null) {
+            clientDialogState!(() {});
+          }
         },
       );
     } catch (e) {
