@@ -210,6 +210,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
   }
 
+  // SESUDAH PERBAIKAN
   void _addDiscussion(DiscussionProvider provider) async {
     final result = await showAddDiscussionDialog(
       context: context,
@@ -220,20 +221,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
     if (result != null && mounted) {
       try {
-        final newDiscussion = await provider.addDiscussion(result);
-        if (result.linkData == 'create_new' && widget.linkedPath != null) {
-          if (result.linkType == DiscussionLinkType.markdown) {
-            await provider.createAndLinkMarkdownFile(
-              newDiscussion,
-              widget.linkedPath!,
-            );
-          } else if (result.linkType == DiscussionLinkType.html) {
-            await provider.createAndLinkHtmlFile(
-              newDiscussion,
-              widget.linkedPath!,
-            );
-          }
-        }
+        // Cukup panggil addDiscussion, logika pembuatan file html & markdown
+        // sudah diotomatisasi dengan aman di dalam provider.
+        await provider.addDiscussion(result);
+
         _showSnackBar('Diskusi "${result.name}" berhasil ditambahkan.');
       } catch (e) {
         _showSnackBar("Gagal: ${e.toString()}", isError: true);
