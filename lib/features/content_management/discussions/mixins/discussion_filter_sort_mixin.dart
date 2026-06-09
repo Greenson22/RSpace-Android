@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../../../core/services/storage_service.dart';
-import '../../discussions/presentation/utils/repetition_code_utils.dart';
+import '../presentation/utils/repetition_code_utils.dart';
 
 mixin DiscussionFilterSortMixin on ChangeNotifier {
   SharedPreferencesService get prefsService;

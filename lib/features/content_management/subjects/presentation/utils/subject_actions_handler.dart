@@ -12,8 +12,8 @@ import 'package:my_aplication/features/content_management/subjects/presentation/
 import 'package:my_aplication/features/content_management/subjects/presentation/dialogs/export_subject_dialog.dart';
 import 'package:my_aplication/features/content_management/subjects/presentation/dialogs/export_bulk_subjects_dialog.dart';
 import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
-import 'package:my_aplication/features/content_management/application/subject_provider.dart';
-import 'package:my_aplication/features/content_management/application/discussion_provider.dart';
+import 'package:my_aplication/features/content_management/subjects/providers/subject_provider.dart';
+import 'package:my_aplication/features/content_management/discussions/providers/discussion_provider.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/discussions_page.dart';
 import 'package:my_aplication/features/content_management/timeline/presentation/discussion_timeline_page.dart';
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';

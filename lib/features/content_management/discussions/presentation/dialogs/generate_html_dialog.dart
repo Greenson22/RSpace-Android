@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/discussions/dialogs/generate_html_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../application/discussion_provider.dart';
+import '../../providers/discussion_provider.dart';
 
 class GenerateHtmlDialog extends StatefulWidget {
   final String discussionName;

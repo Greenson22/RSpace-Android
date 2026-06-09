@@ -12,14 +12,14 @@ import 'package:markdown/markdown.dart' as md;
 // ==> DITAMBAHKAN: Import yang dibutuhkan
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import '../../../../features/webview_page/presentation/pages/webview_page.dart';
-import '../discussion_provider.dart';
+import '../../../webview_page/presentation/pages/webview_page.dart';
+import '../providers/discussion_provider.dart';
 
-import '../../../../features/html_editor/presentation/pages/html_editor_page.dart';
+import '../../../html_editor/presentation/pages/html_editor_page.dart';
 import '../../domain/models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
-import '../../discussions/presentation/utils/repetition_code_utils.dart';
+import '../presentation/utils/repetition_code_utils.dart';
 
 mixin DiscussionActionsMixin on ChangeNotifier {
   DiscussionService get discussionService;

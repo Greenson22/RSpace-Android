@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/subjects/dialogs/subject_sort_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../application/subject_provider.dart';
+import '../../providers/subject_provider.dart';
 // ==> IMPORT DIALOG YANG SUDAH DIREFAKTOR <==
 import '../../../discussions/presentation/dialogs/repetition_code_order_dialog.dart';
 

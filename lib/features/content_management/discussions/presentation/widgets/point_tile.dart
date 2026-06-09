@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
-import '../../../application/discussion_provider.dart';
+import '../../providers/discussion_provider.dart';
 import 'point_edit_popup_menu.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';

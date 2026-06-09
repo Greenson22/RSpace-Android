@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/discussion_model.dart';
-import '../../../application/discussion_provider.dart';
+import '../../providers/discussion_provider.dart';
 import 'point_tile.dart';
 
 class DiscussionPointList extends StatelessWidget {

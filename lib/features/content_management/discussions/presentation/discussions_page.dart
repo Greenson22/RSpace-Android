@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../application/discussion_provider.dart';
+import '../providers/discussion_provider.dart';
 import 'dialogs/discussion_dialogs.dart'; // Import utama untuk dialog
 import 'widgets/discussion_list_item.dart';
 import 'widgets/discussion_stats_header.dart';

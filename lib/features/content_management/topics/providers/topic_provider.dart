@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:archive/archive_io.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
-import '../domain/models/topic_model.dart';
-import '../domain/services/topic_service.dart';
-import '../../../core/services/path_service.dart';
+import '../../domain/models/topic_model.dart';
+import '../../domain/services/topic_service.dart';
+import '../../../../core/services/path_service.dart';
 
 class TopicProvider with ChangeNotifier {
   final TopicService _topicService = TopicService();

@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../application/subject_provider.dart';
+import '../../providers/subject_provider.dart';
 
 void showRepetitionCodeDisplayOrderDialog(BuildContext context) {
   final provider = Provider.of<SubjectProvider>(context, listen: false);

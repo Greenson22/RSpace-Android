@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 // ==> IMPORT PROVIDER <==
-import '../../../application/discussion_provider.dart';
+import '../../providers/discussion_provider.dart';
 // ==> IMPORT DIALOG BARU <==
 import 'repetition_code_order_dialog.dart';
 

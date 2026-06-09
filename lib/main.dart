@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // Import TopicProvider
-import 'features/content_management/application/topic_provider.dart';
+import 'features/content_management/topics/providers/topic_provider.dart';
 
 // Import Halaman
 import 'features/content_management/topics/presentation/topics_page.dart';

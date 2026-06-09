@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_stats_header.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../application/discussion_provider.dart';
+import '../../providers/discussion_provider.dart';
 import '../utils/repetition_code_utils.dart'; // Mengimpor fungsi utilitas repetisi yang benar
 
 class DiscussionStatsHeader extends StatefulWidget {

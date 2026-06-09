@@ -5,14 +5,14 @@ import 'package:my_aplication/features/content_management/domain/models/subject_
 import 'package:my_aplication/features/content_management/discussions/presentation/dialogs/add_discussion_dialog.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
-import '../domain/models/discussion_model.dart';
-import '../domain/models/point_preset_model.dart';
-import '../domain/services/discussion_service.dart';
-import '../domain/services/point_preset_service.dart';
-import '../../../core/services/path_service.dart';
-import '../../../core/services/storage_service.dart';
-import 'mixins/discussion_actions_mixin.dart';
-import 'mixins/discussion_filter_sort_mixin.dart';
+import '../../domain/models/discussion_model.dart';
+import '../../domain/models/point_preset_model.dart';
+import '../../domain/services/discussion_service.dart';
+import '../../domain/services/point_preset_service.dart';
+import '../../../../core/services/path_service.dart';
+import '../../../../core/services/storage_service.dart';
+import '../mixins/discussion_actions_mixin.dart';
+import '../mixins/discussion_filter_sort_mixin.dart';
 
 class DiscussionProvider
     with ChangeNotifier, DiscussionFilterSortMixin, DiscussionActionsMixin {

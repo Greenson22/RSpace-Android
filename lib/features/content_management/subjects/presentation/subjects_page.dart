@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:my_aplication/features/content_management/application/subject_provider.dart';
+import 'package:my_aplication/features/content_management/subjects/providers/subject_provider.dart';
 
 // Imports Refactored Components
 import 'widgets/subjects_app_bar.dart';

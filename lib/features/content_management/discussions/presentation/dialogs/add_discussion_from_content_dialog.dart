@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../application/discussion_provider.dart';
+import '../../providers/discussion_provider.dart';
 
 Future<void> showAddDiscussionFromContentDialog({
   required BuildContext context,
