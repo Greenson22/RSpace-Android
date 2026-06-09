@@ -1,10 +1,11 @@
 // lib/core/services/storage_service.dart
+import 'dart:io';
 import 'path_service.dart';
 import 'user_data_service.dart';
 import 'neuron_service.dart';
 
+/// Kelas Utama SharedPreferences bawaan aplikasi Anda tetap dipertahankan utuh
 class SharedPreferencesService {
-  // _settingsService dihapus karena settings_service.dart tidak lagi di-import
   final PathService _pathService = PathService();
   final UserDataService _userDataService = UserDataService();
   final NeuronService _neuronService = NeuronService();
@@ -44,8 +45,11 @@ class SharedPreferencesService {
   Future<List<String>> loadRepetitionCodeOrder() =>
       _userDataService.loadRepetitionCodeOrder();
 
-  Future<void> saveRepetitionCodeDisplayOrder(List<String> order) =>
-      _userDataService.saveRepetitionCodeDisplayOrder(order);
+  Future<void> saveRepetitionCodeDisplayOrder(List<String> order) async {
+    final List<String> mutableList = List.from(order);
+    await _userDataService.saveRepetitionCodeDisplayOrder(mutableList);
+  }
+
   Future<List<String>> loadRepetitionCodeDisplayOrder() =>
       _userDataService.loadRepetitionCodeDisplayOrder();
 
@@ -54,7 +58,6 @@ class SharedPreferencesService {
   Future<Map<String, int>> loadRepetitionCodeDays() =>
       _userDataService.loadRepetitionCodeDays();
 
-  // ==> TAMBAHKAN FUNGSI BARU DI SINI <==
   Future<void> saveTimelineAppearance({
     double? discussionRadius,
     double? pointRadius,
@@ -64,4 +67,89 @@ class SharedPreferencesService {
   );
   Future<Map<String, double>> loadTimelineAppearance() =>
       _userDataService.loadTimelineAppearance();
+}
+
+// =========================================================================
+// === SOLUSI EROR: Membuat Alias StorageService Berbasis SharedPreferences ===
+// =========================================================================
+class StorageService extends SharedPreferencesService {
+  /// Mengambil basis direktori utama untuk sinkronisasi UI Data Center
+  Future<String> getBaseDirSetting() async {
+    String? kustomPath = await loadCustomStoragePath();
+    return kustomPath ?? 'Documents';
+  }
+
+  /// Membantu menulis data teks mentah ke file target (.json)
+  Future<void> saveJsonData(File file, String content) async {
+    if (!await file.parent.exists()) {
+      await file.parent.create(recursive: true);
+    }
+    await file.writeAsString(content);
+  }
+
+  // --- LOGIKA IP HISTORY (SINKRONISASI WIFI) ---
+  Future<List<String>> getIpHistory() async {
+    return _userDataService.getIpHistory();
+  }
+
+  Future<void> saveIpToHistory(String ip) async {
+    await _userDataService.saveIpToHistory(ip);
+  }
+
+  Future<void> deleteIpFromHistory(String ip) async {
+    await _userDataService.deleteIpFromHistory(ip);
+  }
+
+  // --- LOGIKA CADANGAN BERKAS ZIP DATA CENTER ---
+  Future<List<File>> getAllLocalBackupFiles(String baseDir) async {
+    final String targetPath = await _pathService.rspaceBackupPath;
+    final Directory dir = Directory(targetPath);
+    if (!await dir.exists()) return [];
+    return dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.zip'))
+        .toList();
+  }
+
+  Future<List<File>> getAllServerBackupFiles(String baseDir) async {
+    final String targetPath = await _pathService.perpuskuBackupPath;
+    final Directory dir = Directory(targetPath);
+    if (!await dir.exists()) return [];
+    return dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.zip'))
+        .toList();
+  }
+
+  Future<File> getLocalBackupZipFile(String baseDir, String fileName) async {
+    final String targetPath = await _pathService.rspaceBackupPath;
+    return File('$targetPath/$fileName');
+  }
+
+  Future<File> getBackupZipFile(String baseDir, String fileName) async {
+    final String targetPath = await _pathService.perpuskuBackupPath;
+    return File('$targetPath/$fileName');
+  }
+
+  // --- SEGMEN DATA: RSPACE ---
+  Future<File> getRSpaceJsonFile(String baseDir) async {
+    final String tPath = await _pathService.topicsPath;
+    return File('$tPath/rspace_data_marker.json');
+  }
+
+  // --- SEGMEN DATA: PERPUSKU ---
+  Future<String> getPerpuskuDirPath(String baseDir) async {
+    return await _pathService.perpuskuDataPath;
+  }
+
+  Future<List<File>> getAllPerpuskuGroups(String baseDir) async {
+    final String targetPath = await _pathService.perpuskuDataPath;
+    final Directory dir = Directory(targetPath);
+    if (!await dir.exists()) return [];
+
+    // Membaca seluruh file data internal Perpusku secara rekursif
+    return dir.listSync(recursive: true).whereType<File>().toList();
+  }
 }

@@ -5,18 +5,13 @@ class BackupTab extends StatefulWidget {
   final List<File> localBackupFiles;
   final VoidCallback onCreateBackup;
   final Function(File) onDeleteBackup;
-  final VoidCallback onBackupTaskMaster;
-  final VoidCallback onRestoreTaskMaster;
-  final VoidCallback onBackupChecklist;
-  final VoidCallback onRestoreChecklist;
-  final VoidCallback onBackupJurnal;
-  final VoidCallback onRestoreJurnal;
-  // === TAMBAHAN: Callback untuk Notes & Prompts ===
-  final VoidCallback onBackupNotes;
-  final VoidCallback onRestoreNotes;
-  final VoidCallback onBackupPrompts;
-  final VoidCallback onRestorePrompts;
-  // ================================================
+
+  // === DISESUAIKAN: Callback baru khusus RSpace & Perpusku ===
+  final VoidCallback onBackupRSpace;
+  final VoidCallback onRestoreRSpace;
+  final VoidCallback onBackupPerpusku;
+  final VoidCallback onRestorePerpusku;
+
   final Function(File) onRestoreAllZip;
   final List<File> serverBackupFiles;
   final Function(File) onDeleteServerBackup;
@@ -28,16 +23,12 @@ class BackupTab extends StatefulWidget {
     required this.localBackupFiles,
     required this.onCreateBackup,
     required this.onDeleteBackup,
-    required this.onBackupTaskMaster,
-    required this.onRestoreTaskMaster,
-    required this.onBackupChecklist,
-    required this.onRestoreChecklist,
-    required this.onBackupJurnal,
-    required this.onRestoreJurnal,
-    required this.onBackupNotes,
-    required this.onRestoreNotes,
-    required this.onBackupPrompts,
-    required this.onRestorePrompts,
+    // === DISESUAIKAN: Konstruktor Parameter Baru ===
+    required this.onBackupRSpace,
+    required this.onRestoreRSpace,
+    required this.onBackupPerpusku,
+    required this.onRestorePerpusku,
+
     required this.onRestoreAllZip,
     required this.serverBackupFiles,
     required this.onDeleteServerBackup,
@@ -98,47 +89,25 @@ class _BackupTabState extends State<BackupTab> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        // Baris Tombol Ringkas (Task Master, Checklist, Jurnal, Notes, Prompts)
+        // === DISESUAIKAN: Baris Tombol Ringkas Hanya Untuk RSpace & Perpusku ===
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          // PERBAIKAN: Menggunakan SingleChildScrollView agar tidak overflow jika layar kecil
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildCompactButton(
-                  'Task Master',
-                  Icons.format_list_bulleted,
-                  widget.onBackupTaskMaster,
-                  widget.onRestoreTaskMaster,
+                  'RSpace',
+                  Icons.folder_shared_rounded,
+                  widget.onBackupRSpace,
+                  widget.onRestoreRSpace,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 24),
                 _buildCompactButton(
-                  'Checklist',
-                  Icons.checklist_rtl,
-                  widget.onBackupChecklist,
-                  widget.onRestoreChecklist,
-                ),
-                const SizedBox(width: 16),
-                _buildCompactButton(
-                  'Jurnal',
-                  Icons.menu_book,
-                  widget.onBackupJurnal,
-                  widget.onRestoreJurnal,
-                ),
-                const SizedBox(width: 16),
-                _buildCompactButton(
-                  'Notes',
-                  Icons.note_alt,
-                  widget.onBackupNotes,
-                  widget.onRestoreNotes,
-                ),
-                const SizedBox(width: 16),
-                _buildCompactButton(
-                  'Prompts',
-                  Icons.smart_toy,
-                  widget.onBackupPrompts,
-                  widget.onRestorePrompts,
+                  'Perpusku',
+                  Icons.local_library_rounded,
+                  widget.onBackupPerpusku,
+                  widget.onRestorePerpusku,
                 ),
               ],
             ),
@@ -471,7 +440,10 @@ class _BackupTabState extends State<BackupTab> {
   ) {
     return Column(
       children: [
-        CircleAvatar(child: Icon(icon, color: Colors.white)),
+        CircleAvatar(
+          backgroundColor: Colors.indigo.shade600,
+          child: Icon(icon, color: Colors.white),
+        ),
         const SizedBox(height: 4),
         Text(
           label,

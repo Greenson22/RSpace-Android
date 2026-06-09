@@ -19,8 +19,10 @@ class UserDataService {
   static const String _timelineDiscussionSpacingKey =
       'timeline_discussion_spacing';
   static const String _timelinePointSpacingKey = 'timeline_point_spacing';
-  // ==> KUNCI BARU UNTUK ZOOM <==
   static const String _timelineZoomLevelKey = 'timeline_zoom_level';
+
+  // === TAMBAHAN: Kunci Penyimpanan Kustom untuk Sinkronisasi Jaringan ===
+  static const String _ipHistoryKey = 'network_ip_history';
 
   Future<void> saveString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,7 +39,43 @@ class UserDataService {
     await prefs.remove(key);
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
+  // === TAMBAHAN: Manajemen Riwayat IP Server (Mengatasi Garis Merah Eror) ===
+
+  /// Mengambil semua daftar riwayat IP yang pernah terhubung
+  Future<List<String>> getIpHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_ipHistoryKey) ?? [];
+  }
+
+  /// Menyimpan alamat IP baru ke daftar teratas histori tanpa duplikasi
+  Future<void> saveIpToHistory(String ip) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> currentHistory = prefs.getStringList(_ipHistoryKey) ?? [];
+
+    // Hapus jika IP sudah ada sebelumnya agar posisi barunya bisa naik ke paling atas
+    currentHistory.remove(ip);
+    currentHistory.insert(0, ip);
+
+    // Batasi histori maksimal 10 item agar memori SharedPreferences tetap ringan
+    if (currentHistory.length > 10) {
+      currentHistory = currentHistory.sublist(0, 10);
+    }
+
+    await prefs.setStringList(_ipHistoryKey, currentHistory);
+  }
+
+  /// Menghapus alamat IP tertentu dari daftar histori pilihan user
+  Future<void> deleteIpFromHistory(String ip) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> currentHistory = prefs.getStringList(_ipHistoryKey) ?? [];
+
+    currentHistory.remove(ip);
+
+    await prefs.setStringList(_ipHistoryKey, currentHistory);
+  }
+
+  // =========================================================================
+
   Future<void> saveTimelineAppearance({
     double? discussionRadius,
     double? pointRadius,
@@ -63,7 +101,6 @@ class UserDataService {
     }
   }
 
-  // ==> FUNGSI INI DIPERBARUI <==
   Future<Map<String, double>> loadTimelineAppearance() async {
     final prefs = await SharedPreferences.getInstance();
     return {
@@ -75,23 +112,6 @@ class UserDataService {
       'zoomLevel': prefs.getDouble(_timelineZoomLevelKey) ?? 1.0,
     };
   }
-
-  /* Catatan: Fungsi Chat History di bawah ini dinonaktifkan sementara 
-  karena ChatMessage model telah dihapus. Jika Anda memindahkannya ke tempat lain,
-  Anda bisa menghapus blok komentar ini atau menghapus fungsinya secara permanen.
-
-  Future<void> saveChatHistory(List<ChatMessage> messages) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String encodedData = encodeChatMessages(messages);
-    await prefs.setString(_geminiChatHistory, encodedData);
-  }
-
-  Future<List<ChatMessage>> loadChatHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? encodedData = prefs.getString(_geminiChatHistory);
-    return decodeChatMessages(encodedData ?? '[]');
-  }
-  */
 
   Future<void> saveSortPreferences(String sortType, bool sortAscending) async {
     final prefs = await SharedPreferences.getInstance();
