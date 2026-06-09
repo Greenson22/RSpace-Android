@@ -290,43 +290,80 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
       Future<void> sendDataToServer() async {
         if (clientActiveList.isEmpty) return;
-        String currentDir = await _storageService.getBaseDirSetting();
-        File fileRSpace = await _storageService.getRSpaceJsonFile(currentDir);
-        String rspaceContent = await fileRSpace.exists()
-            ? await fileRSpace.readAsString()
-            : "{}";
 
-        List<File> perpuskuFiles = await _storageService.getAllPerpuskuGroups(
-          currentDir,
-        );
-        final Archive perpusArchive = Archive();
-        for (var file in perpuskuFiles) {
-          final String namaFile = file.path.split('/').last;
-          final List<int> bytes = await file.readAsBytes();
-          perpusArchive.addFile(ArchiveFile(namaFile, bytes.length, bytes));
-        }
-        final List<int>? perpusZipBytes = ZipEncoder().encode(perpusArchive);
-        String perpuskuBase64Content = perpusZipBytes != null
-            ? base64Encode(perpusZipBytes)
-            : "";
+        setState(
+          () => _isLoading = true,
+        ); // Menampilkan loading indicator jika diperlukan
 
-        Map<String, dynamic> sendBigPackage = {
-          'tipe_pesan': 'data_transfer',
-          'rspace_data': rspaceContent,
-          'perpusku_zip': perpuskuBase64Content,
-        };
+        try {
+          // Mendapatkan path folder utama aplikasi (sama seperti di backup_tab)
+          final String appBasePath =
+              await _pathService.loadCustomStoragePath() ?? "";
+          Directory rootDir;
+          if (appBasePath.isNotEmpty) {
+            rootDir = Directory(appBasePath);
+          } else {
+            final String profilePath = await _pathService.profilePicturesPath;
+            rootDir = Directory(profilePath).parent;
+          }
+          final String mainFolderPath = rootDir.path;
 
-        for (var socket in clientActiveList) {
-          socket.sink.add(jsonEncode(sendBigPackage));
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Berhasil mengirim data ke ${clientActiveList.length} Client!',
+          final Directory rspaceDir = Directory(
+            path.join(mainFolderPath, 'RSpace_data'),
+          );
+          final Directory perpuskuDir = Directory(
+            path.join(mainFolderPath, 'PerpusKu'),
+          );
+
+          // Membuat archive zip sementara menggunakan ZipFileEncoder
+          final encoder = ZipFileEncoder();
+          String tempZipName = _getFormattedFileName('temp_server_send', 'zip');
+          File tempZipFile = await _storageService.getBackupZipFile(
+            _baseDir,
+            tempZipName,
+          );
+
+          encoder.create(tempZipFile.path);
+          if (rspaceDir.existsSync()) {
+            await encoder.addDirectory(rspaceDir, includeDirName: true);
+          }
+          if (perpuskuDir.existsSync()) {
+            await encoder.addDirectory(perpuskuDir, includeDirName: true);
+          }
+          encoder.close();
+
+          // Membaca file ZIP yang sudah jadi dan mengubahnya ke Base64
+          List<int> zipBytes = await tempZipFile.readAsBytes();
+          String fullZipBase64 = base64Encode(zipBytes);
+
+          // Hapus file zip sementara agar tidak menumpuk di storage
+          if (await tempZipFile.exists()) {
+            await tempZipFile.delete();
+          }
+
+          // Kirim paket data berupa satu berkas enkapsulasi utuh
+          Map<String, dynamic> sendBigPackage = {
+            'tipe_pesan': 'data_transfer',
+            'full_backup_zip': fullZipBase64, // Menggunakan satu field zip utuh
+          };
+
+          for (var socket in clientActiveList) {
+            socket.sink.add(jsonEncode(sendBigPackage));
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Berhasil mengirim data ke ${clientActiveList.length} Client!',
+              ),
+              backgroundColor: Colors.teal,
             ),
-            backgroundColor: Colors.teal,
-          ),
-        );
+          );
+        } catch (e) {
+          debugPrint("Server gagal membuat/mengirim paket: $e");
+        } finally {
+          setState(() => _isLoading = false);
+        }
       }
 
       showDialog(
@@ -637,38 +674,68 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
       Future<void> fungsiKirimDataClient() async {
         if (!isStillConnected) return;
-        String currentDir = await _storageService.getBaseDirSetting();
-        File fileRSpace = await _storageService.getRSpaceJsonFile(currentDir);
-        String kontenRSpace = await fileRSpace.exists()
-            ? await fileRSpace.readAsString()
-            : "{}";
 
-        List<File> perpusFiles = await _storageService.getAllPerpuskuGroups(
-          currentDir,
-        );
-        final Archive archive = Archive();
-        for (var file in perpusFiles) {
-          final String namaFile = file.path.split('/').last;
-          final List<int> bytes = await file.readAsBytes();
-          archive.addFile(ArchiveFile(namaFile, bytes.length, bytes));
+        setState(() => _isLoading = true);
+
+        try {
+          final String appBasePath =
+              await _pathService.loadCustomStoragePath() ?? "";
+          Directory rootDir;
+          if (appBasePath.isNotEmpty) {
+            rootDir = Directory(appBasePath);
+          } else {
+            final String profilePath = await _pathService.profilePicturesPath;
+            rootDir = Directory(profilePath).parent;
+          }
+          final String mainFolderPath = rootDir.path;
+
+          final Directory rspaceDir = Directory(
+            path.join(mainFolderPath, 'RSpace_data'),
+          );
+          final Directory perpuskuDir = Directory(
+            path.join(mainFolderPath, 'PerpusKu'),
+          );
+
+          final encoder = ZipFileEncoder();
+          String tempZipName = _getFormattedFileName('temp_client_send', 'zip');
+          File tempZipFile = await _storageService.getBackupZipFile(
+            _baseDir,
+            tempZipName,
+          );
+
+          encoder.create(tempZipFile.path);
+          if (rspaceDir.existsSync()) {
+            await encoder.addDirectory(rspaceDir, includeDirName: true);
+          }
+          if (perpuskuDir.existsSync()) {
+            await encoder.addDirectory(perpuskuDir, includeDirName: true);
+          }
+          encoder.close();
+
+          List<int> zipBytes = await tempZipFile.readAsBytes();
+          String fullZipBase64 = base64Encode(zipBytes);
+
+          if (await tempZipFile.exists()) {
+            await tempZipFile.delete();
+          }
+
+          Map<String, dynamic> paketBesarClient = {
+            'tipe_pesan': 'data_transfer',
+            'full_backup_zip': fullZipBase64,
+          };
+
+          channel.sink.add(jsonEncode(paketBesarClient));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data Anda sukses dikirimkan ke Server!'),
+              backgroundColor: Colors.teal,
+            ),
+          );
+        } catch (e) {
+          debugPrint("Client gagal membuat/mengirim paket: $e");
+        } finally {
+          setState(() => _isLoading = false);
         }
-        final List<int>? zipBytes = ZipEncoder().encode(archive);
-        String kontenPerpuskuZip = zipBytes != null
-            ? base64Encode(zipBytes)
-            : "";
-
-        Map<String, dynamic> paketBesarClient = {
-          'tipe_pesan': 'data_transfer',
-          'rspace_data': kontenRSpace,
-          'perpusku_zip': kontenPerpuskuZip,
-        };
-        channel.sink.add(jsonEncode(paketBesarClient));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data Anda sukses dikirimkan ke Server!'),
-            backgroundColor: Colors.teal,
-          ),
-        );
       }
 
       channel.stream
