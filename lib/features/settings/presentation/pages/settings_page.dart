@@ -1,11 +1,13 @@
 // lib/features/settings/presentation/pages/settings_page.dart
-import 'dart:io'; // Ditambahkan untuk pengecekan Platform (OS)
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Dibutuhkan untuk kDebugMode
-import 'package:file_picker/file_picker.dart'; // Diaktifkan untuk pemilih folder
-import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini untuk menyimpan preferensi web
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/storage_service.dart';
-import '../../../../core/theme/app_theme.dart'; // Import AppTheme untuk mengambil gradasi
+import '../../../../core/theme/app_theme.dart';
+// Import halaman Perpusku yang dipindahkan ke sini
+import '../../../perpusku/presentation/pages/perpusku_topic_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -22,14 +24,11 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isLoading = true;
   bool _useInternalWeb = true;
 
-  // --- KODE BARU: Menggunakan key terpisah berdasarkan Platform ---
   String get _webPreferenceKey =>
       Platform.isAndroid ? 'use_internal_web_android' : 'use_internal_web';
 
-  // --- KODE BARU: Mengatur nilai default bawaan berdasarkan Platform ---
   bool get _defaultWebPreferenceValue => Platform.isAndroid ? false : true;
 
-  // --- KODE BARU: Mendapatkan deskripsi lokasi default asli sesuai OS ---
   String _getDefaultPathDescription() {
     if (Platform.isAndroid) {
       return "Default (Internal: Android/data/${Platform.localeName}/files)";
@@ -62,10 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     setState(() => _isLoading = true);
 
-    // 1. Muat data custom path
     final customPath = await _storageService.loadCustomStoragePath();
-
-    // 2. Muat data preferensi web menggunakan key & default value adaptif platform
     final prefs = await SharedPreferences.getInstance();
     final useInternal =
         prefs.getBool(_webPreferenceKey) ?? _defaultWebPreferenceValue;
@@ -170,8 +166,6 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final double textScaleFactor = MediaQuery.of(context).textScaleFactor;
-
-    // Menentukan warna gradasi secara otomatis berdasarkan teks "Pengaturan"
     final List<Color> appBarGradient = AppTheme.getGradientForTitle(
       'Pengaturan',
     );
@@ -183,10 +177,9 @@ class _SettingsPageState extends State<SettingsPage> {
           style: TextStyle(
             fontSize: 18.0 * textScaleFactor,
             fontWeight: FontWeight.w600,
-            color: Colors.white, // Memastikan teks terlihat di atas gradasi
+            color: Colors.white,
           ),
         ),
-        // === PENERAPAN TEMA GRADASI ===
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -207,6 +200,57 @@ class _SettingsPageState extends State<SettingsPage> {
                 vertical: 8.0 * textScaleFactor,
               ),
               children: [
+                // ========================================================
+                // SEKSI MODUL & KONTEN (BARU)
+                // ========================================================
+                Text(
+                  'Modul Aplikasi',
+                  style: TextStyle(
+                    fontSize: 14.0 * textScaleFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 2.0 * textScaleFactor,
+                  ),
+                  leading: Icon(
+                    Icons.local_library_outlined,
+                    color: appBarGradient.first,
+                    size: 22.0 * textScaleFactor,
+                  ),
+                  title: Text(
+                    'Perpusku',
+                    style: TextStyle(
+                      fontSize: 14.0 * textScaleFactor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Buka dan kelola manajemen materi pustaka referensi Anda.',
+                    style: TextStyle(fontSize: 11.0 * textScaleFactor),
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14.0 * textScaleFactor,
+                    color: Colors.grey,
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PerpuskuTopicPage(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 32, thickness: 1.0),
+
+                // ========================================================
+                // SEKSI PENYIMPANAN
+                // ========================================================
                 Text(
                   'Penyimpanan & Data',
                   style: TextStyle(
@@ -283,8 +327,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             IconButton(
                               icon: Icon(
                                 Icons.folder_open,
-                                color: appBarGradient
-                                    .last, // Menyesuaikan warna dengan tema
+                                color: appBarGradient.last,
                                 size: 20.0 * textScaleFactor,
                               ),
                               tooltip: 'Pilih Folder',
@@ -295,6 +338,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const Divider(height: 32, thickness: 1.0),
 
+                // ========================================================
+                // SEKSI PREFERENSI TAUTAN
+                // ========================================================
                 Text(
                   'Preferensi Tautan',
                   style: TextStyle(
@@ -325,8 +371,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     scale: textScaleFactor,
                     child: Switch(
                       value: _useInternalWeb,
-                      activeColor: appBarGradient
-                          .first, // Menyesuaikan warna dengan tema
+                      activeColor: appBarGradient.first,
                       onChanged: (bool value) async {
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.setBool(_webPreferenceKey, value);
