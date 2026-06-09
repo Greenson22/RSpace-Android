@@ -45,7 +45,7 @@ class _AboutPageState extends State<AboutPage>
     final textTheme = theme.textTheme;
     final double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
-    // Mengambil gradasi secara otomatis berdasarkan judul "Tentang RSpace"
+    // Mengambil gradasi secara otomatis berdasarkan judul "Tentang RSpace" sesuai fungsi asli Anda
     final List<Color> appBarGradient = AppTheme.getGradientForTitle(
       'Tentang RSpace',
     );
@@ -93,50 +93,41 @@ class _AboutPageState extends State<AboutPage>
     );
   }
 
-  // ... (Sisa kode _buildFeaturesTab, _buildDeveloperTab, dan _AnimatedFeatureListItem tetap sama)
+  // TAB 1: DAFTAR FITUR YANG SUDAH DIPERBARUI (FOKUS NON-AI & OFFLINE)
   Widget _buildFeaturesTab(BuildContext context) {
     final features = [
       {
-        'icon': Icons.account_tree_outlined,
-        'title': 'Konten Hirarkis',
-        'subtitle': 'Atur materi dalam Topik > Subjek > Diskusi > Poin.',
+        'icon': Icons.topic_outlined,
+        'title': 'Diskusi & Poin Repetisi',
+        'subtitle':
+            'Kelola topik dan poin diskusi Anda dengan sistem Spaced Repetition (R1D, R3D, R7D, dst) agar tidak mudah lupa.',
       },
       {
-        'icon': Icons.school_outlined,
-        'title': 'Spaced Repetition',
-        'subtitle': 'Perkuat ingatan dengan jadwal tinjau otomatis.',
+        'icon': Icons.local_library_outlined,
+        'title': 'Modul Perpusku',
+        'subtitle':
+            'Akses cepat ke materi referensi lokal Anda secara terstruktur berdasarkan Topik, Subjek, dan File Konten.',
       },
       {
-        'icon': Icons.task_alt_outlined,
-        'title': 'Manajemen Tugas',
-        'subtitle': 'Lacak semua tugas dengan kategori, tanggal, dan progres.',
+        'icon': Icons.code,
+        'title': 'Editor HTML & Markdown',
+        'subtitle':
+            'Editor bawaan dengan syntax highlighting, auto-formatting, dan berbagai pilihan tema visual (VS 2015, Atom, GitHub).',
       },
       {
-        'icon': Icons.show_chart,
-        'title': 'Progres Belajar',
-        'subtitle': 'Visualisasikan kemajuan belajar Anda secara detail.',
+        'icon': Icons.language,
+        'title': 'Internal WebView & Bookmark',
+        'subtitle':
+            'Buka tautan web langsung dari dalam aplikasi tanpa browser eksternal, lengkap dengan fitur Bookmark lokal.',
       },
       {
-        'icon': Icons.quiz_outlined,
-        'title': 'Kuis Interaktif',
-        'subtitle': 'Uji pemahaman dengan kuis yang dibuat oleh AI.',
-      },
-      {
-        'icon': Icons.auto_awesome,
-        'title': 'Asisten AI "Flo"',
-        'subtitle': 'Dapatkan jawaban dan rangkuman dari data aplikasi Anda.',
-      },
-      {
-        'icon': Icons.psychology_outlined,
-        'title': 'Sistem Neuron',
-        'subtitle': 'Kumpulkan poin (Neuron) sebagai motivasi belajar.',
-      },
-      {
-        'icon': Icons.folder_zip_outlined,
-        'title': 'Backup & Sync',
-        'subtitle': 'Amankan dan sinkronkan data Anda ke server pribadi.',
+        'icon': Icons.folder_special_outlined,
+        'title': 'Penyimpanan Lokal Mandiri',
+        'subtitle':
+            'Kontrol penuh atas data Anda. Atur sendiri lokasi folder utama penyimpanan file data RSpace & Perpusku Anda.',
       },
     ];
+
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
       itemCount: features.length,
@@ -152,6 +143,7 @@ class _AboutPageState extends State<AboutPage>
     );
   }
 
+  // TAB 2: INFORMASI PENGEMBANG (TETAP UTUH & TIDAK DIHAPUS)
   Widget _buildDeveloperTab(BuildContext context, TextTheme textTheme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
