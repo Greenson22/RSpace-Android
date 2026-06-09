@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 
 import 'features/content_management/topics/providers/topic_provider.dart';
 import 'features/content_management/topics/presentation/topics_page.dart';
-import 'features/settings/presentation/pages/settings_page.dart';
+// Import file data_center_screen yang baru saja Anda tambahkan
+import 'features/data_center/presentation/screens/data_center_screen.dart';
 import 'features/about/presentation/pages/about_page.dart';
 
 void main() {
@@ -45,11 +46,15 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
 
-  // Urutan list halaman:
+  // Urutan list halaman yang disesuaikan:
   // Indeks 0: TopicsPage
-  // Indeks 1: SettingsPage
+  // Indeks 1: DataCenterScreen (Menggantikan SettingsPage)
   // Indeks 2: AboutPage
-  final List<Widget> _pages = const [TopicsPage(), SettingsPage(), AboutPage()];
+  final List<Widget> _pages = const [
+    TopicsPage(),
+    DataCenterScreen(), // Menaruh Data Center di posisi Pengaturan
+    AboutPage(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -72,9 +77,12 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Topics', // Membuka indeks 0 (TopicsPage)
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Pengaturan', // Membuka indeks 1 (SettingsPage)
+            icon: Icon(
+              Icons.storage_outlined,
+            ), // Mengubah ikon agar sesuai dengan Data Center
+            activeIcon: Icon(Icons.storage),
+            label:
+                'Pengaturan', // Tetap menggunakan label Pengaturan sesuai instruksi (Membuka indeks 1)
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.info_outline),
