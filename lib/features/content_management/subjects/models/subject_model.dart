@@ -1,6 +1,6 @@
 // lib/features/content_management/domain/models/subject_model.dart
 
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 
 class Subject {
   // Properti ini untuk identifikasi, tidak disimpan di file JSON subject

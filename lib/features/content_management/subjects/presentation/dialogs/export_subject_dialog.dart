@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
+import 'package:my_aplication/features/content_management/subjects/models/subject_model.dart';
 
 class ExportSubjectDialog extends StatefulWidget {
   final Subject subject;

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/subject_provider.dart';
-import '../../../domain/models/subject_model.dart';
+import '../../models/subject_model.dart';
 import '../../../discussions/presentation/utils/repetition_code_utils.dart';
 
 class SubjectListTile extends StatelessWidget {

@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../webview_page/presentation/pages/webview_page.dart';
 
-import '../../../domain/models/discussion_model.dart';
+import '../../models/discussion_model.dart';
 import '../../providers/discussion_provider.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../dialogs/generate_html_dialog.dart';

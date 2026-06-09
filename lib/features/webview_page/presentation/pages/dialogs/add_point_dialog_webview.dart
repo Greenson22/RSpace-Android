@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/discussions/providers/discussion_provider.dart';
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 // ==> IMPORT DIALOG MANAJEMEN PRESET <==
 import 'package:my_aplication/features/content_management/discussions/presentation/dialogs/manage_point_presets_dialog.dart';

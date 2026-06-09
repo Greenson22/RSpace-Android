@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
-import '../../domain/models/topic_model.dart';
+import '../models/topic_model.dart';
 import '../../subjects/providers/subject_provider.dart';
 import '../providers/topic_provider.dart';
 import '../../subjects/presentation/subjects_page.dart';

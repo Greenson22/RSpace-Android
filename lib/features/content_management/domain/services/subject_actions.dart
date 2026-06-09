@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_aplication/core/services/path_service.dart';
-import '../models/subject_model.dart';
-import '../models/topic_model.dart';
+import '../../subjects/models/subject_model.dart';
+import '../../topics/models/topic_model.dart';
 import 'subject_repository.dart';
 
 class SubjectActions {

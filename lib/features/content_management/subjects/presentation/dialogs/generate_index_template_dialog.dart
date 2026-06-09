@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/subjects/dialogs/generate_index_template_dialog.dart
 
 import 'package:flutter/material.dart';
-import '../../../domain/models/subject_model.dart';
+import '../../models/subject_model.dart';
 
 class GenerateIndexTemplateDialog extends StatefulWidget {
   final Subject subject;

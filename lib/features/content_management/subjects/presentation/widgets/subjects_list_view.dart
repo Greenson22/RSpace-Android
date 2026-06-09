@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/subjects/widgets/subjects_list_view.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:my_aplication/features/content_management/domain/models/subject_model.dart';
+import 'package:my_aplication/features/content_management/subjects/models/subject_model.dart';
 import 'package:my_aplication/features/content_management/subjects/providers/subject_provider.dart';
 import 'package:my_aplication/features/content_management/subjects/presentation/widgets/subject_list_tile.dart';
 

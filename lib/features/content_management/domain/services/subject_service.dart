@@ -6,11 +6,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:my_aplication/core/services/path_service.dart';
 import 'package:my_aplication/core/services/storage_service.dart';
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:path/path.dart' as path;
 
-import '../models/subject_model.dart';
+import '../../subjects/models/subject_model.dart';
 import 'discussion_service.dart';
 import 'subject_repository.dart';
 import 'encryption_service.dart';

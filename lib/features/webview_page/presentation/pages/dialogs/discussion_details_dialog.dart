@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_aplication/features/content_management/discussions/providers/discussion_provider.dart';
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/dialogs/confirmation_dialogs.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
 import 'package:my_aplication/core/providers/neuron_provider.dart';

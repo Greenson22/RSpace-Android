@@ -1,6 +1,6 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_action_menu.dart
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart';
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 
 class DiscussionActionMenu extends StatelessWidget {
   final bool isFinished;

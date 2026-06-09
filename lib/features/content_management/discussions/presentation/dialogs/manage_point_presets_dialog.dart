@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/discussion_provider.dart';
-import '../../../domain/models/point_preset_model.dart';
+import '../../../models/point_preset_model.dart';
 
 void showManagePointPresetsDialog(BuildContext context) {
   final provider = Provider.of<DiscussionProvider>(context, listen: false);

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/discussion_provider.dart';
-import '../../../domain/models/discussion_model.dart';
+import '../../models/discussion_model.dart';
 import '../utils/repetition_code_utils.dart';
 import 'manage_point_presets_dialog.dart';
 

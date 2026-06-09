@@ -1,6 +1,6 @@
 // lib/features/content_management/presentation/subjects/dialogs/move_subject_dialog.dart
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/domain/models/topic_model.dart';
+import 'package:my_aplication/features/content_management/topics/models/topic_model.dart';
 import 'package:my_aplication/features/content_management/domain/services/topic_service.dart';
 
 /// Menampilkan dialog untuk memilih topik tujuan saat memindahkan subject.

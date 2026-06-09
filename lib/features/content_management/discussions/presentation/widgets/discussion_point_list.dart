@@ -1,7 +1,7 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_point_list.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../domain/models/discussion_model.dart';
+import '../../models/discussion_model.dart';
 import '../../providers/discussion_provider.dart';
 import 'point_tile.dart';
 

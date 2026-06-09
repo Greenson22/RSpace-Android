@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart'; // Tetap dipertahankan
-import 'package:my_aplication/features/content_management/domain/models/discussion_model.dart'; //
+import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart'; //
 import '../widgets/navigation_controls.dart'; //
 import '../pages/dialogs/discussion_details_dialog.dart'; //
 import 'dialogs/add_point_dialog_webview.dart'; //

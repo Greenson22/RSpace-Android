@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../domain/models/topic_model.dart';
+import '../../models/topic_model.dart';
 
 class TopicListTile extends StatelessWidget {
   final Topic topic;

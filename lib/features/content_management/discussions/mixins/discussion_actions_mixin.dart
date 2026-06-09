@@ -16,7 +16,7 @@ import '../../../webview_page/presentation/pages/webview_page.dart';
 import '../providers/discussion_provider.dart';
 
 import '../../../html_editor/presentation/pages/html_editor_page.dart';
-import '../../domain/models/discussion_model.dart';
+import '../models/discussion_model.dart';
 import '../../domain/services/discussion_service.dart';
 import '../../../../core/services/path_service.dart';
 import '../presentation/utils/repetition_code_utils.dart';

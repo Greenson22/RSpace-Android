@@ -1,7 +1,7 @@
 // lib/features/content_management/application/mixins/discussion_filter_sort_mixin.dart
 
 import 'package:flutter/material.dart';
-import '../../domain/models/discussion_model.dart';
+import '../models/discussion_model.dart';
 import '../../../../core/services/storage_service.dart';
 import '../presentation/utils/repetition_code_utils.dart';
 

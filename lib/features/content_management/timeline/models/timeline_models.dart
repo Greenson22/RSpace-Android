@@ -1,7 +1,7 @@
 // lib/features/content_management/domain/models/timeline_models.dart
 
 import 'package:flutter/material.dart';
-import 'discussion_model.dart';
+import '../../discussions/models/discussion_model.dart';
 
 // Enum untuk membedakan tipe item di timeline
 enum TimelineEventType { discussion, point }

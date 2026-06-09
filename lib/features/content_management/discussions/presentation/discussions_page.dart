@@ -9,7 +9,7 @@ import 'widgets/discussion_list_item.dart';
 import 'widgets/discussion_stats_header.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
 import '../../../../core/providers/neuron_provider.dart';
-import '../../domain/models/discussion_model.dart';
+import '../models/discussion_model.dart';
 
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;

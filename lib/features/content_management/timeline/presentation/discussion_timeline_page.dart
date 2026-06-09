@@ -1,9 +1,9 @@
 // lib/features/content_management/presentation/timeline/discussion_timeline_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:my_aplication/features/content_management/domain/models/timeline_models.dart';
+import 'package:my_aplication/features/content_management/timeline/models/timeline_models.dart';
 import 'package:provider/provider.dart';
-import '../../domain/models/discussion_model.dart';
+import '../../discussions/models/discussion_model.dart';
 import 'discussion_timeline_provider.dart';
 import 'widgets/timeline_painter.dart';
 import '../../discussions/presentation/utils/repetition_code_utils.dart';

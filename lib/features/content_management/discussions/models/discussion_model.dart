@@ -1,5 +1,5 @@
 // lib/features/content_management/domain/models/discussion_model.dart
-import '../../discussions/presentation/utils/repetition_code_utils.dart';
+import '../presentation/utils/repetition_code_utils.dart';
 
 // ==> PERBAIKAN: Menambahkan 'markdown' ke enum <==
 enum DiscussionLinkType { html, none, link, perpuskuQuiz, markdown }
