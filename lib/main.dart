@@ -78,7 +78,7 @@ class WindowControlWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Mengambil warna dasar tema (deepPurple) agar bar menyatu secara visual
-    final Color barColor = Theme.of(context).colorScheme.primary;
+    final Color barColor = Colors.black87;
 
     return Scaffold(
       body: Column(
