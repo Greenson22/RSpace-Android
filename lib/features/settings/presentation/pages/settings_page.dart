@@ -22,13 +22,29 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _useInternalWeb = true;
 
   // --- KODE BARU: Menggunakan key terpisah berdasarkan Platform ---
-  // Android memakai key khusus, Linux/Windows/lainnya memakai key standar.
   String get _webPreferenceKey =>
       Platform.isAndroid ? 'use_internal_web_android' : 'use_internal_web';
 
   // --- KODE BARU: Mengatur nilai default bawaan berdasarkan Platform ---
-  // Android default-nya FALSE (buka eksternal), Desktop default-nya TRUE (internal).
   bool get _defaultWebPreferenceValue => Platform.isAndroid ? false : true;
+
+  // --- KODE BARU: Mendapatkan deskripsi lokasi default asli sesuai OS ---
+  String _getDefaultPathDescription() {
+    if (Platform.isAndroid) {
+      return "Default (Internal: Android/data/${Platform.localeName}/files)";
+    } else if (Platform.isLinux) {
+      final home = Platform.environment['HOME'] ?? '~';
+      return "Default (Direktori Rumah: $home/.local/share)";
+    } else if (Platform.isWindows) {
+      final appData =
+          Platform.environment['APPDATA'] ?? 'C:\\Users\\...\\AppData\\Roaming';
+      return "Default (Direktori Dokumen / AppData: $appData)";
+    } else if (Platform.isMacOS) {
+      final home = Platform.environment['HOME'] ?? '~';
+      return "Default (Library Support: $home/Library/Application Support)";
+    }
+    return "Default (Penyimpanan Internal Aplikasi)";
+  }
 
   @override
   void initState() {
@@ -54,9 +70,10 @@ class _SettingsPageState extends State<SettingsPage> {
         prefs.getBool(_webPreferenceKey) ?? _defaultWebPreferenceValue;
 
     setState(() {
+      // Mengubah teks fallback statis lama dengan fungsi dinamis multi-OS
       _currentPath = (customPath != null && customPath.isNotEmpty)
           ? customPath
-          : "Default (Penyimpanan Aplikasi: Android/data/com...)";
+          : _getDefaultPathDescription();
       _pathController.text = customPath ?? '';
       _useInternalWeb = useInternal;
       _isLoading = false;
@@ -80,8 +97,65 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _resetPath() async {
-    await _storageService.saveCustomStoragePath('');
-    await _loadSettings();
+    // Menampilkan dialog konfirmasi sebelum melakukan reset jalur
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            final double textScaleFactor = MediaQuery.of(
+              context,
+            ).textScaleFactor;
+            return AlertDialog(
+              title: Text(
+                'Konfirmasi Reset',
+                style: TextStyle(
+                  fontSize: 16.0 * textScaleFactor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Text(
+                'Apakah Anda yakin ingin mengembalikan lokasi folder penyimpanan ke pengaturan default?',
+                style: TextStyle(fontSize: 14.0 * textScaleFactor),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(fontSize: 14.0 * textScaleFactor),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: Text(
+                    'Reset',
+                    style: TextStyle(
+                      fontSize: 14.0 * textScaleFactor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (confirmed) {
+      setState(() => _isLoading = true);
+      await _storageService.saveCustomStoragePath('');
+      await _loadSettings();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lokasi folder berhasil dikembalikan ke default.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _pickDirectory() async {
@@ -96,16 +170,32 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengaturan')),
+      appBar: AppBar(
+        title: Text(
+          'Pengaturan',
+          style: TextStyle(
+            fontSize: 18.0 * textScaleFactor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0 * textScaleFactor,
+              ),
               children: [
-                const Text(
+                Text(
                   'Penyimpanan & Data',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 14.0 * textScaleFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
 
@@ -117,16 +207,20 @@ class _SettingsPageState extends State<SettingsPage> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.orange),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                        SizedBox(width: 12),
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.orange,
+                          size: 18.0 * textScaleFactor,
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Mode Debug Aktif: Perubahan folder yang dilakukan di sini menggunakan kunci terpisah dan tidak akan memengaruhi versi Release.',
                             style: TextStyle(
                               color: Colors.deepOrange,
-                              fontSize: 13,
+                              fontSize: 13.0 * textScaleFactor,
                             ),
                           ),
                         ),
@@ -137,13 +231,22 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
 
                 ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Lokasi Folder RSpace & Perpusku'),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 2.0 * textScaleFactor,
+                  ),
+                  title: Text(
+                    'Lokasi Folder RSpace & Perpusku',
+                    style: TextStyle(fontSize: 14.0 * textScaleFactor),
+                  ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       _currentPath,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 10.0 * textScaleFactor,
+                      ),
                     ),
                   ),
                   trailing: Platform.isAndroid
@@ -151,17 +254,21 @@ class _SettingsPageState extends State<SettingsPage> {
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (_currentPath !=
-                                "Default (Penyimpanan Aplikasi: data/com...)")
+                            // Tombol reset dimunculkan jika teks penunjuk jalan tidak mengandung kata 'Default'
+                            if (!_currentPath.startsWith("Default"))
                               IconButton(
-                                icon: const Icon(Icons.restore),
+                                icon: Icon(
+                                  Icons.restore,
+                                  size: 18.0 * textScaleFactor,
+                                ),
                                 tooltip: 'Kembalikan ke Default',
                                 onPressed: _resetPath,
                               ),
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.folder_open,
                                 color: Colors.blue,
+                                size: 20.0 * textScaleFactor,
                               ),
                               tooltip: 'Pilih Folder',
                               onPressed: _pickDirectory,
@@ -169,55 +276,64 @@ class _SettingsPageState extends State<SettingsPage> {
                           ],
                         ),
                 ),
-                const Divider(height: 32),
+                const Divider(height: 32, thickness: 1.0),
 
-                // ========================================================
-                // BAGIAN PREFERENSI TAUTAN (SUDAH DIADAPTASI)
-                // ========================================================
-                const Text(
+                Text(
                   'Preferensi Tautan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 14.0 * textScaleFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
 
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 2.0 * textScaleFactor,
+                  ),
                   title: Text(
                     Platform.isAndroid
                         ? 'Buka Web di Dalam Aplikasi (Android)'
                         : 'Buka Web di Dalam Aplikasi (Desktop)',
+                    style: TextStyle(fontSize: 14.0 * textScaleFactor),
                   ),
                   subtitle: Text(
                     Platform.isAndroid
                         ? 'Aktifkan untuk membuka diskusi via WebView internal Android. (Default: mati/menggunakan browser bawaan HP).'
                         : 'Aktifkan untuk membuka diskusi via web internal aplikasi.',
+                    style: TextStyle(fontSize: 11.0 * textScaleFactor),
                   ),
-                  value: _useInternalWeb,
-                  activeColor: Colors.blue,
-                  onChanged: (bool value) async {
-                    final prefs = await SharedPreferences.getInstance();
-                    // Menyimpan ke key yang dinamis berdasarkan platform
-                    await prefs.setBool(_webPreferenceKey, value);
+                  trailing: Transform.scale(
+                    scale: textScaleFactor,
+                    child: Switch(
+                      value: _useInternalWeb,
+                      activeColor: Colors.blue,
+                      onChanged: (bool value) async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool(_webPreferenceKey, value);
 
-                    setState(() {
-                      _useInternalWeb = value;
-                    });
+                        setState(() {
+                          _useInternalWeb = value;
+                        });
 
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            value
-                                ? 'Tautan sekarang akan dibuka via Web Internal.'
-                                : 'Tautan sekarang akan dibuka via Browser Eksternal.',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                value
+                                    ? 'Tautan sekarang akan dibuka via Web Internal.'
+                                    : 'Tautan sekarang akan dibuka via Browser Eksternal.',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
                 ),
-                const Divider(height: 32),
+                const Divider(height: 32, thickness: 1.0),
               ],
             ),
     );
