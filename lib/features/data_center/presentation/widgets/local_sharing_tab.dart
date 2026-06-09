@@ -196,41 +196,13 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
             try {
               Map<String, dynamic> dateReceived = jsonDecode(pesanMasuk);
               if (dateReceived['tipe_pesan'] == 'data_transfer') {
-                String clientRSpace = dateReceived['rspace_data'];
-                String clientPerpuskuZipBase64 = dateReceived['perpusku_zip'];
-                final Archive clientArchive = Archive();
+                // DIUBAH: Membaca berkas zip tunggal yang dikirim oleh Client
+                String? clientFullZipBase64 = dateReceived['full_backup_zip'];
 
-                List<int> rspaceBytes = utf8.encode(clientRSpace);
-                clientArchive.addFile(
-                  ArchiveFile(
-                    'rspace_data.json',
-                    rspaceBytes.length,
-                    rspaceBytes,
-                  ),
-                );
+                if (clientFullZipBase64 != null &&
+                    clientFullZipBase64.isNotEmpty) {
+                  List<int> zipBytes = base64Decode(clientFullZipBase64);
 
-                if (clientPerpuskuZipBase64.isNotEmpty) {
-                  List<int> perpusBytes = base64Decode(clientPerpuskuZipBase64);
-                  Archive perpuskuArchive = ZipDecoder().decodeBytes(
-                    perpusBytes,
-                  );
-                  for (ArchiveFile file in perpuskuArchive) {
-                    if (file.isFile) {
-                      clientArchive.addFile(
-                        ArchiveFile(
-                          'perpusku/${file.name}',
-                          file.content.length,
-                          file.content,
-                        ),
-                      );
-                    }
-                  }
-                }
-
-                final List<int>? finalZipBytes = ZipEncoder().encode(
-                  clientArchive,
-                );
-                if (finalZipBytes != null) {
                   String namaZipDinamis = _getFormattedFileName(
                     'client_backup',
                     'zip',
@@ -239,7 +211,8 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                     _baseDir,
                     namaZipDinamis,
                   );
-                  await fileZipTarget.writeAsBytes(finalZipBytes);
+                  await fileZipTarget.writeAsBytes(zipBytes);
+
                   setState(() {
                     _loadServerBackups();
                   });
@@ -251,6 +224,8 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                       backgroundColor: Colors.teal,
                     ),
                   );
+                } else {
+                  debugPrint("Server menerima paket data kosong.");
                 }
               }
             } catch (err) {
@@ -291,12 +266,9 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       Future<void> sendDataToServer() async {
         if (clientActiveList.isEmpty) return;
 
-        setState(
-          () => _isLoading = true,
-        ); // Menampilkan loading indicator jika diperlukan
+        setState(() => _isLoading = true);
 
         try {
-          // Mendapatkan path folder utama aplikasi (sama seperti di backup_tab)
           final String appBasePath =
               await _pathService.loadCustomStoragePath() ?? "";
           Directory rootDir;
@@ -315,7 +287,6 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
             path.join(mainFolderPath, 'PerpusKu'),
           );
 
-          // Membuat archive zip sementara menggunakan ZipFileEncoder
           final encoder = ZipFileEncoder();
           String tempZipName = _getFormattedFileName('temp_server_send', 'zip');
           File tempZipFile = await _storageService.getBackupZipFile(
@@ -332,19 +303,16 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           }
           encoder.close();
 
-          // Membaca file ZIP yang sudah jadi dan mengubahnya ke Base64
           List<int> zipBytes = await tempZipFile.readAsBytes();
           String fullZipBase64 = base64Encode(zipBytes);
 
-          // Hapus file zip sementara agar tidak menumpuk di storage
           if (await tempZipFile.exists()) {
             await tempZipFile.delete();
           }
 
-          // Kirim paket data berupa satu berkas enkapsulasi utuh
           Map<String, dynamic> sendBigPackage = {
             'tipe_pesan': 'data_transfer',
-            'full_backup_zip': fullZipBase64, // Menggunakan satu field zip utuh
+            'full_backup_zip': fullZipBase64,
           };
 
           for (var socket in clientActiveList) {
@@ -761,80 +729,56 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
           )
           .listen(
             (pesanMasuk) async {
-              if (_isLoading)
+              if (_isLoading) {
                 setState(() {
                   _isLoading = false;
                 });
+              }
               try {
                 Map<String, dynamic> dataDiterima = jsonDecode(pesanMasuk);
                 if (dataDiterima['tipe_pesan'] == 'koneksi_terkonfirmasi') {
                   debugPrint("Jabat tangan sukses. Pipa data penerima stabil.");
                 }
                 if (dataDiterima['tipe_pesan'] == 'data_transfer') {
-                  String serverRSpace = dataDiterima['rspace_data'];
-                  String serverPerpuskuZip = dataDiterima['perpusku_zip'];
-                  final Archive backupArchive = Archive();
+                  // DIUBAH: Membaca berkas zip tunggal yang dikirim oleh Server
+                  String? serverFullZipBase64 = dataDiterima['full_backup_zip'];
 
-                  List<int> rspaceBytes = utf8.encode(serverRSpace);
-                  backupArchive.addFile(
-                    ArchiveFile(
-                      'rspace_data.json',
-                      rspaceBytes.length,
-                      rspaceBytes,
-                    ),
-                  );
+                  if (serverFullZipBase64 != null &&
+                      serverFullZipBase64.isNotEmpty) {
+                    List<int> zipBytes = base64Decode(serverFullZipBase64);
 
-                  if (serverPerpuskuZip.isNotEmpty) {
-                    List<int> perpusZipBytes = base64Decode(serverPerpuskuZip);
-                    Archive perpusArchive = ZipDecoder().decodeBytes(
-                      perpusZipBytes,
+                    String namaZipDinamis = _getFormattedFileName(
+                      'server_backup',
+                      'zip',
                     );
-                    for (ArchiveFile file in perpusArchive) {
-                      if (file.isFile) {
-                        backupArchive.addFile(
-                          ArchiveFile(
-                            'perpusku/${file.name}',
-                            file.content.length,
-                            file.content,
-                          ),
-                        );
-                      }
+                    File fileZipTarget = await _storageService.getBackupZipFile(
+                      _baseDir,
+                      namaZipDinamis,
+                    );
+                    await fileZipTarget.writeAsBytes(zipBytes);
+
+                    if (mounted) {
+                      Provider.of<TopicProvider>(
+                        context,
+                        listen: false,
+                      ).fetchTopics();
                     }
-                  }
+                    setState(() {
+                      _loadServerBackups();
+                    });
 
-                  final List<int>? finalZipBytes = ZipEncoder().encode(
-                    backupArchive,
-                  );
-                  if (finalZipBytes == null) return;
-                  String namaZipDinamis = _getFormattedFileName(
-                    'server_backup',
-                    'zip',
-                  );
-                  File fileZipTarget = await _storageService.getBackupZipFile(
-                    _baseDir,
-                    namaZipDinamis,
-                  );
-                  await fileZipTarget.writeAsBytes(finalZipBytes);
-
-                  if (mounted) {
-                    Provider.of<TopicProvider>(
-                      context,
-                      listen: false,
-                    ).fetchTopics();
-                  }
-                  setState(() {
-                    _loadServerBackups();
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Sukses menerima berkas dari Server! Disimpan: $namaZipDinamis',
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Sukses menerima berkas dari Server! Disimpan: $namaZipDinamis',
+                        ),
+                        backgroundColor: Colors.teal,
+                        duration: const Duration(seconds: 3),
                       ),
-                      backgroundColor: Colors.teal,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
+                    );
+                  } else {
+                    debugPrint("Client menerima paket data kosong.");
+                  }
                 }
               } catch (e) {
                 debugPrint("Client gagal memproses data: $e");
@@ -966,7 +910,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                       'Hubungan ke Server terputus secara tiba-tiba!',
                     ),
                     backgroundColor: Colors.redAccent,
-                    duration: const Duration(seconds: 4),
+                    duration: Duration(seconds: 4),
                   ),
                 );
               }
