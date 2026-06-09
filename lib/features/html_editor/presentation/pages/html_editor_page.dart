@@ -1,9 +1,7 @@
 // lib/features/html_editor/presentation/pages/html_editor_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:highlight/languages/xml.dart'; // Bahasa untuk HTML
-
 import '../themes/editor_themes.dart';
 
 class HtmlEditorPage extends StatefulWidget {
@@ -26,7 +24,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
   CodeController? _controller;
   bool _isLoading = true;
   String? _error;
-
   late EditorTheme _selectedTheme;
   String _previousText = '';
   bool _isAutoEditing = false;
@@ -39,11 +36,8 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     _initializeEditor();
   }
 
-  // === PERBAIKAN DI SINI: MENYARING DATA SAAT EDITOR DIKREASI ===
   Future<void> _initializeEditor() async {
-    // Menyaring isi konten awal menggunakan fungsi sanitasi sebelum diserahkan ke CodeController
     final sanitizedContent = _sanitizeUtf16(widget.initialContent);
-
     _controller = CodeController(text: sanitizedContent, language: xml);
     _previousText = _controller!.text;
     _controller!.addListener(_onTextChanged);
@@ -69,22 +63,17 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     super.dispose();
   }
 
-  // === DIOPTIMALKAN: FUNGSI UTAS SANITASI UNTUK MENCEGAH EROR INVALID UTF-16 ===
   String _sanitizeUtf16(String input) {
     if (input.isEmpty) return input;
     try {
-      // 1. Bersihkan karakter surrogate UTF-16 yang berdiri sendiri/cacat menggunakan Regular Expression
       final cleanRegex = input.replaceAll(
         RegExp(
           r'[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]',
         ),
         '',
       );
-
-      // 2. Validasi ulang ke bentuk kumpulan code points (Runes) resmi Flutter
       return String.fromCharCodes(cleanRegex.runes);
     } catch (_) {
-      // Fallback pamungkas: Memisahkan karakter non-standar yang berpotensi merusak kanvas render teks
       return input.replaceAll(
         RegExp(r'[^\x00-\x7F\x80-\xFF\u0100-\uFFFF]'),
         '',
@@ -94,25 +83,18 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
 
   void _onTextChanged() {
     if (_isAutoEditing) return;
-
     final currentText = _controller!.text;
     final currentSelection = _controller!.selection;
-
     if (currentText.length < _previousText.length) {
       final start = currentSelection.start;
-
       if (start < 0 || start > _previousText.length) return;
-
       try {
         final deletedLength = _previousText.length - currentText.length;
         final endLocation = start + deletedLength;
-
         if (endLocation <= _previousText.length) {
           final deletedText = _previousText.substring(start, endLocation);
-
           final openingTagRegex = RegExp(r'^<([a-zA-Z0-9]+)\s*.*?>$');
           final selfClosingTags = {'br', 'hr', 'img', 'input', 'meta', 'link'};
-
           final match = openingTagRegex.firstMatch(deletedText.trim());
           if (match != null) {
             final tagName = match.group(1);
@@ -126,7 +108,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
         // Mencegah crash akibat kegagalan substring acak saat mengetik sangat cepat
       }
     }
-
     _previousText = currentText;
   }
 
@@ -134,39 +115,30 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     String text = _controller!.text;
     int searchIndex = deletionStartOffset;
     int balance = 1;
-
     while (searchIndex < text.length) {
       final nextOpeningTag = text.indexOf('<$tagName', searchIndex);
       final nextClosingTag = text.indexOf('</$tagName>', searchIndex);
-
       if (nextClosingTag == -1) {
         break;
       }
-
       if (nextOpeningTag != -1 && nextOpeningTag < nextClosingTag) {
         balance++;
         searchIndex = nextOpeningTag + 1;
       } else {
         balance--;
         searchIndex = nextClosingTag + 1;
-
         if (balance == 0) {
           _isAutoEditing = true;
           final newTextRaw =
               text.substring(0, nextClosingTag) +
               text.substring(nextClosingTag + tagName.length + 3);
-
-          // MENERAPKAN SANITASI SEBELUM TEKS DI-RENDER FLUTTER
           final newText = _sanitizeUtf16(newTextRaw);
-
           final selection = TextSelection.fromPosition(
             TextPosition(offset: deletionStartOffset),
           );
-
           _controller!.text = newText;
           _controller!.selection = selection;
           _previousText = newText;
-
           Future.delayed(const Duration(milliseconds: 50), () {
             _isAutoEditing = false;
           });
@@ -194,10 +166,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
       start--;
     }
     final newTextRaw = text.substring(0, start) + text.substring(end);
-
-    // MENERAPKAN SANITASI PADA MODE HAPUS BARIS
     final newText = _sanitizeUtf16(newTextRaw);
-
     _controller!.text = newText;
     _controller!.selection = TextSelection.fromPosition(
       TextPosition(offset: start),
@@ -208,7 +177,6 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
     if (_controller == null) return;
     final currentText = _controller!.text;
     final newTextRaw = currentText.replaceAll(RegExp(r'<[^>]*>'), '');
-
     _controller!.text = _sanitizeUtf16(newTextRaw);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Semua tag HTML telah dihapus.')),
@@ -321,48 +289,58 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
         (_selectedTheme.name.toLowerCase().contains('light')
             ? Colors.white
             : const Color(0xFF1E1E1E));
-
     final Color editorTextColor =
         _selectedTheme.theme['root']?.color ??
         (_selectedTheme.name.toLowerCase().contains('light')
             ? Colors.black87
             : Colors.white70);
 
-    // Menentukan apakah tema yang dipilih adalah tipe Light/Terang untuk penyesuaian kontras AppBar & Dropdown
     final bool isLightTheme =
         _selectedTheme.name.toLowerCase().contains('light') ||
         _selectedTheme.name == 'GitHub' ||
         _selectedTheme.name == 'Xcode';
-
     final Color appBarColor = isLightTheme
         ? Colors.grey[200]!
         : Colors.grey[900]!;
     final Color foregroundColor = isLightTheme ? Colors.black87 : Colors.white;
 
+    // === ADAPTASI UKURAN DINAMIS SESUAI DISCUSSIONS_PAGE ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseAppBarIconSize = 18.0;
+    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+    // =======================================================
+
     return Theme(
-      // Membungkus dengan Theme lokal agar popup menu, dialog, dan elemen dropdown mengikuti brightness tema editor
       data: ThemeData(
         brightness: isLightTheme ? Brightness.light : Brightness.dark,
         scaffoldBackgroundColor: editorBackgroundColor,
       ),
       child: Scaffold(
-        backgroundColor:
-            editorBackgroundColor, // Menerapkan warna tema ke background scaffold
+        backgroundColor: editorBackgroundColor,
         appBar: AppBar(
           backgroundColor: appBarColor,
           foregroundColor: foregroundColor,
+          // Menyamakan properti tema ikon bawaan AppBar
+          iconTheme: IconThemeData(
+            size: scaledAppBarIconSize,
+            color: foregroundColor,
+          ),
           title: Text(
             'Edit: ${widget.pageTitle}',
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: foregroundColor),
+            style: TextStyle(
+              fontSize: 18.0,
+              fontWeight: FontWeight.w600,
+              color: foregroundColor,
+            ),
           ),
-          iconTheme: IconThemeData(color: foregroundColor),
           actions: [
             IconButton(
               icon: Icon(
                 Icons.delete_sweep_outlined,
                 color: _isLineDeletionMode ? Colors.amber : foregroundColor,
               ),
+              iconSize: scaledAppBarIconSize, // Ditambahkan ukuran skala
               onPressed: () {
                 setState(() {
                   _isLineDeletionMode = !_isLineDeletionMode;
@@ -382,6 +360,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
             ),
             PopupMenuButton<VoidCallback>(
               icon: Icon(Icons.text_format, color: foregroundColor),
+              iconSize: scaledAppBarIconSize, // Ditambahkan ukuran skala
               tooltip: 'Olah Teks',
               onSelected: (action) => action(),
               itemBuilder: (context) => [
@@ -424,6 +403,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
             ),
             IconButton(
               icon: Icon(Icons.save, color: foregroundColor),
+              iconSize: scaledAppBarIconSize, // Ditambahkan ukuran skala
               onPressed: _isLoading || _controller == null
                   ? null
                   : _saveFileContent,
@@ -449,8 +429,7 @@ class _HtmlEditorPageState extends State<HtmlEditorPage> {
                       color: editorTextColor,
                     ),
                     onTap: _handleLineDeletion,
-                    background:
-                        editorBackgroundColor, // Menyelaraskan background CodeField
+                    background: editorBackgroundColor,
                   ),
                 ),
               ),

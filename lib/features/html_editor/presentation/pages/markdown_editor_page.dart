@@ -1,9 +1,7 @@
 // lib/features/html_editor/presentation/pages/markdown_editor_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:highlight/languages/markdown.dart'; // Bahasa untuk Markdown
-
 import '../themes/editor_themes.dart';
 
 class MarkdownEditorPage extends StatefulWidget {
@@ -26,7 +24,6 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
   CodeController? _controller;
   bool _isLoading = true;
   String? _error;
-
   late EditorTheme _selectedTheme;
   String _previousText = '';
   bool _isLineDeletionMode = false;
@@ -39,9 +36,7 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
   }
 
   Future<void> _initializeEditor() async {
-    // Menyaring isi konten awal menggunakan fungsi sanitasi sebelum diserahkan ke CodeController
     final sanitizedContent = _sanitizeUtf16(widget.initialContent);
-
     _controller = CodeController(text: sanitizedContent, language: markdown);
     _previousText = _controller!.text;
     if (mounted) {
@@ -65,7 +60,6 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
     super.dispose();
   }
 
-  // FUNGSI UTAS SANITASI UNTUK MENCEGAH EROR INVALID UTF-16 PADA GRAPHIC CANVAS FLUTTER
   String _sanitizeUtf16(String input) {
     if (input.isEmpty) return input;
     try {
@@ -103,7 +97,6 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
     }
     final newTextRaw = text.substring(0, start) + text.substring(end);
     final newText = _sanitizeUtf16(newTextRaw);
-
     _controller!.text = newText;
     _controller!.selection = TextSelection.fromPosition(
       TextPosition(offset: start),
@@ -137,13 +130,11 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    // MENGEKSTRAK WARNA UTAMA DARI TEMA EDITOR YANG DIPILIH
     final Color editorBackgroundColor =
         _selectedTheme.theme['root']?.backgroundColor ??
         (_selectedTheme.name.toLowerCase().contains('light')
             ? Colors.white
             : const Color(0xFF1E1E1E));
-
     final Color editorTextColor =
         _selectedTheme.theme['root']?.color ??
         (_selectedTheme.name.toLowerCase().contains('light')
@@ -154,11 +145,16 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
         _selectedTheme.name.toLowerCase().contains('light') ||
         _selectedTheme.name == 'GitHub' ||
         _selectedTheme.name == 'Xcode';
-
     final Color appBarColor = isLightTheme
         ? Colors.grey[200]!
         : Colors.grey[900]!;
     final Color foregroundColor = isLightTheme ? Colors.black87 : Colors.white;
+
+    // === ADAPTASI UKURAN DINAMIS SESUAI DISCUSSIONS_PAGE ===
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    const double baseAppBarIconSize = 18.0;
+    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+    // =======================================================
 
     return Theme(
       data: ThemeData(
@@ -170,18 +166,27 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
         appBar: AppBar(
           backgroundColor: appBarColor,
           foregroundColor: foregroundColor,
+          // Menyamakan properti tema ikon bawaan AppBar
+          iconTheme: IconThemeData(
+            size: scaledAppBarIconSize,
+            color: foregroundColor,
+          ),
           title: Text(
             'Edit MD: ${widget.pageTitle}',
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: foregroundColor),
+            style: TextStyle(
+              fontSize: 18.0,
+              fontWeight: FontWeight.w600,
+              color: foregroundColor,
+            ),
           ),
-          iconTheme: IconThemeData(color: foregroundColor),
           actions: [
             IconButton(
               icon: Icon(
                 Icons.delete_sweep_outlined,
                 color: _isLineDeletionMode ? Colors.amber : foregroundColor,
               ),
+              iconSize: scaledAppBarIconSize, // Ditambahkan ukuran skala
               onPressed: () {
                 setState(() {
                   _isLineDeletionMode = !_isLineDeletionMode;
@@ -219,6 +224,7 @@ class _MarkdownEditorPageState extends State<MarkdownEditorPage> {
             ),
             IconButton(
               icon: Icon(Icons.save, color: foregroundColor),
+              iconSize: scaledAppBarIconSize, // Ditambahkan ukuran skala
               onPressed: _isLoading || _controller == null
                   ? null
                   : _saveFileContent,
