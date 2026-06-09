@@ -112,7 +112,14 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       List<int> bytes = await zipFile.readAsBytes();
       Archive archive = ZipDecoder().decodeBytes(bytes);
       for (ArchiveFile file in archive) {
-        String fullPathTarget = path.join(destinationPath, file.name);
+        String targetFolder = destinationPath;
+
+        // PERBAIKAN EXTRAK JALUR: Mengantisipasi letak subfolder data internal bawaan RSpace_data
+        if (appBasePath.isEmpty && file.name.startsWith('RSpace_data')) {
+          targetFolder = path.join(destinationPath, 'data');
+        }
+
+        String fullPathTarget = path.join(targetFolder, file.name);
         if (file.isFile) {
           final data = file.content as List<int>;
           final outFile = File(fullPathTarget);
@@ -170,6 +177,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       List<dynamic> clientActiveList = [];
       StateSetter? dialogState;
 
+      // PERBAIKAN: Mengembalikan Callback asli agar tidak eror ConnectionCallback
       var handler = webSocketHandler((dynamic webSocket, dynamic protocol) {
         final String clientId =
             "Client_${webSocket.hashCode.toString().substring(0, 4)}";
@@ -295,33 +303,12 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
           encoder.create(tempZipFile.path);
 
-          // Fungsi pembantu rekursif manual untuk menjamin RSpace_data ikut terkompres mendalam
-          Future<void> gilasFolderKeZip(
-            Directory dir,
-            String folderNameInZip,
-          ) async {
-            if (dir.existsSync()) {
-              await for (var entity in dir.list(
-                recursive: true,
-                followLinks: false,
-              )) {
-                if (entity is File) {
-                  String relativePath = path.relative(
-                    entity.path,
-                    from: dir.path,
-                  );
-                  String archivePath = path.join(folderNameInZip, relativePath);
-                  await encoder.addFile(entity, archivePath);
-                }
-              }
-            }
-          }
-
+          // PERBAIKAN: Menggunakan addDirectory standar agar struktur root ZIP rapi & lengkap
           if (rspaceDir.existsSync()) {
-            await gilasFolderKeZip(rspaceDir, 'RSpace_data');
+            await encoder.addDirectory(rspaceDir, includeDirName: true);
           }
           if (perpuskuDir.existsSync()) {
-            await gilasFolderKeZip(perpuskuDir, 'PerpusKu');
+            await encoder.addDirectory(perpuskuDir, includeDirName: true);
           }
           encoder.close();
 
@@ -695,33 +682,12 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
 
           encoder.create(tempZipFile.path);
 
-          // Fungsi pembantu rekursif manual untuk menjamin RSpace_data ikut terkompres mendalam di sisi Client
-          Future<void> gilasFolderKeZip(
-            Directory dir,
-            String folderNameInZip,
-          ) async {
-            if (dir.existsSync()) {
-              await for (var entity in dir.list(
-                recursive: true,
-                followLinks: false,
-              )) {
-                if (entity is File) {
-                  String relativePath = path.relative(
-                    entity.path,
-                    from: dir.path,
-                  );
-                  String archivePath = path.join(folderNameInZip, relativePath);
-                  await encoder.addFile(entity, archivePath);
-                }
-              }
-            }
-          }
-
+          // PERBAIKAN: Menggunakan addDirectory standar untuk kompresi data Client
           if (rspaceDir.existsSync()) {
-            await gilasFolderKeZip(rspaceDir, 'RSpace_data');
+            await encoder.addDirectory(rspaceDir, includeDirName: true);
           }
           if (perpuskuDir.existsSync()) {
-            await gilasFolderKeZip(perpuskuDir, 'PerpusKu');
+            await encoder.addDirectory(perpuskuDir, includeDirName: true);
           }
           encoder.close();
 
