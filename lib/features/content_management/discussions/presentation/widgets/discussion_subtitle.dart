@@ -7,7 +7,6 @@ import '../../providers/discussion_provider.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
 import '../../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../../core/providers/neuron_provider.dart';
 
 class DiscussionSubtitle extends StatelessWidget {
   final Discussion discussion;
@@ -111,15 +110,6 @@ class DiscussionSubtitle extends StatelessWidget {
 
                         if (confirmed) {
                           provider.incrementRepetitionCode(discussion);
-
-                          final reward = getNeuronRewardForCode(nextCode);
-                          if (reward > 0) {
-                            await Provider.of<NeuronProvider>(
-                              currentContext,
-                              listen: false,
-                            ).addNeurons(reward);
-                            showNeuronRewardSnackBar(currentContext, reward);
-                          }
 
                           scaffoldMessenger.showSnackBar(
                             SnackBar(

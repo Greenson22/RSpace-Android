@@ -7,7 +7,6 @@ import 'package:my_aplication/features/content_management/discussions/providers/
 import 'package:my_aplication/features/content_management/discussions/models/discussion_model.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/dialogs/confirmation_dialogs.dart';
 import 'package:my_aplication/features/content_management/discussions/presentation/utils/repetition_code_utils.dart';
-import 'package:my_aplication/core/providers/neuron_provider.dart';
 import 'package:my_aplication/core/utils/scaffold_messenger_utils.dart';
 
 void showDiscussionDetailsDialog(
@@ -131,17 +130,6 @@ void showDiscussionDetailsDialog(
                                       discussion,
                                       nextCode,
                                     );
-                                  }
-
-                                  final reward = getNeuronRewardForCode(
-                                    nextCode,
-                                  );
-                                  if (reward > 0) {
-                                    await Provider.of<NeuronProvider>(
-                                      context,
-                                      listen: false,
-                                    ).addNeurons(reward);
-                                    showNeuronRewardSnackBar(context, reward);
                                   }
 
                                   showAppSnackBar(

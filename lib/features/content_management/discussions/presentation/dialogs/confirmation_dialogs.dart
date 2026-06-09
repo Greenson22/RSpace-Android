@@ -29,12 +29,6 @@ Future<void> showDeleteDiscussionConfirmationDialog({
                 ),
               ),
             ],
-            // ==> PERINGATAN NEURON DITAMBAHKAN DI SINI <==
-            const SizedBox(height: 16),
-            const Text(
-              'Tindakan ini akan mengurangi 15 Neurons Anda.',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-            ),
           ],
         ),
         actions: [

@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/discussion_provider.dart';
-import 'dialogs/discussion_dialogs.dart'; // Import utama untuk dialog
+import 'dialogs/discussion_dialogs.dart';
 import 'widgets/discussion_list_item.dart';
 import 'widgets/discussion_stats_header.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
-import '../../../../core/providers/neuron_provider.dart';
 import '../models/discussion_model.dart';
 
 class DiscussionsPage extends StatefulWidget {
@@ -35,7 +34,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   bool _isKeyboardActive = false;
   int? _reorderingDiscussionIndex;
 
-  // Daftar warna palet untuk menyamakan tampilan tema dengan content card
   final List<Color> _themePalettes = [
     Colors.deepPurple,
     Colors.blue,
@@ -46,7 +44,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     Colors.green,
   ];
 
-  // Fungsi utilitas untuk menghasilkan warna dinamis yang konsisten berdasarkan judul subjek
   Color _getThemeColorFromTitle(String title) {
     if (title.isEmpty) return _themePalettes[0];
     int hash = title.hashCode;
@@ -139,6 +136,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         }
         return;
       }
+
       if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
           event.logicalKey == LogicalKeyboardKey.arrowUp ||
           event.logicalKey == LogicalKeyboardKey.arrowLeft ||
@@ -148,11 +146,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         _focusTimer = Timer(const Duration(milliseconds: 500), () {
           if (mounted) setState(() => _isKeyboardActive = false);
         });
+
         final discussions = provider.filteredDiscussions;
         final totalItems = discussions.length;
         if (totalItems == 0) return;
+
         final isTwoColumn = MediaQuery.of(context).size.width > 800.0;
         final int middle = (totalItems / 2).ceil();
+
         setState(() {
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
             if (isTwoColumn) {
@@ -216,34 +217,24 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
       label: 'Nama Diskusi',
       subjectLinkedPath: widget.linkedPath,
     );
+
     if (result != null && mounted) {
       try {
-        // 1. Simpan entri data diskusi ke provider dan tangkap objek barunya
         final newDiscussion = await provider.addDiscussion(result);
-
-        // 2. Jika user memilih opsi buat file baru dan path subjek tersedia, langsung buat filenya
         if (result.linkData == 'create_new' && widget.linkedPath != null) {
           if (result.linkType == DiscussionLinkType.markdown) {
-            // Otomatis membuat file .md fisik secara realtime
             await provider.createAndLinkMarkdownFile(
               newDiscussion,
               widget.linkedPath!,
             );
           } else if (result.linkType == DiscussionLinkType.html) {
-            // Otomatis membuat file .html fisik secara realtime
             await provider.createAndLinkHtmlFile(
               newDiscussion,
               widget.linkedPath!,
             );
           }
         }
-
         _showSnackBar('Diskusi "${result.name}" berhasil ditambahkan.');
-        await Provider.of<NeuronProvider>(
-          context,
-          listen: false,
-        ).addNeurons(10);
-        showNeuronRewardSnackBar(context, 10);
       } catch (e) {
         _showSnackBar("Gagal: ${e.toString()}", isError: true);
       }
@@ -258,24 +249,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           discussion.filePath != null && discussion.filePath!.isNotEmpty,
       onDelete: () async {
         try {
-          final neuronProvider = Provider.of<NeuronProvider>(
-            context,
-            listen: false,
-          );
-          final bool success = await neuronProvider.spendNeurons(15);
-          if (!mounted) return;
-          if (success) {
-            await provider.deleteDiscussion(discussion);
-            _showSnackBar(
-              'Diskusi "${discussion.discussion}" berhasil deleted.',
-            );
-            showNeuronPenaltySnackBar(context, 15);
-          } else {
-            _showSnackBar(
-              "Gagal menghapus: Neuron tidak cukup.",
-              isError: true,
-            );
-          }
+          await provider.deleteDiscussion(discussion);
+          _showSnackBar('Diskusi "${discussion.discussion}" berhasil dihapus.');
         } catch (e) {
           if (mounted) {
             _showSnackBar("Gagal menghapus: ${e.toString()}", isError: true);
@@ -293,7 +268,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     const double baseAppBarIconSize = 18.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
 
-    // Menghitung warna dinamis berdasarkan nama subjek halaman saat ini
     final Color dynamicAppBarColor = _getThemeColorFromTitle(
       widget.subjectName,
     );
@@ -322,8 +296,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             : FloatingActionButton(
                 onPressed: () => _addDiscussion(provider),
                 tooltip: 'Tambah Diskusi Baru',
-                backgroundColor:
-                    dynamicAppBarColor, // Menyesuaikan warna FAB dengan warna AppBar
+                backgroundColor: dynamicAppBarColor,
                 foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),
@@ -424,7 +397,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           iconSize: scaledIconSize,
-          color: Colors.white, // Latar belakang menu popup
+          color: Colors.white,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           onSelected: (value) {
@@ -533,7 +506,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     List<dynamic> discussions,
   ) {
     final Color dynamicColor = _getThemeColorFromTitle(widget.subjectName);
-
     return Column(
       children: [
         DiscussionStatsHeader(themeColor: dynamicColor),
@@ -590,6 +562,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     final int middle = (discussions.length / 2).ceil();
     final List<dynamic> firstHalf = discussions.sublist(0, middle);
     final List<dynamic> secondHalf = discussions.sublist(middle);
+
     return Column(
       children: [
         DiscussionStatsHeader(themeColor: dynamicColor),

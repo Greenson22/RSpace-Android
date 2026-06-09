@@ -8,7 +8,6 @@ import '../../providers/discussion_provider.dart';
 import 'point_edit_popup_menu.dart';
 import '../dialogs/discussion_dialogs.dart';
 import '../utils/repetition_code_utils.dart';
-import '../../../../../core/providers/neuron_provider.dart';
 import '../../../../../core/utils/scaffold_messenger_utils.dart';
 
 class PointTile extends StatelessWidget {
@@ -190,14 +189,6 @@ class PointTile extends StatelessWidget {
                           if (!currentContext.mounted) return;
                           if (confirmed) {
                             provider.incrementRepetitionCode(point);
-                            final reward = getNeuronRewardForCode(nextCode);
-                            if (reward > 0) {
-                              await Provider.of<NeuronProvider>(
-                                currentContext,
-                                listen: false,
-                              ).addNeurons(reward);
-                              showNeuronRewardSnackBar(currentContext, reward);
-                            }
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
                                 content: Text(
