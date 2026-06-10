@@ -1,4 +1,3 @@
-// lib/features/perpusku/presentation/pages/perpusku_topic_page.dart
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
 import 'package:open_file/open_file.dart';
@@ -6,13 +5,28 @@ import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
 import 'perpusku_subject_page.dart';
 
-class PerpuskuTopicPage extends StatelessWidget {
+// 1. UBAH KE STATEFUL WIDGET AGAR PROVIDER TIDAK USER-RECREATE SAAT REBUILD
+class PerpuskuTopicPage extends StatefulWidget {
   const PerpuskuTopicPage({super.key});
 
   @override
+  State<PerpuskuTopicPage> createState() => _PerpuskuTopicPageState();
+}
+
+class _PerpuskuTopicPageState extends State<PerpuskuTopicPage> {
+  late PerpuskuProvider _perpuskuProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi provider hanya sekali di sini
+    _perpuskuProvider = PerpuskuProvider()..fetchTopics();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => PerpuskuProvider()..fetchTopics(),
+    return ChangeNotifierProvider<PerpuskuProvider>.value(
+      value: _perpuskuProvider,
       child: const _PerpuskuTopicView(),
     );
   }
@@ -27,7 +41,6 @@ class _PerpuskuTopicView extends StatefulWidget {
 
 class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
   final TextEditingController _searchController = TextEditingController();
-
   final List<Color> _themePalettes = [
     Colors.deepPurple,
     Colors.blue,
@@ -166,7 +179,6 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
       itemBuilder: (context, index) {
         final topic = provider.topics[index];
         final Color mainThemeColor = _getThemeColorFromTitle(topic.name);
-
         return Card(
           elevation: 2,
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -215,7 +227,6 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  // ==> TAMBAHKAN POPUP MENU BUTTON DI SINI
                   Theme(
                     data: Theme.of(context).copyWith(
                       iconTheme: IconThemeData(
@@ -279,7 +290,6 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
     );
   }
 
-  // ==> FUNGSI UTK DIALOG EDIT TOPIK (TANPA ICON) - TERBARU & FIX DIALOG STUCK
   void _showRenameTopicDialog(
     BuildContext context,
     PerpuskuProvider provider,
@@ -305,9 +315,7 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
             onPressed: () async {
               final newName = controller.text.trim();
               if (newName.isNotEmpty && newName != oldName) {
-                // Tutup dialog terlebih dahulu agar UI tidak stuck
                 Navigator.pop(ctx);
-
                 try {
                   await provider.renameTopic(oldName, newName);
                   if (context.mounted) {
@@ -337,7 +345,6 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
     );
   }
 
-  // ==> FUNGSI UTK DIALOG HAPUS TOPIK - FIX DIALOG STUCK & REFRESH UTAMA
   void _showDeleteTopicDialog(
     BuildContext context,
     PerpuskuProvider provider,
@@ -357,17 +364,12 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
           ),
           TextButton(
             onPressed: () async {
-              // 1. Tutup dialog terlebih dahulu agar tidak stuck di layar
               Navigator.pop(ctx);
-
               try {
-                // 2. Jalankan proses hapus data
                 await provider.deleteTopic(
                   topicName,
                   deletePerpuskuFolder: true,
                 );
-
-                // 3. Picu refresh pada TopicProvider utama (RSpace)
                 if (context.mounted) {
                   Provider.of<TopicProvider>(
                     context,
