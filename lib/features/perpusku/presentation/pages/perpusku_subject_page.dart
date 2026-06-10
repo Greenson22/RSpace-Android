@@ -1,5 +1,6 @@
 // lib/features/perpusku/presentation/pages/perpusku_subject_page.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
@@ -292,6 +293,13 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
                     newName,
                     widget.topic.path,
                   );
+
+                  if (context.mounted) {
+                    Provider.of<TopicProvider>(
+                      context,
+                      listen: false,
+                    ).fetchTopics();
+                  }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -335,6 +343,12 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
             onPressed: () async {
               try {
                 await provider.deleteSubject(subjectName, widget.topic.path);
+                if (context.mounted) {
+                  Provider.of<TopicProvider>(
+                    context,
+                    listen: false,
+                  ).fetchTopics();
+                }
                 if (context.mounted) Navigator.pop(ctx);
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(

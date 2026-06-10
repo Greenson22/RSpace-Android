@@ -1,5 +1,6 @@
 // lib/features/perpusku/presentation/pages/perpusku_topic_page.dart
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import '../../application/perpusku_provider.dart';
@@ -309,6 +310,12 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
 
                 try {
                   await provider.renameTopic(oldName, newName);
+                  if (context.mounted) {
+                    Provider.of<TopicProvider>(
+                      context,
+                      listen: false,
+                    ).fetchTopics();
+                  }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -355,6 +362,12 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
                   topicName,
                   deletePerpuskuFolder: true,
                 );
+                if (context.mounted) {
+                  Provider.of<TopicProvider>(
+                    context,
+                    listen: false,
+                  ).fetchTopics();
+                }
                 if (context.mounted) Navigator.pop(ctx);
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(

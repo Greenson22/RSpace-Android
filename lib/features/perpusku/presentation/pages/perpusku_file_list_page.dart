@@ -1,4 +1,5 @@
 // lib/features/perpusku/presentation/pages/perpusku_file_list_page.dart
+import 'package:my_aplication/features/content_management/topics/providers/topic_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -124,6 +125,13 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
                     oldFileName: oldFileName,
                     newFileName: newFileNameWithExt,
                   );
+
+                  if (context.mounted) {
+                    Provider.of<TopicProvider>(
+                      context,
+                      listen: false,
+                    ).fetchTopics();
+                  }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -170,6 +178,13 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
                   subjectPath: widget.subject.path,
                   fileName: fileName,
                 );
+
+                if (context.mounted) {
+                  Provider.of<TopicProvider>(
+                    context,
+                    listen: false,
+                  ).fetchTopics();
+                }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
