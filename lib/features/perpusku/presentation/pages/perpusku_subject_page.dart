@@ -321,7 +321,7 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
     );
   }
 
-  // ==> FUNGSI UTK DIALOG HAPUS SUBJEK
+  // ==> FUNGSI UTK DIALOG HAPUS SUBJEK - FIX DIALOG STUCK & REFRESH UTAMA
   void _showDeleteSubjectDialog(
     BuildContext context,
     PerpuskuProvider provider,
@@ -341,22 +341,29 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
           ),
           TextButton(
             onPressed: () async {
+              // 1. Tutup dialog terlebih dahulu agar tidak stuck di layar
+              Navigator.pop(ctx);
+
               try {
+                // 2. Jalankan proses hapus data subjek
                 await provider.deleteSubject(subjectName, widget.topic.path);
+
+                // 3. Picu refresh pada TopicProvider utama (RSpace)
                 if (context.mounted) {
                   Provider.of<TopicProvider>(
                     context,
                     listen: false,
                   ).fetchTopics();
                 }
-                if (context.mounted) Navigator.pop(ctx);
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(e.toString()),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
