@@ -109,8 +109,7 @@ class _AboutPageState extends State<AboutPage>
             'Akses cepat ke materi referensi lokal Anda secara terstruktur berdasarkan Topik, Subjek, dan File Konten.',
       },
       {
-        'icon': Icons
-            .storage_outlined, // Anda juga bisa menggunakan Icons.dns_outlined atau Icons.vanguard_view_outlined sesuai selera
+        'icon': Icons.storage_outlined,
         'title': 'Data Center (Backup & Share)',
         'subtitle':
             'Amankan data Anda dengan fitur kompresi ZIP otomatis atau distribusikan data antar perangkat secara wireless melalui local sharing server.',
@@ -281,6 +280,9 @@ class __AnimatedFeatureListItemState extends State<_AnimatedFeatureListItem>
 
   @override
   Widget build(BuildContext context) {
+    // Mengambil textScaleFactor agar ukuran adaptif mengikuti pengaturan sistem
+    final double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -288,21 +290,39 @@ class __AnimatedFeatureListItemState extends State<_AnimatedFeatureListItem>
         child: Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
           child: ListTile(
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0 * textScaleFactor,
+            ),
             leading: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   widget.icon,
                   color: Theme.of(context).primaryColor,
-                  size: 30,
+                  size:
+                      24.0 *
+                      textScaleFactor, // Disesuaikan ukuran dasarnya dari 30 ke 24 agar seimbang dengan ListTile skala teks
                 ),
               ],
             ),
             title: Text(
               widget.title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize:
+                    14.0 *
+                    textScaleFactor, // Skala font title disamakan dengan sub-judul settings_page
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            subtitle: Text(widget.subtitle),
+            subtitle: Text(
+              widget.subtitle,
+              style: TextStyle(
+                fontSize:
+                    11.0 *
+                    textScaleFactor, // Skala font subtitle disamakan dengan deskripsi settings_page
+              ),
+            ),
           ),
         ),
       ),
