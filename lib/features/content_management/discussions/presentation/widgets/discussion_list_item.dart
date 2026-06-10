@@ -32,6 +32,7 @@ class DiscussionListItem extends StatelessWidget {
   final Function(int) onToggleVisibility;
   final String subjectName;
   final String? subjectLinkedPath;
+  final Color themeColor; // ==> TERIMA WARNA TEMA YANG DIWARISKAN DARI HULU
   final VoidCallback onDelete;
   final bool isPointReorderMode;
   final VoidCallback onToggleReorder;
@@ -42,6 +43,7 @@ class DiscussionListItem extends StatelessWidget {
     super.key,
     required this.discussion,
     required this.index,
+    required this.themeColor, // Wajib disertakan agar selaras dengan subjek/topik
     this.isFocused = false,
     required this.arePointsVisible,
     required this.onToggleVisibility,
@@ -54,23 +56,7 @@ class DiscussionListItem extends StatelessWidget {
     this.horizontalGap = 10.0,
   });
 
-  Color _getThemeColorFromTitle(String title) {
-    if (title.isEmpty) return Colors.deepPurple;
-    final List<Color> themePalettes = [
-      Colors.deepPurple,
-      Colors.blue,
-      Colors.teal,
-      Colors.indigo,
-      Colors.pink,
-      Colors.amber.shade900,
-      Colors.green.shade700,
-      Colors.cyan.shade800,
-      Colors.orange.shade800,
-    ];
-    final int hash = title.hashCode;
-    final int index = hash.abs() % themePalettes.length;
-    return themePalettes[index];
-  }
+  // ==> LOGIKA _getThemeColorFromTitle SEBELUMNYA TELAH DIHAPUS SEPENUHNYA DI SINI
 
   void _moveDiscussion(
     BuildContext context,
@@ -165,9 +151,6 @@ class DiscussionListItem extends StatelessWidget {
     );
   }
 
-  // ========================================================================
-  // LOGIKA YANG DIPERBARUI: Adaptasi Preferensi Tautan Berdasarkan Platform
-  // ========================================================================
   Future<void> _openUrlWithOptions(BuildContext context) async {
     if (discussion.url == null || discussion.url!.isEmpty) {
       _showSnackBar(context, 'URL tidak valid atau kosong.', isError: true);
@@ -177,15 +160,12 @@ class DiscussionListItem extends StatelessWidget {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Sinkronisasi Kunci (Key) berdasarkan jenis platform OS
       final String webPreferenceKey = Platform.isAndroid
           ? 'use_internal_web_android'
           : 'use_internal_web';
 
-      // Sinkronisasi Nilai Default (Android: false/external, Desktop: true/internal)
       final bool defaultWebValue = Platform.isAndroid ? false : true;
 
-      // Ambil preferensi tersimpan, jika belum disetel pakai defaultWebValue
       final bool useInternalWeb =
           prefs.getBool(webPreferenceKey) ?? defaultWebValue;
 
@@ -448,7 +428,8 @@ class DiscussionListItem extends StatelessWidget {
         discussion.filePath != null &&
         discussion.filePath!.isNotEmpty;
 
-    final Color mainThemeColor = _getThemeColorFromTitle(discussion.discussion);
+    // ==> GUNAKAN WARNA TEMA YANG DIWARISKAN AGAR KONSISTEN DENGAN HALAMAN DI ATASNYA
+    final Color mainThemeColor = themeColor;
     final Color? textColor = isFinished ? theme.disabledColor : null;
 
     IconData iconData;

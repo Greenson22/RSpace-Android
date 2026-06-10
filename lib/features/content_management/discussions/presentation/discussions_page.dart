@@ -13,10 +13,12 @@ import '../models/discussion_model.dart';
 class DiscussionsPage extends StatefulWidget {
   final String subjectName;
   final String? linkedPath;
+  final Color themeColor; // ==> TERIMA WARNA TEMA DARI HALAMAN SEBELUMNYA
 
   const DiscussionsPage({
     super.key,
     required this.subjectName,
+    required this.themeColor, // Wajib diisi untuk keselarasan tema warna
     this.linkedPath,
   });
 
@@ -34,22 +36,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   bool _isKeyboardActive = false;
   int? _reorderingDiscussionIndex;
 
-  final List<Color> _themePalettes = [
-    Colors.deepPurple,
-    Colors.blue,
-    Colors.teal,
-    Colors.orange,
-    Colors.pink,
-    Colors.indigo,
-    Colors.green,
-  ];
-
-  Color _getThemeColorFromTitle(String title) {
-    if (title.isEmpty) return _themePalettes[0];
-    int hash = title.hashCode;
-    int index = hash.abs() % _themePalettes.length;
-    return _themePalettes[index];
-  }
+  // ==> LOGIKA PALET WARNA LOKAL SEBELUMNYA TELAH DIHAPUS DI SINI
 
   @override
   void initState() {
@@ -210,7 +197,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     });
   }
 
-  // SESUDAH PERBAIKAN
   void _addDiscussion(DiscussionProvider provider) async {
     final result = await showAddDiscussionDialog(
       context: context,
@@ -221,10 +207,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
     if (result != null && mounted) {
       try {
-        // Cukup panggil addDiscussion, logika pembuatan file html & markdown
-        // sudah diotomatisasi dengan aman di dalam provider.
         await provider.addDiscussion(result);
-
         _showSnackBar('Diskusi "${result.name}" berhasil ditambahkan.');
       } catch (e) {
         _showSnackBar("Gagal: ${e.toString()}", isError: true);
@@ -259,9 +242,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     const double baseAppBarIconSize = 18.0;
     final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
 
-    final Color dynamicAppBarColor = _getThemeColorFromTitle(
-      widget.subjectName,
-    );
+    // ==> GUNAKAN WARNA TEMA YANG DIWARISKAN SECARA LANGSUNG
+    final Color dynamicAppBarColor = widget.themeColor;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
@@ -287,7 +269,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             : FloatingActionButton(
                 onPressed: () => _addDiscussion(provider),
                 tooltip: 'Tambah Diskusi Baru',
-                backgroundColor: dynamicAppBarColor,
+                backgroundColor: dynamicAppBarColor, // Sesuai tema visual hulu
                 foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),
@@ -496,7 +478,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     DiscussionProvider provider,
     List<dynamic> discussions,
   ) {
-    final Color dynamicColor = _getThemeColorFromTitle(widget.subjectName);
+    // ==> AMBIL WARNA TEMA DARI WIDGET
+    final Color dynamicColor = widget.themeColor;
     return Column(
       children: [
         DiscussionStatsHeader(themeColor: dynamicColor),
@@ -523,6 +506,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   onToggleVisibility: _togglePointsVisibility,
                   subjectName: widget.subjectName,
                   subjectLinkedPath: widget.linkedPath,
+                  themeColor: widget.themeColor, // ==> OPER WARNA TEMA KE ITEM
                   onDelete: () => _deleteDiscussion(provider, discussion),
                   isPointReorderMode: isPointReorderMode,
                   onToggleReorder: () {
@@ -549,7 +533,8 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     DiscussionProvider provider,
     List<dynamic> discussions,
   ) {
-    final Color dynamicColor = _getThemeColorFromTitle(widget.subjectName);
+    // ==> AMBIL WARNA TEMA DARI WIDGET
+    final Color dynamicColor = widget.themeColor;
     final int middle = (discussions.length / 2).ceil();
     final List<dynamic> firstHalf = discussions.sublist(0, middle);
     final List<dynamic> secondHalf = discussions.sublist(middle);
@@ -601,6 +586,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           onToggleVisibility: _togglePointsVisibility,
           subjectName: widget.subjectName,
           subjectLinkedPath: widget.linkedPath,
+          themeColor: widget.themeColor, // ==> OPER WARNA TEMA KE ITEM
           onDelete: () => _deleteDiscussion(provider, discussion),
           isPointReorderMode: isPointReorderMode,
           onToggleReorder: () {

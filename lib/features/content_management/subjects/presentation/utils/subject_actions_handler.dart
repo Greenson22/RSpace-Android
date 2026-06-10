@@ -545,6 +545,26 @@ class SubjectActionsHandler {
     );
     if (!context.mounted) return;
 
+    // ========================================================================
+    // SOLUSI: Hitung warna secara dinamis dari nama Subject (mengikuti trik lama)
+    // ========================================================================
+    final List<Color> themePalettes = [
+      Colors.deepPurple,
+      Colors.blue,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber.shade900,
+      Colors.green.shade700,
+      Colors.cyan.shade800,
+      Colors.orange.shade800,
+    ];
+
+    final int hash = subject.name.hashCode;
+    final int paletteIndex = hash.abs() % themePalettes.length;
+    final Color inferredThemeColor = themePalettes[paletteIndex];
+    // ========================================================================
+
     // Menerapkan PageRouteBuilder dengan transisi shared axis dan AppThemeTokens
     Navigator.push(
       context,
@@ -560,6 +580,8 @@ class SubjectActionsHandler {
           child: DiscussionsPage(
             subjectName: subject.name,
             linkedPath: currentLinkedPath,
+            themeColor:
+                inferredThemeColor, // ==> Aman digunakan dan bebas error!
           ),
         ),
         transitionsBuilder: (context, anim, secAnim, child) {
