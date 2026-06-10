@@ -11,6 +11,8 @@ import '../../subjects/presentation/subjects_page.dart';
 import 'dialogs/topic_dialogs.dart';
 import 'widgets/topic_list_tile.dart';
 import '../../../../core/utils/scaffold_messenger_utils.dart';
+// Import file konstanta rujukan Anda
+import '../../../../core/constants/app_ui_constants.dart';
 
 class TopicsPage extends StatelessWidget {
   const TopicsPage({super.key});
@@ -35,7 +37,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   int _focusedIndex = 0;
   Timer? _focusTimer;
   bool _isKeyboardActive = false;
-
   final List<Color> _themePalettes = [
     Colors.deepPurple,
     Colors.blue,
@@ -117,12 +118,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     final topicsPath = await provider.getTopicsPath();
     final folderPath = path.join(topicsPath, topic.name);
-
     Navigator.push(
       context,
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 450),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
+        // Menerapkan durasi transisi dari AppThemeTokens
+        transitionDuration: AppThemeTokens.pageTransitionIn,
+        reverseTransitionDuration: AppThemeTokens.pageTransitionOut,
         pageBuilder: (context, anim, secAnim) => ChangeNotifierProvider(
           create: (_) => SubjectProvider(folderPath),
           child: SubjectsPage(topicName: topic.name),
@@ -130,17 +131,24 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         transitionsBuilder: (context, anim, secAnim, child) {
           return FadeTransition(
             opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-              CurvedAnimation(parent: anim, curve: Curves.easeInOutCubic),
+              // Menerapkan kurva dari AppThemeTokens
+              CurvedAnimation(
+                parent: anim,
+                curve: AppThemeTokens.animationCurve,
+              ),
             ),
             child: ScaleTransition(
               scale: Tween<double>(begin: 0.94, end: 1.0).animate(
-                CurvedAnimation(parent: anim, curve: Curves.easeInOutCubic),
+                CurvedAnimation(
+                  parent: anim,
+                  curve: AppThemeTokens.animationCurve,
+                ),
               ),
               child: ScaleTransition(
                 scale: Tween<double>(begin: 1.0, end: 1.05).animate(
                   CurvedAnimation(
                     parent: secAnim,
-                    curve: Curves.easeInOutCubic,
+                    curve: AppThemeTokens.animationCurve,
                   ),
                 ),
                 child: child,
@@ -165,7 +173,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
       title: 'Tambah Topik Baru',
       onSave: (name, icon) async {
         try {
-          // Sesuaikan parameter jika addTopic di provider Anda mendukung ikon
           await provider.addTopic(name);
           showAppSnackBar(context, 'Topik "$name" berhasil ditambahkan.');
         } catch (e) {
@@ -184,16 +191,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
       initialIcon: topic.icon,
       onSave: (newName, newIcon) async {
         try {
-          // 1. Jika ikonnya berubah, update ikonnya terlebih dahulu
           if (topic.icon != newIcon) {
             await provider.updateTopicIcon(topic.name, newIcon);
           }
-
-          // 2. Jika namanya juga diganti, baru jalankan renameTopic
           if (topic.name != newName) {
             await provider.renameTopic(topic.name, newName);
           }
-
           showAppSnackBar(context, 'Topik berhasil diubah.');
         } catch (e) {
           showAppSnackBar(context, e.toString(), isError: true);
@@ -238,10 +241,9 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final topicProvider = Provider.of<TopicProvider>(context);
     const bool isTransparent = false;
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseAppBarIconSize = 18.0;
-    final scaledAppBarIconSize = baseAppBarIconSize * textScaleFactor;
+    // Menerapkan AppThemeTokens.iconSmall untuk ukuran dasar ikon AppBar
+    final scaledAppBarIconSize = AppThemeTokens.iconSmall * textScaleFactor;
     final Color defaultThemeColor = _themePalettes[0];
-
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
@@ -261,11 +263,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
           title: topicProvider.isReorderModeEnabled
               ? const Text(
                   'Urutkan Topik',
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                  style: AppThemeTokens
+                      .heading, // Menerapkan gaya teks heading standar
                 )
               : (_isSearching
                     ? TextField(
@@ -283,11 +282,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                       )
                     : const Text(
                         'Topics',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
+                        style: AppThemeTokens
+                            .heading, // Menerapkan gaya teks heading standar
                       )),
           actions: [
             if (!topicProvider.isReorderModeEnabled) ...[
@@ -342,10 +338,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                           topicProvider.showHiddenTopics
                               ? 'Sembunyikan Tersembunyi'
                               : 'Tampilkan Tersembunyi',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
+                          style: AppThemeTokens
+                              .body, // Menerapkan gaya teks body standar
                         ),
                       ],
                     ),
@@ -358,7 +352,8 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                         SizedBox(width: 8),
                         Text(
                           'Urutkan Topik',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                          style: AppThemeTokens
+                              .body, // Menerapkan gaya teks body standar
                         ),
                       ],
                     ),
@@ -448,8 +443,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
 
   Widget _buildEmptyState(TopicProvider provider) {
     final Color defaultThemeColor = _themePalettes[0];
-
-    // 1. Kondisi: Memang belum ada topik sama sekali di dalam aplikasi
     if (provider.allTopics.isEmpty) {
       return Center(
         child: SingleChildScrollView(
@@ -457,7 +450,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Ilustrasi lingkaran ikon
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -484,13 +476,14 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
                 'Mulai kelola konten Anda dengan menambahkan topik atau folder baru pertama Anda.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppThemeTokens
+                      .body
+                      .fontSize, // Menyesuaikan ukuran font body rujukan
                   color: Colors.grey.shade600,
                   height: 1.4,
                 ),
               ),
               const SizedBox(height: 32),
-              // Tombol aksi interaktif untuk menambah topik
               ElevatedButton.icon(
                 onPressed: () => _addTopic(context),
                 icon: const Icon(Icons.add, color: Colors.white),
@@ -518,8 +511,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         ),
       );
     }
-
-    // 2. Kondisi: User sedang mencari sesuatu tapi keyword-nya tidak cocok
     if (provider.filteredTopics.isEmpty && provider.searchQuery.isNotEmpty) {
       return Center(
         child: Padding(
@@ -545,15 +536,16 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               Text(
                 'Tidak ada hasil yang cocok untuk "${provider.searchQuery}". Coba periksa kembali ejaan Anda.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(
+                  fontSize: AppThemeTokens.body.fontSize,
+                  color: Colors.grey.shade500,
+                ),
               ),
             ],
           ),
         ),
       );
     }
-
-    // 3. Kondisi: Topik ada, tapi semuanya sedang disembunyikan (Hidden)
     if (provider.filteredTopics.isEmpty && !provider.showHiddenTopics) {
       return Center(
         child: Padding(
@@ -579,7 +571,10 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               Text(
                 'Aktifkan opsi "Tampilkan Tersembunyi" dari menu pojok kanan atas untuk melihat topik.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                style: TextStyle(
+                  fontSize: AppThemeTokens.body.fontSize,
+                  color: Colors.grey.shade500,
+                ),
               ),
               const SizedBox(height: 20),
               TextButton.icon(
@@ -598,7 +593,6 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         ),
       );
     }
-
     return const SizedBox.shrink();
   }
 }
