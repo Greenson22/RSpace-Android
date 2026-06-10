@@ -158,8 +158,16 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
       initialIcon: topic.icon,
       onSave: (newName, newIcon) async {
         try {
-          // Panggil fungsi rename/update milik provider Anda
-          await provider.renameTopic(topic.name, newName);
+          // 1. Jika ikonnya berubah, update ikonnya terlebih dahulu
+          if (topic.icon != newIcon) {
+            await provider.updateTopicIcon(topic.name, newIcon);
+          }
+
+          // 2. Jika namanya juga diganti, baru jalankan renameTopic
+          if (topic.name != newName) {
+            await provider.renameTopic(topic.name, newName);
+          }
+
           showAppSnackBar(context, 'Topik berhasil diubah.');
         } catch (e) {
           showAppSnackBar(context, e.toString(), isError: true);
