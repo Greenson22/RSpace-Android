@@ -1,5 +1,7 @@
 // lib/features/perpusku/application/perpusku_provider.dart
 
+import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/topics/services/topic_service.dart';
 import '../domain/models/perpusku_models.dart';
@@ -119,16 +121,27 @@ class PerpuskuProvider with ChangeNotifier {
   ) async {
     _setLoading(true);
     try {
-      // Logika perubahan nama subjek (misal menggunakan SubjectService Anda atau manipulasi Directory)
-      // Contoh pendelegasian jika Anda memiliki SubjectService:
-      // await _subjectService.renameSubject(topicName, oldName, newName);
+      // 1. Definisikan path folder subjek yang lama dan yang baru
+      final oldSubjectPath = path.join(topicPath, oldName);
+      final newSubjectPath = path.join(topicPath, newName);
 
-      // Mengingat subjek berupa folder fisik, alternatif langsung:
-      // final oldDir = Directory(path.join(topicPath, oldName));
-      // final newDir = Directory(path.join(topicPath, newName));
-      // if (await oldDir.exists()) { await oldDir.rename(newDir.path); }
+      final oldDir = Directory(oldSubjectPath);
+      final newDir = Directory(newSubjectPath);
 
-      await fetchSubjects(topicPath); // Refresh view subjek
+      // 2. Validasi ketersediaan folder sebelum diubah
+      if (await oldDir.exists()) {
+        if (await newDir.exists()) {
+          throw Exception('Subjek dengan nama "$newName" sudah ada.');
+        }
+
+        // 3. Eksekusi pengubahan nama folder fisik di penyimpanan lokal
+        await oldDir.rename(newDir.path);
+      } else {
+        throw Exception('Folder subjek lama tidak ditemukan.');
+      }
+
+      // 4. Muat ulang (refresh) data list subjek dari path topik agar UI berubah
+      await fetchSubjects(topicPath);
     } catch (e) {
       rethrow;
     } finally {
@@ -136,11 +149,20 @@ class PerpuskuProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteSubject(String oldName, String topicPath) async {
+  Future<void> deleteSubject(String subjectName, String topicPath) async {
     _setLoading(true);
     try {
-      // Logika hapus folder subjek
-      await fetchSubjects(topicPath); // Refresh view subjek
+      // 1. Definisikan path folder subjek yang akan dihapus
+      final subjectFullPath = path.join(topicPath, subjectName);
+      final dir = Directory(subjectFullPath);
+
+      // 2. Eksekusi penghapusan folder beserta seluruh isinya secara rekursif
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+
+      // 3. Muat ulang data list subjek agar UI sinkron
+      await fetchSubjects(topicPath);
     } catch (e) {
       rethrow;
     } finally {
