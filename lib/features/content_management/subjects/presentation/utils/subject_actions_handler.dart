@@ -286,6 +286,7 @@ class SubjectActionsHandler {
     );
   }
 
+  //  KODE YANG SUDAH DIPERBAIKI
   static Future<void> renameSubject(
     BuildContext context,
     Subject subject,
@@ -299,12 +300,23 @@ class SubjectActionsHandler {
       initialIcon: subject.icon,
       onSave: (newName, newIcon) async {
         try {
-          await provider.renameSubject(subject.name, newName);
-          if (context.mounted)
+          // 1. Jika ikon berubah, perbarui ikon terlebih dahulu
+          if (subject.icon != newIcon) {
+            await provider.updateSubjectIcon(subject.name, newIcon);
+          }
+
+          // 2. Jika nama diubah, baru jalankan fungsi rename file JSON
+          if (subject.name != newName) {
+            await provider.renameSubject(subject.name, newName);
+          }
+
+          if (context.mounted) {
             showSnackBar(context, 'Subject berhasil diubah.');
+          }
         } catch (e) {
-          if (context.mounted)
+          if (context.mounted) {
             showSnackBar(context, e.toString(), isError: true);
+          }
         }
       },
     );
