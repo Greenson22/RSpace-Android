@@ -480,6 +480,11 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   ) {
     // ==> AMBIL WARNA TEMA DARI WIDGET
     final Color dynamicColor = widget.themeColor;
+
+    // Memisahkan list diskusi aktif dan selesai
+    final activeDiscussions = discussions.where((d) => !d.finished).toList();
+    final finishedDiscussions = discussions.where((d) => d.finished).toList();
+
     return Column(
       children: [
         DiscussionStatsHeader(themeColor: dynamicColor),
@@ -489,24 +494,106 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(4, 4, 4, 80),
-              itemCount: discussions.length,
+              itemCount:
+                  activeDiscussions.length +
+                  (finishedDiscussions.isNotEmpty
+                      ? 1 + finishedDiscussions.length
+                      : 0),
               itemBuilder: (context, index) {
-                final discussion = discussions[index];
+                // 1. Bagian Diskusi Aktif
+                if (index < activeDiscussions.length) {
+                  final discussion = activeDiscussions[index];
+                  final originalIndex = provider.allDiscussions.indexOf(
+                    discussion,
+                  );
+                  final isPointReorderMode =
+                      originalIndex == _reorderingDiscussionIndex;
+                  return DiscussionListItem(
+                    key: ValueKey(discussion.hashCode),
+                    discussion: discussion,
+                    index: originalIndex,
+                    isFocused: _isKeyboardActive && index == _focusedIndex,
+                    arePointsVisible: _arePointsVisible,
+                    onToggleVisibility: _togglePointsVisibility,
+                    subjectName: widget.subjectName,
+                    subjectLinkedPath: widget.linkedPath,
+                    themeColor: widget.themeColor,
+                    onDelete: () => _deleteDiscussion(provider, discussion),
+                    isPointReorderMode: isPointReorderMode,
+                    onToggleReorder: () {
+                      setState(() {
+                        if (isPointReorderMode) {
+                          _reorderingDiscussionIndex = null;
+                        } else {
+                          _reorderingDiscussionIndex = originalIndex;
+                          if (!(_arePointsVisible[originalIndex] ?? false)) {
+                            _arePointsVisible[originalIndex] = true;
+                          }
+                        }
+                      });
+                    },
+                  );
+                }
+
+                // 2. Bagian Garis Pembatas Keterangan Selesai
+                final separatorIndex = activeDiscussions.length;
+                if (index == separatorIndex) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16.0,
+                      horizontal: 16.0,
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(child: Divider(thickness: 1)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 16,
+                                color: Colors.green.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Diskusi Selesai',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Expanded(child: Divider(thickness: 1)),
+                      ],
+                    ),
+                  );
+                }
+
+                // 3. Bagian Diskusi Selesai
+                final finishedIndex = index - activeDiscussions.length - 1;
+                final discussion = finishedDiscussions[finishedIndex];
                 final originalIndex = provider.allDiscussions.indexOf(
                   discussion,
                 );
                 final isPointReorderMode =
                     originalIndex == _reorderingDiscussionIndex;
+                final globalIndex = activeDiscussions.length + finishedIndex;
+
                 return DiscussionListItem(
                   key: ValueKey(discussion.hashCode),
                   discussion: discussion,
                   index: originalIndex,
-                  isFocused: _isKeyboardActive && index == _focusedIndex,
+                  isFocused: _isKeyboardActive && globalIndex == _focusedIndex,
                   arePointsVisible: _arePointsVisible,
                   onToggleVisibility: _togglePointsVisibility,
                   subjectName: widget.subjectName,
                   subjectLinkedPath: widget.linkedPath,
-                  themeColor: widget.themeColor, // ==> OPER WARNA TEMA KE ITEM
+                  themeColor: widget.themeColor,
                   onDelete: () => _deleteDiscussion(provider, discussion),
                   isPointReorderMode: isPointReorderMode,
                   onToggleReorder: () {
@@ -526,6 +613,133 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildColumnListView(
+    DiscussionProvider provider,
+    List<dynamic> discussionList,
+    int indexOffset,
+  ) {
+    // Memisahkan list kustom per kolom untuk diskusi aktif dan selesai
+    final activeDiscussions = discussionList.where((d) => !d.finished).toList();
+    final finishedDiscussions = discussionList
+        .where((d) => d.finished)
+        .toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 80),
+      itemCount:
+          activeDiscussions.length +
+          (finishedDiscussions.isNotEmpty ? 1 + finishedDiscussions.length : 0),
+      itemBuilder: (context, index) {
+        // 1. Bagian Diskusi Aktif (Multi-kolom)
+        if (index < activeDiscussions.length) {
+          final discussion = activeDiscussions[index];
+          final originalIndex = provider.allDiscussions.indexOf(discussion);
+          final overallIndex = index + indexOffset;
+          final isPointReorderMode =
+              originalIndex == _reorderingDiscussionIndex;
+          return DiscussionListItem(
+            key: ValueKey(discussion.hashCode),
+            discussion: discussion,
+            index: originalIndex,
+            isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
+            arePointsVisible: _arePointsVisible,
+            onToggleVisibility: _togglePointsVisibility,
+            subjectName: widget.subjectName,
+            subjectLinkedPath: widget.linkedPath,
+            themeColor: widget.themeColor,
+            onDelete: () => _deleteDiscussion(provider, discussion),
+            isPointReorderMode: isPointReorderMode,
+            onToggleReorder: () {
+              setState(() {
+                if (isPointReorderMode) {
+                  _reorderingDiscussionIndex = null;
+                } else {
+                  _reorderingDiscussionIndex = originalIndex;
+                  if (!(_arePointsVisible[originalIndex] ?? false)) {
+                    _arePointsVisible[originalIndex] = true;
+                  }
+                }
+              });
+            },
+          );
+        }
+
+        // 2. Bagian Garis Pembatas Keterangan Selesai (Multi-kolom)
+        final separatorIndex = activeDiscussions.length;
+        if (index == separatorIndex) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 8.0,
+            ),
+            child: Row(
+              children: [
+                const Expanded(child: Divider(thickness: 1)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.green.shade600,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Selesai',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Expanded(child: Divider(thickness: 1)),
+              ],
+            ),
+          );
+        }
+
+        // 3. Bagian Diskusi Selesai (Multi-kolom)
+        final finishedIndex = index - activeDiscussions.length - 1;
+        final discussion = finishedDiscussions[finishedIndex];
+        final originalIndex = provider.allDiscussions.indexOf(discussion);
+        final overallIndex =
+            activeDiscussions.length + finishedIndex + indexOffset;
+        final isPointReorderMode = originalIndex == _reorderingDiscussionIndex;
+
+        return DiscussionListItem(
+          key: ValueKey(discussion.hashCode),
+          discussion: discussion,
+          index: originalIndex,
+          isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
+          arePointsVisible: _arePointsVisible,
+          onToggleVisibility: _togglePointsVisibility,
+          subjectName: widget.subjectName,
+          subjectLinkedPath: widget.linkedPath,
+          themeColor: widget.themeColor,
+          onDelete: () => _deleteDiscussion(provider, discussion),
+          isPointReorderMode: isPointReorderMode,
+          onToggleReorder: () {
+            setState(() {
+              if (isPointReorderMode) {
+                _reorderingDiscussionIndex = null;
+              } else {
+                _reorderingDiscussionIndex = originalIndex;
+                if (!(_arePointsVisible[originalIndex] ?? false)) {
+                  _arePointsVisible[originalIndex] = true;
+                }
+              }
+            });
+          },
+        );
+      },
     );
   }
 
@@ -561,48 +775,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildColumnListView(
-    DiscussionProvider provider,
-    List<dynamic> discussionList,
-    int indexOffset,
-  ) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 80),
-      itemCount: discussionList.length,
-      itemBuilder: (context, index) {
-        final discussion = discussionList[index];
-        final originalIndex = provider.allDiscussions.indexOf(discussion);
-        final overallIndex = index + indexOffset;
-        final isPointReorderMode = originalIndex == _reorderingDiscussionIndex;
-        return DiscussionListItem(
-          key: ValueKey(discussion.hashCode),
-          discussion: discussion,
-          index: originalIndex,
-          isFocused: _isKeyboardActive && overallIndex == _focusedIndex,
-          arePointsVisible: _arePointsVisible,
-          onToggleVisibility: _togglePointsVisibility,
-          subjectName: widget.subjectName,
-          subjectLinkedPath: widget.linkedPath,
-          themeColor: widget.themeColor, // ==> OPER WARNA TEMA KE ITEM
-          onDelete: () => _deleteDiscussion(provider, discussion),
-          isPointReorderMode: isPointReorderMode,
-          onToggleReorder: () {
-            setState(() {
-              if (isPointReorderMode) {
-                _reorderingDiscussionIndex = null;
-              } else {
-                _reorderingDiscussionIndex = originalIndex;
-                if (!(_arePointsVisible[originalIndex] ?? false)) {
-                  _arePointsVisible[originalIndex] = true;
-                }
-              }
-            });
-          },
-        );
-      },
     );
   }
 
