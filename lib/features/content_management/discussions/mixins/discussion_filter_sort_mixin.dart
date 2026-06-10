@@ -266,7 +266,7 @@ mixin DiscussionFilterSortMixin on ChangeNotifier {
     _activeFilterType = null;
     _selectedRepetitionCode = null;
     _selectedDateRange = null;
-    _showFinishedDiscussions = true;
+    _showFinishedDiscussions = false;
     prefsService.saveFilterPreference(null, null);
     filterAndSortDiscussions();
   }
