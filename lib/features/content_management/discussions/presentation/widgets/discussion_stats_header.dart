@@ -1,12 +1,12 @@
 // lib/features/content_management/presentation/discussions/widgets/discussion_stats_header.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/discussion_provider.dart';
-import '../utils/repetition_code_utils.dart'; // Mengimpor fungsi utilitas repetisi yang benar
+import '../utils/repetition_code_utils.dart';
 
 class DiscussionStatsHeader extends StatefulWidget {
   final Color themeColor;
-
   const DiscussionStatsHeader({super.key, required this.themeColor});
 
   @override
@@ -20,7 +20,6 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
   Widget build(BuildContext context) {
     final provider = Provider.of<DiscussionProvider>(context, listen: true);
     final theme = Theme.of(context);
-
     final total = provider.totalDiscussionCount;
     final finished = provider.finishedDiscussionCount;
 
@@ -28,14 +27,25 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       return const SizedBox.shrink();
     }
 
-    // Menghitung rasio kemajuan penyelesaian subjek
-    final double completionPercentage = total > 0 ? (finished / total) : 0.0;
+    // ==> PERUBAHAN UTAMA: Perhitungan Progress Berdasarkan Akumulasi Bobot Kode <==
+    double totalMaxWeight = total * 100.0;
+    double currentActualWeight = 0.0;
 
-    // ==> HITUNG JUMLAH KODE REPETISI SECARA DINAMIS <==
+    for (var discussion in provider.allDiscussions) {
+      final code = discussion.effectiveRepetitionCode;
+      currentActualWeight += getProgressPercentageForCode(code);
+    }
+
+    final double completionPercentage = totalMaxWeight > 0
+        ? (currentActualWeight / totalMaxWeight).clamp(0.0, 1.0)
+        : 0.0;
+
+    final int displaySubjectPercent = (completionPercentage * 100).round();
+
+    // Menghitung jumlah rincian kode repetisi secara dinamis
     final Map<String, int> codeCounts = {};
     for (var discussion in provider.allDiscussions) {
       final code = discussion.repetitionCode ?? 'Tanpa Kode';
-
       if (discussion.finished == true) {
         codeCounts['Finish'] = (codeCounts['Finish'] ?? 0) + 1;
       } else {
@@ -43,7 +53,6 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       }
     }
 
-    // Mengurutkan kunci agar R0D, R7D, dst tampil rapi (Finish ditaruh paling belakang)
     final sortedKeys = codeCounts.keys.toList()
       ..sort((a, b) {
         if (a == 'Finish') return 1;
@@ -61,12 +70,9 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       ),
       color: widget.themeColor.withOpacity(0.03),
       child: Theme(
-        // Menambahkan iconTheme kustom agar panah bawaan ExpansionTile berukuran 30.0
         data: theme.copyWith(
           dividerColor: Colors.transparent,
-          iconTheme: theme.iconTheme.copyWith(
-            size: 24.0, // <-- Mengubah ukuran panah (chevron) kanan atas
-          ),
+          iconTheme: theme.iconTheme.copyWith(size: 24.0),
         ),
         child: ExpansionTile(
           key: const PageStorageKey('discussion-stats-header'),
@@ -90,7 +96,7 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Ringkasan Subject',
+                      'Ringkasan Subject ($displaySubjectPercent%)', // Menampilkan persentase total subjek
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 14.0,
@@ -111,7 +117,7 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
                         ),
                         const TextSpan(text: ' ('),
                         TextSpan(
-                          text: '$finished ✔',
+                          text: '$finished Selesai',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.green.shade700,
@@ -183,12 +189,9 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
                       children: sortedKeys.map((code) {
                         final count = codeCounts[code] ?? 0;
                         final isFinishType = code == 'Finish';
-
-                        // PERBAIKAN 1: Menggunakan fungsi bawaan dari file utilitas yang valid
                         final Color codeColor = isFinishType
                             ? Colors.green.shade700
                             : getColorForRepetitionCode(code);
-
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -197,7 +200,6 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
                           decoration: BoxDecoration(
                             color: codeColor.withOpacity(0.06),
                             borderRadius: BorderRadius.circular(8),
-                            // PERBAIKAN 2: Mengubah Border.solid menjadi Border.all
                             border: Border.all(
                               color: codeColor.withOpacity(0.18),
                               width: 1,

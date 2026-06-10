@@ -41,6 +41,29 @@ int getRepetitionCodeIndex(String code, {List<String>? customOrder}) {
   return index == -1 ? 998 : index;
 }
 
+int getProgressPercentageForCode(String code) {
+  switch (code) {
+    case 'R0D':
+      return 0;
+    case 'R1D':
+      return 15;
+    case 'R3D':
+      return 30;
+    case 'R7D':
+      return 45;
+    case 'R7D2':
+      return 60;
+    case 'R7D3':
+      return 75;
+    case 'R30D':
+      return 90;
+    case 'Finish':
+      return 100;
+    default:
+      return 0;
+  }
+}
+
 Color getColorForRepetitionCode(String code) {
   switch (code) {
     case 'R0D':
