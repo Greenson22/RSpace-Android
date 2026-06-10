@@ -22,7 +22,7 @@ class DiscussionSubtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     if (discussion.finished) {
       return Text(
-        'Selesai pada: ${discussion.finish_date} (100%)', // Ditambahkan info teks 100% saat selesai
+        'Selesai pada: ${discussion.finish_date} (100%)',
         style: const TextStyle(
           color: Colors.green,
           fontStyle: FontStyle.italic,
@@ -36,29 +36,66 @@ class DiscussionSubtitle extends StatelessWidget {
     final dateText = displayDate ?? 'N/A';
     final codeText = displayCode;
 
-    // ==> HITUNG PERSENTASE INDIVIDUAL DISKUSI <==
+    // HITUNG PERSENTASE INDIVIDUAL DISKUSI
     final int itemPercentage = getProgressPercentageForCode(codeText);
 
-    Color dateColor = Colors.grey;
+    // DEKLARASI WARNA UNTUK TIAP SEGMEN TANGGAL (BUKAN WARNA CERAH)
+    Color yearColor = const Color(0xff556b2f); // Olive tua
+    Color monthColor = const Color(0xff4682b4); // Steel Blue kalem
+    Color dayColor = const Color(0xff8b4513); // Saddle Brown
+
     if (displayDate != null) {
       try {
         final discussionDate = DateTime.parse(displayDate);
         final today = DateTime.now();
+        // Jika terlambat, buat seluruh segmen menjadi merah gelap/maroon (bukan merah cerah)
         if (discussionDate.isBefore(
           DateTime(today.year, today.month, today.day),
         )) {
-          dateColor = Colors.red;
-        } else {
-          dateColor = Colors.amber.shade700;
+          yearColor = const Color(0xff800000);
+          monthColor = const Color(0xff800000);
+          dayColor = const Color(0xff800000);
         }
       } catch (e) {
-        // Biarkan warna default
+        // Biarkan menggunakan warna default
       }
     }
 
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
     const double baseFontSize = 10.0;
     final scaledFontSize = baseFontSize * textScaleFactor;
+
+    // FUNGSI HELPER UNTUK MEMECAH PARSING TANGGAL (yyyy-MM-dd)
+    List<TextSpan> _buildDateSegments(String dateStr) {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return [
+          TextSpan(
+            text: parts[0],
+            style: TextStyle(color: yearColor, fontWeight: FontWeight.bold),
+          ),
+          const TextSpan(text: '-'),
+          TextSpan(
+            text: parts[1],
+            style: TextStyle(color: monthColor, fontWeight: FontWeight.bold),
+          ),
+          const TextSpan(text: '-'),
+          TextSpan(
+            text: parts[2],
+            style: TextStyle(color: dayColor, fontWeight: FontWeight.bold),
+          ),
+        ];
+      }
+      return [
+        TextSpan(
+          text: dateStr,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ];
+    }
 
     return RichText(
       text: TextSpan(
@@ -68,14 +105,10 @@ class DiscussionSubtitle extends StatelessWidget {
         ),
         children: [
           const TextSpan(text: 'Date: '),
-          TextSpan(
-            text: dateText,
-            style: TextStyle(color: dateColor, fontWeight: FontWeight.bold),
-          ),
+          ..._buildDateSegments(dateText),
           const TextSpan(text: ' | Code: '),
           TextSpan(
-            text:
-                '$codeText ($itemPercentage%)', // ==> MENAMPILKAN PERSENTASE INDIVIDUAL <==
+            text: codeText,
             style: TextStyle(
               color: getColorForRepetitionCode(codeText),
               fontWeight: FontWeight.bold,
@@ -116,6 +149,14 @@ class DiscussionSubtitle extends StatelessWidget {
                       }
                     })
                 : null,
+          ),
+          // SEPARASI WARNA PERSEN: Menggunakan Slate/Charcoal Grey kalem (berbeda dari repetition code)
+          TextSpan(
+            text: ' ($itemPercentage%)',
+            style: const TextStyle(
+              color: Color(0xff4a5568),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
