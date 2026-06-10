@@ -214,12 +214,157 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // ==> TAMBAHKAN POPUP MENU BUTTON DI SINI
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      iconTheme: IconThemeData(
+                        color: mainThemeColor.withOpacity(0.7),
+                      ),
+                    ),
+                    child: PopupMenuButton<String>(
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showRenameTopicDialog(context, provider, topic.name);
+                        } else if (value == 'delete') {
+                          _showDeleteTopicDialog(context, provider, topic.name);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Ubah Nama Topik',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Hapus',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  // ==> FUNGSI UTK DIALOG EDIT TOPIK (TANPA ICON)
+  void _showRenameTopicDialog(
+    BuildContext context,
+    PerpuskuProvider provider,
+    String oldName,
+  ) {
+    final controller = TextEditingController(text: oldName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ubah Nama Topik'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nama Baru Topik'),
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (controller.text.isNotEmpty && controller.text != oldName) {
+                try {
+                  await provider.renameTopic(oldName, controller.text);
+                  if (context.mounted) Navigator.pop(ctx);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } else {
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> FUNGSI UTK DIALOG HAPUS TOPIK
+  void _showDeleteTopicDialog(
+    BuildContext context,
+    PerpuskuProvider provider,
+    String topicName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Topik'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus topik "$topicName" beserta seluruh isinya?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await provider.deleteTopic(
+                  topicName,
+                  deletePerpuskuFolder: true,
+                );
+                if (context.mounted) Navigator.pop(ctx);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
     );
   }
 

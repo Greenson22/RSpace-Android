@@ -184,12 +184,167 @@ class _PerpuskuSubjectViewState extends State<_PerpuskuSubjectView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // ==> TAMBAHKAN POPUP MENU BUTTON UNTUK SUBJEK DI SINI
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      iconTheme: IconThemeData(
+                        color: mainThemeColor.withOpacity(0.7),
+                      ),
+                    ),
+                    child: PopupMenuButton<String>(
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showRenameSubjectDialog(
+                            context,
+                            provider,
+                            subject.name,
+                          );
+                        } else if (value == 'delete') {
+                          _showDeleteSubjectDialog(
+                            context,
+                            provider,
+                            subject.name,
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Ubah Nama Subjek',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Hapus',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  // ==> FUNGSI UTK DIALOG EDIT SUBJEK
+  void _showRenameSubjectDialog(
+    BuildContext context,
+    PerpuskuProvider provider,
+    String oldName,
+  ) {
+    final controller = TextEditingController(text: oldName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ubah Nama Subjek'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nama Baru Subjek'),
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (controller.text.isNotEmpty && controller.text != oldName) {
+                try {
+                  await provider.renameSubject(
+                    widget.topic.name,
+                    oldName,
+                    controller.text,
+                    widget.topic.path,
+                  );
+                  if (context.mounted) Navigator.pop(ctx);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } else {
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> FUNGSI UTK DIALOG HAPUS SUBJEK
+  void _showDeleteSubjectDialog(
+    BuildContext context,
+    PerpuskuProvider provider,
+    String subjectName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Subjek'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus subjek "$subjectName"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await provider.deleteSubject(subjectName, widget.topic.path);
+                if (context.mounted) Navigator.pop(ctx);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
     );
   }
 

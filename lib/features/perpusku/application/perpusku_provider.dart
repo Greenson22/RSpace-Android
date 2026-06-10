@@ -1,6 +1,7 @@
 // lib/features/perpusku/application/perpusku_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:my_aplication/features/content_management/topics/services/topic_service.dart';
 import '../domain/models/perpusku_models.dart';
 import '../infrastructure/perpusku_service.dart';
 
@@ -74,6 +75,77 @@ class PerpuskuProvider with ChangeNotifier {
     _setLoading(true);
     _searchResults = await _service.searchFilesInTopic(topicPath, query);
     _setLoading(false);
+  }
+
+  Future<void> renameTopic(String oldName, String newName) async {
+    _setLoading(true);
+    try {
+      // Panggil TopicService utama Anda untuk melakukan penggantian nama folder terintegrasi
+      final topicService = TopicService();
+      await topicService.renameTopic(oldName, newName);
+      // Refresh list setelah diubah
+      await fetchTopics();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> deleteTopic(
+    String topicName, {
+    bool deletePerpuskuFolder = true,
+  }) async {
+    _setLoading(true);
+    try {
+      final topicService = TopicService();
+      await topicService.deleteTopic(
+        topicName,
+        deletePerpuskuFolder: deletePerpuskuFolder,
+      );
+      await fetchTopics();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> renameSubject(
+    String topicName,
+    String oldName,
+    String newName,
+    String topicPath,
+  ) async {
+    _setLoading(true);
+    try {
+      // Logika perubahan nama subjek (misal menggunakan SubjectService Anda atau manipulasi Directory)
+      // Contoh pendelegasian jika Anda memiliki SubjectService:
+      // await _subjectService.renameSubject(topicName, oldName, newName);
+
+      // Mengingat subjek berupa folder fisik, alternatif langsung:
+      // final oldDir = Directory(path.join(topicPath, oldName));
+      // final newDir = Directory(path.join(topicPath, newName));
+      // if (await oldDir.exists()) { await oldDir.rename(newDir.path); }
+
+      await fetchSubjects(topicPath); // Refresh view subjek
+    } catch (e) {
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> deleteSubject(String oldName, String topicPath) async {
+    _setLoading(true);
+    try {
+      // Logika hapus folder subjek
+      await fetchSubjects(topicPath); // Refresh view subjek
+    } catch (e) {
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void clearSearch() {
