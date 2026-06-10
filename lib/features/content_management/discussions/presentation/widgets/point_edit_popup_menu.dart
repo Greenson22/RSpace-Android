@@ -23,16 +23,15 @@ class PointEditPopupMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // === PERBAIKAN DI SINI: Hitung ukuran ikon berdasarkan skala ===
     final textScaleFactor = MediaQuery.of(context).textScaleFactor;
-    const double baseIconSize = 18.0; // Ukuran ikon default
+    const double baseIconSize = 18.0;
     final scaledIconSize = baseIconSize * textScaleFactor;
-    // === AKHIR PERBAIKAN ===
 
     return PopupMenuButton<String>(
-      // Terapkan ukuran ikon yang sudah diskalakan
       iconSize: scaledIconSize,
-      icon: const Icon(Icons.more_vert), // Ikon titik tiga
+      icon: const Icon(Icons.more_vert),
+      // MENYAMAKAN LEBAR MAKSIMAL kontainer popup menu sesuai standar diskusi
+      constraints: const BoxConstraints(minWidth: 200, maxWidth: 280),
       onSelected: (value) {
         if (value == 'edit_date' && onDateChange != null) onDateChange!();
         if (value == 'edit_code' && onCodeChange != null) onCodeChange!();
@@ -47,100 +46,89 @@ class PointEditPopupMenu extends StatelessWidget {
         if (!isFinished) {
           if (onDateChange != null) {
             menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'edit_date',
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_month_outlined),
-                    SizedBox(width: 8),
-                    Text('Ubah Tanggal'),
-                  ],
-                ),
+              _buildMenuItem(
+                'edit_date',
+                Icons.calendar_month_outlined,
+                'Ubah Tanggal',
               ),
             );
           }
           if (onCodeChange != null) {
             menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'edit_code',
-                child: Row(
-                  children: [
-                    Icon(Icons.repeat_outlined),
-                    SizedBox(width: 8),
-                    Text('Ubah Kode Repetisi'),
-                  ],
-                ),
+              _buildMenuItem(
+                'edit_code',
+                Icons.repeat_outlined,
+                'Ubah Kode Repetisi',
               ),
             );
           }
           if (onRename != null) {
             menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'rename',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined),
-                    SizedBox(width: 8),
-                    Text('Ubah Nama'),
-                  ],
-                ),
-              ),
+              _buildMenuItem('rename', Icons.edit_outlined, 'Ubah Nama'),
             );
           }
         }
 
-        menuItems.add(const PopupMenuDivider());
+        menuItems.add(const PopupMenuDivider(height: 8));
 
         if (!isFinished) {
           if (onMarkAsFinished != null) {
             menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'finish',
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle_outline),
-                    SizedBox(width: 8),
-                    Text('Tandai Selesai'),
-                  ],
-                ),
+              _buildMenuItem(
+                'finish',
+                Icons.check_circle_outline,
+                'Tandai Selesai',
               ),
             );
           }
         } else {
           if (onReactivate != null) {
             menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'reactivate',
-                child: Row(
-                  children: [
-                    Icon(Icons.replay),
-                    SizedBox(width: 8),
-                    Text('Aktifkan Lagi'),
-                  ],
-                ),
-              ),
+              _buildMenuItem('reactivate', Icons.replay, 'Aktifkan Lagi'),
             );
           }
         }
 
         if (onDelete != null) {
-          menuItems.add(const PopupMenuDivider());
+          menuItems.add(const PopupMenuDivider(height: 8));
           menuItems.add(
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Hapus', style: TextStyle(color: Colors.red)),
-                ],
-              ),
+            _buildMenuItem(
+              'delete',
+              Icons.delete_outline,
+              'Hapus',
+              color: Colors.red,
             ),
           );
         }
 
         return menuItems;
       },
+    );
+  }
+
+  // Fungsi helper pembentuk item dengan tinggi 40, ukuran icon 20, dan ukuran font teks 14 (Sama seperti Discussion)
+  PopupMenuItem<String> _buildMenuItem(
+    String value,
+    IconData icon,
+    String text, {
+    Color? color,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      height: 40, // Tinggi item menu diskusi
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20), // Ukuran ikon menu diskusi
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+            ), // Ukuran font menu diskusi
+          ),
+        ],
+      ),
     );
   }
 }
