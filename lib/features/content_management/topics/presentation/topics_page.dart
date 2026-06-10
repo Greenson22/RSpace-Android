@@ -117,17 +117,43 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     final topicsPath = await provider.getTopicsPath();
     final folderPath = path.join(topicsPath, topic.name);
+
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ChangeNotifierProvider(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 450),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, anim, secAnim) => ChangeNotifierProvider(
           create: (_) => SubjectProvider(folderPath),
           child: SubjectsPage(topicName: topic.name),
         ),
+        transitionsBuilder: (context, anim, secAnim, child) {
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(parent: anim, curve: Curves.easeInOutCubic),
+            ),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+                CurvedAnimation(parent: anim, curve: Curves.easeInOutCubic),
+              ),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 1.0, end: 1.05).animate(
+                  CurvedAnimation(
+                    parent: secAnim,
+                    curve: Curves.easeInOutCubic,
+                  ),
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
       ),
     ).then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        FocusScope.of(context).requestFocus(_focusNode);
+        if (mounted) {
+          FocusScope.of(context).requestFocus(_focusNode);
+        }
       });
     });
   }
