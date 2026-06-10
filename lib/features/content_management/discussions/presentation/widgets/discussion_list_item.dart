@@ -21,6 +21,8 @@ import '../../../subjects/presentation/subjects_page.dart';
 import '../dialogs/move_discussion_dialog.dart';
 import '../dialogs/html_file_picker_dialog.dart';
 import '../dialogs/edit_dialogs.dart';
+// Import berkas rujukan konstanta terpusat Anda
+import '../../../../../core/constants/app_ui_constants.dart';
 
 class DiscussionListItem extends StatelessWidget {
   final Discussion discussion;
@@ -512,6 +514,8 @@ class DiscussionListItem extends StatelessWidget {
         ? mainThemeColor.withOpacity(0.15)
         : (isFinished ? theme.disabledColor.withOpacity(0.1) : theme.cardColor);
 
+    final bool isPointsVisible = arePointsVisible[index] ?? false;
+
     return Card(
       elevation: isFinished ? 1 : 2,
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -709,7 +713,7 @@ class DiscussionListItem extends StatelessWidget {
                             !provider.isSelectionMode)
                           IconButton(
                             icon: Icon(
-                              (arePointsVisible[index] ?? false)
+                              isPointsVisible
                                   ? (isPointReorderMode
                                         ? Icons.check
                                         : Icons.expand_less)
@@ -731,16 +735,27 @@ class DiscussionListItem extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (discussion.points.isNotEmpty &&
-                      (arePointsVisible[index] ?? false))
+                  if (discussion.points.isNotEmpty && isPointsVisible)
                     const Divider(height: 1, indent: 12, endIndent: 12),
+                  // Menerapkan ekspansi transisi halus menggunakan AnimatedCrossFade
                   if (discussion.points.isNotEmpty)
-                    Visibility(
-                      visible: arePointsVisible[index] ?? false,
-                      child: DiscussionPointList(
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox(
+                        width: double.infinity,
+                        height: 0,
+                      ),
+                      secondChild: DiscussionPointList(
                         discussion: discussion,
                         isReorderMode: isPointReorderMode,
                       ),
+                      crossFadeState: isPointsVisible
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: AppThemeTokens.pageTransitionIn,
+                      reverseDuration: AppThemeTokens.pageTransitionOut,
+                      firstCurve: AppThemeTokens.animationCurve,
+                      secondCurve: AppThemeTokens.animationCurve,
+                      sizeCurve: AppThemeTokens.animationCurve,
                     ),
                 ],
               ),
