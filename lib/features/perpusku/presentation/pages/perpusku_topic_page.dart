@@ -278,7 +278,7 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
     );
   }
 
-  // ==> FUNGSI UTK DIALOG EDIT TOPIK (TANPA ICON)
+  // ==> FUNGSI UTK DIALOG EDIT TOPIK (TANPA ICON) - TERBARU & FIX DIALOG STUCK
   void _showRenameTopicDialog(
     BuildContext context,
     PerpuskuProvider provider,
@@ -302,17 +302,22 @@ class _PerpuskuTopicViewState extends State<_PerpuskuTopicView> {
           ),
           TextButton(
             onPressed: () async {
-              if (controller.text.isNotEmpty && controller.text != oldName) {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty && newName != oldName) {
+                // Tutup dialog terlebih dahulu agar UI tidak stuck
+                Navigator.pop(ctx);
+
                 try {
-                  await provider.renameTopic(oldName, controller.text);
-                  if (context.mounted) Navigator.pop(ctx);
+                  await provider.renameTopic(oldName, newName);
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString()),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               } else {
                 Navigator.pop(ctx);
