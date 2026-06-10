@@ -1,4 +1,5 @@
 // lib/features/perpusku/presentation/pages/perpusku_file_list_page.dart
+import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
@@ -70,13 +71,20 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
     }
   }
 
-  // ==> FUNGSI UTK DIALOG EDIT NAMA FILE (HTML / MD)
   void _showRenameFileDialog(
     BuildContext context,
     PerpuskuProvider provider,
     String oldFileName,
   ) {
-    final controller = TextEditingController(text: oldFileName);
+    // 1. Ekstrak ekstensi asli file (.md atau .html) dan nama utamanya saja
+    final extension = path.extension(
+      oldFileName,
+    ); // Menghasilkan '.md' atau '.html'
+    final oldMainName = path.basenameWithoutExtension(oldFileName);
+
+    // 2. Tampilkan hanya nama utama di dalam TextField agar ekstensi tidak bisa dirusak pengguna
+    final controller = TextEditingController(text: oldMainName);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -84,9 +92,14 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Nama Baru File',
-            hintText: 'contoh_file.html atau materi.md',
+            // Berikan teks bantuan yang menunjukkan ekstensi file terkunci
+            suffixText: extension,
+            suffixStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
           ),
         ),
         actions: [
@@ -96,15 +109,20 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
           ),
           TextButton(
             onPressed: () async {
-              final newFileName = controller.text.trim();
-              if (newFileName.isNotEmpty && newFileName != oldFileName) {
+              final newMainName = controller.text.trim();
+
+              if (newMainName.isNotEmpty && newMainName != oldMainName) {
                 // Tutup dialog terlebih dahulu agar UI tidak stuck
                 Navigator.pop(ctx);
+
+                // 3. Gabungkan kembali nama utama baru dengan ekstensi aslinya
+                final newFileNameWithExt = '$newMainName$extension';
+
                 try {
                   await provider.renameFile(
                     subjectPath: widget.subject.path,
                     oldFileName: oldFileName,
-                    newFileName: newFileName,
+                    newFileName: newFileNameWithExt,
                   );
                 } catch (e) {
                   if (context.mounted) {
