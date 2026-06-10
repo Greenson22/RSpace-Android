@@ -138,3 +138,32 @@ Future<bool> showRepetitionCodeUpdateConfirmationDialog({
       ) ??
       false;
 }
+
+/// ==> DIALOG BARU: Konfirmasi sebelum menandai diskusi selesai <==
+Future<bool> showFinishDiscussionConfirmationDialog({
+  required BuildContext context,
+  required String discussionName,
+}) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Tandai Selesai'),
+            content: Text(
+              'Apakah Anda yakin ingin menandai diskusi "$discussionName" sebagai selesai?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Selesai'),
+              ),
+            ],
+          );
+        },
+      ) ??
+      false;
+}

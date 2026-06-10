@@ -388,9 +388,20 @@ class DiscussionListItem extends StatelessWidget {
     }
   }
 
-  void _markAsFinished(BuildContext context, DiscussionProvider provider) {
-    provider.markAsFinished(discussion);
-    _showSnackBar(context, 'Diskusi ditandai selesai.');
+  void _markAsFinished(
+    BuildContext context,
+    DiscussionProvider provider,
+  ) async {
+    // Sekarang Anda bisa menggunakan await dengan aman
+    final bool confirmed = await showFinishDiscussionConfirmationDialog(
+      context: context,
+      discussionName: discussion.discussion,
+    );
+
+    if (confirmed && context.mounted) {
+      provider.markAsFinished(discussion);
+      _showSnackBar(context, 'Diskusi ditandai selesai.');
+    }
   }
 
   void _reactivateDiscussion(
