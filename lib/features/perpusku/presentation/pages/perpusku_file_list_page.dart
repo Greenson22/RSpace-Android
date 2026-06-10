@@ -70,6 +70,107 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
     }
   }
 
+  // ==> FUNGSI UTK DIALOG EDIT NAMA FILE (HTML / MD)
+  void _showRenameFileDialog(
+    BuildContext context,
+    PerpuskuProvider provider,
+    String oldFileName,
+  ) {
+    final controller = TextEditingController(text: oldFileName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ubah Nama File'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nama Baru File',
+            hintText: 'contoh_file.html atau materi.md',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newFileName = controller.text.trim();
+              if (newFileName.isNotEmpty && newFileName != oldFileName) {
+                // Tutup dialog terlebih dahulu agar UI tidak stuck
+                Navigator.pop(ctx);
+                try {
+                  await provider.renameFile(
+                    subjectPath: widget.subject.path,
+                    oldFileName: oldFileName,
+                    newFileName: newFileName,
+                  );
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              } else {
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==> FUNGSI UTK DIALOG HAPUS FILE
+  void _showDeleteFileDialog(
+    BuildContext context,
+    PerpuskuProvider provider,
+    String fileName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus File'),
+        content: Text('Apakah Anda yakin ingin menghapus file "$fileName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              // Tutup dialog terlebih dahulu agar UI tidak stuck
+              Navigator.pop(ctx);
+              try {
+                await provider.deleteFile(
+                  subjectPath: widget.subject.path,
+                  fileName: fileName,
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _provider = Provider.of<PerpuskuProvider>(context);
@@ -143,7 +244,6 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
                           ),
                         ),
                         child: ListTile(
-                          // MODIFIKASI: Membedakan icon dan warnanya secara dinamis berdasarkan ekstensi file (.md atau .html)
                           leading: Builder(
                             builder: (context) {
                               final isMarkdown = file.path
@@ -187,6 +287,69 @@ class __PerpuskuFileListViewState extends State<_PerpuskuFileListView> {
                               );
                             }
                           },
+                          // ==> MENAMBAHKAN POPUP MENU BUTTON DI SINI
+                          trailing: Theme(
+                            data: Theme.of(context).copyWith(
+                              iconTheme: IconThemeData(
+                                color: subjectThemeColor.withOpacity(0.7),
+                              ),
+                            ),
+                            child: PopupMenuButton<String>(
+                              iconSize: 20,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _showRenameFileDialog(
+                                    context,
+                                    _provider,
+                                    file.fileName,
+                                  );
+                                } else if (value == 'delete') {
+                                  _showDeleteFileDialog(
+                                    context,
+                                    _provider,
+                                    file.fileName,
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, size: 18),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Ubah Nama File',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Hapus',
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       );
                     },

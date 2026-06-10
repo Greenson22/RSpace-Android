@@ -1,6 +1,7 @@
 // lib/features/perpusku/application/perpusku_provider.dart
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:my_aplication/features/content_management/topics/services/topic_service.dart';
@@ -163,6 +164,98 @@ class PerpuskuProvider with ChangeNotifier {
 
       // 3. Muat ulang data list subjek agar UI sinkron
       await fetchSubjects(topicPath);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> renameFile({
+    required String subjectPath,
+    required String oldFileName,
+    required String newFileName,
+  }) async {
+    _setLoading(true);
+    try {
+      final oldFilePath = path.join(subjectPath, oldFileName);
+      final newFilePath = path.join(subjectPath, newFileName);
+
+      final oldFile = File(oldFilePath);
+      final newFile = File(newFilePath);
+
+      if (await oldFile.exists()) {
+        if (await newFile.exists()) {
+          throw Exception('File dengan nama "$newFileName" sudah ada.');
+        }
+        // 1. Ganti nama berkas fisik
+        await oldFile.rename(newFile.path);
+
+        // 2. Perbarui judul di dalam metadata.json jika ada
+        final metadataFile = File(path.join(subjectPath, 'metadata.json'));
+        if (await metadataFile.exists()) {
+          final jsonString = await metadataFile.readAsString();
+          if (jsonString.isNotEmpty) {
+            final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+            final content = jsonData['content'] as List<dynamic>? ?? [];
+
+            for (var item in content) {
+              if (item['nama_file'] == oldFileName) {
+                item['nama_file'] = newFileName;
+                // Opsional: Jika ingin judul UI ikut berubah menyamai nama file baru tanpa ekstensi
+                final ext = path.extension(newFileName);
+                item['judul'] = path.basenameWithoutExtension(newFileName);
+                break;
+              }
+            }
+            const encoder = JsonEncoder.withIndent('  ');
+            await metadataFile.writeAsString(encoder.convert(jsonData));
+          }
+        }
+      } else {
+        throw Exception('File lama tidak ditemukan.');
+      }
+
+      // 3. Muat ulang daftar file di UI
+      await fetchFiles(subjectPath);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> deleteFile({
+    required String subjectPath,
+    required String fileName,
+  }) async {
+    _setLoading(true);
+    try {
+      final filePath = path.join(subjectPath, fileName);
+      final file = File(filePath);
+
+      if (await file.exists()) {
+        // 1. Hapus berkas fisik
+        await file.delete();
+
+        // 2. Hapus entri dari metadata.json jika ada
+        final metadataFile = File(path.join(subjectPath, 'metadata.json'));
+        if (await metadataFile.exists()) {
+          final jsonString = await metadataFile.readAsString();
+          if (jsonString.isNotEmpty) {
+            final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+            final content = jsonData['content'] as List<dynamic>? ?? [];
+
+            content.removeWhere((item) => item['nama_file'] == fileName);
+
+            const encoder = JsonEncoder.withIndent('  ');
+            await metadataFile.writeAsString(encoder.convert(jsonData));
+          }
+        }
+      }
+
+      // 3. Muat ulang daftar file di UI
+      await fetchFiles(subjectPath);
     } catch (e) {
       rethrow;
     } finally {
