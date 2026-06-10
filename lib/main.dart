@@ -18,9 +18,7 @@ void main() async {
 
     // Pengaturan awal jendela (bisa disesuaikan ukurannya)
     WindowOptions windowOptions = const WindowOptions(
-      // size: Size(1280, 720),
       minimumSize: Size(600, 600),
-      // center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle:
