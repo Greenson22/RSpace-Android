@@ -424,50 +424,141 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
+
         final topicsToShow = provider.filteredTopics;
         if (topicsToShow.isEmpty) {
           return _buildEmptyState(provider);
         }
+
         final isReorderActive =
             provider.isReorderModeEnabled && provider.searchQuery.isEmpty;
-        return ReorderableListView.builder(
+
+        // Memisahkan list topik normal dan tersembunyi
+        final normalTopics = topicsToShow.where((t) => !t.isHidden).toList();
+        final hiddenTopics = topicsToShow.where((t) => t.isHidden).toList();
+
+        // Jika mode reorder aktif, gunakan ReorderableListView bawaan tanpa pemisah garis
+        // karena reorder memerlukan indeks asli yang konsisten.
+        if (isReorderActive) {
+          return ReorderableListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            itemCount: topicsToShow.length,
+            buildDefaultDragHandles: false,
+            proxyDecorator:
+                (Widget child, int index, Animation<double> animation) {
+                  return Material(
+                    elevation: 4,
+                    color: Colors.transparent,
+                    child: child,
+                  );
+                },
+            itemBuilder: (context, index) {
+              final topic = topicsToShow[index];
+              return TopicListTile(
+                key: ValueKey(topic.name),
+                topic: topic,
+                index: index,
+                isFocused: _isKeyboardActive && index == _focusedIndex,
+                onTap: null,
+                onEdit: () => _editTopic(context, topic),
+                onDelete: () => _deleteTopic(context, topic),
+                onToggleVisibility: () => _toggleVisibility(context, topic),
+                isReorderActive: isReorderActive,
+              );
+            },
+            onReorder: (oldIndex, newIndex) {
+              provider.reorderTopics(oldIndex, newIndex);
+            },
+          );
+        }
+
+        // Jika mode normal (bukan reorder), tampilkan ListView biasa dengan garis pembatas keterangan
+        return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
-          itemCount: topicsToShow.length,
-          buildDefaultDragHandles: false,
-          proxyDecorator:
-              (Widget child, int index, Animation<double> animation) {
-                return Material(
-                  elevation: 4,
-                  color: Colors.transparent,
-                  child: child,
-                );
-              },
+          itemCount:
+              normalTopics.length +
+              (hiddenTopics.isNotEmpty ? 1 + hiddenTopics.length : 0),
           itemBuilder: (context, index) {
-            final topic = topicsToShow[index];
+            // 1. Bagian Topik Normal
+            if (index < normalTopics.length) {
+              final topic = normalTopics[index];
+              return TopicListTile(
+                key: ValueKey(topic.name),
+                topic: topic,
+                index: index,
+                isFocused: _isKeyboardActive && index == _focusedIndex,
+                onTap: () {
+                  final Color currentWarna = _getThemeColorFromTitle(
+                    topic.name,
+                  );
+                  _navigateToSubjectsPage(context, topic, currentWarna);
+                },
+                onEdit: () => _editTopic(context, topic),
+                onDelete: () => _deleteTopic(context, topic),
+                onToggleVisibility: () => _toggleVisibility(context, topic),
+                isReorderActive: false,
+              );
+            }
+
+            // 2. Bagian Garis Pembatas Keterangan Tersembunyi
+            final separatorIndex = normalTopics.length;
+            if (index == separatorIndex) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16.0,
+                  horizontal: 16.0,
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(child: Divider(thickness: 1)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.visibility_off_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Topik Tersembunyi',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Expanded(child: Divider(thickness: 1)),
+                  ],
+                ),
+              );
+            }
+
+            // 3. Bagian Topik Tersembunyi
+            final hiddenIndex = index - normalTopics.length - 1;
+            final topic = hiddenTopics[hiddenIndex];
+            // Menghitung index global untuk keperluan fokus keyboard jika dibutuhkan
+            final globalIndex = normalTopics.length + hiddenIndex;
+
             return TopicListTile(
               key: ValueKey(topic.name),
               topic: topic,
-              index: index,
-              isFocused: _isKeyboardActive && index == _focusedIndex,
-              onTap: isReorderActive
-                  ? null
-                  : () {
-                      // Ambil warna tema spesifik dari topik yang diklik
-                      final Color currentWarna = _getThemeColorFromTitle(
-                        topic.name,
-                      );
-                      _navigateToSubjectsPage(context, topic, currentWarna);
-                    },
+              index: globalIndex,
+              isFocused: _isKeyboardActive && globalIndex == _focusedIndex,
+              onTap: () {
+                final Color currentWarna = _getThemeColorFromTitle(topic.name);
+                _navigateToSubjectsPage(context, topic, currentWarna);
+              },
               onEdit: () => _editTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onToggleVisibility: () => _toggleVisibility(context, topic),
-              isReorderActive: isReorderActive,
+              isReorderActive: false,
             );
-          },
-          onReorder: (oldIndex, newIndex) {
-            if (isReorderActive) {
-              provider.reorderTopics(oldIndex, newIndex);
-            }
           },
         );
       },
