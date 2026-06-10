@@ -30,15 +30,30 @@ class TopicService {
         .map((item) => path.basename(item.path))
         .toList();
 
+    // ==> AMBIL PATH UTAMA PERPUSKU UNTUK COCOKKAN INTEGRASI FOLDER FISIK <==
+    final perpuskuDataPath = await _pathService.perpuskuDataPath;
+    final perpuskuTopicsBasePath = path.join(
+      perpuskuDataPath,
+      'file_contents',
+      'topics',
+    );
+
     List<Topic> topics = [];
     for (var name in folderNames) {
       final config = await _getTopicConfig(name);
+
+      // ==> LOGIKA PEMERIKSAAN HUBUNGAN FOLDER PERPUSKU <==
+      final perpuskuFolder = Directory(path.join(perpuskuTopicsBasePath, name));
+      final bool isLinked = await perpuskuFolder.exists();
+
       topics.add(
         Topic(
           name: name,
           icon: config['icon'] as String? ?? _defaultIcon,
           position: config['position'] as int? ?? -1,
-          isHidden: config['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
+          isHidden: config['isHidden'] as bool? ?? false,
+          isPerpuskuLinked:
+              isLinked, // ==> SET STATUS TINGKAT KETERHUBUNGAN DI SINI
         ),
       );
     }
@@ -88,7 +103,6 @@ class TopicService {
   }
 
   Future<Map<String, dynamic>> _getTopicConfig(String topicName) async {
-    // Menggunakan await untuk mendapatkan configPath
     final configPath = await _pathService.getTopicConfigPath(topicName);
     final configFile = File(configPath);
 
@@ -100,8 +114,7 @@ class TopicService {
           return {
             'icon': jsonData['icon'] as String? ?? _defaultIcon,
             'position': jsonData['position'] as int?,
-            'isHidden':
-                jsonData['isHidden'] as bool? ?? false, // ==> DITAMBAHKAN
+            'isHidden': jsonData['isHidden'] as bool? ?? false,
           };
         }
       } catch (e) {
@@ -112,7 +125,6 @@ class TopicService {
   }
 
   Future<void> _saveTopicConfig(Topic topic) async {
-    // Menggunakan await untuk mendapatkan configPath
     final configPath = await _pathService.getTopicConfigPath(topic.name);
     final configFile = File(configPath);
     try {
@@ -123,7 +135,6 @@ class TopicService {
     }
   }
 
-  // ==> FUNGSI BARU <==
   Future<void> updateTopicVisibility(String topicName, bool isHidden) async {
     final config = await _getTopicConfig(topicName);
     final topic = Topic(
@@ -149,7 +160,6 @@ class TopicService {
   Future<void> addTopic(String topicName) async {
     if (topicName.isEmpty) throw Exception('Nama topik tidak boleh kosong.');
 
-    // Menggunakan await untuk mendapatkan newTopicPath
     final newTopicPath = await _pathService.getTopicPath(topicName);
     final directory = Directory(newTopicPath);
 
@@ -158,7 +168,6 @@ class TopicService {
     }
 
     try {
-      // 1. Buat folder topik di RSpace
       await directory.create();
       final currentTopics = await getTopics();
       final newPosition = currentTopics.length;
@@ -169,7 +178,6 @@ class TopicService {
       );
       await _saveTopicConfig(newTopic);
 
-      // 2. Buat juga folder yang sesuai di PerpusKu/data/file_contents/topics
       try {
         final perpuskuDataPath = await _pathService.perpuskuDataPath;
         final perpuskuTopicPath = path.join(
@@ -183,8 +191,6 @@ class TopicService {
           await perpuskuDirectory.create(recursive: true);
         }
       } catch (e) {
-        // Jika pembuatan folder di PerpusKu gagal, tampilkan pesan error
-        // tapi jangan batalkan pembuatan topik di RSpace.
         debugPrint(
           'Gagal membuat folder pendamping di PerpusKu untuk topik "$topicName": $e',
         );
@@ -194,11 +200,9 @@ class TopicService {
     }
   }
 
-  // >> FUNGSI INI TELAH DIPERBARUI SECARA SIGNIFIKAN <<
   Future<void> renameTopic(String oldName, String newName) async {
     if (newName.isEmpty) throw Exception('Nama baru tidak boleh kosong.');
 
-    // Path untuk RSpace
     final oldRspacePath = await _pathService.getTopicPath(oldName);
     final newRspacePath = await _pathService.getTopicPath(newName);
     final oldRspaceDir = Directory(oldRspacePath);
@@ -210,7 +214,6 @@ class TopicService {
       throw Exception('Topik dengan nama "$newName" sudah ada di RSpace.');
     }
 
-    // Path untuk PerpusKu
     final perpuskuDataPath = await _pathService.perpuskuDataPath;
     final perpuskuTopicsBasePath = path.join(
       perpuskuDataPath,
@@ -222,7 +225,6 @@ class TopicService {
     final oldPerpuskuDir = Directory(oldPerpuskuPath);
 
     try {
-      // 1. Rename folder RSpace dan simpan config baru
       final oldConfig = await _getTopicConfig(oldName);
       await oldRspaceDir.rename(newRspacePath);
       final newTopic = Topic(
@@ -233,7 +235,6 @@ class TopicService {
       );
       await _saveTopicConfig(newTopic);
 
-      // 2. Rename juga folder di PerpusKu jika ada
       if (await oldPerpuskuDir.exists()) {
         if (await Directory(newPerpuskuPath).exists()) {
           debugPrint(
@@ -244,7 +245,6 @@ class TopicService {
         }
       }
 
-      // 3. PERBAIKAN: Update linkedPath di semua subject yang terpengaruh
       final newRspaceDir = Directory(newRspacePath);
       final subjectFiles = newRspaceDir.listSync().whereType<File>().where(
         (file) =>
@@ -265,14 +265,12 @@ class TopicService {
             final subjectFolderName = path.split(oldLinkedPath).last;
             metadata['linkedPath'] = path.join(newName, subjectFolderName);
 
-            // Simpan kembali file JSON dengan metadata yang sudah diperbarui
             const encoder = JsonEncoder.withIndent('  ');
             await subjectFile.writeAsString(encoder.convert(jsonData));
           }
         }
       }
     } catch (e) {
-      // Jika gagal, coba kembalikan nama folder RSpace
       if (!await oldRspaceDir.exists() &&
           await Directory(newRspacePath).exists()) {
         await Directory(newRspacePath).rename(oldRspacePath);

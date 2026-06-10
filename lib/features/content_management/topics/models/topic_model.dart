@@ -5,15 +5,18 @@ class Topic {
   String icon;
   int position;
   bool isHidden;
+  bool isPerpuskuLinked; // ==> TAMBAHKAN PROPERTI BARU DI SINI
 
   Topic({
     required this.name,
     required this.icon,
     required this.position,
     this.isHidden = false,
+    this.isPerpuskuLinked =
+        true, // ==> TAMBAHKAN DI KONSTRUKTOR DENGAN DEFAULT TRUE
   });
 
-  // ==> TAMBAHKAN BLOK KODE DI BAWAH INI <==
+  // ==> BLOK KODE SESUAI PERMINTAAN YANG SUDAH DIPERBARUI
   factory Topic.fromJson(Map<String, dynamic> json) {
     return Topic(
       name: json['name'] as String,
@@ -25,10 +28,13 @@ class Topic {
       isHidden:
           json['isHidden'] as bool? ??
           false, // Beri nilai default jika isHidden null
+      isPerpuskuLinked:
+          json['isPerpuskuLinked'] as bool? ??
+          true, // ==> BERI NILAI DEFAULT TRUE JIKA TIDAK ADA DI JSON
     );
   }
 
-  // Fungsi toConfigJson tidak berubah
+  // Fungsi toConfigJson tidak berubah (karena isPerpuskuLinked dicek dari fisik folder, bukan disimpan)
   Map<String, dynamic> toConfigJson() {
     return {'icon': icon, 'position': position, 'isHidden': isHidden};
   }

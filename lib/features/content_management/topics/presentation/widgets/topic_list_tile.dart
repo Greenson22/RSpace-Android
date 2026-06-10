@@ -86,17 +86,42 @@ class TopicListTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
+
+              // ==> BAGIAN DIPERBARUI: MENDUKUNG INDIKATOR WARNA INTEGRASI PERPUSKU
               Expanded(
-                child: Text(
-                  topic.name,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isHidden ? textColor : mainThemeColor,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        topic.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isHidden ? textColor : mainThemeColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Menampilkan indikator jika folder di Perpusku terputus / hilang
+                    if (!topic.isPerpuskuLinked) ...[
+                      const SizedBox(width: 6),
+                      Tooltip(
+                        message:
+                            'Folder di PerpusKu tidak ditemukan atau tidak sinkron!',
+                        triggerMode: TooltipTriggerMode
+                            .tap, // Mendukung sentuhan di mobile
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.amber.shade800,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+
               if (isReorderActive)
                 ReorderableDragStartListener(
                   index: index,

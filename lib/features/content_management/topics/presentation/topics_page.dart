@@ -421,21 +421,158 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   }
 
   Widget _buildEmptyState(TopicProvider provider) {
+    final Color defaultThemeColor = _themePalettes[0];
+
+    // 1. Kondisi: Memang belum ada topik sama sekali di dalam aplikasi
     if (provider.allTopics.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada topik. Tekan + untuk menambah.'),
-      );
-    }
-    if (provider.filteredTopics.isEmpty && provider.searchQuery.isNotEmpty) {
-      return const Center(child: Text('Topik tidak ditemukan.'));
-    }
-    if (provider.filteredTopics.isEmpty && !provider.showHiddenTopics) {
-      return const Center(
-        child: Text(
-          'Tidak ada topik yang terlihat. Coba tampilkan topik tersembunyi.',
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Ilustrasi lingkaran ikon
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: defaultThemeColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.folder_open_rounded,
+                  size: 80,
+                  color: defaultThemeColor.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Belum Ada Topik',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mulai kelola konten Anda dengan menambahkan topik atau folder baru pertama Anda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Tombol aksi interaktif untuk menambah topik
+              ElevatedButton.icon(
+                onPressed: () => _addTopic(context),
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  'Tambah Topik Pertama',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: defaultThemeColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
+
+    // 2. Kondisi: User sedang mencari sesuatu tapi keyword-nya tidak cocok
+    if (provider.filteredTopics.isEmpty && provider.searchQuery.isNotEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off_rounded,
+                size: 72,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Topik Tidak Ditemukan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Tidak ada hasil yang cocok untuk "${provider.searchQuery}". Coba periksa kembali ejaan Anda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 3. Kondisi: Topik ada, tapi semuanya sedang disembunyikan (Hidden)
+    if (provider.filteredTopics.isEmpty && !provider.showHiddenTopics) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.visibility_off_outlined,
+                size: 72,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Semua Topik Tersembunyi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Aktifkan opsi "Tampilkan Tersembunyi" dari menu pojok kanan atas untuk melihat topik.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              ),
+              const SizedBox(height: 20),
+              TextButton.icon(
+                onPressed: () => provider.toggleShowHidden(),
+                icon: Icon(Icons.visibility, color: defaultThemeColor),
+                label: Text(
+                  'Tampilkan Sekarang',
+                  style: TextStyle(
+                    color: defaultThemeColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return const SizedBox.shrink();
   }
 }
