@@ -11,7 +11,14 @@ import 'utils/subject_actions_handler.dart';
 
 class SubjectsPage extends StatefulWidget {
   final String topicName;
-  const SubjectsPage({super.key, required this.topicName});
+  final Color themeColor; // <--- 1. TAMBAHKAN PROPERTI WARNA TEMA WARISAN
+
+  // 2. UPDATE CONSTRUCTOR UNTUK MENERIMA WARNA
+  const SubjectsPage({
+    super.key,
+    required this.topicName,
+    required this.themeColor, // <--- WAJIB DIISI
+  });
 
   @override
   State<SubjectsPage> createState() => _SubjectsPageState();
@@ -26,24 +33,8 @@ class _SubjectsPageState extends State<SubjectsPage> {
   bool _isKeyboardActive = false;
   Timer? _focusTimer;
 
-  // Daftar palet warna yang konsisten dengan halaman diskusi dan card
-  final List<Color> _themePalettes = [
-    Colors.deepPurple,
-    Colors.blue,
-    Colors.teal,
-    Colors.orange,
-    Colors.pink,
-    Colors.indigo,
-    Colors.green,
-  ];
-
-  // Fungsi pembantu untuk menghasilkan warna dinamis dari teks topicName
-  Color _getThemeColorFromTitle(String title) {
-    if (title.isEmpty) return _themePalettes[0];
-    int hash = title.hashCode;
-    int index = hash.abs() % _themePalettes.length;
-    return _themePalettes[index];
-  }
+  // 3. SEKARANG DAFTAR _themePalettes DAN FUNGSI _getThemeColorFromTitle TELAH DIHAPUS
+  // KARENA KITA MENGGUNAKAN WARNA LANGSUNG DARI widget.themeColor
 
   @override
   void initState() {
@@ -116,21 +107,20 @@ class _SubjectsPageState extends State<SubjectsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<SubjectProvider>(context);
 
-    // 1. Hitung warna dinamis berdasarkan nama topik (topicName) halaman ini
-    final Color dynamicThemeColor = _getThemeColorFromTitle(widget.topicName);
+    // 4. SET VARIABEL WARNA LANGSUNG MENGAMBIL DATA DARI WIDGET INDUKNYA
+    final Color dynamicThemeColor = widget.themeColor;
 
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: _handleKeyEvent,
       child: Scaffold(
-        // 2. Oper variabel dynamicThemeColor ke dalam parameter SubjectsAppBar Anda
         appBar: SubjectsAppBar(
           topicName: widget.topicName,
           isSelectionMode: provider.isSelectionMode,
           isSearching: _isSearching,
           searchController: _searchController,
           backgroundColor:
-              dynamicThemeColor, // <--- Ditambahkan/Disesuaikan di komponen widgetnya nanti
+              dynamicThemeColor, // Menggunakan warna tema yang konsisten
           onToggleSearch: () {
             setState(() {
               _isSearching = !_isSearching;
@@ -165,7 +155,6 @@ class _SubjectsPageState extends State<SubjectsPage> {
                     );
                   }
                 },
-                // DIUBAH: Menyatukan onRename dan onIconChange menjadi onEdit tunggal
                 onEdit: (ctx, subject) =>
                     SubjectActionsHandler.renameSubject(ctx, subject),
                 onDelete: (ctx, subject) =>
@@ -201,7 +190,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
                 onPressed: () => SubjectActionsHandler.addSubject(context),
                 tooltip: 'Tambah Subject',
                 backgroundColor:
-                    dynamicThemeColor, // 3. Setel warna FAB agar serasi dengan AppBar
+                    dynamicThemeColor, // Setel warna FAB agar serasi dengan AppBar
                 foregroundColor: Colors.white,
                 child: const Icon(Icons.add),
               ),

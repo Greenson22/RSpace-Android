@@ -47,6 +47,25 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
     Colors.green,
   ];
 
+  // Fungsi pembantu untuk menghasilkan warna dinamis dari teks nama topik (Sama seperti di TopicListTile)
+  Color _getThemeColorFromTitle(String title) {
+    if (title.isEmpty) return Colors.deepPurple;
+    final List<Color> themePalettes = [
+      Colors.deepPurple,
+      Colors.blue,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber.shade900,
+      Colors.green.shade700,
+      Colors.cyan.shade800,
+      Colors.orange.shade800,
+    ];
+    final int hash = title.hashCode;
+    final int index = hash.abs() % themePalettes.length;
+    return themePalettes[index];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -102,9 +121,12 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
           listen: false,
         );
         if (_focusedIndex < topicProvider.filteredTopics.length) {
+          final selectedTopic = topicProvider.filteredTopics[_focusedIndex];
+          final targetColor = _getThemeColorFromTitle(selectedTopic.name);
           _navigateToSubjectsPage(
             context,
-            topicProvider.filteredTopics[_focusedIndex],
+            selectedTopic,
+            targetColor, // Kirim warna saat navigasi via keyboard Enter
           );
         }
       }
@@ -114,6 +136,7 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
   Future<void> _navigateToSubjectsPage(
     BuildContext context,
     Topic topic,
+    Color themeColor, // Tambahkan parameter warna di sini
   ) async {
     final provider = Provider.of<TopicProvider>(context, listen: false);
     final topicsPath = await provider.getTopicsPath();
@@ -126,7 +149,11 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
         reverseTransitionDuration: AppThemeTokens.pageTransitionOut,
         pageBuilder: (context, anim, secAnim) => ChangeNotifierProvider(
           create: (_) => SubjectProvider(folderPath),
-          child: SubjectsPage(topicName: topic.name),
+          child: SubjectsPage(
+            topicName: topic.name,
+            themeColor:
+                themeColor, // Oper warna ke halaman tujuan (SubjectsPage)
+          ),
         ),
         transitionsBuilder: (context, anim, secAnim, child) {
           return FadeTransition(
@@ -424,7 +451,13 @@ class _TopicsPageContentState extends State<_TopicsPageContent> {
               isFocused: _isKeyboardActive && index == _focusedIndex,
               onTap: isReorderActive
                   ? null
-                  : () => _navigateToSubjectsPage(context, topic),
+                  : () {
+                      // Ambil warna tema spesifik dari topik yang diklik
+                      final Color currentWarna = _getThemeColorFromTitle(
+                        topic.name,
+                      );
+                      _navigateToSubjectsPage(context, topic, currentWarna);
+                    },
               onEdit: () => _editTopic(context, topic),
               onDelete: () => _deleteTopic(context, topic),
               onToggleVisibility: () => _toggleVisibility(context, topic),
