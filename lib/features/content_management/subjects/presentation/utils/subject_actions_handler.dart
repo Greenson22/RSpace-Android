@@ -17,6 +17,8 @@ import 'package:my_aplication/features/content_management/discussions/providers/
 import 'package:my_aplication/features/content_management/discussions/presentation/discussions_page.dart';
 import 'package:my_aplication/features/content_management/timeline/presentation/discussion_timeline_page.dart';
 import 'package:my_aplication/features/html_editor/presentation/pages/html_editor_page.dart';
+// Import berkas rujukan konstanta terpusat Anda
+import '../../../../../core/constants/app_ui_constants.dart';
 
 class SubjectActionsHandler {
   static void showSnackBar(
@@ -286,7 +288,6 @@ class SubjectActionsHandler {
     );
   }
 
-  //  KODE YANG SUDAH DIPERBAIKI
   static Future<void> renameSubject(
     BuildContext context,
     Subject subject,
@@ -300,16 +301,12 @@ class SubjectActionsHandler {
       initialIcon: subject.icon,
       onSave: (newName, newIcon) async {
         try {
-          // 1. Jika ikon berubah, perbarui ikon terlebih dahulu
           if (subject.icon != newIcon) {
             await provider.updateSubjectIcon(subject.name, newIcon);
           }
-
-          // 2. Jika nama diubah, baru jalankan fungsi rename file JSON
           if (subject.name != newName) {
             await provider.renameSubject(subject.name, newName);
           }
-
           if (context.mounted) {
             showSnackBar(context, 'Subject berhasil diubah.');
           }
@@ -547,10 +544,14 @@ class SubjectActionsHandler {
       '${subject.name}.json',
     );
     if (!context.mounted) return;
+
+    // Menerapkan PageRouteBuilder dengan transisi shared axis dan AppThemeTokens
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (newContext) => ChangeNotifierProvider(
+      PageRouteBuilder(
+        transitionDuration: AppThemeTokens.pageTransitionIn,
+        reverseTransitionDuration: AppThemeTokens.pageTransitionOut,
+        pageBuilder: (newContext, anim, secAnim) => ChangeNotifierProvider(
           create: (_) => DiscussionProvider(
             jsonFilePath,
             linkedPath: currentLinkedPath,
@@ -561,6 +562,33 @@ class SubjectActionsHandler {
             linkedPath: currentLinkedPath,
           ),
         ),
+        transitionsBuilder: (context, anim, secAnim, child) {
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: anim,
+                curve: AppThemeTokens.animationCurve,
+              ),
+            ),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: anim,
+                  curve: AppThemeTokens.animationCurve,
+                ),
+              ),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 1.0, end: 1.05).animate(
+                  CurvedAnimation(
+                    parent: secAnim,
+                    curve: AppThemeTokens.animationCurve,
+                  ),
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
       ),
     ).then((_) {
       if (context.mounted) subjectProvider.fetchSubjects();
@@ -587,17 +615,49 @@ class SubjectActionsHandler {
       subjectProvider.topicPath,
       '${subject.name}.json',
     );
+
+    // Menerapkan PageRouteBuilder dengan transisi shared axis yang sama untuk Linimasa
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: subjectProvider,
-          child: DiscussionTimelinePage(
-            subjectName: subject.name,
-            discussions: subject.discussions,
-            subjectJsonPath: jsonFilePath,
-          ),
-        ),
+      PageRouteBuilder(
+        transitionDuration: AppThemeTokens.pageTransitionIn,
+        reverseTransitionDuration: AppThemeTokens.pageTransitionOut,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ChangeNotifierProvider.value(
+              value: subjectProvider,
+              child: DiscussionTimelinePage(
+                subjectName: subject.name,
+                discussions: subject.discussions,
+                subjectJsonPath: jsonFilePath,
+              ),
+            ),
+        transitionsBuilder: (context, anim, secAnim, child) {
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: anim,
+                curve: AppThemeTokens.animationCurve,
+              ),
+            ),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: anim,
+                  curve: AppThemeTokens.animationCurve,
+                ),
+              ),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 1.0, end: 1.05).animate(
+                  CurvedAnimation(
+                    parent: secAnim,
+                    curve: AppThemeTokens.animationCurve,
+                  ),
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
       ),
     ).then((_) {
       subjectProvider.fetchSubjects();
