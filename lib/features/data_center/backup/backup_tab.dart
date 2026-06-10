@@ -194,11 +194,12 @@ class _BackupTabState extends State<BackupTab> {
     }
   }
 
-  // --- LOGIKA EKSPOR LOKAL KE FOLDER EKSTERNAL/KUSTOM ---
   void _exportBackupToCustomFolder(File fileBackup) async {
     try {
       final String namaFile = fileBackup.path.split('/').last;
+
       if (Platform.isLinux) {
+        // Tetap pertahankan logika Linux Anda yang sudah berjalan baik
         String? lokasiSimpan = await FilePicker.saveFile(
           dialogTitle: 'Simpan Berkas Cadangan',
           fileName: namaFile,
@@ -215,24 +216,43 @@ class _BackupTabState extends State<BackupTab> {
             ),
           );
         }
-      } else {
-        String? direktoriPilihan = await FilePicker.getDirectoryPath(
-          dialogTitle: 'Pilih Folder Tujuan Penyimpanan',
+      } else if (Platform.isAndroid || Platform.isIOS) {
+        // ======= SOLUSI UNTUK ANDROID & IOS =======
+        setState(() => _isLoading = true);
+
+        // Menggunakan share_plus untuk mengekspor file secara aman
+        final result = await Share.shareXFiles(
+          [XFile(fileBackup.path)],
+          text: 'Ekspor Berkas Cadangan Aplikasi',
+          subject: namaFile,
         );
-        if (direktoriPilihan != null) {
-          final String pathTargetBaru = '$direktoriPilihan/$namaFile';
-          await fileBackup.copy(pathTargetBaru);
-          if (!mounted) return;
+
+        setState(() => _isLoading = false);
+
+        if (!mounted) return;
+
+        // Di Android, jika user menutup share sheet tanpa membatalkan secara ekstrem,
+        // statusnya biasanya sukses, atau Anda bisa cek status kembaliannya.
+        if (result.status == ShareResultStatus.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Berkas sukses disalin ke folder kustom!'),
+              content: Text('Berkas cadangan berhasil diekspor!'),
               backgroundColor: Colors.teal,
             ),
           );
         }
       }
     } catch (e) {
+      setState(() => _isLoading = false);
       debugPrint("Gagal mengekspor berkas backup ke folder kustom: $e");
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengekspor berkas: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 

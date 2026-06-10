@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'RSpace Next',
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
