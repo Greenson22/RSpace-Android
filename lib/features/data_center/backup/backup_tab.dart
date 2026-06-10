@@ -755,7 +755,7 @@ class _BackupTabState extends State<BackupTab> {
                                         color: Colors.indigo,
                                         size: 20,
                                       ),
-                                      title: Text('Simpan ke Folder Kustom'),
+                                      title: Text('Simpan'),
                                       contentPadding: EdgeInsets.zero,
                                       dense: true,
                                     ),
