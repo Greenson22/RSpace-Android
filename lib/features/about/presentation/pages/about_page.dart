@@ -1,5 +1,7 @@
 // lib/features/about/presentation/pages/about_page.dart
 
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,16 +19,57 @@ class _AboutPageState extends State<AboutPage>
   String _version = '...';
   late TabController _tabController;
 
+  // State untuk manajemen rotasi ayat otomatis
+  Timer? _verseTimer;
+  int _currentVerseIndex = 0;
+
+  // Daftar materi ayat Alkitab harian
+  final List<Map<String, String>> _verses = [
+    {
+      'text':
+          '"Serahkanlah perbuatanmu kepada TUHAN,\nmaka terlaksanalah segala rencanamu."',
+      'ref': '— Amsal 16:3 —',
+    },
+    {
+      'text':
+          '"Bukan kepada kami, ya TUHAN, bukan kepada kami,\ntetapi kepada nama-Mulah beri kemuliaan,\noleh karena kasih-Mu, oleh karena setia-Mu!"',
+      'ref': '— Mazmur 115:1 —',
+    },
+    {
+      'text':
+          '"Apapun juga yang kamu perbuat,\nperbuatlah dengan segenap hatimu\nseperti untuk Tuhan dan bukan untuk manusia."',
+      'ref': '— Kolose 3:23 —',
+    },
+    {
+      'text':
+          '"Percayalah kepada TUHAN dengan segenap hatimu,\ndan janganlah bersandar kepada pengertianmu sendiri.\nAkuilah Dia dalam segala lakumu,\nmaka Ia akan meluruskan jalanmu."',
+      'ref': '— Amsal 3:5-6 —',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _initPackageInfo();
+
+    // Mengatur indeks awal ayat secara acak saat About dibuka
+    _currentVerseIndex = Random().nextInt(_verses.length);
+
+    // Menjalankan rotasi perubahan ayat setiap 15 detik secara berkala
+    _verseTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentVerseIndex = (_currentVerseIndex + 1) % _verses.length;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _verseTimer?.cancel(); // Mencegah memory leak akibat timer aktif
     super.dispose();
   }
 
@@ -149,13 +192,119 @@ class _AboutPageState extends State<AboutPage>
     );
   }
 
-  // TAB 2: INFORMASI PENGEMBANG (TETAP UTUH & TIDAK DIHAPUS)
+  // TAB 2: INFORMASI PENGEMBANG (TETAP UTUH & DILENGKAPI KOTAK AYAT & SYUKUR)
   Widget _buildDeveloperTab(BuildContext context, TextTheme textTheme) {
+    final theme = Theme.of(context);
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    final primaryColor = theme.primaryColor;
+    final activeVerse = _verses[_currentVerseIndex];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          // ========================================================
+          // CARD DEDIKASI DENGAN SISTEM ROTASI AYAT OTOMATIS & ACAK
+          // ========================================================
+          Card(
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 24.0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: primaryColor.withOpacity(0.2),
+                width: 1.5,
+              ),
+            ),
+            color: primaryColor.withOpacity(0.05),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.format_quote_rounded,
+                    size: 32 * textScaleFactor,
+                    color: primaryColor.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // AnimatedSwitcher untuk transisi fade saat ayat berganti
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    child: Column(
+                      key: ValueKey<int>(_currentVerseIndex),
+                      children: [
+                        Text(
+                          activeVerse['text']!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14 * textScaleFactor,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w600,
+                            color: theme.textTheme.bodyLarge?.color,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          activeVerse['ref']!,
+                          style: TextStyle(
+                            fontSize: 12 * textScaleFactor,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14.0),
+                    child: Divider(
+                      indent: 40,
+                      endIndent: 40,
+                      color: primaryColor.withOpacity(0.15),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.volunteer_activism,
+                        color: primaryColor,
+                        size: 20 * textScaleFactor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ungkapan Syukur',
+                        style: TextStyle(
+                          fontSize: 14 * textScaleFactor,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Puji dan syukur yang tak terhingga kepada TUHAN atas hikmat, kekuatan, dan tuntunan-Nya yang sempurna dari awal perancangan hingga terselesaikannya aplikasi ini. Segala kemuliaan hanya bagi nama-Nya.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13 * textScaleFactor,
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                        0.85,
+                      ),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ========================================================
+          // INFORMASI PENGEMBANG UTUH
+          // ========================================================
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
