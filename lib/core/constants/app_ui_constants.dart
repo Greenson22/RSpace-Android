@@ -15,8 +15,8 @@ class AppThemeTokens {
   // ==========================================
   // 2. PARAMETER ANIMASI (ANIMATIONS)
   // ==========================================
-  static const Duration pageTransitionIn = Duration(milliseconds: 450);
-  static const Duration pageTransitionOut = Duration(milliseconds: 400);
+  static const Duration pageTransitionIn = Duration(milliseconds: 250);
+  static const Duration pageTransitionOut = Duration(milliseconds: 200);
   static const Curve animationCurve = Curves.easeInOutCubic;
 
   // ==========================================
