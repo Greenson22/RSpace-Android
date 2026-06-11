@@ -74,6 +74,32 @@ class Discussion {
     this.highlightLabel,
   });
 
+  // ==> TAMBAHKAN GETTER BARU UNTUK PERSENTASE DI SINI <==
+  double get completionPercentage {
+    if (finished) return 100.0;
+
+    // Kasus 1: Jika diskusi memiliki poin-poin anak di dalamnya
+    if (points.isNotEmpty) {
+      double totalPointsPercentage = 0.0;
+      for (final point in points) {
+        if (point.finished) {
+          totalPointsPercentage += 100.0;
+        } else {
+          // Menggunakan helper bawaan dari utilitas kode Anda (asumsi mengembalikan double/num persentase)
+          // Jika fungsi di utils Anda mengembalikan int, gunakan .toDouble()
+          totalPointsPercentage += getProgressPercentageForCode(
+            point.repetitionCode,
+          ).toDouble();
+        }
+      }
+      // Rata-rata persentase dari akumulasi poin yang ada
+      return totalPointsPercentage / points.length;
+    }
+
+    // Kasus 2: Jika tidak memiliki anak poin, hitung langsung dari kode diskusi itu sendiri
+    return getProgressPercentageForCode(effectiveRepetitionCode).toDouble();
+  }
+
   Point? get _pointWithMinRepetitionCode {
     final activePoints = points.where((p) => !p.finished).toList();
     if (activePoints.isEmpty) {

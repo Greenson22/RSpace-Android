@@ -27,13 +27,14 @@ class _DiscussionStatsHeaderState extends State<DiscussionStatsHeader> {
       return const SizedBox.shrink();
     }
 
-    // ==> PERUBAHAN UTAMA: Perhitungan Progress Berdasarkan Akumulasi Bobot Kode <==
+    // ==> PERUBAHAN UTAMA: Perhitungan Progress Berdasarkan Akumulasi Poin/Kode Pintar <==
     double totalMaxWeight = total * 100.0;
     double currentActualWeight = 0.0;
 
     for (var discussion in provider.allDiscussions) {
-      final code = discussion.effectiveRepetitionCode;
-      currentActualWeight += getProgressPercentageForCode(code);
+      // Menggunakan properti completionPercentage baru dari Discussion model
+      // yang otomatis merata-rata poin jika diskusi memiliki anak poin.
+      currentActualWeight += discussion.completionPercentage;
     }
 
     final double completionPercentage = totalMaxWeight > 0
