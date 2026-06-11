@@ -137,10 +137,9 @@ class _SubjectsPageState extends State<SubjectsPage> {
             context,
             widget.topicName,
           ),
-          // --- HUBUNGKAN DUA CALLBACK BARU DI BAWAH INI ---
           onClearSelection: () {
             provider
-                .clearSelection(); // Memperbaiki tombol X agar berfungsi bersih seleksi
+                .clearSelection(); // Berfungsi membersihkan seleksi saat menekan X
           },
           onBulkFreezeSelected: () async {
             if (provider.selectedSubjects.isNotEmpty) {
@@ -151,6 +150,22 @@ class _SubjectsPageState extends State<SubjectsPage> {
                   const SnackBar(
                     content: Text(
                       'Status pembekuan massal berhasil diperbarui.',
+                    ),
+                  ),
+                );
+              }
+            }
+          },
+          // HUBUNGKAN AKSI SEMBUNYIKAN MASSAL DI SINI
+          onBulkHideSelected: () async {
+            if (provider.selectedSubjects.isNotEmpty) {
+              await provider
+                  .toggleVisibilitySelectedSubjects(); // Memanggil penyembunyian massal dari provider
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Status visibilitas massal berhasil diperbarui.',
                     ),
                   ),
                 );

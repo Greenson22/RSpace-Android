@@ -11,9 +11,10 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onExportSelected;
   final Color backgroundColor;
 
-  // TAMBAHKAN CALLBACK BARU UNTUK BERSIHKAN SELEKSI & BEKUKAN MASSAL
+  // CALLBACK UNTUK BERSIHKAN SELEKSI, BEKUKAN MASSAL, & SEMBUNYIKAN MASSAL
   final VoidCallback onClearSelection;
   final VoidCallback onBulkFreezeSelected;
+  final VoidCallback onBulkHideSelected; // Tambahan untuk sembunyikan massal
 
   const SubjectsAppBar({
     super.key,
@@ -25,8 +26,9 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onMenuSelected,
     required this.onExportSelected,
     required this.backgroundColor,
-    required this.onClearSelection, // Wajib diisi
-    required this.onBulkFreezeSelected, // Wajib diisi
+    required this.onClearSelection,
+    required this.onBulkFreezeSelected,
+    required this.onBulkHideSelected, // Wajib diisi
   });
 
   @override
@@ -42,7 +44,7 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: isSelectionMode
           ? IconButton(
               icon: const Icon(Icons.close),
-              onPressed: onClearSelection, // MENGGUNAKAN CALLBACK YANG BARU
+              onPressed: onClearSelection, // Memperbaiki fungsi tombol X
             )
           : IconButton(
               iconSize: 18.0,
@@ -75,11 +77,17 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
             mainAxisSize: MainAxisSize.min,
             children: isSelectionMode
                 ? [
-                    // TOMBOL BARU: BEKUKAN MASSAL (BULK FREEZE)
+                    // TOMBOL: BEKUKAN MASSAL (BULK FREEZE)
                     IconButton(
                       icon: const Icon(Icons.ac_unit),
                       onPressed: onBulkFreezeSelected,
                       tooltip: 'Bekukan Terpilih',
+                    ),
+                    // TOMBOL BARU: SEMBUNYIKAN MASSAL (BULK HIDE)
+                    IconButton(
+                      icon: const Icon(Icons.visibility_off),
+                      onPressed: onBulkHideSelected,
+                      tooltip: 'Sembunyikan Terpilih',
                     ),
                     IconButton(
                       icon: const Icon(Icons.share),
