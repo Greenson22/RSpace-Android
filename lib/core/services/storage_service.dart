@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'path_service.dart';
 import 'user_data_service.dart';
 import 'neuron_service.dart';
@@ -220,5 +221,35 @@ class StorageService extends SharedPreferencesService {
     }
 
     return fileZipTarget;
+  }
+
+  // Tambahkan di dalam kelas StorageService Anda
+  Future<void> saveLastRestoreInfo({
+    required String fileName,
+    required String source,
+  }) async {
+    final prefs =
+        await SharedPreferences.getInstance(); // atau dependensi lokal Anda
+    final now = DateTime.now();
+    final formattedTime =
+        "${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
+    await prefs.setString('last_restore_time', formattedTime);
+    await prefs.setString('last_restore_file', fileName);
+    await prefs.setString('last_restore_source', source);
+  }
+
+  Future<Map<String, String>?> getLastRestoreInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    final time = prefs.getString('last_restore_time');
+    final file = prefs.getString('last_restore_file');
+    final source = prefs.getString('last_restore_source');
+
+    if (time == null) return null;
+    return {
+      'time': time,
+      'file': file ?? 'Tidak diketahui',
+      'source': source ?? 'Lokal',
+    };
   }
 }

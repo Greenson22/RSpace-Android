@@ -34,6 +34,9 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
   bool _isServerSelectionMode = false;
   final List<File> _selectedServerFiles = [];
 
+  // Variabel untuk menyimpan status restore terakhir
+  Map<String, String>? _lastRestoreInfo;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +50,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
       pathService: _pathService,
     );
     _loadBaseDirectory();
+    _loadLastRestoreStatus(); // Memuat status riwayat restore saat inisialisasi
   }
 
   @override
@@ -54,6 +58,16 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
     // Pastikan server ditutup saat keluar dari tab
     _serverHandler.dispose();
     super.dispose();
+  }
+
+  // Memuat data restore terakhir dari storage service
+  Future<void> _loadLastRestoreStatus() async {
+    final info = await _storageService.getLastRestoreInfo();
+    if (mounted) {
+      setState(() {
+        _lastRestoreInfo = info;
+      });
+    }
   }
 
   void _setLoading(bool value) {
@@ -79,7 +93,7 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
   }
 
   // --- LOGIKA UTAMA: RESTORE DATA DARI ZIP ---
-  void _importAllFromZip(File zipFile) async {
+  void _importAllFromZip(File zipFile, {required String sourceName}) async {
     _setLoading(true);
     try {
       final String appBasePath =
@@ -128,15 +142,21 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         }
       }
 
+      // 🌟 MENYIMPAN INFORMASI RESTORE TERAKHIR KETIKA BERHASIL
+      final String fileNameOnly = zipFile.path.split('/').last;
+      await _storageService.saveLastRestoreInfo(
+        fileName: fileNameOnly,
+        source: sourceName,
+      );
+      await _loadLastRestoreStatus(); // Refresh tampilan info banner
+
       if (mounted) {
         Provider.of<TopicProvider>(context, listen: false).fetchTopics();
       }
       _loadServerBackups();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Restore Berhasil dari "${zipFile.path.split('/').last}".',
-          ),
+          content: Text('Restore Berhasil dari "$fileNameOnly".'),
           backgroundColor: Colors.teal,
         ),
       );
@@ -239,6 +259,179 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         false;
   }
 
+  // 🌟 WIDGET: BANNER INFORMASI STATUS RESTORE TERAKHIR (DESAIN SANGAT BAGUS & MODERN)
+  Widget _buildLastRestoreBanner() {
+    if (_lastRestoreInfo == null) return const SizedBox.shrink();
+
+    // Menentukan skema warna gradien dinamis berdasarkan string sumber data
+    final bool isFromServer = _lastRestoreInfo!['source']!
+        .toLowerCase()
+        .contains('server');
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isFromServer
+                ? [
+                    const Color(0xFF0D324D),
+                    const Color(0xFF7F5A83),
+                  ] // Server Theme: Dark Blue Soft Purple
+                : [
+                    const Color(0xFF11998e),
+                    const Color(0xFF38ef7d),
+                  ], // Local Theme: Emerald Neon Green
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  (isFromServer
+                          ? const Color(0xFF0D324D)
+                          : const Color(0xFF11998e))
+                      .withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Efek watermark ikon transparan dekoratif di pojok kanan bawah
+              Positioned(
+                right: -15,
+                bottom: -15,
+                child: Icon(
+                  isFromServer ? Icons.dns_rounded : Icons.folder_zip_rounded,
+                  size: 110,
+                  color: Colors.white.withOpacity(0.09),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isFromServer
+                                    ? Icons.dns_outlined
+                                    : Icons.inventory_2_outlined,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "Sumber: ${_lastRestoreInfo!['source']}",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white60, width: 1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            "RESTORE AKTIF",
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Terakhir Kali Di-restore:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _lastRestoreInfo!['time']!,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(0, 2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(height: 1, color: Colors.white24),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.file_present_rounded,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            "Berkas: ${_lastRestoreInfo!['file']}",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontStyle: FontStyle.italic,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -246,6 +439,9 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
         ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+            // 🌟 INJEKSI BANNER RIWAYAT RESTORE TERAKHIR (PALING ATAS SCREEN)
+            _buildLastRestoreBanner(),
+
             // === Card Koneksi Jaringan ===
             Card(
               shape: RoundedRectangleBorder(
@@ -482,13 +678,18 @@ class _LocalSharingTabState extends State<LocalSharingTab> {
                                     : _selectedServerFiles.add(file);
                               })
                             : () async {
-                                // PERBAIKAN: Memanggil _showConfirmRestoreDialog yang baru
                                 final confirm = await _showConfirmRestoreDialog(
                                   title: 'Restore Data Aplikasi?',
                                   content:
                                       'Apakah Anda yakin ingin memulihkan seluruh data menggunakan file cadangan "$fileName"?\n\n*Peringatan: Folder RSpace_data dan PerpusKu aktif saat ini akan sepenuhnya ditimpa.',
                                 );
-                                if (confirm) _importAllFromZip(file);
+                                if (confirm) {
+                                  // Mengirimkan parameter nama sumber 'Server Sharing Wi-Fi' saat restore
+                                  _importAllFromZip(
+                                    file,
+                                    sourceName: 'Server Sharing Wi-Fi',
+                                  );
+                                }
                               },
                         leading: _isServerSelectionMode
                             ? Checkbox(
