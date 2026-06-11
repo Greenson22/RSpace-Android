@@ -119,8 +119,7 @@ class _SubjectsPageState extends State<SubjectsPage> {
           isSelectionMode: provider.isSelectionMode,
           isSearching: _isSearching,
           searchController: _searchController,
-          backgroundColor:
-              dynamicThemeColor, // Menggunakan warna tema yang konsisten
+          backgroundColor: dynamicThemeColor,
           onToggleSearch: () {
             setState(() {
               _isSearching = !_isSearching;
@@ -138,6 +137,26 @@ class _SubjectsPageState extends State<SubjectsPage> {
             context,
             widget.topicName,
           ),
+          // --- HUBUNGKAN DUA CALLBACK BARU DI BAWAH INI ---
+          onClearSelection: () {
+            provider
+                .clearSelection(); // Memperbaiki tombol X agar berfungsi bersih seleksi
+          },
+          onBulkFreezeSelected: () async {
+            if (provider.selectedSubjects.isNotEmpty) {
+              await provider
+                  .toggleFreezeSelectedSubjects(); // Memanggil pembekuan massal
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Status pembekuan massal berhasil diperbarui.',
+                    ),
+                  ),
+                );
+              }
+            }
+          },
         ),
         body: Column(
           children: [

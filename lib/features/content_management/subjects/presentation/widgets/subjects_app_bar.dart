@@ -1,3 +1,4 @@
+// lib/features/content_management/presentation/subjects/widgets/subjects_app_bar.dart
 import 'package:flutter/material.dart';
 
 class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -8,9 +9,11 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onToggleSearch;
   final ValueChanged<String?> onMenuSelected;
   final VoidCallback onExportSelected;
-
-  // 1. TAMBAHKAN PARAMETER INI
   final Color backgroundColor;
+
+  // TAMBAHKAN CALLBACK BARU UNTUK BERSIHKAN SELEKSI & BEKUKAN MASSAL
+  final VoidCallback onClearSelection;
+  final VoidCallback onBulkFreezeSelected;
 
   const SubjectsAppBar({
     super.key,
@@ -21,7 +24,9 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onToggleSearch,
     required this.onMenuSelected,
     required this.onExportSelected,
-    required this.backgroundColor, // 2. TAMBAHKAN DI SINI JUGA (Wajib diisi)
+    required this.backgroundColor,
+    required this.onClearSelection, // Wajib diisi
+    required this.onBulkFreezeSelected, // Wajib diisi
   });
 
   @override
@@ -29,32 +34,20 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Jika sedang dalam mode seleksi (isSelectionMode), Anda bisa memilih
-    // apakah mau pakai warna dinamis atau warna default selection Anda.
-    // Di sini kita setel agar kedua kondisi menggunakan warna dinamis yang dikirim.
-
     return AppBar(
-      // 3. PASANG WARNA DINAMIS DI SINI
       backgroundColor: backgroundColor,
-
-      // 4. SETEL WARNA TEKS & IKON MENJADI PUTIH AGAR KONTRAS
       foregroundColor: Colors.white,
       elevation: 0,
       iconTheme: const IconThemeData(color: Colors.white),
-
       leading: isSelectionMode
           ? IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => onMenuSelected('clear_selection'),
+              onPressed: onClearSelection, // MENGGUNAKAN CALLBACK YANG BARU
             )
           : IconButton(
-              // Tombol panah kembali kustom saat tidak dalam mode seleksi
-              iconSize:
-                  18.0, // <-- KONTROL UKURAN PANAH KEMBALI DI SINI (Default: 24.0)
+              iconSize: 18.0,
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(
-                context,
-              ).pop(), // Aksi kembali ke halaman sebelumnya
+              onPressed: () => Navigator.of(context).pop(),
             ),
       title: isSearching
           ? TextField(
@@ -75,22 +68,21 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-      // === MODIFIKASI UKURAN IKON SEARCH & SHOW MENU DI SINI ===
       actions: [
         IconTheme(
-          data: const IconThemeData(
-            size:
-                18.0, // <-- SILAKAN UBAH UKURAN IKON APP BAR DI SINI (Default: 24.0)
-            color: Colors.white,
-          ),
+          data: const IconThemeData(size: 18.0, color: Colors.white),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: isSelectionMode
                 ? [
+                    // TOMBOL BARU: BEKUKAN MASSAL (BULK FREEZE)
                     IconButton(
-                      icon: const Icon(
-                        Icons.share,
-                      ), // atau Icons.upload_file untuk export
+                      icon: const Icon(Icons.ac_unit),
+                      onPressed: onBulkFreezeSelected,
+                      tooltip: 'Bekukan Terpilih',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.share),
                       onPressed: onExportSelected,
                       tooltip: 'Export Terpilih',
                     ),
@@ -103,8 +95,7 @@ class SubjectsAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert),
-                      color: Colors
-                          .white, // Latar belakang popup menu tetap putih bersih
+                      color: Colors.white,
                       onSelected: onMenuSelected,
                       itemBuilder: (context) => [
                         const PopupMenuItem(
